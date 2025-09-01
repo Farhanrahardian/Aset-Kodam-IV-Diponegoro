@@ -284,6 +284,59 @@
       "asal_milik": "pembelian tahun 1960",
       "bukti_kepemilikan": "shp no 7",
       "atas_nama_pemilik_sertifikat": "pemerinta RI"
+    },
+    {
+      "id": "T1756701893282",
+      "nama": "Ahmad Imtiyaz Najih",
+      "korem_id": "2",
+      "kodim": "2_2",
+      "luas": 3908883746.05,
+      "lokasi_nama": "Lokasi dari Peta",
+      "kib_kode_barang": "A6",
+      "kode_barang": "A6",
+      "nomor_registrasi": "adada1211dasd",
+      "no_registrasi": "adada1211dasd",
+      "registrasi": "adada1211dasd",
+      "nomorRegistrasi": "adada1211dasd",
+      "noRegistrasi": "adada1211dasd",
+      "no_reg": "adada1211dasd",
+      "alamat": "demak",
+      "peruntukan": "kantor puat",
+      "fungsi": "kantor puat",
+      "status": "Aktif",
+      "asal_milik": "Pembelian",
+      "bukti_pemilikan": "Girik",
+      "bukti_kepemilikan": "Girik",
+      "pemilikan_sertifikat": "Ya",
+      "sertifikat_bidang": "12",
+      "sertifikat_luas": "999999999",
+      "belum_sertifikat_bidang": "",
+      "belum_sertifikat_luas": "",
+      "keterangan": "masuk",
+      "atas_nama_pemilik_sertifikat": "yazna",
+      "lokasi": [
+        [
+          [
+            109.644494,
+            -7.227627
+          ],
+          [
+            110.48564,
+            -6.944418
+          ],
+          [
+            110.408672,
+            -7.72825
+          ],
+          [
+            109.644494,
+            -7.227627
+          ]
+        ]
+      ],
+      "luas_total": 999999999,
+      "luas_gambar": 3908883746.052742,
+      "kodim_id": "2_2"
     }
   ],
   "korem": [
