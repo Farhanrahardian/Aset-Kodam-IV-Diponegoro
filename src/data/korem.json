@@ -1,0 +1,56 @@
+
+[
+  {
+    "id": 1,
+    "nama": "Korem 071/Wijayakusuma",
+    "wilayah": "Banyumas dan sekitarnya",
+    "kodim": [
+      "Kodim 0701/Banyumas",
+      "Kodim 0702/Purbalingga",
+      "Kodim 0703/Cilacap",
+      "Kodim 0704/Banjarnegara"
+    ]
+  },
+  {
+    "id": 2,
+    "nama": "Korem 072/Pamungkas",
+    "wilayah": "Yogyakarta dan sekitarnya",
+    "kodim": [
+      "Kodim 0734/Yogyakarta",
+      "Kodim 0732/Sleman",
+      "Kodim 0729/Bantul",
+      "Kodim 0730/Gunungkidul",
+      "Kodim 0731/Kulon Progo"
+    ]
+  },
+  {
+    "id": 3,
+    "nama": "Korem 073/Makutarama",
+    "wilayah": "Salatiga dan sekitarnya",
+    "kodim": [
+      "Kodim 0714/Salatiga",
+      "Kodim 0715/Kendal",
+      "Kodim 0716/Demak",
+      "Kodim 0717/Purwodadi",
+      "Kodim 0718/Pati"
+    ]
+  },
+  {
+    "id": 4,
+    "nama": "Korem 074/Warastratama",
+    "wilayah": "Surakarta dan sekitarnya",
+    "kodim": [
+      "Kodim 0735/Surakarta",
+      "Kodim 0723/Sukoharjo",
+      "Kodim 0724/Boyolali",
+      "Kodim 0725/Sragen",
+      "Kodim 0726/Sukowati"
+    ]
+  },
+  {
+    "id": 5,
+    "nama": "Kodim 0733/Kota Semarang",
+    "wilayah": "Semarang",
+    "kodim": []
+  }
+]

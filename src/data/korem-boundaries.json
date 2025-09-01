@@ -1,0 +1,46 @@
+
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "korem_id": 1, "nama": "Korem 071/Wijayakusuma" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[ [108.8, -7.8], [109.8, -7.8], [109.8, -6.8], [108.8, -6.8], [108.8, -7.8] ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "korem_id": 2, "nama": "Korem 072/Pamungkas" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[ [110.0, -8.2], [110.8, -8.2], [110.8, -7.5], [110.0, -7.5], [110.0, -8.2] ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "korem_id": 3, "nama": "Korem 073/Makutarama" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[ [110.2, -7.5], [111.2, -7.5], [111.2, -6.5], [110.2, -6.5], [110.2, -7.5] ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "korem_id": 4, "nama": "Korem 074/Warastratama" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[ [110.5, -7.8], [111.5, -7.8], [111.5, -7.2], [110.5, -7.2], [110.5, -7.8] ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "korem_id": 5, "nama": "Kodim 0733/Kota Semarang" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[ [110.35, -7.05], [110.45, -7.05], [110.45, -6.95], [110.35, -6.95], [110.35, -7.05] ]]
+      }
+    }
+  ]
+}

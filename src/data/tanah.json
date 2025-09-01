@@ -1,0 +1,48 @@
+
+[
+  {
+    "id": "T001",
+    "korem_id": 1,
+    "nama": "Tanah Lapang Purwokerto",
+    "lokasi": [-7.4291, 109.2394],
+    "luas": 5000,
+    "status": "Sertifikat Hak Pakai",
+    "kodim": "Kodim 0701/Banyumas"
+  },
+  {
+    "id": "T002",
+    "korem_id": 2,
+    "nama": "Lahan Markas Bantul",
+    "lokasi": [-7.883, 110.3215],
+    "luas": 12000,
+    "status": "Sertifikat Hak Guna Bangunan",
+    "kodim": "Kodim 0729/Bantul"
+  },
+  {
+    "id": "T003",
+    "korem_id": 5,
+    "nama": "Kavling Mijen",
+    "lokasi": [-7.024, 110.352],
+    "luas": 2500,
+    "status": "Dalam Proses Sertifikasi",
+    "kodim": "Kodim 0733/Kota Semarang"
+  },
+  {
+    "id": "T004",
+    "korem_id": 4,
+    "nama": "Area Latihan Tembak Sragen",
+    "lokasi": [-7.42, 111.022],
+    "luas": 35000,
+    "status": "Sertifikat Hak Pakai",
+    "kodim": "Kodim 0725/Sragen"
+  },
+  {
+    "id": "T005",
+    "korem_id": 2,
+    "nama": "Pos Koramil Godean",
+    "lokasi": [-7.772, 110.298],
+    "luas": 1500,
+    "status": "Sertifikat Hak Pakai",
+    "kodim": "Kodim 0732/Sleman"
+  }
+]

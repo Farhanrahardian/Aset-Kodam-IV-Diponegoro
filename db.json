@@ -1,0 +1,344 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "username": "admin",
+      "password": "password123",
+      "name": "Administrator Utama"
+    }
+  ],
+  "assets": [
+    {
+      "id": "T1756430898263",
+      "nama": "-",
+      "korem_id": "1",
+      "kodim": "kodim 0701/Banyumas",
+      "luas": 4171052779.68,
+      "status": "dimiliki",
+      "fungsi": "asrama",
+      "lokasi": [
+        [
+          [
+            108.85258,
+            -7.244484
+          ],
+          [
+            109.528276,
+            -7.729567
+          ],
+          [
+            110.006207,
+            -7.397152
+          ],
+          [
+            109.495315,
+            -7.135403
+          ],
+          [
+            108.85258,
+            -7.244484
+          ]
+        ]
+      ],
+      "kode_barang": "A2",
+      "no_reg": "Sp09wf",
+      "alamat": "JLmajengna",
+      "asal_milik": "pembelian tahun 1960",
+      "bukti_kepemilikan": "shp no 7",
+      "atas_nama_pemilik_sertifikat": "pemerinta RI"
+    },
+    {
+      "id": "T1756430976891",
+      "nama": "-",
+      "korem_id": 2,
+      "kodim": "Kodim 0709/Bantul",
+      "luas": 4077395390.36,
+      "status": "dimiliki",
+      "fungsi": "Kosong",
+      "lokasi": [
+        [
+          [
+            110.808252,
+            -6.955364
+          ],
+          [
+            110.874174,
+            -7.478917
+          ],
+          [
+            111.489441,
+            -7.473467
+          ],
+          [
+            111.368585,
+            -6.90625
+          ],
+          [
+            110.74233,
+            -6.928079
+          ],
+          [
+            110.808252,
+            -6.955364
+          ]
+        ]
+      ],
+      "kode_barang": "A3",
+      "no_reg": "adsaad09a",
+      "alamat": "Jl. ahajs",
+      "asal_milik": "pembelian tahun 1960",
+      "bukti_kepemilikan": "shp no 7",
+      "atas_nama_pemilik_sertifikat": "pemerinta RI"
+    },
+    {
+      "id": "T1756431060254",
+      "nama": "-",
+      "korem_id": "1",
+      "kodim": "Kodim 0702/Purbalingga",
+      "luas": 165523991.95,
+      "status": "dimiliki",
+      "fungsi": "Kosong",
+      "lokasi": [
+        [
+          [
+            110.072128,
+            -6.966277
+          ],
+          [
+            110.105089,
+            -7.059031
+          ],
+          [
+            110.225945,
+            -7.059031
+          ],
+          [
+            110.214958,
+            -6.949907
+          ],
+          [
+            110.072128,
+            -6.966277
+          ]
+        ]
+      ],
+      "kode_barang": "A4",
+      "no_reg": "qweq23",
+      "alamat": "Jl.dvrd",
+      "asal_milik": "pembelian tahun 1960",
+      "bukti_kepemilikan": "shp no 7",
+      "atas_nama_pemilik_sertifikat": "pemerinta RI"
+    },
+    {
+      "id": "T1756431125951",
+      "nama": "-",
+      "korem_id": 2,
+      "kodim": "Kodim 0709/Bantul",
+      "luas": 3198644931.27,
+      "status": "dimiliki",
+      "fungsi": "gedung",
+      "lokasi": [
+        [
+          [
+            109.921007,
+            -7.167091
+          ],
+          [
+            110.05285,
+            -7.635915
+          ],
+          [
+            110.679104,
+            -7.385211
+          ],
+          [
+            110.426405,
+            -7.055265
+          ],
+          [
+            109.921007,
+            -7.167091
+          ]
+        ]
+      ],
+      "kode_barang": "A6",
+      "no_reg": "dadcaea54",
+      "alamat": "Jl. hkfv",
+      "asal_milik": "pembelian tahun 1960",
+      "bukti_kepemilikan": "shp no 7",
+      "atas_nama_pemilik_sertifikat": "pemerinta RI"
+    },
+    {
+      "id": "T1756431220171",
+      "nama": "-",
+      "korem_id": 3,
+      "kodim": "Kodim 0714/Salatiga",
+      "luas": 4956609666.4,
+      "status": "dimiliki",
+      "fungsi": "tanah",
+      "lokasi": [
+        [
+          [
+            109.275576,
+            -7.233577
+          ],
+          [
+            110.253412,
+            -7.77859
+          ],
+          [
+            110.539072,
+            -7.309919
+          ],
+          [
+            109.929298,
+            -7.119039
+          ],
+          [
+            109.275576,
+            -7.233577
+          ]
+        ]
+      ],
+      "kode_barang": "A9",
+      "no_reg": "fwgfsc32",
+      "alamat": "JL. hksfjbs",
+      "asal_milik": "pembelian tahun 1960",
+      "bukti_kepemilikan": "shp no 7",
+      "atas_nama_pemilik_sertifikat": "pemerinta RI"
+    },
+    {
+      "id": "T1756433191655",
+      "nama": "-",
+      "korem_id": 4,
+      "kodim": "Kodim 0723/Klaten",
+      "luas": 1597055143.02,
+      "status": "dimiliki",
+      "fungsi": "gedung",
+      "lokasi": [
+        [
+          [
+            109.547455,
+            -7.156369
+          ],
+          [
+            109.712259,
+            -7.491692
+          ],
+          [
+            110.077574,
+            -7.388123
+          ],
+          [
+            109.956718,
+            -7.107277
+          ],
+          [
+            109.547455,
+            -7.156369
+          ]
+        ]
+      ],
+      "kode_barang": "Ag0",
+      "no_reg": "aefaef34",
+      "alamat": "Jl. bkuk",
+      "asal_milik": "pembelian tahun 1960",
+      "bukti_kepemilikan": "shp no 7",
+      "atas_nama_pemilik_sertifikat": "pemerinta RI"
+    },
+    {
+      "id": "T1756436017348",
+      "nama": "-",
+      "korem_id": 5,
+      "kodim": "Kodim 0733/Kota Semarang",
+      "luas": 717564153.46,
+      "status": "dimiliki",
+      "fungsi": "tanah",
+      "lokasi": [
+        [
+          [
+            109.599661,
+            -7.063545
+          ],
+          [
+            109.654595,
+            -7.3008
+          ],
+          [
+            109.907294,
+            -7.213548
+          ],
+          [
+            109.830386,
+            -7.006259
+          ],
+          [
+            109.599661,
+            -7.063545
+          ]
+        ]
+      ],
+      "kode_barang": "A5",
+      "no_reg": "gsefs64",
+      "alamat": "Jl",
+      "asal_milik": "pembelian tahun 1960",
+      "bukti_kepemilikan": "shp no 7",
+      "atas_nama_pemilik_sertifikat": "pemerinta RI"
+    }
+  ],
+  "korem": [
+    {
+      "id": "1",
+      "nama": "Korem 071/Wijayakusuma",
+      "wilayah": "Banyumas dan sekitarnya",
+      "kodim": [
+        "Kodim 0701/Banyumas",
+        "Kodim 0702/Purbalingga",
+        "Kodim 0703/Cilacap",
+        "Kodim 0704/Banjarnegara"
+      ]
+    },
+    {
+      "id": "2",
+      "nama": "Korem 072/Pamungkas",
+      "wilayah": "Yogyakarta dan sekitarnya",
+      "kodim": [
+        "Kodim 0734/Yogyakarta",
+        "Kodim 0732/Sleman",
+        "Kodim 0729/Bantul",
+        "Kodim 0730/Gunungkidul",
+        "Kodim 0731/Kulon Progo"
+      ]
+    },
+    {
+      "id": "3",
+      "nama": "Korem 073/Makutarama",
+      "wilayah": "Salatiga dan sekitarnya",
+      "kodim": [
+        "Kodim 0714/Salatiga",
+        "Kodim 0715/Kendal",
+        "Kodim 0716/Demak",
+        "Kodim 0717/Purwodadi",
+        "Kodim 0718/Pati"
+      ]
+    },
+    {
+      "id": "4",
+      "nama": "Korem 074/Warastratama",
+      "wilayah": "Surakarta dan sekitarnya",
+      "kodim": [
+        "Kodim 0735/Surakarta",
+        "Kodim 0723/Sukoharjo",
+        "Kodim 0724/Boyolali",
+        "Kodim 0725/Sragen",
+        "Kodim 0726/Sukowati"
+      ]
+    },
+    {
+      "id": "5",
+      "nama": "Kodim 0733/Kota Semarang",
+      "wilayah": "Semarang",
+      "kodim": []
+    }
+  ]
+}
