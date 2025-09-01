@@ -1,21 +1,116 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Container, Row, Col, Spinner, Alert } from "react-bootstrap";
+import {
+  Container,
+  Row,
+  Col,
+  Spinner,
+  Alert,
+  Table,
+  Button,
+} from "react-bootstrap";
 import axios from "axios";
 import { useAuth } from "../auth/AuthContext";
 import toast from "react-hot-toast";
 import Swal from "sweetalert2";
 
-import RingkasanAset from "../components/RingkasanAset";
 import FormAset from "../components/FormAset";
 import FilterPanel from "../components/FilterPanel";
+import PetaAset from "../components/PetaAset";
+import jatengBoundary from "../data/indonesia_jawatengah.json";
+import diyBoundary from "../data/indonesia_yogyakarta.json";
 
 const API_URL = "http://localhost:3001";
+
+// New simplified table component
+const TabelAset = ({
+  assets,
+  onEdit,
+  onDelete,
+  onViewDetail,
+  koremList,
+  kodimList,
+}) => {
+  if (!assets || assets.length === 0) {
+    return (
+      <div className="text-center py-5">
+        <p className="text-muted">Tidak ada data aset yang ditemukan.</p>
+      </div>
+    );
+  }
+
+  return (
+    <Table striped bordered hover responsive>
+      <thead className="table-dark">
+        <tr>
+          <th style={{ width: "30%" }}>Nama Aset</th>
+          <th style={{ width: "25%" }}>Wilayah Korem</th>
+          <th style={{ width: "25%" }}>Kodim</th>
+          <th style={{ width: "20%" }}>Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {assets.map((asset) => {
+          const korem = koremList.find((k) => k.id == asset.korem_id);
+          // Fix: Try multiple field variations for kodim_id
+          const kodim = kodimList.find(
+            (k) =>
+              k.id == asset.kodim_id ||
+              k.id == asset.kodim ||
+              k.id == asset.kodim_id_val ||
+              k.nama === asset.kodim
+          );
+
+          return (
+            <tr key={asset.id}>
+              <td>{asset.nama || "-"}</td>
+              <td>{korem?.nama || "-"}</td>
+              <td>{kodim?.nama || asset.kodim || "-"}</td>
+              <td>
+                <div className="d-flex gap-1">
+                  <Button
+                    variant="info"
+                    size="sm"
+                    onClick={() => onViewDetail(asset)}
+                    title="Lihat Detail"
+                  >
+                    Detail
+                  </Button>
+                  {onEdit && (
+                    <Button
+                      variant="warning"
+                      size="sm"
+                      onClick={() => onEdit(asset)}
+                      title="Edit Aset"
+                    >
+                      Edit
+                    </Button>
+                  )}
+                  {onDelete && (
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => onDelete(asset.id)}
+                      title="Hapus Aset"
+                    >
+                      Hapus
+                    </Button>
+                  )}
+                </div>
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </Table>
+  );
+};
 
 const DataAsetTanahPage = () => {
   const { user } = useAuth();
   const [assets, setAssets] = useState([]);
   const [koremList, setKoremList] = useState([]);
   const [kodimList, setKodimList] = useState([]);
+  const [allKodimList, setAllKodimList] = useState([]);
   const [filteredAssets, setFilteredAssets] = useState([]);
   const [selectedKorem, setSelectedKorem] = useState(null);
   const [selectedKodim, setSelectedKodim] = useState("");
@@ -26,6 +121,20 @@ const DataAsetTanahPage = () => {
 
   const [showModal, setShowModal] = useState(false);
   const [editingAsset, setEditingAsset] = useState(null);
+
+  // New state for detail view (like TambahAsetPage layout)
+  const [selectedAssetDetail, setSelectedAssetDetail] = useState(null);
+  const [showDetailView, setShowDetailView] = useState(false);
+
+  // Fetch all Kodim data for detail view
+  const fetchAllKodim = useCallback(async () => {
+    try {
+      const kodimRes = await axios.get(`${API_URL}/kodim`);
+      setAllKodimList(kodimRes.data || []);
+    } catch (err) {
+      console.error("Error fetching all Kodim:", err);
+    }
+  }, []);
 
   // Fetch Kodim data based on selected Korem
   const fetchKodim = useCallback(async (koremId) => {
@@ -104,6 +213,11 @@ const DataAsetTanahPage = () => {
                   nama: "Kodim 0705/Magelang",
                   korem_id: koremId,
                 },
+                {
+                  id: `${koremId}_6`,
+                  nama: "Kodim 0733/Kota Semarang",
+                  korem_id: koremId,
+                },
               ],
             };
             endpointUsed = "mock data";
@@ -147,12 +261,12 @@ const DataAsetTanahPage = () => {
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+    fetchAllKodim();
+  }, [fetchData, fetchAllKodim]);
 
   useEffect(() => {
     if (selectedKorem) {
       setFilteredAssets(assets.filter((a) => a.korem_id == selectedKorem.id));
-      // Fetch kodim when korem is selected
       fetchKodim(selectedKorem.id);
     } else {
       setFilteredAssets(assets);
@@ -178,16 +292,46 @@ const DataAsetTanahPage = () => {
     setSelectedKodim(kodimId);
   };
 
+  // Handle view detail - like TambahAsetPage layout
+  const handleViewDetail = (asset) => {
+    setSelectedAssetDetail(asset);
+    setShowDetailView(true);
+
+    // Set up korem and kodim for detail view
+    const korem = koremList.find((k) => k.id == asset.korem_id);
+    if (korem) {
+      setSelectedKorem(korem);
+      fetchKodim(korem.id);
+    }
+  };
+
+  // Handle back from detail view
+  const handleBackFromDetail = () => {
+    setShowDetailView(false);
+    setSelectedAssetDetail(null);
+    setSelectedKorem(null);
+    setSelectedKodim("");
+    setKodimList([]);
+  };
+
   const handleSaveAsset = async (assetData) => {
     const toastId = toast.loading("Menyimpan perubahan...");
     try {
       if (editingAsset) {
+        // Get the selected kodim name for saving
+        const selectedKodimObj = kodimList.find((k) => k.id === selectedKodim);
+        const kodimName = selectedKodimObj
+          ? selectedKodimObj.nama
+          : selectedKodim;
+
         const response = await axios.put(
           `${API_URL}/assets/${editingAsset.id}`,
           {
             ...assetData,
             korem_id: selectedKorem?.id || editingAsset.korem_id,
-            kodim_id: selectedKodim || editingAsset.kodim_id,
+            kodim_id:
+              selectedKodim || editingAsset.kodim_id || editingAsset.kodim,
+            kodim: kodimName || editingAsset.kodim, // Save kodim name for display
           }
         );
         setAssets(
@@ -236,7 +380,7 @@ const DataAsetTanahPage = () => {
     // Set selected korem and kodim for editing
     const korem = koremList.find((k) => k.id == asset.korem_id);
     setSelectedKorem(korem || null);
-    setSelectedKodim(asset.kodim_id || "");
+    setSelectedKodim(asset.kodim_id || asset.kodim || "");
     if (korem) {
       fetchKodim(korem.id);
     }
@@ -252,6 +396,52 @@ const DataAsetTanahPage = () => {
 
   if (loading) return <Spinner animation="border" variant="primary" />;
 
+  // Detail view layout (like TambahAsetPage)
+  if (showDetailView && selectedAssetDetail) {
+    return (
+      <Container fluid className="mt-4">
+        <div className="mb-3">
+          <Button variant="secondary" onClick={handleBackFromDetail}>
+            ← Kembali ke Daftar Aset
+          </Button>
+        </div>
+
+        <h3>Detail Aset Tanah - {selectedAssetDetail.nama}</h3>
+
+        <Row>
+          <Col md={7}>
+            <div style={{ height: "70vh", width: "100%" }}>
+              <PetaAset
+                assets={[selectedAssetDetail]} // Show only this asset on map
+                isDrawing={false}
+                onDrawingCreated={() => {}}
+                jatengBoundary={jatengBoundary}
+                diyBoundary={diyBoundary}
+                selectedKorem={selectedKorem?.id}
+                selectedKodim={selectedKodim}
+                viewMode={true} // Add view mode to show existing assets
+              />
+            </div>
+          </Col>
+          <Col md={5}>
+            <FormAset
+              onSave={() => {}} // No save function in view mode
+              onCancel={handleBackFromDetail}
+              koremList={koremList}
+              kodimList={allKodimList}
+              selectedKorem={selectedKorem?.id}
+              selectedKodim={selectedKodim}
+              assetToEdit={selectedAssetDetail}
+              isEnabled={false} // Disable editing in detail view
+              viewMode={true} // Add view mode prop
+            />
+          </Col>
+        </Row>
+      </Container>
+    );
+  }
+
+  // Main table view
   return (
     <Container fluid className="mt-4">
       <h3>Data Aset Tanah</h3>
@@ -267,10 +457,20 @@ const DataAsetTanahPage = () => {
             <br />- Korem List: {koremList.length} items
             <br />- Selected Korem: {selectedKorem?.nama || "None"}
             <br />- Kodim List: {kodimList.length} items
+            <br />- All Kodim List: {allKodimList.length} items
             <br />- Selected Kodim: {selectedKodim || "None"}
             <br />- Kodim Loading: {kodimLoading ? "Yes" : "No"}
             <br />- Editing Asset: {editingAsset?.id || "None"}
+            <br />- Show Detail View: {showDetailView ? "Yes" : "No"}
             <br />- API URL: {API_URL}
+            <br />- Sample Asset Kodim Field:{" "}
+            {assets[0]
+              ? JSON.stringify({
+                  kodim_id: assets[0].kodim_id,
+                  kodim: assets[0].kodim,
+                  kodim_id_val: assets[0].kodim_id_val,
+                })
+              : "No assets"}
           </small>
         </Alert>
       )}
@@ -290,10 +490,13 @@ const DataAsetTanahPage = () => {
         <Col md={assets.length > 0 ? 9 : 12}>
           <h2 className="mt-3"></h2>
           <div style={{ height: "calc(100vh - 180px)", overflowY: "auto" }}>
-            <RingkasanAset
+            <TabelAset
               assets={filteredAssets}
               onEdit={user ? handleEditAsset : null}
               onDelete={user ? handleDeleteAsset : null}
+              onViewDetail={handleViewDetail}
+              koremList={koremList}
+              kodimList={allKodimList} // Use all kodim list for better matching
             />
           </div>
         </Col>

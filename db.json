@@ -247,96 +247,61 @@
       "atas_nama_pemilik_sertifikat": "pemerinta RI"
     },
     {
-      "id": "T1756436017348",
-      "nama": "-",
-      "korem_id": 5,
+      "id": "T1756711099402",
+      "nama": "Prince Yazna",
+      "korem_id": "5",
       "kodim": "Kodim 0733/Kota Semarang",
-      "luas": 717564153.46,
-      "status": "dimiliki",
-      "fungsi": "tanah",
-      "lokasi": [
-        [
-          [
-            109.599661,
-            -7.063545
-          ],
-          [
-            109.654595,
-            -7.3008
-          ],
-          [
-            109.907294,
-            -7.213548
-          ],
-          [
-            109.830386,
-            -7.006259
-          ],
-          [
-            109.599661,
-            -7.063545
-          ]
-        ]
-      ],
-      "kode_barang": "A5",
-      "no_reg": "gsefs64",
-      "alamat": "Jl",
-      "asal_milik": "pembelian tahun 1960",
-      "bukti_kepemilikan": "shp no 7",
-      "atas_nama_pemilik_sertifikat": "pemerinta RI"
-    },
-    {
-      "id": "T1756701893282",
-      "nama": "Ahmad Imtiyaz Najih",
-      "korem_id": "2",
-      "kodim": "2_2",
-      "luas": 3908883746.05,
+      "luas": 460691012.59,
       "lokasi_nama": "Lokasi dari Peta",
-      "kib_kode_barang": "A6",
-      "kode_barang": "A6",
-      "nomor_registrasi": "adada1211dasd",
-      "no_registrasi": "adada1211dasd",
-      "registrasi": "adada1211dasd",
-      "nomorRegistrasi": "adada1211dasd",
-      "noRegistrasi": "adada1211dasd",
-      "no_reg": "adada1211dasd",
-      "alamat": "demak",
-      "peruntukan": "kantor puat",
-      "fungsi": "kantor puat",
+      "kib_kode_barang": "fbsds",
+      "kode_barang": "fbsds",
+      "nomor_registrasi": "csdbhcbsd",
+      "no_registrasi": "csdbhcbsd",
+      "registrasi": "csdbhcbsd",
+      "nomorRegistrasi": "csdbhcbsd",
+      "noRegistrasi": "csdbhcbsd",
+      "no_reg": "csdbhcbsd",
+      "alamat": "cbsdjhcbcjhsdc",
+      "peruntukan": "bcjhcs",
+      "fungsi": "bcjhcs",
       "status": "Aktif",
-      "asal_milik": "Pembelian",
-      "bukti_pemilikan": "Girik",
-      "bukti_kepemilikan": "Girik",
+      "asal_milik": "Hibah",
+      "bukti_pemilikan": "Letter C",
+      "bukti_kepemilikan": "Letter C",
       "pemilikan_sertifikat": "Ya",
-      "sertifikat_bidang": "12",
-      "sertifikat_luas": "999999999",
+      "sertifikat_bidang": "111",
+      "sertifikat_luas": "2121",
       "belum_sertifikat_bidang": "",
       "belum_sertifikat_luas": "",
-      "keterangan": "masuk",
-      "atas_nama_pemilik_sertifikat": "yazna",
+      "keterangan": "cbscbscsb",
+      "atas_nama_pemilik_sertifikat": "adnkjaj",
       "lokasi": [
         [
           [
-            109.644494,
-            -7.227627
+            106.703666,
+            -7.195411
           ],
           [
-            110.48564,
-            -6.944418
+            106.904332,
+            -7.252581
           ],
           [
-            110.408672,
-            -7.72825
+            106.908455,
+            -7.415881
           ],
           [
-            109.644494,
-            -7.227627
+            106.674803,
+            -7.37234
+          ],
+          [
+            106.703666,
+            -7.195411
           ]
         ]
       ],
-      "luas_total": 999999999,
-      "luas_gambar": 3908883746.052742,
-      "kodim_id": "2_2"
+      "luas_total": 2121,
+      "luas_gambar": 460691012.59431577,
+      "kodim_id": "5_6"
     }
   ],
   "korem": [

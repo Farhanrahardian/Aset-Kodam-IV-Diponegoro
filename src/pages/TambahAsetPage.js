@@ -116,6 +116,11 @@ const TambahAsetPage = () => {
                   nama: "Kodim 0705/Magelang",
                   korem_id: koremId,
                 },
+                {
+                  id: `${koremId}_6`,
+                  nama: "Kodim 0733/Kota Semarang",
+                  korem_id: koremId,
+                },
               ],
             };
             endpointUsed = "mock data";
@@ -171,12 +176,19 @@ const TambahAsetPage = () => {
   const handleSaveAsset = async (assetData) => {
     const toastId = toast.loading("Menyimpan data aset...");
     try {
+      // Get kodim name instead of ID for saving
+      const selectedKodimObj = kodimList.find((k) => k.id === selectedKodim);
+      const kodimName = selectedKodimObj
+        ? selectedKodimObj.nama
+        : selectedKodim;
+
       await axios.post(`${API_URL}/assets`, {
         ...assetData,
         id: `T${Date.now()}`,
         lokasi: newAssetData.geometry,
         korem_id: selectedKorem,
-        kodim_id: selectedKodim,
+        kodim_id: selectedKodim, // Keep ID for backend reference
+        kodim: kodimName, // Save name for display purposes
       });
       toast.success("Aset berhasil ditambahkan!", { id: toastId });
       setTimeout(() => {
@@ -215,6 +227,8 @@ const TambahAsetPage = () => {
             <br />- Selected Korem: {selectedKorem || "None"}
             <br />- Kodim List: {kodimList.length} items
             <br />- Selected Kodim: {selectedKodim || "None"}
+            <br />- Selected Kodim Name:{" "}
+            {kodimList.find((k) => k.id === selectedKodim)?.nama || "None"}
             <br />- Kodim Loading: {kodimLoading ? "Yes" : "No"}
             <br />- API URL: {API_URL}
           </small>
