@@ -1,4 +1,13 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { OverlayTrigger, Tooltip, Modal, Image } from "react-bootstrap";
+import {
+  FaInfoCircle,
+  FaEdit,
+  FaTrash,
+  FaEye,
+  FaDownload,
+  FaImage,
+} from "react-icons/fa";
 import {
   Container,
   Row,
@@ -7,6 +16,7 @@ import {
   Alert,
   Table,
   Button,
+  Card,
 } from "react-bootstrap";
 import axios from "axios";
 import { useAuth } from "../auth/AuthContext";
@@ -14,14 +24,191 @@ import toast from "react-hot-toast";
 import Swal from "sweetalert2";
 
 import FormAset from "../components/FormAset";
-import FilterPanel from "../components/FilterPanel";
 import PetaAset from "../components/PetaAset";
 import jatengBoundary from "../data/indonesia_jawatengah.json";
 import diyBoundary from "../data/indonesia_yogyakarta.json";
 
 const API_URL = "http://localhost:3001";
 
-// New simplified table component
+// Debug dan test semua kemungkinan path gambar
+const ImagePreviewModal = ({ show, onHide, imageData, assetName }) => {
+  const [imageError, setImageError] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
+  const [currentUrl, setCurrentUrl] = useState("");
+  const [debugInfo, setDebugInfo] = useState([]);
+
+  // Test semua kemungkinan path
+  const testImagePaths = async (imageData) => {
+    if (!imageData) return { found: false, workingUrl: null, debugInfo: [] };
+
+    const baseUrl = API_URL.replace(/\/$/, "");
+    const testPaths = [];
+
+    // Jika sudah full URL
+    if (imageData.startsWith("http")) {
+      testPaths.push(imageData);
+    } else {
+      // Coba berbagai kemungkinan path
+      testPaths.push(
+        `${baseUrl}/uploads/bukti-pemilikan/${imageData}`,
+        `${baseUrl}/uploads/${imageData}`,
+        `${baseUrl}/static/uploads/bukti-pemilikan/${imageData}`,
+        `${baseUrl}/static/uploads/${imageData}`,
+        `${baseUrl}/public/uploads/bukti-pemilikan/${imageData}`,
+        `${baseUrl}/public/uploads/${imageData}`,
+        `${baseUrl}/files/bukti-pemilikan/${imageData}`,
+        `${baseUrl}/files/${imageData}`,
+        `${baseUrl}/static/${imageData}`,
+        `${baseUrl}/${imageData}`
+      );
+    }
+
+    const debugResults = [];
+
+    // Test setiap path
+    for (const path of testPaths) {
+      try {
+        const response = await fetch(path, { method: "HEAD" });
+        debugResults.push({
+          path,
+          status: response.status,
+          ok: response.ok,
+          contentType: response.headers.get("content-type"),
+        });
+
+        if (response.ok) {
+          return { found: true, workingUrl: path, debugInfo: debugResults };
+        }
+      } catch (error) {
+        debugResults.push({
+          path,
+          status: "ERROR",
+          ok: false,
+          error: error.message,
+        });
+      }
+    }
+
+    return { found: false, workingUrl: null, debugInfo: debugResults };
+  };
+
+  useEffect(() => {
+    if (show && imageData) {
+      setImageLoading(true);
+      setImageError(false);
+
+      testImagePaths(imageData).then((result) => {
+        setDebugInfo(result.debugInfo);
+
+        if (result.found) {
+          setCurrentUrl(result.workingUrl);
+          setImageError(false);
+        } else {
+          setImageError(true);
+          setImageLoading(false);
+        }
+      });
+    }
+  }, [show, imageData]);
+
+  const handleImageLoad = () => {
+    setImageLoading(false);
+  };
+
+  const handleImageError = () => {
+    setImageError(true);
+    setImageLoading(false);
+  };
+
+  return (
+    <Modal show={show} onHide={onHide} size="lg" centered>
+      <Modal.Header closeButton>
+        <Modal.Title>Bukti Pemilikan - {assetName}</Modal.Title>
+      </Modal.Header>
+      <Modal.Body className="text-center">
+        {imageLoading && !imageError && (
+          <div className="py-5">
+            <Spinner animation="border" variant="primary" />
+            <p className="mt-2">Memuat gambar...</p>
+          </div>
+        )}
+
+        {imageError && (
+          <div className="py-4">
+            <FaImage size={50} className="text-muted mb-3" />
+            <p className="text-muted mb-3">Gambar tidak dapat dimuat</p>
+
+            {/* Debug information */}
+            <div className="text-start">
+              <small className="text-muted">
+                <strong>Debug Info:</strong>
+                <br />
+                Original data: {imageData}
+                <br />
+                Paths tested: {debugInfo.length}
+              </small>
+
+              <details className="mt-2">
+                <summary style={{ cursor: "pointer", fontSize: "12px" }}>
+                  Show detailed test results
+                </summary>
+                <div
+                  style={{
+                    maxHeight: "200px",
+                    overflowY: "auto",
+                    fontSize: "11px",
+                  }}
+                >
+                  {debugInfo.map((info, idx) => (
+                    <div key={idx} className="mb-1">
+                      <div className={info.ok ? "text-success" : "text-danger"}>
+                        {info.status}: {info.path}
+                      </div>
+                      {info.contentType && <div>Type: {info.contentType}</div>}
+                      {info.error && <div>Error: {info.error}</div>}
+                    </div>
+                  ))}
+                </div>
+              </details>
+            </div>
+          </div>
+        )}
+
+        {!imageError && currentUrl && (
+          <img
+            src={currentUrl}
+            alt="Bukti Pemilikan"
+            className="img-fluid"
+            style={{
+              maxHeight: "70vh",
+              display: imageLoading ? "none" : "block",
+            }}
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+          />
+        )}
+      </Modal.Body>
+      <Modal.Footer>
+        {!imageError && currentUrl && (
+          <Button
+            variant="primary"
+            href={currentUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <FaDownload className="me-2" />
+            Download
+          </Button>
+        )}
+        <Button variant="secondary" onClick={onHide}>
+          Tutup
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  );
+};
+
+// Original table component - tidak diubah
 const TabelAset = ({
   assets,
   onEdit,
@@ -38,20 +225,59 @@ const TabelAset = ({
     );
   }
 
+  const renderLuas = (asset) => {
+    const sertifikatLuas = parseFloat(asset.sertifikat_luas) || 0;
+    const belumSertifikatLuas = parseFloat(asset.belum_sertifikat_luas) || 0;
+    const petaLuas = parseFloat(asset.luas) || 0;
+
+    const items = [];
+
+    if (sertifikatLuas > 0) {
+      items.push(
+        <div key="sertifikat" className="text-success">
+          {sertifikatLuas.toLocaleString("id-ID")} m²{" "}
+          <small>(Sertifikat)</small>
+        </div>
+      );
+    }
+
+    if (belumSertifikatLuas > 0) {
+      items.push(
+        <div key="belum" className="text-warning">
+          {belumSertifikatLuas.toLocaleString("id-ID")} m²{" "}
+          <small>(Belum Sertifikat)</small>
+        </div>
+      );
+    }
+
+    if (petaLuas > 0 && items.length === 0) {
+      items.push(
+        <div key="peta" className="text-muted">
+          {petaLuas.toLocaleString("id-ID")} m² <small>(Peta)</small>
+        </div>
+      );
+    }
+
+    return items.length > 0 ? items : "-";
+  };
+
   return (
     <Table striped bordered hover responsive>
       <thead className="table-dark">
         <tr>
-          <th style={{ width: "30%" }}>Nama Aset</th>
-          <th style={{ width: "25%" }}>Wilayah Korem</th>
-          <th style={{ width: "25%" }}>Kodim</th>
-          <th style={{ width: "20%" }}>Aksi</th>
+          <th style={{ width: "12%" }}>NUP</th>
+          <th style={{ width: "15%" }}>Wilayah Korem</th>
+          <th style={{ width: "15%" }}>Wilayah Kodim</th>
+          <th style={{ width: "20%" }}>Alamat</th>
+          <th style={{ width: "12%" }}>Peruntukan</th>
+          <th style={{ width: "10%" }}>Status</th>
+          <th style={{ width: "13%" }}>Luas</th>
+          <th style={{ width: "8%" }}>Aksi</th>
         </tr>
       </thead>
       <tbody>
         {assets.map((asset) => {
           const korem = koremList.find((k) => k.id == asset.korem_id);
-          // Fix: Try multiple field variations for kodim_id
           const kodim = kodimList.find(
             (k) =>
               k.id == asset.kodim_id ||
@@ -66,34 +292,79 @@ const TabelAset = ({
               <td>{korem?.nama || "-"}</td>
               <td>{kodim?.nama || asset.kodim || "-"}</td>
               <td>
-                <div className="d-flex gap-1">
-                  <Button
-                    variant="info"
-                    size="sm"
-                    onClick={() => onViewDetail(asset)}
-                    title="Lihat Detail"
+                <div style={{ maxWidth: "150px", fontSize: "0.9em" }}>
+                  {asset.alamat
+                    ? asset.alamat.length > 40
+                      ? asset.alamat.substring(0, 40) + "..."
+                      : asset.alamat
+                    : "-"}
+                </div>
+              </td>
+              <td>{asset.peruntukan || asset.fungsi || "-"}</td>
+              <td>
+                <span
+                  className={`badge ${
+                    asset.status === "Aktif"
+                      ? "bg-success"
+                      : asset.status === "Tidak Aktif"
+                      ? "bg-secondary"
+                      : asset.status === "Dalam Proses"
+                      ? "bg-warning"
+                      : asset.status === "Sengketa"
+                      ? "bg-danger"
+                      : "bg-light text-dark"
+                  }`}
+                >
+                  {asset.status || "-"}
+                </span>
+              </td>
+              <td>{renderLuas(asset)}</td>
+              <td>
+                <div className="d-flex gap-1 flex-wrap">
+                  <OverlayTrigger
+                    placement="top"
+                    overlay={<Tooltip>Lihat Detail</Tooltip>}
                   >
-                    Detail
-                  </Button>
+                    <Button
+                      variant="link"
+                      size="sm"
+                      onClick={() => onViewDetail(asset)}
+                      className="text-info p-1"
+                    >
+                      <FaInfoCircle />
+                    </Button>
+                  </OverlayTrigger>
+
                   {onEdit && (
-                    <Button
-                      variant="warning"
-                      size="sm"
-                      onClick={() => onEdit(asset)}
-                      title="Edit Aset"
+                    <OverlayTrigger
+                      placement="top"
+                      overlay={<Tooltip>Edit Aset</Tooltip>}
                     >
-                      Edit
-                    </Button>
+                      <Button
+                        variant="link"
+                        size="sm"
+                        onClick={() => onEdit(asset)}
+                        className="text-warning p-1"
+                      >
+                        <FaEdit />
+                      </Button>
+                    </OverlayTrigger>
                   )}
+
                   {onDelete && (
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      onClick={() => onDelete(asset.id)}
-                      title="Hapus Aset"
+                    <OverlayTrigger
+                      placement="top"
+                      overlay={<Tooltip>Hapus Aset</Tooltip>}
                     >
-                      Hapus
-                    </Button>
+                      <Button
+                        variant="link"
+                        size="sm"
+                        onClick={() => onDelete(asset.id)}
+                        className="text-danger p-1"
+                      >
+                        <FaTrash />
+                      </Button>
+                    </OverlayTrigger>
                   )}
                 </div>
               </td>
@@ -102,6 +373,214 @@ const TabelAset = ({
         })}
       </tbody>
     </Table>
+  );
+};
+
+// Original filter component - tidak diubah
+const FilterPanelTop = ({
+  koremList,
+  kodimList,
+  selectedKorem,
+  selectedKodim,
+  statusFilter,
+  onSelectKorem,
+  onSelectKodim,
+  onSelectStatus,
+  onShowAll,
+  totalAssets,
+  filteredAssets,
+}) => {
+  const statusOptions = [
+    { value: "", label: "Semua Status" },
+    { value: "Aktif", label: "Aktif" },
+    { value: "Tidak Aktif", label: "Tidak Aktif" },
+    { value: "Dalam Proses", label: "Dalam Proses" },
+    { value: "Sengketa", label: "Sengketa" },
+  ];
+
+  return (
+    <Card className="mb-4">
+      <Card.Header className="bg-primary text-white">
+        <h5 className="mb-0">Filter Data Aset</h5>
+      </Card.Header>
+      <Card.Body>
+        <Row>
+          <Col md={3}>
+            <div className="mb-3">
+              <label className="form-label fw-bold">Wilayah Korem</label>
+              <select
+                className="form-select"
+                value={selectedKorem?.id || ""}
+                onChange={(e) => {
+                  const korem = koremList.find((k) => k.id == e.target.value);
+                  onSelectKorem(korem || null);
+                }}
+              >
+                <option value="">Semua Korem</option>
+                {koremList.map((korem) => (
+                  <option key={korem.id} value={korem.id}>
+                    {korem.nama}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </Col>
+          <Col md={3}>
+            <div className="mb-3">
+              <label className="form-label fw-bold">Wilayah Kodim</label>
+              <select
+                className="form-select"
+                value={selectedKodim || ""}
+                onChange={(e) => onSelectKodim(e.target.value)}
+                disabled={!selectedKorem}
+              >
+                <option value="">
+                  {selectedKorem ? "Semua Kodim" : "Pilih Korem dulu"}
+                </option>
+                {kodimList.map((kodim) => (
+                  <option key={kodim.id} value={kodim.id}>
+                    {kodim.nama}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </Col>
+          <Col md={3}>
+            <div className="mb-3">
+              <label className="form-label fw-bold">Status</label>
+              <select
+                className="form-select"
+                value={statusFilter || ""}
+                onChange={(e) => onSelectStatus(e.target.value)}
+              >
+                {statusOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </Col>
+          <Col md={3}>
+            <div className="mb-3">
+              <label className="form-label fw-bold">Aksi</label>
+              <div>
+                <Button
+                  variant="outline-secondary"
+                  onClick={onShowAll}
+                  className="w-100"
+                >
+                  Reset Filter
+                </Button>
+              </div>
+            </div>
+          </Col>
+        </Row>
+
+        <Row>
+          <Col>
+            <div className="bg-light p-2 rounded">
+              <small className="text-muted">
+                <strong>Hasil:</strong> {filteredAssets} dari {totalAssets} aset
+                {selectedKorem && (
+                  <span>
+                    {" "}
+                    • <strong>Korem:</strong> {selectedKorem.nama}
+                  </span>
+                )}
+                {selectedKodim &&
+                  kodimList.find((k) => k.id === selectedKodim) && (
+                    <span>
+                      {" "}
+                      • <strong>Kodim:</strong>{" "}
+                      {kodimList.find((k) => k.id === selectedKodim)?.nama}
+                    </span>
+                  )}
+                {statusFilter && (
+                  <span>
+                    {" "}
+                    • <strong>Status:</strong> {statusFilter}
+                  </span>
+                )}
+              </small>
+            </div>
+          </Col>
+        </Row>
+      </Card.Body>
+    </Card>
+  );
+};
+
+// Enhanced FormAset Component dengan Image Preview di bawah
+const EnhancedFormAset = (props) => {
+  const [showImageModal, setShowImageModal] = useState(false);
+
+  // Get image data dari berbagai kemungkinan field
+  const getImageData = () => {
+    if (!props.assetToEdit) return null;
+
+    // Coba berbagai field yang mungkin menyimpan path gambar
+    return (
+      props.assetToEdit.bukti_pemilikan_url ||
+      props.assetToEdit.bukti_pemilikan_filename ||
+      props.assetToEdit.bukti_pemilikan ||
+      props.assetToEdit.bukti_pemilikan_file
+    );
+  };
+
+  const imageData = getImageData();
+  const hasImage = !!imageData;
+
+  return (
+    <div>
+      {/* Form Aset Original tanpa field bukti pemilikan */}
+      <FormAset {...props} hideBuktiPemilikan={props.viewMode} />
+
+      {/* Image Preview Section - dipindah ke bawah dan terpisah */}
+      <div className="card mt-3">
+        <div className="card-header d-flex justify-content-between align-items-center">
+          <h6 className="mb-0">Bukti Pemilikan</h6>
+          {hasImage && <small className="text-muted">File: {imageData}</small>}
+        </div>
+        <div className="card-body">
+          {hasImage ? (
+            <div className="text-center">
+              <div className="mb-3">
+                <Button
+                  variant="outline-primary"
+                  onClick={() => setShowImageModal(true)}
+                  className="d-flex align-items-center mx-auto"
+                >
+                  <FaEye className="me-2" />
+                  Lihat Bukti Pemilikan
+                </Button>
+              </div>
+              <div className="small text-muted">
+                <div>Format yang didukung: PNG, JPG, PDF (maksimal 50MB)</div>
+                <div>Klik tombol untuk melihat gambar bukti pemilikan</div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center text-muted py-4">
+              <FaImage size={40} className="mb-3" />
+              <p className="mb-2">Gambar belum tersedia</p>
+              <div className="small">
+                <div>Format yang didukung: PNG, JPG, PDF (maksimal 50MB)</div>
+                <div>Upload bukti pemilikan melalui halaman edit aset</div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Image Preview Modal dengan debug info */}
+      <ImagePreviewModal
+        show={showImageModal}
+        onHide={() => setShowImageModal(false)}
+        imageData={imageData}
+        assetName={props.assetToEdit?.nama || "Aset"}
+      />
+    </div>
   );
 };
 
@@ -114,6 +593,7 @@ const DataAsetTanahPage = () => {
   const [filteredAssets, setFilteredAssets] = useState([]);
   const [selectedKorem, setSelectedKorem] = useState(null);
   const [selectedKodim, setSelectedKodim] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [kodimLoading, setKodimLoading] = useState(false);
@@ -122,11 +602,11 @@ const DataAsetTanahPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingAsset, setEditingAsset] = useState(null);
 
-  // New state for detail view (like TambahAsetPage layout)
+  // State for detail view
   const [selectedAssetDetail, setSelectedAssetDetail] = useState(null);
   const [showDetailView, setShowDetailView] = useState(false);
 
-  // Fetch all Kodim data for detail view
+  // Fetch all Kodim data
   const fetchAllKodim = useCallback(async () => {
     try {
       const kodimRes = await axios.get(`${API_URL}/kodim`);
@@ -150,7 +630,6 @@ const DataAsetTanahPage = () => {
       let kodimRes;
       let endpointUsed = "";
 
-      // Option 1: Try kodim endpoint with korem filter
       try {
         console.log(`Trying: ${API_URL}/kodim?korem_id=${koremId}`);
         kodimRes = await axios.get(`${API_URL}/kodim?korem_id=${koremId}`);
@@ -159,7 +638,6 @@ const DataAsetTanahPage = () => {
       } catch (err1) {
         console.log("Option 1 failed:", err1.response?.status, err1.message);
 
-        // Option 2: Try nested endpoint
         try {
           console.log(`Trying: ${API_URL}/korem/${koremId}/kodim`);
           kodimRes = await axios.get(`${API_URL}/korem/${koremId}/kodim`);
@@ -168,7 +646,6 @@ const DataAsetTanahPage = () => {
         } catch (err2) {
           console.log("Option 2 failed:", err2.response?.status, err2.message);
 
-          // Option 3: Get all kodim and filter
           try {
             console.log(`Trying: ${API_URL}/kodim (all)`);
             kodimRes = await axios.get(`${API_URL}/kodim`);
@@ -184,7 +661,6 @@ const DataAsetTanahPage = () => {
               err3.message
             );
 
-            // Option 4: Mock data as fallback (temporary solution)
             console.log("All endpoints failed, using mock data");
             kodimRes = {
               data: [
@@ -227,7 +703,7 @@ const DataAsetTanahPage = () => {
 
       console.log(`Kodim data loaded using: ${endpointUsed}`, kodimRes.data);
       setKodimList(kodimRes.data || []);
-      setSelectedKodim(""); // Reset selection when korem changes
+      setSelectedKodim("");
       setError(null);
     } catch (err) {
       const errorMsg = `Gagal memuat data Kodim. ${
@@ -264,40 +740,71 @@ const DataAsetTanahPage = () => {
     fetchAllKodim();
   }, [fetchData, fetchAllKodim]);
 
+  // Filtering logic
   useEffect(() => {
-    if (selectedKorem) {
-      setFilteredAssets(assets.filter((a) => a.korem_id == selectedKorem.id));
-      fetchKodim(selectedKorem.id);
-    } else {
-      setFilteredAssets(assets);
-      setKodimList([]);
-      setSelectedKodim("");
-    }
-  }, [selectedKorem, assets, fetchKodim]);
+    let filtered = assets;
 
-  // Handle Korem selection change
-  const handleKoremChange = (koremId) => {
-    const korem = koremList.find((k) => k.id == koremId);
-    setSelectedKorem(korem || null);
-    if (koremId) {
-      fetchKodim(koremId);
+    if (selectedKorem) {
+      filtered = filtered.filter((a) => a.korem_id == selectedKorem.id);
+      if (selectedKorem && !kodimList.length) {
+        fetchKodim(selectedKorem.id);
+      }
+    }
+
+    if (selectedKodim) {
+      filtered = filtered.filter(
+        (a) =>
+          a.kodim_id == selectedKodim ||
+          a.kodim == selectedKodim ||
+          a.kodim_id_val == selectedKodim
+      );
+    }
+
+    if (statusFilter) {
+      filtered = filtered.filter((a) => a.status === statusFilter);
+    }
+
+    setFilteredAssets(filtered);
+  }, [
+    selectedKorem,
+    selectedKodim,
+    statusFilter,
+    assets,
+    fetchKodim,
+    kodimList.length,
+  ]);
+
+  // Handle filter changes
+  const handleKoremChange = (korem) => {
+    setSelectedKorem(korem);
+    setSelectedKodim("");
+    if (korem) {
+      fetchKodim(korem.id);
     } else {
       setKodimList([]);
-      setSelectedKodim("");
     }
   };
 
-  // Handle Kodim selection change
   const handleKodimChange = (kodimId) => {
     setSelectedKodim(kodimId);
   };
 
-  // Handle view detail - like TambahAsetPage layout
+  const handleStatusChange = (status) => {
+    setStatusFilter(status);
+  };
+
+  const handleShowAll = () => {
+    setSelectedKorem(null);
+    setSelectedKodim("");
+    setStatusFilter("");
+    setKodimList([]);
+  };
+
+  // Handle view detail
   const handleViewDetail = (asset) => {
     setSelectedAssetDetail(asset);
     setShowDetailView(true);
 
-    // Set up korem and kodim for detail view
     const korem = koremList.find((k) => k.id == asset.korem_id);
     if (korem) {
       setSelectedKorem(korem);
@@ -309,42 +816,254 @@ const DataAsetTanahPage = () => {
   const handleBackFromDetail = () => {
     setShowDetailView(false);
     setSelectedAssetDetail(null);
-    setSelectedKorem(null);
-    setSelectedKodim("");
-    setKodimList([]);
   };
 
+  // Enhanced save function with file verification
   const handleSaveAsset = async (assetData) => {
+    if (!editingAsset) {
+      toast.error("Tidak ada aset yang sedang diedit");
+      return;
+    }
+
     const toastId = toast.loading("Menyimpan perubahan...");
     try {
-      if (editingAsset) {
-        // Get the selected kodim name for saving
-        const selectedKodimObj = kodimList.find((k) => k.id === selectedKodim);
-        const kodimName = selectedKodimObj
-          ? selectedKodimObj.nama
-          : selectedKodim;
+      const selectedKodimObj = kodimList.find((k) => k.id === selectedKodim);
+      const kodimName = selectedKodimObj
+        ? selectedKodimObj.nama
+        : selectedKodim;
 
-        const response = await axios.put(
-          `${API_URL}/assets/${editingAsset.id}`,
-          {
-            ...assetData,
-            korem_id: selectedKorem?.id || editingAsset.korem_id,
-            kodim_id:
-              selectedKodim || editingAsset.kodim_id || editingAsset.kodim,
-            kodim: kodimName || editingAsset.kodim, // Save kodim name for display
+      // Handle file upload dengan verifikasi lebih ketat
+      let fileUploadData = {};
+
+      if (
+        assetData.bukti_pemilikan_file &&
+        assetData.bukti_pemilikan_file instanceof File
+      ) {
+        const file = assetData.bukti_pemilikan_file;
+
+        // Validasi file
+        const maxSize = 50 * 1024 * 1024; // 50MB
+        if (file.size > maxSize) {
+          toast.error("File terlalu besar. Maksimal 50MB.", { id: toastId });
+          return;
+        }
+
+        const validTypes = [
+          "image/jpeg",
+          "image/jpg",
+          "image/png",
+          "application/pdf",
+        ];
+        if (!validTypes.includes(file.type)) {
+          toast.error(
+            "Format file tidak didukung. Gunakan PNG, JPG, atau PDF.",
+            { id: toastId }
+          );
+          return;
+        }
+
+        // Siapkan FormData
+        const formData = new FormData();
+        formData.append("bukti_pemilikan", file);
+
+        // Tambah metadata untuk debugging
+        formData.append("originalName", file.name);
+        formData.append("fileSize", file.size.toString());
+        formData.append("fileType", file.type);
+
+        console.log("Uploading file:", {
+          name: file.name,
+          size: file.size,
+          type: file.type,
+        });
+
+        toast.loading("Mengupload file...", { id: toastId });
+
+        try {
+          // Coba upload dengan endpoint yang berbeda
+          const uploadEndpoints = [
+            { url: `${API_URL}/upload/bukti-pemilikan`, method: "POST" },
+            { url: `${API_URL}/api/upload/bukti-pemilikan`, method: "POST" },
+            { url: `${API_URL}/uploads`, method: "POST" },
+            { url: `${API_URL}/api/upload`, method: "POST" },
+          ];
+
+          let uploadResponse = null;
+          let successEndpoint = null;
+
+          for (const endpoint of uploadEndpoints) {
+            try {
+              console.log(`Trying upload to: ${endpoint.url}`);
+
+              uploadResponse = await axios.post(endpoint.url, formData, {
+                headers: {
+                  "Content-Type": "multipart/form-data",
+                },
+                timeout: 120000, // 2 menit timeout
+                onUploadProgress: (progressEvent) => {
+                  const percentCompleted = Math.round(
+                    (progressEvent.loaded * 100) / progressEvent.total
+                  );
+                  console.log(`Upload progress: ${percentCompleted}%`);
+                },
+              });
+
+              console.log(
+                `Upload successful to ${endpoint.url}:`,
+                uploadResponse.data
+              );
+              successEndpoint = endpoint.url;
+              break;
+            } catch (endpointErr) {
+              console.log(`Upload failed to ${endpoint.url}:`, {
+                status: endpointErr.response?.status,
+                statusText: endpointErr.response?.statusText,
+                data: endpointErr.response?.data,
+              });
+
+              if (endpoint === uploadEndpoints[uploadEndpoints.length - 1]) {
+                throw endpointErr;
+              }
+            }
           }
-        );
-        setAssets(
-          assets.map((a) => (a.id === editingAsset.id ? response.data : a))
-        );
-        toast.success("Aset berhasil diperbarui!", { id: toastId });
+
+          if (!uploadResponse || !uploadResponse.data) {
+            throw new Error("Upload response tidak valid");
+          }
+
+          // Extract data dari response
+          const responseData = uploadResponse.data;
+          fileUploadData = {
+            bukti_pemilikan_url:
+              responseData.url || responseData.path || responseData.filename,
+            bukti_pemilikan_filename:
+              responseData.filename || responseData.fileName || file.name,
+          };
+
+          console.log("File upload successful:", fileUploadData);
+
+          // Verifikasi file berhasil diupload dengan test akses
+          if (
+            fileUploadData.bukti_pemilikan_url ||
+            fileUploadData.bukti_pemilikan_filename
+          ) {
+            const testUrl =
+              fileUploadData.bukti_pemilikan_url ||
+              `${API_URL}/uploads/bukti-pemilikan/${fileUploadData.bukti_pemilikan_filename}`;
+
+            try {
+              const testResponse = await fetch(testUrl, { method: "HEAD" });
+              if (testResponse.ok) {
+                console.log("File verification successful:", testUrl);
+                toast.success(`File berhasil diupload ke: ${successEndpoint}`, {
+                  id: toastId,
+                });
+              } else {
+                console.warn(
+                  "File upload success but verification failed:",
+                  testResponse.status
+                );
+                toast.warning("File diupload tapi tidak bisa diverifikasi", {
+                  id: toastId,
+                });
+              }
+            } catch (verifyErr) {
+              console.warn("File verification error:", verifyErr);
+              toast.warning("File diupload tapi tidak bisa diverifikasi", {
+                id: toastId,
+              });
+            }
+          }
+        } catch (uploadErr) {
+          console.error("File upload failed completely:", uploadErr);
+
+          let errorMsg = "Gagal mengupload file";
+
+          if (uploadErr.response) {
+            const status = uploadErr.response.status;
+            const data = uploadErr.response.data;
+
+            switch (status) {
+              case 413:
+                errorMsg += ": File terlalu besar (maksimal 50MB)";
+                break;
+              case 400:
+                errorMsg += `: ${data?.message || "Request tidak valid"}`;
+                break;
+              case 415:
+                errorMsg += ": Format file tidak didukung";
+                break;
+              case 500:
+                errorMsg += ": Error server internal";
+                break;
+              default:
+                errorMsg += `: HTTP ${status} - ${
+                  data?.message || uploadErr.response.statusText
+                }`;
+            }
+          } else if (uploadErr.request) {
+            errorMsg +=
+              ": Server tidak merespons. Periksa koneksi dan server API.";
+          } else {
+            errorMsg += `: ${uploadErr.message}`;
+          }
+
+          toast.error(errorMsg, { id: toastId });
+          return;
+        }
       }
+
+      // Update progress
+      toast.loading("Menyimpan data aset...", { id: toastId });
+
+      // Prepare data untuk save
+      const saveData = {
+        ...assetData,
+        ...fileUploadData,
+        korem_id: selectedKorem?.id || editingAsset.korem_id,
+        kodim_id: selectedKodim || editingAsset.kodim_id || editingAsset.kodim,
+        kodim: kodimName || editingAsset.kodim,
+      };
+
+      console.log("Saving asset data:", saveData);
+
+      const response = await axios.put(
+        `${API_URL}/assets/${editingAsset.id}`,
+        saveData,
+        { timeout: 30000 }
+      );
+
+      console.log("Save response:", response.data);
+
+      // Update state
+      const updatedAssets = assets.map((a) =>
+        a.id === editingAsset.id ? response.data : a
+      );
+      setAssets(updatedAssets);
+
+      if (selectedAssetDetail && selectedAssetDetail.id === editingAsset.id) {
+        setSelectedAssetDetail(response.data);
+      }
+
+      toast.success("Aset berhasil diperbarui!", { id: toastId });
+
       setShowModal(false);
       setEditingAsset(null);
     } catch (err) {
-      toast.error("Gagal menyimpan perubahan.", { id: toastId });
-      console.error("Gagal menyimpan aset", err);
-      setError("Gagal menyimpan aset.");
+      console.error("Save failed:", err);
+      let errorMsg = "Gagal menyimpan perubahan";
+
+      if (err.response) {
+        errorMsg += `: ${err.response.status} - ${
+          err.response.data?.message || err.response.statusText
+        }`;
+      } else if (err.request) {
+        errorMsg += ": Server tidak merespons";
+      } else {
+        errorMsg += `: ${err.message}`;
+      }
+
+      toast.error(errorMsg, { id: toastId });
     }
   };
 
@@ -377,7 +1096,6 @@ const DataAsetTanahPage = () => {
   const handleEditAsset = (asset) => {
     setEditingAsset(asset);
     setShowModal(true);
-    // Set selected korem and kodim for editing
     const korem = koremList.find((k) => k.id == asset.korem_id);
     setSelectedKorem(korem || null);
     setSelectedKodim(asset.kodim_id || asset.kodim || "");
@@ -389,55 +1107,78 @@ const DataAsetTanahPage = () => {
   const handleCancel = () => {
     setEditingAsset(null);
     setShowModal(false);
-    setSelectedKorem(null);
-    setSelectedKodim("");
-    setKodimList([]);
   };
 
   if (loading) return <Spinner animation="border" variant="primary" />;
 
-  // Detail view layout (like TambahAsetPage)
+  // Detail view - dengan preview gambar yang diperbaiki
   if (showDetailView && selectedAssetDetail) {
     return (
-      <Container fluid className="mt-4">
-        <div className="mb-3">
-          <Button variant="secondary" onClick={handleBackFromDetail}>
-            ← Kembali ke Daftar Aset
-          </Button>
-        </div>
+      <div
+        style={{
+          width: "100%",
+          minHeight: "100vh",
+          position: "relative",
+          zIndex: 1,
+        }}
+      >
+        <Container fluid className="mt-4">
+          <div className="mb-3">
+            <Button
+              variant="secondary"
+              onClick={handleBackFromDetail}
+              style={{
+                zIndex: 10,
+                position: "relative",
+                pointerEvents: "auto",
+              }}
+            >
+              ← Kembali ke Daftar Aset
+            </Button>
+          </div>
 
-        <h3>Detail Aset Tanah - {selectedAssetDetail.nama}</h3>
+          <h3>Detail Aset Tanah - {selectedAssetDetail.nama}</h3>
 
-        <Row>
-          <Col md={7}>
-            <div style={{ height: "70vh", width: "100%" }}>
-              <PetaAset
-                assets={[selectedAssetDetail]} // Show only this asset on map
-                isDrawing={false}
-                onDrawingCreated={() => {}}
-                jatengBoundary={jatengBoundary}
-                diyBoundary={diyBoundary}
-                selectedKorem={selectedKorem?.id}
-                selectedKodim={selectedKodim}
-                viewMode={true} // Add view mode to show existing assets
-              />
-            </div>
-          </Col>
-          <Col md={5}>
-            <FormAset
-              onSave={() => {}} // No save function in view mode
-              onCancel={handleBackFromDetail}
-              koremList={koremList}
-              kodimList={allKodimList}
-              selectedKorem={selectedKorem?.id}
-              selectedKodim={selectedKodim}
-              assetToEdit={selectedAssetDetail}
-              isEnabled={false} // Disable editing in detail view
-              viewMode={true} // Add view mode prop
-            />
-          </Col>
-        </Row>
-      </Container>
+          <Row>
+            <Col md={7}>
+              <div style={{ height: "70vh", width: "100%" }}>
+                <PetaAset
+                  assets={[selectedAssetDetail]}
+                  isDrawing={false}
+                  onDrawingCreated={() => {}}
+                  jatengBoundary={jatengBoundary}
+                  diyBoundary={diyBoundary}
+                  selectedKorem={selectedKorem?.id}
+                  selectedKodim={selectedKodim}
+                  viewMode={true}
+                />
+              </div>
+            </Col>
+            <Col md={5}>
+              <div
+                style={{
+                  position: "relative",
+                  zIndex: 10,
+                  pointerEvents: "auto",
+                  width: "100%",
+                }}
+              >
+                <EnhancedFormAset
+                  onSave={() => console.log("Detail view - no save")}
+                  onCancel={handleBackFromDetail}
+                  koremList={koremList}
+                  kodimList={allKodimList}
+                  selectedKorem={selectedKorem?.id}
+                  selectedKodim={selectedKodim}
+                  assetToEdit={selectedAssetDetail}
+                  isEnabled={true}
+                  viewMode={true}
+                />
+              </div>
+            </Col>
+          </Row>
+        </Container>
+      </div>
     );
   }
 
@@ -447,73 +1188,94 @@ const DataAsetTanahPage = () => {
       <h3>Data Aset Tanah</h3>
       {error && <Alert variant="danger">{error}</Alert>}
 
-      {/* Debug Panel - Remove this in production */}
-      {process.env.NODE_ENV === "development" && (
-        <Alert variant="info" className="mb-3">
-          <small>
-            <strong>Debug Info:</strong>
-            <br />- Assets: {assets.length} items
-            <br />- Filtered Assets: {filteredAssets.length} items
-            <br />- Korem List: {koremList.length} items
-            <br />- Selected Korem: {selectedKorem?.nama || "None"}
-            <br />- Kodim List: {kodimList.length} items
-            <br />- All Kodim List: {allKodimList.length} items
-            <br />- Selected Kodim: {selectedKodim || "None"}
-            <br />- Kodim Loading: {kodimLoading ? "Yes" : "No"}
-            <br />- Editing Asset: {editingAsset?.id || "None"}
-            <br />- Show Detail View: {showDetailView ? "Yes" : "No"}
-            <br />- API URL: {API_URL}
-            <br />- Sample Asset Kodim Field:{" "}
-            {assets[0]
-              ? JSON.stringify({
-                  kodim_id: assets[0].kodim_id,
-                  kodim: assets[0].kodim,
-                  kodim_id_val: assets[0].kodim_id_val,
-                })
-              : "No assets"}
-          </small>
-        </Alert>
-      )}
+      <FilterPanelTop
+        koremList={koremList}
+        kodimList={kodimList}
+        selectedKorem={selectedKorem}
+        selectedKodim={selectedKodim}
+        statusFilter={statusFilter}
+        onSelectKorem={handleKoremChange}
+        onSelectKodim={handleKodimChange}
+        onSelectStatus={handleStatusChange}
+        onShowAll={handleShowAll}
+        totalAssets={assets.length}
+        filteredAssets={filteredAssets.length}
+      />
 
-      <Row>
-        {assets.length > 0 && (
-          <Col md={3} className="bg-light p-3">
-            <h4 className="mb-3">Filter Data</h4>
-            <FilterPanel
-              koremList={koremList}
-              onSelectKorem={setSelectedKorem}
-              onShowAll={() => setSelectedKorem(null)}
-              selectedKorem={selectedKorem}
-            />
-          </Col>
-        )}
-        <Col md={assets.length > 0 ? 9 : 12}>
-          <h2 className="mt-3"></h2>
-          <div style={{ height: "calc(100vh - 180px)", overflowY: "auto" }}>
+      <Card>
+        <Card.Header className="bg-light">
+          <h5 className="mb-0">Daftar Aset Tanah</h5>
+        </Card.Header>
+        <Card.Body className="p-0">
+          <div style={{ maxHeight: "60vh", overflowY: "auto" }}>
             <TabelAset
               assets={filteredAssets}
               onEdit={user ? handleEditAsset : null}
               onDelete={user ? handleDeleteAsset : null}
               onViewDetail={handleViewDetail}
               koremList={koremList}
-              kodimList={allKodimList} // Use all kodim list for better matching
+              kodimList={allKodimList}
             />
           </div>
-        </Col>
-      </Row>
+        </Card.Body>
+      </Card>
 
-      {editingAsset && (
-        <div className="mt-4">
-          <FormAset
-            onSave={handleSaveAsset}
-            onCancel={handleCancel}
-            koremList={koremList}
-            kodimList={kodimList}
-            selectedKorem={selectedKorem?.id || ""}
-            selectedKodim={selectedKodim}
-            assetToEdit={editingAsset}
-            isEnabled={true}
-          />
+      {/* Edit modal */}
+      {editingAsset && showModal && (
+        <div style={{ position: "relative", zIndex: 9999 }}>
+          <Modal
+            show={showModal}
+            onHide={handleCancel}
+            size="xl"
+            backdrop="static"
+            keyboard={true}
+            style={{ zIndex: 9999 }}
+            enforceFocus={false}
+            autoFocus={false}
+          >
+            <Modal.Header closeButton style={{ zIndex: 10000 }}>
+              <Modal.Title>Edit Aset - {editingAsset.nama}</Modal.Title>
+            </Modal.Header>
+            <Modal.Body
+              style={{
+                maxHeight: "80vh",
+                overflowY: "auto",
+                zIndex: 9999,
+                position: "relative",
+              }}
+            >
+              <div
+                style={{
+                  position: "relative",
+                  zIndex: 10,
+                  pointerEvents: "auto",
+                  width: "100%",
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <FormAset
+                  onSave={handleSaveAsset}
+                  onCancel={handleCancel}
+                  koremList={koremList}
+                  kodimList={kodimList}
+                  selectedKorem={selectedKorem?.id || ""}
+                  selectedKodim={selectedKodim}
+                  assetToEdit={editingAsset}
+                  isEnabled={true}
+                  viewMode={false}
+                />
+              </div>
+            </Modal.Body>
+            <Modal.Footer style={{ zIndex: 10000 }}>
+              <Button
+                variant="secondary"
+                onClick={handleCancel}
+                style={{ pointerEvents: "auto" }}
+              >
+                Tutup
+              </Button>
+            </Modal.Footer>
+          </Modal>
         </div>
       )}
     </Container>

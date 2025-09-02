@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { Button, Form, Row, Col, Card, Alert } from "react-bootstrap";
+import {
+  Button,
+  Form,
+  Row,
+  Col,
+  Card,
+  Alert,
+  Modal,
+  Image,
+} from "react-bootstrap";
+import { FaEye, FaEdit, FaTrash, FaDownload } from "react-icons/fa";
 
 const FormAset = ({
   onSave,
@@ -12,13 +22,27 @@ const FormAset = ({
   initialGeometry,
   initialArea,
   isEnabled = true,
+  viewMode = false,
 }) => {
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+
+  // File size limit in MB (increased from 5MB to 50MB)
+  const MAX_FILE_SIZE_MB = 50;
+  const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
   useEffect(() => {
     if (assetToEdit) {
       setFormData(assetToEdit);
+      // If there's an existing bukti_pemilikan file URL, set it for preview
+      if (assetToEdit.bukti_pemilikan_url || assetToEdit.bukti_pemilikan) {
+        setImagePreview(
+          assetToEdit.bukti_pemilikan_url || assetToEdit.bukti_pemilikan
+        );
+      }
     } else {
       // Reset form for new entry with all required fields
       setFormData({
@@ -46,6 +70,7 @@ const FormAset = ({
         asal_milik: "",
         bukti_pemilikan: "", // Renamed from 'bukti_kepemilikan'
         bukti_kepemilikan: "", // Alternative field name
+        bukti_pemilikan_url: "", // URL for uploaded file
         pemilikan_sertifikat: "Ya", // New field
 
         // Tanah dengan sertifikat
@@ -58,6 +83,7 @@ const FormAset = ({
 
         // Additional info
         keterangan: "", // New field
+        keterangan_bukti_pemilikan: "", // New field
         atas_nama_pemilik_sertifikat: "", // Keep from original
 
         lokasi: initialGeometry || null,
@@ -228,6 +254,84 @@ const FormAset = ({
     }
   };
 
+  // Enhanced file handling with larger size support
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+
+    if (!file) return;
+
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      alert(`File terlalu besar. Maksimal ${MAX_FILE_SIZE_MB}MB.`);
+      e.target.value = ""; // Clear the input
+      return;
+    }
+
+    // Validate file type
+    const allowedTypes = [
+      "image/png",
+      "image/jpg",
+      "image/jpeg",
+      "application/pdf",
+    ];
+    if (!allowedTypes.includes(file.type)) {
+      alert("Format file tidak didukung. Gunakan PNG, JPG, atau PDF.");
+      e.target.value = ""; // Clear the input
+      return;
+    }
+
+    // Create preview for images
+    if (file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setImagePreview(null); // PDF files don't have image preview
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      bukti_pemilikan_file: file,
+      bukti_pemilikan_filename: file.name,
+    }));
+  };
+
+  // Handle image view
+  const handleViewImage = () => {
+    if (imagePreview || formData.bukti_pemilikan_url) {
+      setSelectedImage(imagePreview || formData.bukti_pemilikan_url);
+      setShowImageModal(true);
+    }
+  };
+
+  // Handle image download
+  const handleDownloadImage = () => {
+    if (imagePreview || formData.bukti_pemilikan_url) {
+      const link = document.createElement("a");
+      link.href = imagePreview || formData.bukti_pemilikan_url;
+      link.download = formData.bukti_pemilikan_filename || "bukti_pemilikan";
+      link.click();
+    }
+  };
+
+  // Handle image removal
+  const handleRemoveImage = () => {
+    setImagePreview(null);
+    setFormData((prev) => ({
+      ...prev,
+      bukti_pemilikan_file: null,
+      bukti_pemilikan_filename: "",
+      bukti_pemilikan_url: "",
+    }));
+    // Clear the file input
+    const fileInput = document.querySelector(
+      'input[name="bukti_pemilikan_file"]'
+    );
+    if (fileInput) fileInput.value = "";
+  };
+
   const validateForm = () => {
     const newErrors = {};
 
@@ -236,7 +340,7 @@ const FormAset = ({
     if (!formData.korem_id) newErrors.korem_id = "Korem harus dipilih";
     if (!formData.kodim?.trim()) newErrors.kodim = "Kodim harus diisi";
     if (!formData.lokasi_nama?.trim())
-      newErrors.lokasi_nama = "Nama lokasi harus diisi";
+      newErrors.lokasi_nama = "Alamat harus diisi";
     if (!formData.kib_kode_barang?.trim())
       newErrors.kib_kode_barang = "KIB/Kode Barang harus diisi";
     if (!formData.nomor_registrasi?.trim())
@@ -356,10 +460,12 @@ const FormAset = ({
       belum_sertifikat_bidang: "",
       belum_sertifikat_luas: "",
       keterangan: "",
+      keterangan_bukti_pemilikan: "",
       atas_nama_pemilik_sertifikat: "",
       lokasi: initialGeometry || null,
     });
     setErrors({});
+    setImagePreview(null);
   };
 
   const statusOptions = [
@@ -390,516 +496,670 @@ const FormAset = ({
   ];
 
   return (
-    <Card>
-      <Card.Header>
-        <h5>{assetToEdit ? "Edit Detail Aset" : "Lengkapi Detail Aset"}</h5>
-      </Card.Header>
-      <Card.Body>
-        {!isEnabled && !assetToEdit && (
-          <div className="text-muted text-center p-4">
-            <p>
-              Silakan gambar lokasi di peta terlebih dahulu untuk mengaktifkan
-              formulir ini.
-            </p>
-          </div>
-        )}
+    <>
+      <Card>
+        <Card.Header>
+          <h5>
+            {assetToEdit
+              ? viewMode
+                ? "Detail Aset"
+                : "Edit Detail Aset"
+              : "Lengkapi Detail Aset"}
+          </h5>
+        </Card.Header>
+        <Card.Body>
+          {!isEnabled && !assetToEdit && !viewMode && (
+            <div className="text-muted text-center p-4">
+              <p>
+                Silakan gambar lokasi di peta terlebih dahulu untuk mengaktifkan
+                formulir ini.
+              </p>
+            </div>
+          )}
 
-        {/* Debug geometry info in development */}
-        {process.env.NODE_ENV === "development" && initialGeometry && (
-          <Alert variant="info" className="mb-3">
-            <small>
-              <strong>Debug Geometry:</strong>
-              <br />- Type: {initialGeometry.type || "Unknown"}
-              <br />- Has coordinates:{" "}
-              {initialGeometry.coordinates ? "Yes" : "No"}
-              <br />- Coordinates length:{" "}
-              {Array.isArray(initialGeometry.coordinates)
-                ? initialGeometry.coordinates.length
-                : "Not array"}
-              <br />- Area:{" "}
-              {initialArea ? initialArea.toFixed(2) + " m²" : "No area"}
-            </small>
-          </Alert>
-        )}
+          {/* Debug geometry info in development */}
+          {process.env.NODE_ENV === "development" && initialGeometry && (
+            <Alert variant="info" className="mb-3">
+              <small>
+                <strong>Debug Geometry:</strong>
+                <br />- Type: {initialGeometry.type || "Unknown"}
+                <br />- Has coordinates:{" "}
+                {initialGeometry.coordinates ? "Yes" : "No"}
+                <br />- Coordinates length:{" "}
+                {Array.isArray(initialGeometry.coordinates)
+                  ? initialGeometry.coordinates.length
+                  : "Not array"}
+                <br />- Area:{" "}
+                {initialArea ? initialArea.toFixed(2) + " m²" : "No area"}
+              </small>
+            </Alert>
+          )}
 
-        <fieldset disabled={!isEnabled && !assetToEdit}>
-          <Form>
-            {/* Basic Asset Info */}
-            <Card className="mb-3">
-              <Card.Header>
-                <strong>Informasi Dasar Aset</strong>
-              </Card.Header>
-              <Card.Body>
-                <Form.Group className="mb-3">
-                  <Form.Label>Nama Aset *</Form.Label>
-                  <Form.Control
-                    type="text"
-                    name="nama"
-                    value={formData.nama || ""}
-                    onChange={handleChange}
-                    placeholder="Masukkan nama aset"
-                    isInvalid={!!errors.nama}
-                    required
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {errors.nama}
-                  </Form.Control.Feedback>
-                </Form.Group>
+          <fieldset disabled={(!isEnabled && !assetToEdit) || viewMode}>
+            <Form>
+              {/* Basic Asset Info */}
+              <Card className="mb-3">
+                <Card.Header>
+                  <strong>Informasi Dasar Aset</strong>
+                </Card.Header>
+                <Card.Body>
+                  <Form.Group className="mb-3">
+                    <Form.Label>NUP *</Form.Label>
+                    <Form.Control
+                      type="text"
+                      name="nama"
+                      value={formData.nama || ""}
+                      onChange={handleChange}
+                      placeholder="Masukkan NUP"
+                      isInvalid={!!errors.nama}
+                      required
+                      readOnly={viewMode}
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.nama}
+                    </Form.Control.Feedback>
+                  </Form.Group>
 
-                <Row>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>1. Wilayah Korem *</Form.Label>
-                      <Form.Select
-                        name="korem_id"
-                        value={formData.korem_id || ""}
-                        onChange={handleChange}
-                        isInvalid={!!errors.korem_id}
-                      >
-                        <option value="">-- Pilih Korem --</option>
-                        {koremList.map((korem) => (
-                          <option key={korem.id} value={korem.id}>
-                            {korem.nama}
-                          </option>
-                        ))}
-                      </Form.Select>
-                      <Form.Control.Feedback type="invalid">
-                        {errors.korem_id}
-                      </Form.Control.Feedback>
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>2. Kodim *</Form.Label>
-                      {kodimList.length > 0 ? (
+                  <Row>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label>1. Wilayah Korem *</Form.Label>
                         <Form.Select
-                          name="kodim"
-                          value={formData.kodim || ""}
+                          name="korem_id"
+                          value={formData.korem_id || ""}
                           onChange={handleChange}
-                          isInvalid={!!errors.kodim}
+                          isInvalid={!!errors.korem_id}
+                          disabled={viewMode}
                         >
-                          <option value="">-- Pilih Kodim --</option>
-                          {kodimList.map((kodim) => (
-                            <option key={kodim.id} value={kodim.id}>
-                              {kodim.nama}
+                          <option value="">-- Pilih Korem --</option>
+                          {koremList.map((korem) => (
+                            <option key={korem.id} value={korem.id}>
+                              {korem.nama}
                             </option>
                           ))}
                         </Form.Select>
-                      ) : (
-                        <Form.Control
-                          type="text"
-                          name="kodim"
-                          value={formData.kodim || ""}
-                          onChange={handleChange}
-                          placeholder="Contoh: Kodim 0701/Banyumas"
-                          isInvalid={!!errors.kodim}
-                          required
-                        />
-                      )}
-                      <Form.Control.Feedback type="invalid">
-                        {errors.kodim}
-                      </Form.Control.Feedback>
-                    </Form.Group>
-                  </Col>
-                </Row>
-
-                <Form.Group className="mb-3">
-                  <Form.Label>3. Nama Lokasi *</Form.Label>
-                  <Form.Control
-                    type="text"
-                    name="lokasi_nama"
-                    value={formData.lokasi_nama || ""}
-                    onChange={handleChange}
-                    placeholder="Masukkan nama lokasi"
-                    isInvalid={!!errors.lokasi_nama}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {errors.lokasi_nama}
-                  </Form.Control.Feedback>
-                  <Form.Text className="text-muted">
-                    Nama lokasi akan otomatis terisi berdasarkan titik yang
-                    digambar di peta
-                  </Form.Text>
-                </Form.Group>
-              </Card.Body>
-            </Card>
-
-            {/* Asset Registration Details */}
-            <Card className="mb-3">
-              <Card.Header>
-                <strong>Detail Registrasi Aset</strong>
-              </Card.Header>
-              <Card.Body>
-                <Row>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>4. KIB/Kode Barang *</Form.Label>
-                      <Form.Control
-                        type="text"
-                        name="kib_kode_barang"
-                        value={formData.kib_kode_barang || ""}
-                        onChange={handleChange}
-                        placeholder="Contoh: 1.3.1.01.001"
-                        isInvalid={!!errors.kib_kode_barang}
-                      />
-                      <Form.Control.Feedback type="invalid">
-                        {errors.kib_kode_barang}
-                      </Form.Control.Feedback>
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>5. Nomor Registrasi *</Form.Label>
-                      <Form.Control
-                        type="text"
-                        name="nomor_registrasi"
-                        value={formData.nomor_registrasi || ""}
-                        onChange={handleChange}
-                        placeholder="Masukkan nomor registrasi"
-                        isInvalid={!!errors.nomor_registrasi}
-                      />
-                      <Form.Control.Feedback type="invalid">
-                        {errors.nomor_registrasi}
-                      </Form.Control.Feedback>
-                    </Form.Group>
-                  </Col>
-                </Row>
-
-                <Form.Group className="mb-3">
-                  <Form.Label>6. Alamat *</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={2}
-                    name="alamat"
-                    value={formData.alamat || ""}
-                    onChange={handleChange}
-                    placeholder="Masukkan alamat lengkap"
-                    isInvalid={!!errors.alamat}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {errors.alamat}
-                  </Form.Control.Feedback>
-                </Form.Group>
-
-                <Row>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>7. Peruntukan *</Form.Label>
-                      <Form.Control
-                        type="text"
-                        name="peruntukan"
-                        value={formData.peruntukan || ""}
-                        onChange={handleChange}
-                        placeholder="Contoh: Kantor, Gudang, Latihan"
-                        isInvalid={!!errors.peruntukan}
-                      />
-                      <Form.Control.Feedback type="invalid">
-                        {errors.peruntukan}
-                      </Form.Control.Feedback>
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Luas dari Peta (m²)</Form.Label>
-                      <Form.Control
-                        type="number"
-                        name="luas"
-                        value={formData.luas || 0}
-                        onChange={handleChange}
-                        placeholder="Luas akan otomatis terisi"
-                        readOnly
-                      />
-                      <Form.Text className="text-muted">
-                        Luas otomatis dari gambar di peta
-                      </Form.Text>
-                    </Form.Group>
-                  </Col>
-                </Row>
-              </Card.Body>
-            </Card>
-
-            {/* Ownership Details */}
-            <Card className="mb-3">
-              <Card.Header>
-                <strong>Detail Kepemilikan</strong>
-              </Card.Header>
-              <Card.Body>
-                <Row>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>8. Status *</Form.Label>
-                      <Form.Select
-                        name="status"
-                        value={formData.status || ""}
-                        onChange={handleChange}
-                        isInvalid={!!errors.status}
-                      >
-                        <option value="">-- Pilih Status --</option>
-                        {statusOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </Form.Select>
-                      <Form.Control.Feedback type="invalid">
-                        {errors.status}
-                      </Form.Control.Feedback>
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>9. Asal Milik *</Form.Label>
-                      <Form.Select
-                        name="asal_milik"
-                        value={formData.asal_milik || ""}
-                        onChange={handleChange}
-                        isInvalid={!!errors.asal_milik}
-                      >
-                        <option value="">-- Pilih Asal Milik --</option>
-                        {asalMilikOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </Form.Select>
-                      <Form.Control.Feedback type="invalid">
-                        {errors.asal_milik}
-                      </Form.Control.Feedback>
-                    </Form.Group>
-                  </Col>
-                </Row>
-
-                <Row>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>10. Bukti Pemilikan</Form.Label>
-                      <Form.Select
-                        name="bukti_pemilikan"
-                        value={formData.bukti_pemilikan || ""}
-                        onChange={handleChange}
-                      >
-                        <option value="">-- Pilih Bukti Pemilikan --</option>
-                        {buktiPemilikanOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </Form.Select>
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>11. Pemilikan Sertifikat</Form.Label>
-                      <div>
-                        <Form.Check
-                          inline
-                          type="radio"
-                          name="pemilikan_sertifikat"
-                          value="Ya"
-                          label="Ya"
-                          checked={formData.pemilikan_sertifikat === "Ya"}
-                          onChange={handleChange}
-                        />
-                        <Form.Check
-                          inline
-                          type="radio"
-                          name="pemilikan_sertifikat"
-                          value="Tidak"
-                          label="Tidak"
-                          checked={formData.pemilikan_sertifikat === "Tidak"}
-                          onChange={handleChange}
-                        />
-                      </div>
-                    </Form.Group>
-                  </Col>
-                </Row>
-
-                <Form.Group className="mb-3">
-                  <Form.Label>Atas Nama Pemilik Sertifikat</Form.Label>
-                  <Form.Control
-                    type="text"
-                    name="atas_nama_pemilik_sertifikat"
-                    value={formData.atas_nama_pemilik_sertifikat || ""}
-                    onChange={handleChange}
-                    placeholder="Masukkan Nama Pemilik"
-                  />
-                </Form.Group>
-              </Card.Body>
-            </Card>
-
-            {/* Land Certificate Info */}
-            <Card className="mb-3">
-              <Card.Header>
-                <strong>12. Jumlah Tanah Sertifikat</strong>
-              </Card.Header>
-              <Card.Body>
-                <Row>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Bidang</Form.Label>
-                      <Form.Control
-                        type="number"
-                        name="sertifikat_bidang"
-                        value={formData.sertifikat_bidang || ""}
-                        onChange={handleChange}
-                        placeholder="Jumlah bidang"
-                        min="0"
-                        isInvalid={!!errors.sertifikat_bidang}
-                      />
-                      <Form.Control.Feedback type="invalid">
-                        {errors.sertifikat_bidang}
-                      </Form.Control.Feedback>
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Luas (M²)</Form.Label>
-                      <Form.Control
-                        type="number"
-                        name="sertifikat_luas"
-                        value={formData.sertifikat_luas || ""}
-                        onChange={handleChange}
-                        placeholder="Luas dalam m²"
-                        min="0"
-                        step="0.01"
-                        isInvalid={!!errors.sertifikat_luas}
-                      />
-                      <Form.Control.Feedback type="invalid">
-                        {errors.sertifikat_luas}
-                      </Form.Control.Feedback>
-                    </Form.Group>
-                  </Col>
-                </Row>
-              </Card.Body>
-            </Card>
-
-            {/* Uncertified Land Info */}
-            <Card className="mb-3">
-              <Card.Header>
-                <strong>13. Belum Sertifikat</strong>
-              </Card.Header>
-              <Card.Body>
-                <Row>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Bidang</Form.Label>
-                      <Form.Control
-                        type="number"
-                        name="belum_sertifikat_bidang"
-                        value={formData.belum_sertifikat_bidang || ""}
-                        onChange={handleChange}
-                        placeholder="Jumlah bidang"
-                        min="0"
-                        isInvalid={!!errors.belum_sertifikat_bidang}
-                      />
-                      <Form.Control.Feedback type="invalid">
-                        {errors.belum_sertifikat_bidang}
-                      </Form.Control.Feedback>
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Luas (M²)</Form.Label>
-                      <Form.Control
-                        type="number"
-                        name="belum_sertifikat_luas"
-                        value={formData.belum_sertifikat_luas || ""}
-                        onChange={handleChange}
-                        placeholder="Luas dalam m²"
-                        min="0"
-                        step="0.01"
-                        isInvalid={!!errors.belum_sertifikat_luas}
-                      />
-                      <Form.Control.Feedback type="invalid">
-                        {errors.belum_sertifikat_luas}
-                      </Form.Control.Feedback>
-                    </Form.Group>
-                  </Col>
-                </Row>
-                {errors.tanah_data && (
-                  <div className="text-danger small mb-2">
-                    {errors.tanah_data}
-                  </div>
-                )}
-              </Card.Body>
-            </Card>
-
-            {/* Additional Info */}
-            <Card className="mb-3">
-              <Card.Header>
-                <strong>14. Informasi Tambahan</strong>
-              </Card.Header>
-              <Card.Body>
-                <Form.Group className="mb-3">
-                  <Form.Label>Keterangan</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={3}
-                    name="keterangan"
-                    value={formData.keterangan || ""}
-                    onChange={handleChange}
-                    placeholder="Masukkan keterangan tambahan jika ada"
-                  />
-                </Form.Group>
-              </Card.Body>
-            </Card>
-
-            {/* Summary Info */}
-            {initialArea && (
-              <Card className="mb-3">
-                <Card.Header>
-                  <strong>Ringkasan</strong>
-                </Card.Header>
-                <Card.Body>
-                  <Row>
-                    <Col md={6}>
-                      <small className="text-muted">
-                        <strong>Luas dari Gambar Peta:</strong>
-                        <br />
-                        {initialArea.toFixed(2)} m²
-                      </small>
+                        <Form.Control.Feedback type="invalid">
+                          {errors.korem_id}
+                        </Form.Control.Feedback>
+                      </Form.Group>
                     </Col>
                     <Col md={6}>
-                      <small className="text-muted">
-                        <strong>Total Luas Sertifikat:</strong>
-                        <br />
-                        {(
-                          (parseFloat(formData.sertifikat_luas) || 0) +
-                          (parseFloat(formData.belum_sertifikat_luas) || 0)
-                        ).toFixed(2)}{" "}
-                        m²
-                      </small>
+                      <Form.Group className="mb-3">
+                        <Form.Label>2. Kodim *</Form.Label>
+                        {kodimList.length > 0 ? (
+                          <Form.Select
+                            name="kodim"
+                            value={formData.kodim || ""}
+                            onChange={handleChange}
+                            isInvalid={!!errors.kodim}
+                            disabled={viewMode}
+                          >
+                            <option value="">-- Pilih Kodim --</option>
+                            {kodimList.map((kodim) => (
+                              <option key={kodim.id} value={kodim.id}>
+                                {kodim.nama}
+                              </option>
+                            ))}
+                          </Form.Select>
+                        ) : (
+                          <Form.Control
+                            type="text"
+                            name="kodim"
+                            value={formData.kodim || ""}
+                            onChange={handleChange}
+                            placeholder="Contoh: Kodim 0701/Banyumas"
+                            isInvalid={!!errors.kodim}
+                            required
+                            readOnly={viewMode}
+                          />
+                        )}
+                        <Form.Control.Feedback type="invalid">
+                          {errors.kodim}
+                        </Form.Control.Feedback>
+                      </Form.Group>
                     </Col>
                   </Row>
                 </Card.Body>
               </Card>
-            )}
-          </Form>
-        </fieldset>
-      </Card.Body>
 
-      <Card.Footer className="text-end">
-        <Button variant="secondary" onClick={onCancel} className="me-2">
-          Batal
-        </Button>
-        <Button
-          variant="warning"
-          onClick={() => window.location.reload()}
-          className="me-2"
-        >
-          Reset Form
-        </Button>
+              {/* Asset Registration Details */}
+              <Card className="mb-3">
+                <Card.Header>
+                  <strong>Detail Registrasi Aset</strong>
+                </Card.Header>
+                <Card.Body>
+                  <Row>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label>4. KIB/Kode Barang *</Form.Label>
+                        <Form.Control
+                          type="text"
+                          name="kib_kode_barang"
+                          value={formData.kib_kode_barang || ""}
+                          onChange={handleChange}
+                          placeholder="Contoh: 1.3.1.01.001"
+                          isInvalid={!!errors.kib_kode_barang}
+                          readOnly={viewMode}
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {errors.kib_kode_barang}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label>5. Nomor Registrasi *</Form.Label>
+                        <Form.Control
+                          type="text"
+                          name="nomor_registrasi"
+                          value={formData.nomor_registrasi || ""}
+                          onChange={handleChange}
+                          placeholder="Masukkan nomor registrasi"
+                          isInvalid={!!errors.nomor_registrasi}
+                          readOnly={viewMode}
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {errors.nomor_registrasi}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+                    </Col>
+                  </Row>
 
-        <Button
-          variant="success"
-          onClick={handleSave}
-          disabled={!isEnabled && !assetToEdit}
-          style={{ backgroundColor: "#4CAF50", border: "none" }}
-        >
-          Simpan Aset
-        </Button>
-      </Card.Footer>
-    </Card>
+                  <Form.Group className="mb-3">
+                    <Form.Label>6. Alamat Registrasi Aset*</Form.Label>
+                    <Form.Control
+                      as="textarea"
+                      rows={2}
+                      name="alamat"
+                      value={formData.alamat || ""}
+                      onChange={handleChange}
+                      placeholder="Masukkan alamat lengkap"
+                      isInvalid={!!errors.alamat}
+                      readOnly={viewMode}
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.alamat}
+                    </Form.Control.Feedback>
+                  </Form.Group>
+
+                  <Row>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label>7. Peruntukan *</Form.Label>
+                        <Form.Control
+                          type="text"
+                          name="peruntukan"
+                          value={formData.peruntukan || ""}
+                          onChange={handleChange}
+                          placeholder="Contoh: Kantor, Gudang, Latihan"
+                          isInvalid={!!errors.peruntukan}
+                          readOnly={viewMode}
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {errors.peruntukan}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label>Luas dari Peta (m²)</Form.Label>
+                        <Form.Control
+                          type="number"
+                          name="luas"
+                          value={formData.luas || 0}
+                          onChange={handleChange}
+                          placeholder="Luas akan otomatis terisi"
+                          readOnly
+                        />
+                        <Form.Text className="text-muted">
+                          Luas otomatis dari gambar di peta
+                        </Form.Text>
+                      </Form.Group>
+                    </Col>
+                  </Row>
+                </Card.Body>
+              </Card>
+
+              {/* Ownership Details */}
+              <Card className="mb-3">
+                <Card.Header>
+                  <strong>Detail Kepemilikan</strong>
+                </Card.Header>
+                <Card.Body>
+                  <Row>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label>8. Status *</Form.Label>
+                        <Form.Select
+                          name="status"
+                          value={formData.status || ""}
+                          onChange={handleChange}
+                          isInvalid={!!errors.status}
+                          disabled={viewMode}
+                        >
+                          <option value="">-- Pilih Status --</option>
+                          {statusOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </Form.Select>
+                        <Form.Control.Feedback type="invalid">
+                          {errors.status}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label>9. Asal Milik *</Form.Label>
+                        <Form.Select
+                          name="asal_milik"
+                          value={formData.asal_milik || ""}
+                          onChange={handleChange}
+                          isInvalid={!!errors.asal_milik}
+                          disabled={viewMode}
+                        >
+                          <option value="">-- Pilih Asal Milik --</option>
+                          {asalMilikOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </Form.Select>
+                        <Form.Control.Feedback type="invalid">
+                          {errors.asal_milik}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+                    </Col>
+                  </Row>
+
+                  <Form.Group as={Col} md={6}>
+                    <Form.Label>
+                      10. Bukti Pemilikan (Upload PNG, JPG, PDF - Max{" "}
+                      {MAX_FILE_SIZE_MB}MB)
+                    </Form.Label>
+                    <Form.Control
+                      type="file"
+                      name="bukti_pemilikan_file"
+                      accept=".png,.jpg,.jpeg,.pdf"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          // simpan file ke state
+                          setFormData({
+                            ...formData,
+                            bukti_pemilikan_file: file,
+                            bukti_pemilikan_filename: file.name,
+                          });
+                          // buat preview
+                          setImagePreview(URL.createObjectURL(file));
+                        }
+                      }}
+                      disabled={viewMode}
+                    />
+                    <Form.Text className="text-muted">
+                      Format yang didukung: PNG, JPG, PDF (maksimal{" "}
+                      {MAX_FILE_SIZE_MB}MB)
+                    </Form.Text>
+
+                    {/* File Preview Section */}
+                    {(imagePreview || formData.bukti_pemilikan_file) && (
+                      <div className="mt-3">
+                        <div className="d-flex align-items-center gap-2">
+                          <div
+                            className="file-preview-container"
+                            style={{ width: "100px", height: "100px" }}
+                          >
+                            {formData.bukti_pemilikan_filename
+                              ?.toLowerCase()
+                              .includes(".pdf") ? (
+                              <div
+                                className="pdf-preview d-flex align-items-center justify-content-center border"
+                                style={{
+                                  width: "100%",
+                                  height: "100%",
+                                  backgroundColor: "#f8f9fa",
+                                }}
+                              >
+                                <span className="text-muted">PDF</span>
+                              </div>
+                            ) : (
+                              <Image
+                                src={imagePreview}
+                                alt="Preview"
+                                thumbnail
+                                style={{
+                                  width: "100%",
+                                  height: "100%",
+                                  objectFit: "cover",
+                                }}
+                              />
+                            )}
+                          </div>
+                          <div className="flex-grow-1">
+                            <small className="text-muted d-block">
+                              {formData.bukti_pemilikan_filename ||
+                                "File bukti pemilikan"}
+                            </small>
+                            <div className="mt-2">
+                              <Button
+                                variant="outline-primary"
+                                size="sm"
+                                onClick={() =>
+                                  window.open(
+                                    imagePreview,
+                                    "_blank",
+                                    "noopener,noreferrer"
+                                  )
+                                }
+                                className="me-2"
+                                disabled={viewMode}
+                              >
+                                <FaEye /> Lihat
+                              </Button>
+                              <Button
+                                variant="outline-success"
+                                size="sm"
+                                onClick={() => {
+                                  const url = imagePreview;
+                                  const a = document.createElement("a");
+                                  a.href = url;
+                                  a.download =
+                                    formData.bukti_pemilikan_filename || "file";
+                                  a.click();
+                                }}
+                                className="me-2"
+                              >
+                                <FaDownload /> Unduh
+                              </Button>
+                              {!viewMode && (
+                                <Button
+                                  variant="outline-danger"
+                                  size="sm"
+                                  onClick={() => {
+                                    setFormData({
+                                      ...formData,
+                                      bukti_pemilikan_file: null,
+                                      bukti_pemilikan_filename: "",
+                                    });
+                                    setImagePreview(null);
+                                  }}
+                                >
+                                  <FaTrash /> Hapus
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>Keterangan Bukti Pemilikan</Form.Label>
+                    <Form.Control
+                      as="textarea"
+                      rows={2}
+                      name="keterangan_bukti_pemilikan"
+                      value={formData.keterangan_bukti_pemilikan || ""}
+                      onChange={handleChange}
+                      placeholder="Keterangan tambahan mengenai bukti pemilikan"
+                      readOnly={viewMode}
+                    />
+                  </Form.Group>
+                </Card.Body>
+              </Card>
+
+              {/* Land Certificate Details */}
+              <Card className="mb-3">
+                <Card.Header>
+                  <strong>Detail Tanah</strong>
+                </Card.Header>
+                <Card.Body>
+                  {errors.tanah_data && (
+                    <Alert variant="danger">{errors.tanah_data}</Alert>
+                  )}
+
+                  <Row>
+                    <Col md={6}>
+                      <Card className="h-100">
+                        <Card.Header>
+                          <strong>Tanah dengan Sertifikat</strong>
+                        </Card.Header>
+                        <Card.Body>
+                          <Form.Group className="mb-3">
+                            <Form.Label>Jumlah Bidang</Form.Label>
+                            <Form.Control
+                              type="number"
+                              name="sertifikat_bidang"
+                              value={formData.sertifikat_bidang || ""}
+                              onChange={handleChange}
+                              placeholder="Jumlah bidang"
+                              isInvalid={!!errors.sertifikat_bidang}
+                              readOnly={viewMode}
+                            />
+                            <Form.Control.Feedback type="invalid">
+                              {errors.sertifikat_bidang}
+                            </Form.Control.Feedback>
+                          </Form.Group>
+                          <Form.Group className="mb-3">
+                            <Form.Label>Luas (m²)</Form.Label>
+                            <Form.Control
+                              type="number"
+                              step="0.01"
+                              name="sertifikat_luas"
+                              value={formData.sertifikat_luas || ""}
+                              onChange={handleChange}
+                              placeholder="Luas dalam m²"
+                              isInvalid={!!errors.sertifikat_luas}
+                              readOnly={viewMode}
+                            />
+                            <Form.Control.Feedback type="invalid">
+                              {errors.sertifikat_luas}
+                            </Form.Control.Feedback>
+                          </Form.Group>
+                        </Card.Body>
+                      </Card>
+                    </Col>
+                    <Col md={6}>
+                      <Card className="h-100">
+                        <Card.Header>
+                          <strong>Tanah Belum Sertifikat</strong>
+                        </Card.Header>
+                        <Card.Body>
+                          <Form.Group className="mb-3">
+                            <Form.Label>Jumlah Bidang</Form.Label>
+                            <Form.Control
+                              type="number"
+                              name="belum_sertifikat_bidang"
+                              value={formData.belum_sertifikat_bidang || ""}
+                              onChange={handleChange}
+                              placeholder="Jumlah bidang"
+                              isInvalid={!!errors.belum_sertifikat_bidang}
+                              readOnly={viewMode}
+                            />
+                            <Form.Control.Feedback type="invalid">
+                              {errors.belum_sertifikat_bidang}
+                            </Form.Control.Feedback>
+                          </Form.Group>
+                          <Form.Group className="mb-3">
+                            <Form.Label>Luas (m²)</Form.Label>
+                            <Form.Control
+                              type="number"
+                              step="0.01"
+                              name="belum_sertifikat_luas"
+                              value={formData.belum_sertifikat_luas || ""}
+                              onChange={handleChange}
+                              placeholder="Luas dalam m²"
+                              isInvalid={!!errors.belum_sertifikat_luas}
+                              readOnly={viewMode}
+                            />
+                            <Form.Control.Feedback type="invalid">
+                              {errors.belum_sertifikat_luas}
+                            </Form.Control.Feedback>
+                          </Form.Group>
+                        </Card.Body>
+                      </Card>
+                    </Col>
+                  </Row>
+
+                  {/* Summary of total area */}
+                  {(formData.sertifikat_luas ||
+                    formData.belum_sertifikat_luas) && (
+                    <Alert variant="info" className="mt-3">
+                      <strong>Total Luas Tanah: </strong>
+                      {(
+                        (parseFloat(formData.sertifikat_luas) || 0) +
+                        (parseFloat(formData.belum_sertifikat_luas) || 0)
+                      ).toFixed(2)}{" "}
+                      m²
+                      {initialArea && (
+                        <span className="ms-2">
+                          (Luas dari peta: {initialArea.toFixed(2)} m²)
+                        </span>
+                      )}
+                    </Alert>
+                  )}
+                </Card.Body>
+              </Card>
+
+              {/* Additional Information */}
+              <Card className="mb-3">
+                <Card.Header>
+                  <strong>Informasi Tambahan</strong>
+                </Card.Header>
+                <Card.Body>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Lokasi (dari Peta)</Form.Label>
+                    <Form.Control
+                      type="text"
+                      name="lokasi_nama"
+                      value={formData.lokasi_nama || ""}
+                      onChange={handleChange}
+                      placeholder="Lokasi akan otomatis terisi dari peta"
+                      isInvalid={!!errors.lokasi_nama}
+                      readOnly={viewMode}
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.lokasi_nama}
+                    </Form.Control.Feedback>
+                    <Form.Text className="text-muted">
+                      Lokasi otomatis dari koordinat yang digambar di peta
+                    </Form.Text>
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>Keterangan</Form.Label>
+                    <Form.Control
+                      as="textarea"
+                      rows={3}
+                      name="keterangan"
+                      value={formData.keterangan || ""}
+                      onChange={handleChange}
+                      placeholder="Keterangan tambahan tentang aset"
+                      readOnly={viewMode}
+                    />
+                  </Form.Group>
+                </Card.Body>
+              </Card>
+
+              {/* Action Buttons */}
+              {!viewMode && (
+                <div className="d-flex gap-2 justify-content-end">
+                  <Button
+                    variant="secondary"
+                    onClick={onCancel}
+                    disabled={!isEnabled && !assetToEdit}
+                  >
+                    {assetToEdit ? "Batal" : "Tutup"}
+                  </Button>
+                  <Button
+                    variant="outline-warning"
+                    onClick={handleReset}
+                    disabled={!isEnabled && !assetToEdit}
+                  >
+                    Reset
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={handleSave}
+                    disabled={!isEnabled && !assetToEdit}
+                  >
+                    {assetToEdit ? "Update Aset" : "Simpan Aset"}
+                  </Button>
+                </div>
+              )}
+
+              {viewMode && (
+                <div className="d-flex gap-2 justify-content-end">
+                  <Button variant="secondary" onClick={onCancel}>
+                    Tutup
+                  </Button>
+                </div>
+              )}
+            </Form>
+          </fieldset>
+        </Card.Body>
+      </Card>
+
+      {/* Image View Modal */}
+      <Modal
+        show={showImageModal}
+        onHide={() => setShowImageModal(false)}
+        size="lg"
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Bukti Pemilikan - {formData.nama || "Aset"}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="text-center">
+          {selectedImage && (
+            <>
+              {selectedImage.toLowerCase().includes(".pdf") ? (
+                <div>
+                  <p>File PDF tidak dapat ditampilkan dalam preview.</p>
+                  <Button variant="primary" onClick={handleDownloadImage}>
+                    <FaDownload /> Unduh PDF
+                  </Button>
+                </div>
+              ) : (
+                <Image
+                  src={selectedImage}
+                  alt="Bukti Pemilikan"
+                  fluid
+                  style={{ maxHeight: "70vh" }}
+                />
+              )}
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <div className="w-100 d-flex justify-content-between">
+            <div>
+              <small className="text-muted">
+                {formData.bukti_pemilikan_filename || "bukti_pemilikan"}
+              </small>
+            </div>
+            <div>
+              <Button
+                variant="outline-success"
+                size="sm"
+                onClick={handleDownloadImage}
+                className="me-2"
+              >
+                <FaDownload /> Unduh
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => setShowImageModal(false)}
+              >
+                Tutup
+              </Button>
+            </div>
+          </div>
+        </Modal.Footer>
+      </Modal>
+    </>
   );
 };
 
