@@ -7,7 +7,7 @@ import {
   FaEye,
   FaDownload,
   FaImage,
-} from "react-icons/fa";
+} from "react-icons/fa"; // contoh pakai react-icons
 import {
   Container,
   Row,
@@ -30,185 +30,47 @@ import diyBoundary from "../data/indonesia_yogyakarta.json";
 
 const API_URL = "http://localhost:3001";
 
-// Debug dan test semua kemungkinan path gambar
-const ImagePreviewModal = ({ show, onHide, imageData, assetName }) => {
-  const [imageError, setImageError] = useState(false);
-  const [imageLoading, setImageLoading] = useState(true);
-  const [currentUrl, setCurrentUrl] = useState("");
-  const [debugInfo, setDebugInfo] = useState([]);
+// Helper function untuk memperbaiki path gambar
+const getImageUrl = (asset) => {
+  if (!asset) return null;
 
-  // Test semua kemungkinan path
-  const testImagePaths = async (imageData) => {
-    if (!imageData) return { found: false, workingUrl: null, debugInfo: [] };
+  // Cek berbagai field yang mungkin menyimpan URL gambar
+  let imageUrl =
+    asset.bukti_pemilikan_url ||
+    asset.bukti_pemilikan ||
+    asset.bukti_kepemilikan_url ||
+    asset.bukti_kepemilikan;
 
-    const baseUrl = API_URL.replace(/\/$/, "");
-    const testPaths = [];
+  if (!imageUrl) return null;
 
-    // Jika sudah full URL
-    if (imageData.startsWith("http")) {
-      testPaths.push(imageData);
-    } else {
-      // Coba berbagai kemungkinan path
-      testPaths.push(
-        `${baseUrl}/uploads/bukti-pemilikan/${imageData}`,
-        `${baseUrl}/uploads/${imageData}`,
-        `${baseUrl}/static/uploads/bukti-pemilikan/${imageData}`,
-        `${baseUrl}/static/uploads/${imageData}`,
-        `${baseUrl}/public/uploads/bukti-pemilikan/${imageData}`,
-        `${baseUrl}/public/uploads/${imageData}`,
-        `${baseUrl}/files/bukti-pemilikan/${imageData}`,
-        `${baseUrl}/files/${imageData}`,
-        `${baseUrl}/static/${imageData}`,
-        `${baseUrl}/${imageData}`
-      );
-    }
+  // Jika sudah URL lengkap (http/https), return as is
+  if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+    return imageUrl;
+  }
 
-    const debugResults = [];
+  // Jika path relatif, gabungkan dengan API_URL
+  if (imageUrl.startsWith("/")) {
+    return `${API_URL}${imageUrl}`;
+  }
 
-    // Test setiap path
-    for (const path of testPaths) {
-      try {
-        const response = await fetch(path, { method: "HEAD" });
-        debugResults.push({
-          path,
-          status: response.status,
-          ok: response.ok,
-          contentType: response.headers.get("content-type"),
-        });
-
-        if (response.ok) {
-          return { found: true, workingUrl: path, debugInfo: debugResults };
-        }
-      } catch (error) {
-        debugResults.push({
-          path,
-          status: "ERROR",
-          ok: false,
-          error: error.message,
-        });
-      }
-    }
-
-    return { found: false, workingUrl: null, debugInfo: debugResults };
-  };
-
-  useEffect(() => {
-    if (show && imageData) {
-      setImageLoading(true);
-      setImageError(false);
-
-      testImagePaths(imageData).then((result) => {
-        setDebugInfo(result.debugInfo);
-
-        if (result.found) {
-          setCurrentUrl(result.workingUrl);
-          setImageError(false);
-        } else {
-          setImageError(true);
-          setImageLoading(false);
-        }
-      });
-    }
-  }, [show, imageData]);
-
-  const handleImageLoad = () => {
-    setImageLoading(false);
-  };
-
-  const handleImageError = () => {
-    setImageError(true);
-    setImageLoading(false);
-  };
-
-  return (
-    <Modal show={show} onHide={onHide} size="lg" centered>
-      <Modal.Header closeButton>
-        <Modal.Title>Bukti Pemilikan - {assetName}</Modal.Title>
-      </Modal.Header>
-      <Modal.Body className="text-center">
-        {imageLoading && !imageError && (
-          <div className="py-5">
-            <Spinner animation="border" variant="primary" />
-            <p className="mt-2">Memuat gambar...</p>
-          </div>
-        )}
-
-        {imageError && (
-          <div className="py-4">
-            <FaImage size={50} className="text-muted mb-3" />
-            <p className="text-muted mb-3">Gambar tidak dapat dimuat</p>
-
-            {/* Debug information */}
-            <div className="text-start">
-              <small className="text-muted">
-                <strong>Debug Info:</strong>
-                <br />
-                Original data: {imageData}
-                <br />
-                Paths tested: {debugInfo.length}
-              </small>
-
-              <details className="mt-2">
-                <summary style={{ cursor: "pointer", fontSize: "12px" }}>
-                  Show detailed test results
-                </summary>
-                <div
-                  style={{
-                    maxHeight: "200px",
-                    overflowY: "auto",
-                    fontSize: "11px",
-                  }}
-                >
-                  {debugInfo.map((info, idx) => (
-                    <div key={idx} className="mb-1">
-                      <div className={info.ok ? "text-success" : "text-danger"}>
-                        {info.status}: {info.path}
-                      </div>
-                      {info.contentType && <div>Type: {info.contentType}</div>}
-                      {info.error && <div>Error: {info.error}</div>}
-                    </div>
-                  ))}
-                </div>
-              </details>
-            </div>
-          </div>
-        )}
-
-        {!imageError && currentUrl && (
-          <img
-            src={currentUrl}
-            alt="Bukti Pemilikan"
-            className="img-fluid"
-            style={{
-              maxHeight: "70vh",
-              display: imageLoading ? "none" : "block",
-            }}
-            onLoad={handleImageLoad}
-            onError={handleImageError}
-          />
-        )}
-      </Modal.Body>
-      <Modal.Footer>
-        {!imageError && currentUrl && (
-          <Button
-            variant="primary"
-            href={currentUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <FaDownload className="me-2" />
-            Download
-          </Button>
-        )}
-        <Button variant="secondary" onClick={onHide}>
-          Tutup
-        </Button>
-      </Modal.Footer>
-    </Modal>
-  );
+  // Jika tidak ada slash di awal, tambahkan
+  return `${API_URL}/${imageUrl}`;
 };
 
-// Original table component - tidak diubah
+// Helper function untuk cek apakah file gambar atau PDF
+const isImageFile = (filename) => {
+  if (!filename) return false;
+  const imageExtensions = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"];
+  return imageExtensions.some((ext) => filename.toLowerCase().endsWith(ext));
+};
+
+// Helper function untuk cek apakah file PDF
+const isPdfFile = (filename) => {
+  if (!filename) return false;
+  return filename.toLowerCase().endsWith(".pdf");
+};
+
+// Enhanced table component with more columns and FIXED image preview
 const TabelAset = ({
   assets,
   onEdit,
@@ -225,6 +87,7 @@ const TabelAset = ({
     );
   }
 
+  // Helper function: tampilkan luas lebih jelas
   const renderLuas = (asset) => {
     const sertifikatLuas = parseFloat(asset.sertifikat_luas) || 0;
     const belumSertifikatLuas = parseFloat(asset.belum_sertifikat_luas) || 0;
@@ -261,17 +124,82 @@ const TabelAset = ({
     return items.length > 0 ? items : "-";
   };
 
+  // Helper function: tampilkan preview bukti pemilikan dengan proper URL handling
+  const renderBuktiPemilikan = (asset) => {
+    const imageUrl = getImageUrl(asset);
+    const filename =
+      asset.bukti_pemilikan_filename ||
+      asset.bukti_kepemilikan_filename ||
+      "File";
+
+    if (!imageUrl && !filename) {
+      return <span className="text-muted">-</span>;
+    }
+
+    const hasValidImage = imageUrl && isImageFile(filename);
+    const hasPdf = imageUrl && isPdfFile(filename);
+
+    return (
+      <div className="d-flex align-items-center gap-2">
+        {hasValidImage && (
+          <div
+            style={{
+              width: "40px",
+              height: "40px",
+              border: "1px solid #ddd",
+              borderRadius: "4px",
+              overflow: "hidden",
+              cursor: "pointer",
+            }}
+            onClick={() => onViewDetail(asset)}
+            title="Klik untuk lihat detail"
+          >
+            <img
+              src={imageUrl}
+              alt="Preview"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+              }}
+              onError={(e) => {
+                console.error("Image load error:", imageUrl);
+                e.target.style.display = "none";
+                e.target.parentNode.innerHTML =
+                  '<span class="text-muted small">Error</span>';
+              }}
+            />
+          </div>
+        )}
+        {hasPdf && (
+          <Button
+            variant="outline-danger"
+            size="sm"
+            onClick={() => onViewDetail(asset)}
+            title="Lihat PDF"
+          >
+            PDF
+          </Button>
+        )}
+        <small className="text-truncate" style={{ maxWidth: "80px" }}>
+          {filename}
+        </small>
+      </div>
+    );
+  };
+
   return (
     <Table striped bordered hover responsive>
       <thead className="table-dark">
         <tr>
-          <th style={{ width: "12%" }}>NUP</th>
-          <th style={{ width: "15%" }}>Wilayah Korem</th>
-          <th style={{ width: "15%" }}>Wilayah Kodim</th>
-          <th style={{ width: "20%" }}>Alamat</th>
-          <th style={{ width: "12%" }}>Peruntukan</th>
-          <th style={{ width: "10%" }}>Status</th>
-          <th style={{ width: "13%" }}>Luas</th>
+          <th style={{ width: "10%" }}>NUP</th>
+          <th style={{ width: "12%" }}>Wilayah Korem</th>
+          <th style={{ width: "12%" }}>Wilayah Kodim</th>
+          <th style={{ width: "18%" }}>Alamat</th>
+          <th style={{ width: "10%" }}>Peruntukan</th>
+          <th style={{ width: "8%" }}>Status</th>
+          <th style={{ width: "10%" }}>Luas</th>
+          <th style={{ width: "12%" }}>Bukti Pemilikan</th>
           <th style={{ width: "8%" }}>Aksi</th>
         </tr>
       </thead>
@@ -319,6 +247,7 @@ const TabelAset = ({
                 </span>
               </td>
               <td>{renderLuas(asset)}</td>
+              <td>{renderBuktiPemilikan(asset)}</td>
               <td>
                 <div className="d-flex gap-1 flex-wrap">
                   <OverlayTrigger
@@ -376,7 +305,7 @@ const TabelAset = ({
   );
 };
 
-// Original filter component - tidak diubah
+// Enhanced filter component at the top
 const FilterPanelTop = ({
   koremList,
   kodimList,
@@ -477,6 +406,7 @@ const FilterPanelTop = ({
           </Col>
         </Row>
 
+        {/* Summary Info */}
         <Row>
           <Col>
             <div className="bg-light p-2 rounded">
@@ -511,79 +441,6 @@ const FilterPanelTop = ({
   );
 };
 
-// Enhanced FormAset Component dengan Image Preview di bawah
-const EnhancedFormAset = (props) => {
-  const [showImageModal, setShowImageModal] = useState(false);
-
-  // Get image data dari berbagai kemungkinan field
-  const getImageData = () => {
-    if (!props.assetToEdit) return null;
-
-    // Coba berbagai field yang mungkin menyimpan path gambar
-    return (
-      props.assetToEdit.bukti_pemilikan_url ||
-      props.assetToEdit.bukti_pemilikan_filename ||
-      props.assetToEdit.bukti_pemilikan ||
-      props.assetToEdit.bukti_pemilikan_file
-    );
-  };
-
-  const imageData = getImageData();
-  const hasImage = !!imageData;
-
-  return (
-    <div>
-      {/* Form Aset Original tanpa field bukti pemilikan */}
-      <FormAset {...props} hideBuktiPemilikan={props.viewMode} />
-
-      {/* Image Preview Section - dipindah ke bawah dan terpisah */}
-      <div className="card mt-3">
-        <div className="card-header d-flex justify-content-between align-items-center">
-          <h6 className="mb-0">Bukti Pemilikan</h6>
-          {hasImage && <small className="text-muted">File: {imageData}</small>}
-        </div>
-        <div className="card-body">
-          {hasImage ? (
-            <div className="text-center">
-              <div className="mb-3">
-                <Button
-                  variant="outline-primary"
-                  onClick={() => setShowImageModal(true)}
-                  className="d-flex align-items-center mx-auto"
-                >
-                  <FaEye className="me-2" />
-                  Lihat Bukti Pemilikan
-                </Button>
-              </div>
-              <div className="small text-muted">
-                <div>Format yang didukung: PNG, JPG, PDF (maksimal 50MB)</div>
-                <div>Klik tombol untuk melihat gambar bukti pemilikan</div>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center text-muted py-4">
-              <FaImage size={40} className="mb-3" />
-              <p className="mb-2">Gambar belum tersedia</p>
-              <div className="small">
-                <div>Format yang didukung: PNG, JPG, PDF (maksimal 50MB)</div>
-                <div>Upload bukti pemilikan melalui halaman edit aset</div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Image Preview Modal dengan debug info */}
-      <ImagePreviewModal
-        show={showImageModal}
-        onHide={() => setShowImageModal(false)}
-        imageData={imageData}
-        assetName={props.assetToEdit?.nama || "Aset"}
-      />
-    </div>
-  );
-};
-
 const DataAsetTanahPage = () => {
   const { user } = useAuth();
   const [assets, setAssets] = useState([]);
@@ -602,11 +459,11 @@ const DataAsetTanahPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingAsset, setEditingAsset] = useState(null);
 
-  // State for detail view
+  // New state for detail view (like TambahAsetPage layout)
   const [selectedAssetDetail, setSelectedAssetDetail] = useState(null);
   const [showDetailView, setShowDetailView] = useState(false);
 
-  // Fetch all Kodim data
+  // Fetch all Kodim data for detail view
   const fetchAllKodim = useCallback(async () => {
     try {
       const kodimRes = await axios.get(`${API_URL}/kodim`);
@@ -630,6 +487,7 @@ const DataAsetTanahPage = () => {
       let kodimRes;
       let endpointUsed = "";
 
+      // Option 1: Try kodim endpoint with korem filter
       try {
         console.log(`Trying: ${API_URL}/kodim?korem_id=${koremId}`);
         kodimRes = await axios.get(`${API_URL}/kodim?korem_id=${koremId}`);
@@ -638,6 +496,7 @@ const DataAsetTanahPage = () => {
       } catch (err1) {
         console.log("Option 1 failed:", err1.response?.status, err1.message);
 
+        // Option 2: Try nested endpoint
         try {
           console.log(`Trying: ${API_URL}/korem/${koremId}/kodim`);
           kodimRes = await axios.get(`${API_URL}/korem/${koremId}/kodim`);
@@ -646,6 +505,7 @@ const DataAsetTanahPage = () => {
         } catch (err2) {
           console.log("Option 2 failed:", err2.response?.status, err2.message);
 
+          // Option 3: Get all kodim and filter
           try {
             console.log(`Trying: ${API_URL}/kodim (all)`);
             kodimRes = await axios.get(`${API_URL}/kodim`);
@@ -661,6 +521,7 @@ const DataAsetTanahPage = () => {
               err3.message
             );
 
+            // Option 4: Mock data as fallback (temporary solution)
             console.log("All endpoints failed, using mock data");
             kodimRes = {
               data: [
@@ -703,7 +564,7 @@ const DataAsetTanahPage = () => {
 
       console.log(`Kodim data loaded using: ${endpointUsed}`, kodimRes.data);
       setKodimList(kodimRes.data || []);
-      setSelectedKodim("");
+      setSelectedKodim(""); // Reset selection when korem changes
       setError(null);
     } catch (err) {
       const errorMsg = `Gagal memuat data Kodim. ${
@@ -740,10 +601,11 @@ const DataAsetTanahPage = () => {
     fetchAllKodim();
   }, [fetchData, fetchAllKodim]);
 
-  // Filtering logic
+  // Enhanced filtering with status and kodim
   useEffect(() => {
     let filtered = assets;
 
+    // Filter by Korem
     if (selectedKorem) {
       filtered = filtered.filter((a) => a.korem_id == selectedKorem.id);
       if (selectedKorem && !kodimList.length) {
@@ -751,6 +613,7 @@ const DataAsetTanahPage = () => {
       }
     }
 
+    // Filter by Kodim
     if (selectedKodim) {
       filtered = filtered.filter(
         (a) =>
@@ -760,6 +623,7 @@ const DataAsetTanahPage = () => {
       );
     }
 
+    // Filter by Status
     if (statusFilter) {
       filtered = filtered.filter((a) => a.status === statusFilter);
     }
@@ -777,7 +641,7 @@ const DataAsetTanahPage = () => {
   // Handle filter changes
   const handleKoremChange = (korem) => {
     setSelectedKorem(korem);
-    setSelectedKodim("");
+    setSelectedKodim(""); // Reset kodim when korem changes
     if (korem) {
       fetchKodim(korem.id);
     } else {
@@ -800,11 +664,12 @@ const DataAsetTanahPage = () => {
     setKodimList([]);
   };
 
-  // Handle view detail
+  // Handle view detail - like TambahAsetPage layout
   const handleViewDetail = (asset) => {
     setSelectedAssetDetail(asset);
     setShowDetailView(true);
 
+    // Set up korem and kodim for detail view
     const korem = koremList.find((k) => k.id == asset.korem_id);
     if (korem) {
       setSelectedKorem(korem);
@@ -816,9 +681,9 @@ const DataAsetTanahPage = () => {
   const handleBackFromDetail = () => {
     setShowDetailView(false);
     setSelectedAssetDetail(null);
+    // Don't reset filters when going back
   };
 
-  // Enhanced save function with file verification
   const handleSaveAsset = async (assetData) => {
     if (!editingAsset) {
       toast.error("Tidak ada aset yang sedang diedit");
@@ -827,183 +692,56 @@ const DataAsetTanahPage = () => {
 
     const toastId = toast.loading("Menyimpan perubahan...");
     try {
+      // Get the selected kodim name for saving
       const selectedKodimObj = kodimList.find((k) => k.id === selectedKodim);
       const kodimName = selectedKodimObj
         ? selectedKodimObj.nama
         : selectedKodim;
 
-      // Handle file upload dengan verifikasi lebih ketat
+      // Handle file upload if there's a new file
       let fileUploadData = {};
+
+      console.log("Checking file upload:", assetData.bukti_pemilikan_file);
 
       if (
         assetData.bukti_pemilikan_file &&
         assetData.bukti_pemilikan_file instanceof File
       ) {
-        const file = assetData.bukti_pemilikan_file;
-
-        // Validasi file
-        const maxSize = 50 * 1024 * 1024; // 50MB
-        if (file.size > maxSize) {
-          toast.error("File terlalu besar. Maksimal 50MB.", { id: toastId });
-          return;
-        }
-
-        const validTypes = [
-          "image/jpeg",
-          "image/jpg",
-          "image/png",
-          "application/pdf",
-        ];
-        if (!validTypes.includes(file.type)) {
-          toast.error(
-            "Format file tidak didukung. Gunakan PNG, JPG, atau PDF.",
-            { id: toastId }
-          );
-          return;
-        }
-
-        // Siapkan FormData
         const formData = new FormData();
-        formData.append("bukti_pemilikan", file);
+        formData.append("bukti_pemilikan", assetData.bukti_pemilikan_file);
 
-        // Tambah metadata untuk debugging
-        formData.append("originalName", file.name);
-        formData.append("fileSize", file.size.toString());
-        formData.append("fileType", file.type);
-
-        console.log("Uploading file:", {
-          name: file.name,
-          size: file.size,
-          type: file.type,
-        });
-
-        toast.loading("Mengupload file...", { id: toastId });
+        console.log("Uploading file:", assetData.bukti_pemilikan_file.name);
 
         try {
-          // Coba upload dengan endpoint yang berbeda
-          const uploadEndpoints = [
-            { url: `${API_URL}/upload/bukti-pemilikan`, method: "POST" },
-            { url: `${API_URL}/api/upload/bukti-pemilikan`, method: "POST" },
-            { url: `${API_URL}/uploads`, method: "POST" },
-            { url: `${API_URL}/api/upload`, method: "POST" },
-          ];
-
-          let uploadResponse = null;
-          let successEndpoint = null;
-
-          for (const endpoint of uploadEndpoints) {
-            try {
-              console.log(`Trying upload to: ${endpoint.url}`);
-
-              uploadResponse = await axios.post(endpoint.url, formData, {
-                headers: {
-                  "Content-Type": "multipart/form-data",
-                },
-                timeout: 120000, // 2 menit timeout
-                onUploadProgress: (progressEvent) => {
-                  const percentCompleted = Math.round(
-                    (progressEvent.loaded * 100) / progressEvent.total
-                  );
-                  console.log(`Upload progress: ${percentCompleted}%`);
-                },
-              });
-
-              console.log(
-                `Upload successful to ${endpoint.url}:`,
-                uploadResponse.data
-              );
-              successEndpoint = endpoint.url;
-              break;
-            } catch (endpointErr) {
-              console.log(`Upload failed to ${endpoint.url}:`, {
-                status: endpointErr.response?.status,
-                statusText: endpointErr.response?.statusText,
-                data: endpointErr.response?.data,
-              });
-
-              if (endpoint === uploadEndpoints[uploadEndpoints.length - 1]) {
-                throw endpointErr;
-              }
+          const uploadRes = await axios.post(
+            `${API_URL}/upload/bukti-pemilikan`,
+            formData,
+            {
+              headers: {
+                "Content-Type": "multipart/form-data",
+              },
+              timeout: 30000, // 30 seconds timeout
             }
-          }
+          );
 
-          if (!uploadResponse || !uploadResponse.data) {
-            throw new Error("Upload response tidak valid");
-          }
+          console.log("Upload response:", uploadRes.data);
 
-          // Extract data dari response
-          const responseData = uploadResponse.data;
           fileUploadData = {
-            bukti_pemilikan_url:
-              responseData.url || responseData.path || responseData.filename,
-            bukti_pemilikan_filename:
-              responseData.filename || responseData.fileName || file.name,
+            bukti_pemilikan_url: uploadRes.data.url,
+            bukti_pemilikan_filename: uploadRes.data.filename,
           };
 
-          console.log("File upload successful:", fileUploadData);
-
-          // Verifikasi file berhasil diupload dengan test akses
-          if (
-            fileUploadData.bukti_pemilikan_url ||
-            fileUploadData.bukti_pemilikan_filename
-          ) {
-            const testUrl =
-              fileUploadData.bukti_pemilikan_url ||
-              `${API_URL}/uploads/bukti-pemilikan/${fileUploadData.bukti_pemilikan_filename}`;
-
-            try {
-              const testResponse = await fetch(testUrl, { method: "HEAD" });
-              if (testResponse.ok) {
-                console.log("File verification successful:", testUrl);
-                toast.success(`File berhasil diupload ke: ${successEndpoint}`, {
-                  id: toastId,
-                });
-              } else {
-                console.warn(
-                  "File upload success but verification failed:",
-                  testResponse.status
-                );
-                toast.warning("File diupload tapi tidak bisa diverifikasi", {
-                  id: toastId,
-                });
-              }
-            } catch (verifyErr) {
-              console.warn("File verification error:", verifyErr);
-              toast.warning("File diupload tapi tidak bisa diverifikasi", {
-                id: toastId,
-              });
-            }
-          }
+          toast.success("File berhasil diupload", { id: toastId });
         } catch (uploadErr) {
-          console.error("File upload failed completely:", uploadErr);
-
-          let errorMsg = "Gagal mengupload file";
+          console.error("File upload failed:", uploadErr);
+          let errorMsg = "Gagal mengupload file bukti pemilikan";
 
           if (uploadErr.response) {
-            const status = uploadErr.response.status;
-            const data = uploadErr.response.data;
-
-            switch (status) {
-              case 413:
-                errorMsg += ": File terlalu besar (maksimal 50MB)";
-                break;
-              case 400:
-                errorMsg += `: ${data?.message || "Request tidak valid"}`;
-                break;
-              case 415:
-                errorMsg += ": Format file tidak didukung";
-                break;
-              case 500:
-                errorMsg += ": Error server internal";
-                break;
-              default:
-                errorMsg += `: HTTP ${status} - ${
-                  data?.message || uploadErr.response.statusText
-                }`;
-            }
+            errorMsg += `: ${uploadErr.response.status} - ${
+              uploadErr.response.data?.message || uploadErr.response.statusText
+            }`;
           } else if (uploadErr.request) {
-            errorMsg +=
-              ": Server tidak merespons. Periksa koneksi dan server API.";
+            errorMsg += ": Tidak ada respons dari server";
           } else {
             errorMsg += `: ${uploadErr.message}`;
           }
@@ -1013,10 +751,7 @@ const DataAsetTanahPage = () => {
         }
       }
 
-      // Update progress
-      toast.loading("Menyimpan data aset...", { id: toastId });
-
-      // Prepare data untuk save
+      // Prepare the data to save
       const saveData = {
         ...assetData,
         ...fileUploadData,
@@ -1030,23 +765,27 @@ const DataAsetTanahPage = () => {
       const response = await axios.put(
         `${API_URL}/assets/${editingAsset.id}`,
         saveData,
-        { timeout: 30000 }
+        {
+          timeout: 15000, // 15 seconds timeout
+        }
       );
 
       console.log("Save response:", response.data);
 
-      // Update state
+      // Update the assets state and refresh data
       const updatedAssets = assets.map((a) =>
         a.id === editingAsset.id ? response.data : a
       );
       setAssets(updatedAssets);
 
+      // If we're viewing this asset detail, update it too
       if (selectedAssetDetail && selectedAssetDetail.id === editingAsset.id) {
         setSelectedAssetDetail(response.data);
       }
 
       toast.success("Aset berhasil diperbarui!", { id: toastId });
 
+      // Close modal and reset states
       setShowModal(false);
       setEditingAsset(null);
     } catch (err) {
@@ -1058,12 +797,13 @@ const DataAsetTanahPage = () => {
           err.response.data?.message || err.response.statusText
         }`;
       } else if (err.request) {
-        errorMsg += ": Server tidak merespons";
+        errorMsg += ": Tidak ada respons dari server";
       } else {
         errorMsg += `: ${err.message}`;
       }
 
       toast.error(errorMsg, { id: toastId });
+      setError(`Gagal menyimpan aset: ${errorMsg}`);
     }
   };
 
@@ -1095,7 +835,8 @@ const DataAsetTanahPage = () => {
 
   const handleEditAsset = (asset) => {
     setEditingAsset(asset);
-    setShowModal(true);
+    setShowModal(false); // Tidak perlu modal lagi
+    // Set selected korem and kodim for editing
     const korem = koremList.find((k) => k.id == asset.korem_id);
     setSelectedKorem(korem || null);
     setSelectedKodim(asset.kodim_id || asset.kodim || "");
@@ -1107,11 +848,12 @@ const DataAsetTanahPage = () => {
   const handleCancel = () => {
     setEditingAsset(null);
     setShowModal(false);
+    // Don't reset filters here
   };
 
   if (loading) return <Spinner animation="border" variant="primary" />;
 
-  // Detail view - dengan preview gambar yang diperbaiki
+  // Detail view layout - FULLY FIXED for interaction issues
   if (showDetailView && selectedAssetDetail) {
     return (
       <div
@@ -1163,7 +905,7 @@ const DataAsetTanahPage = () => {
                   width: "100%",
                 }}
               >
-                <EnhancedFormAset
+                <FormAset
                   onSave={() => console.log("Detail view - no save")}
                   onCancel={handleBackFromDetail}
                   koremList={koremList}
@@ -1182,12 +924,13 @@ const DataAsetTanahPage = () => {
     );
   }
 
-  // Main table view
+  // Main table view with top filters
   return (
     <Container fluid className="mt-4">
       <h3>Data Aset Tanah</h3>
       {error && <Alert variant="danger">{error}</Alert>}
 
+      {/* Top Filter Panel */}
       <FilterPanelTop
         koremList={koremList}
         kodimList={kodimList}
@@ -1202,6 +945,7 @@ const DataAsetTanahPage = () => {
         filteredAssets={filteredAssets.length}
       />
 
+      {/* Enhanced Table WITHOUT bukti pemilikan column */}
       <Card>
         <Card.Header className="bg-light">
           <h5 className="mb-0">Daftar Aset Tanah</h5>
@@ -1220,7 +964,7 @@ const DataAsetTanahPage = () => {
         </Card.Body>
       </Card>
 
-      {/* Edit modal */}
+      {/* COMPLETELY FIXED: Edit form modal with proper event handling */}
       {editingAsset && showModal && (
         <div style={{ position: "relative", zIndex: 9999 }}>
           <Modal
@@ -1277,6 +1021,55 @@ const DataAsetTanahPage = () => {
             </Modal.Footer>
           </Modal>
         </div>
+      )}
+
+      {/* Debug Panel - Remove this in production */}
+      {process.env.NODE_ENV === "development" && (
+        <Alert variant="info" className="mt-3">
+          <small>
+            <strong>Debug Info:</strong>
+            <br />- Assets: {assets.length} items
+            <br />- Filtered Assets: {filteredAssets.length} items
+            <br />- Korem List: {koremList.length} items
+            <br />- Selected Korem: {selectedKorem?.nama || "None"}
+            <br />- Kodim List: {kodimList.length} items
+            <br />- Selected Kodim: {selectedKodim || "None"}
+            <br />- Status Filter: {statusFilter || "None"}
+            <br />- All Kodim List: {allKodimList.length} items
+            <br />- Show Detail View: {showDetailView ? "Yes" : "No"}
+            <br />- Show Modal: {showModal ? "Yes" : "No"}
+            <br />- Editing Asset: {editingAsset ? "Yes" : "No"}
+            {editingAsset && (
+              <>
+                <br />- Edit Asset bukti_pemilikan_url:{" "}
+                {editingAsset.bukti_pemilikan_url || "None"}
+                <br />- Edit Asset bukti_pemilikan:{" "}
+                {editingAsset.bukti_pemilikan || "None"}
+                <br />- Edit Asset bukti_pemilikan_filename:{" "}
+                {editingAsset.bukti_pemilikan_filename || "None"}
+              </>
+            )}
+            {selectedAssetDetail && (
+              <>
+                <br />- Detail Asset bukti_pemilikan_url:{" "}
+                {selectedAssetDetail.bukti_pemilikan_url || "None"}
+                <br />- Detail Asset bukti_pemilikan:{" "}
+                {selectedAssetDetail.bukti_pemilikan || "None"}
+                <br />- Detail Asset bukti_pemilikan_filename:{" "}
+                {selectedAssetDetail.bukti_pemilikan_filename || "None"}
+              </>
+            )}
+          </small>
+        </Alert>
+      )}
+
+      {/* Image Debug Modal - untuk debugging path gambar */}
+      {process.env.NODE_ENV === "development" && (
+        <Modal show={false} size="sm">
+          <Modal.Body>
+            <small>Image Debug Info</small>
+          </Modal.Body>
+        </Modal>
       )}
     </Container>
   );
