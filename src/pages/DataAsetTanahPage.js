@@ -7,7 +7,7 @@ import {
   FaEye,
   FaDownload,
   FaImage,
-} from "react-icons/fa";
+} from "react-icons/fa"; // contoh pakai react-icons
 import {
   Container,
   Row,
@@ -70,7 +70,7 @@ const isPdfFile = (filename) => {
   return filename.toLowerCase().endsWith(".pdf");
 };
 
-// Enhanced table component with REMOVED Bukti Pemilikan column
+// Enhanced table component with more columns and FIXED image preview
 const TabelAset = ({
   assets,
   onEdit,
@@ -124,18 +124,83 @@ const TabelAset = ({
     return items.length > 0 ? items : "-";
   };
 
+  // Helper function: tampilkan preview bukti pemilikan dengan proper URL handling
+  const renderBuktiPemilikan = (asset) => {
+    const imageUrl = getImageUrl(asset);
+    const filename =
+      asset.bukti_pemilikan_filename ||
+      asset.bukti_kepemilikan_filename ||
+      "File";
+
+    if (!imageUrl && !filename) {
+      return <span className="text-muted">-</span>;
+    }
+
+    const hasValidImage = imageUrl && isImageFile(filename);
+    const hasPdf = imageUrl && isPdfFile(filename);
+
+    return (
+      <div className="d-flex align-items-center gap-2">
+        {hasValidImage && (
+          <div
+            style={{
+              width: "40px",
+              height: "40px",
+              border: "1px solid #ddd",
+              borderRadius: "4px",
+              overflow: "hidden",
+              cursor: "pointer",
+            }}
+            onClick={() => onViewDetail(asset)}
+            title="Klik untuk lihat detail"
+          >
+            <img
+              src={imageUrl}
+              alt="Preview"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+              }}
+              onError={(e) => {
+                console.error("Image load error:", imageUrl);
+                e.target.style.display = "none";
+                e.target.parentNode.innerHTML =
+                  '<span class="text-muted small">Error</span>';
+              }}
+            />
+          </div>
+        )}
+        {hasPdf && (
+          <Button
+            variant="outline-danger"
+            size="sm"
+            onClick={() => onViewDetail(asset)}
+            title="Lihat PDF"
+          >
+            PDF
+          </Button>
+        )}
+        <small className="text-truncate" style={{ maxWidth: "80px" }}>
+          {filename}
+        </small>
+      </div>
+    );
+  };
+
   return (
     <Table striped bordered hover responsive>
       <thead className="table-dark">
         <tr>
-          <th style={{ width: "15%" }}>NUP</th>
-          <th style={{ width: "18%" }}>Wilayah Korem</th>
-          <th style={{ width: "18%" }}>Wilayah Kodim</th>
-          <th style={{ width: "22%" }}>Alamat</th>
-          <th style={{ width: "12%" }}>Peruntukan</th>
+          <th style={{ width: "10%" }}>NUP</th>
+          <th style={{ width: "12%" }}>Wilayah Korem</th>
+          <th style={{ width: "12%" }}>Wilayah Kodim</th>
+          <th style={{ width: "18%" }}>Alamat</th>
+          <th style={{ width: "10%" }}>Peruntukan</th>
           <th style={{ width: "8%" }}>Status</th>
-          <th style={{ width: "12%" }}>Luas</th>
-          <th style={{ width: "15%" }}>Aksi</th>
+          <th style={{ width: "10%" }}>Luas</th>
+          <th style={{ width: "12%" }}>Bukti Pemilikan</th>
+          <th style={{ width: "8%" }}>Aksi</th>
         </tr>
       </thead>
       <tbody>
@@ -155,10 +220,10 @@ const TabelAset = ({
               <td>{korem?.nama || "-"}</td>
               <td>{kodim?.nama || asset.kodim || "-"}</td>
               <td>
-                <div style={{ maxWidth: "180px", fontSize: "0.9em" }}>
+                <div style={{ maxWidth: "150px", fontSize: "0.9em" }}>
                   {asset.alamat
-                    ? asset.alamat.length > 50
-                      ? asset.alamat.substring(0, 50) + "..."
+                    ? asset.alamat.length > 40
+                      ? asset.alamat.substring(0, 40) + "..."
                       : asset.alamat
                     : "-"}
                 </div>
@@ -182,6 +247,7 @@ const TabelAset = ({
                 </span>
               </td>
               <td>{renderLuas(asset)}</td>
+              <td>{renderBuktiPemilikan(asset)}</td>
               <td>
                 <div className="d-flex gap-1 flex-wrap">
                   <Button
@@ -190,7 +256,6 @@ const TabelAset = ({
                     onClick={() => onViewDetail(asset)}
                     title="Lihat Detail"
                   >
-                    <FaEye className="me-1" />
                     Detail
                   </Button>
 
@@ -201,7 +266,6 @@ const TabelAset = ({
                       onClick={() => onEdit(asset)}
                       title="Edit Aset"
                     >
-                      <FaEdit className="me-1" />
                       Edit
                     </Button>
                   )}
@@ -213,7 +277,6 @@ const TabelAset = ({
                       onClick={() => onDelete(asset.id)}
                       title="Hapus Aset"
                     >
-                      <FaTrash className="me-1" />
                       Hapus
                     </Button>
                   )}
@@ -363,11 +426,8 @@ const FilterPanelTop = ({
   );
 };
 
-// Enhanced Modal Detail Component with PROPER FILE DISPLAY
+// Enhanced Modal Detail Component with Map for Assets
 const DetailModalAset = ({ asset, show, onHide, koremList, kodimList }) => {
-  const [showImageModal, setShowImageModal] = useState(false);
-  const [currentImageUrl, setCurrentImageUrl] = useState("");
-
   if (!asset) return null;
 
   console.log("Asset data in modal:", asset);
@@ -448,614 +508,349 @@ const DetailModalAset = ({ asset, show, onHide, koremList, kodimList }) => {
       k.nama === asset.kodim
   );
 
-  // Enhanced file handling functions
   const imageUrl = getImageUrl(asset);
   const filename =
     asset.bukti_pemilikan_filename ||
     asset.bukti_kepemilikan_filename ||
-    asset.original_filename ||
-    "File Bukti Pemilikan";
+    "File";
   const hasValidImage = imageUrl && isImageFile(filename);
   const hasPdf = imageUrl && isPdfFile(filename);
 
-  // Function to handle image viewing in modal
-  const handleViewImage = () => {
-    if (hasValidImage) {
-      setCurrentImageUrl(imageUrl);
-      setShowImageModal(true);
-    } else if (hasPdf) {
-      window.open(imageUrl, "_blank");
-    } else if (imageUrl) {
-      // For other file types, try to open in new tab
-      window.open(imageUrl, "_blank");
-    }
-  };
-
-  // Function to handle file download
-  const handleDownloadFile = () => {
-    if (imageUrl) {
-      const link = document.createElement("a");
-      link.href = imageUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-  };
-
-  // Render bukti pemilikan section with proper file handling
-  const renderBuktiPemilikan = () => {
-    if (!imageUrl) {
-      return (
-        <div className="text-center py-4">
-          <i className="fas fa-file-times fa-3x text-muted mb-3"></i>
-          <p className="text-muted">Tidak ada file bukti pemilikan</p>
-          <small className="text-muted">
-            Silakan upload file melalui form edit aset
-          </small>
-        </div>
-      );
-    }
-
-    return (
-      <div className="bukti-pemilikan-section">
-        <div className="row">
-          {/* File Preview */}
-          <div className="col-md-4">
-            <div className="text-center">
-              {hasValidImage && (
-                <div
-                  className="file-preview-container border rounded p-3"
-                  style={{
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                    minHeight: "200px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                  onClick={handleViewImage}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = "#0d6efd";
-                    e.currentTarget.style.transform = "scale(1.02)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = "#dee2e6";
-                    e.currentTarget.style.transform = "scale(1)";
-                  }}
-                  title="Klik untuk melihat gambar penuh"
-                >
-                  <img
-                    src={imageUrl}
-                    alt="Preview Bukti Pemilikan"
-                    style={{
-                      maxWidth: "100%",
-                      maxHeight: "180px",
-                      objectFit: "contain",
-                    }}
-                    onError={(e) => {
-                      console.error("Image load error:", imageUrl);
-                      e.target.style.display = "none";
-                      e.target.parentNode.innerHTML = `
-                        <div class="text-muted text-center">
-                          <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
-                          <br>
-                          <small>Error loading image</small>
-                        </div>
-                      `;
-                    }}
-                  />
-                </div>
-              )}
-
-              {hasPdf && (
-                <div
-                  className="pdf-preview-container border rounded p-4 text-center"
-                  style={{
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                    minHeight: "200px",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor: "#f8f9fa",
-                  }}
-                  onClick={handleViewImage}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = "#dc3545";
-                    e.currentTarget.style.backgroundColor = "#fff5f5";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = "#dee2e6";
-                    e.currentTarget.style.backgroundColor = "#f8f9fa";
-                  }}
-                  title="Klik untuk membuka PDF"
-                >
-                  <i className="fas fa-file-pdf fa-4x text-danger mb-3"></i>
-                  <h6 className="text-dark">PDF Document</h6>
-                  <p className="text-muted small mb-0">Klik untuk membuka</p>
-                </div>
-              )}
-
-              {!hasValidImage && !hasPdf && imageUrl && (
-                <div
-                  className="file-preview-container border rounded p-4 text-center"
-                  style={{
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                    minHeight: "200px",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor: "#f8f9fa",
-                  }}
-                  onClick={handleViewImage}
-                  title="Klik untuk membuka file"
-                >
-                  <i className="fas fa-file fa-4x text-secondary mb-3"></i>
-                  <h6 className="text-dark">File</h6>
-                  <p className="text-muted small mb-0">Klik untuk membuka</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* File Information */}
-          <div className="col-md-8">
-            <div className="file-info">
-              <h6 className="mb-3 text-dark">
-                <i className="fas fa-paperclip me-2"></i>
-                Informasi File
-              </h6>
-
-              <table className="table table-borderless table-sm">
-                <tbody>
-                  <tr>
-                    <td style={{ width: "30%" }}>
-                      <strong>Nama File:</strong>
-                    </td>
-                    <td>{filename}</td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <strong>Tipe:</strong>
-                    </td>
-                    <td>
-                      {hasValidImage && (
-                        <span className="badge bg-info">
-                          <i className="fas fa-image me-1"></i>Gambar
-                        </span>
-                      )}
-                      {hasPdf && (
-                        <span className="badge bg-danger">
-                          <i className="fas fa-file-pdf me-1"></i>PDF
-                        </span>
-                      )}
-                      {!hasValidImage && !hasPdf && (
-                        <span className="badge bg-secondary">
-                          <i className="fas fa-file me-1"></i>File
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <strong>Status:</strong>
-                    </td>
-                    <td>
-                      <span className="badge bg-success">
-                        <i className="fas fa-check me-1"></i>Tersedia
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-
-              {/* File Actions */}
-              <div className="file-actions mt-3">
-                <div className="d-grid gap-2 d-md-flex">
-                  {hasValidImage && (
-                    <Button
-                      variant="primary"
-                      onClick={handleViewImage}
-                      className="me-2"
-                    >
-                      <FaEye className="me-1" />
-                      Lihat Gambar
-                    </Button>
-                  )}
-
-                  {hasPdf && (
-                    <Button
-                      variant="danger"
-                      onClick={handleViewImage}
-                      className="me-2"
-                    >
-                      <i className="fas fa-file-pdf me-1"></i>
-                      Buka PDF
-                    </Button>
-                  )}
-
-                  {!hasValidImage && !hasPdf && imageUrl && (
-                    <Button
-                      variant="secondary"
-                      onClick={handleViewImage}
-                      className="me-2"
-                    >
-                      <i className="fas fa-external-link-alt me-1"></i>
-                      Buka File
-                    </Button>
-                  )}
-
-                  <Button variant="success" onClick={handleDownloadFile}>
-                    <FaDownload className="me-1" />
-                    Unduh File
-                  </Button>
-                </div>
-              </div>
-
-              {/* Technical Details */}
-              <div className="mt-4">
-                <details>
-                  <summary
-                    className="text-muted"
-                    style={{ cursor: "pointer", fontSize: "0.9em" }}
-                  >
-                    <i className="fas fa-info-circle me-1"></i>
-                    Detail Teknis
-                  </summary>
-                  <div className="mt-2 p-2 bg-light rounded">
-                    <small className="text-muted d-block">
-                      <strong>URL:</strong>{" "}
-                      <code
-                        className="text-break"
-                        style={{ fontSize: "0.75rem" }}
-                      >
-                        {imageUrl}
-                      </code>
-                    </small>
-                    <small className="text-muted d-block mt-1">
-                      <strong>Field Source:</strong>{" "}
-                      {asset.bukti_pemilikan_url
-                        ? "bukti_pemilikan_url"
-                        : asset.bukti_pemilikan
-                        ? "bukti_pemilikan"
-                        : asset.bukti_kepemilikan_url
-                        ? "bukti_kepemilikan_url"
-                        : asset.bukti_kepemilikan
-                        ? "bukti_kepemilikan"
-                        : "unknown"}
-                    </small>
-                  </div>
-                </details>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
-    <>
-      <Modal show={show} onHide={onHide} size="xl" centered>
-        <Modal.Header closeButton>
-          <Modal.Title>
-            <i className="fas fa-map-marked-alt me-2"></i>
-            Detail Aset Tanah - {asset.nama || "Unknown"}
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Row>
-            {/* Detail Informasi */}
-            <Col md={6}>
-              <div className="card h-100">
-                <div className="card-header bg-primary text-white">
-                  <h5 className="mb-0">
-                    <i className="fas fa-info-circle me-2"></i>
-                    Informasi Aset Tanah
-                  </h5>
-                </div>
-                <div className="card-body">
-                  <table className="table table-borderless">
-                    <tbody>
-                      <tr>
-                        <td style={{ width: "35%" }}>
-                          <strong>NUP:</strong>
-                        </td>
-                        <td>{asset.nama || "-"}</td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <strong>Wilayah Korem:</strong>
-                        </td>
-                        <td>{korem?.nama || "-"}</td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <strong>Wilayah Kodim:</strong>
-                        </td>
-                        <td>{kodim?.nama || asset.kodim || "-"}</td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <strong>Alamat:</strong>
-                        </td>
-                        <td>{asset.alamat || "-"}</td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <strong>Peruntukan:</strong>
-                        </td>
-                        <td>{asset.peruntukan || asset.fungsi || "-"}</td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <strong>Status:</strong>
-                        </td>
-                        <td>
-                          <span
-                            className={`badge ${
-                              asset.status === "Aktif"
-                                ? "bg-success"
-                                : asset.status === "Tidak Aktif"
-                                ? "bg-secondary"
-                                : asset.status === "Dalam Proses"
-                                ? "bg-warning"
-                                : asset.status === "Sengketa"
-                                ? "bg-danger"
-                                : "bg-light text-dark"
-                            }`}
-                          >
-                            {asset.status || "-"}
-                          </span>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <strong>Luas Sertifikat:</strong>
-                        </td>
-                        <td>
-                          {asset.sertifikat_luas
-                            ? `${parseFloat(
-                                asset.sertifikat_luas
-                              ).toLocaleString("id-ID")} m²`
-                            : "-"}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <strong>Luas Belum Sertifikat:</strong>
-                        </td>
-                        <td>
-                          {asset.belum_sertifikat_luas
-                            ? `${parseFloat(
-                                asset.belum_sertifikat_luas
-                              ).toLocaleString("id-ID")} m²`
-                            : "-"}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <strong>Luas Peta:</strong>
-                        </td>
-                        <td>
-                          {asset.luas
-                            ? `${parseFloat(asset.luas).toLocaleString(
-                                "id-ID"
-                              )} m²`
-                            : "-"}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <strong>Keterangan:</strong>
-                        </td>
-                        <td>{asset.keterangan || "-"}</td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <strong>Tanggal Dibuat:</strong>
-                        </td>
-                        <td>
-                          {asset.created_at
-                            ? (() => {
-                                try {
-                                  const date = new Date(asset.created_at);
-                                  return isNaN(date.getTime())
-                                    ? asset.created_at
-                                    : date.toLocaleString("id-ID");
-                                } catch (e) {
-                                  return String(asset.created_at);
-                                }
-                              })()
-                            : "-"}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+    <Modal show={show} onHide={onHide} size="xl" centered>
+      <Modal.Header closeButton>
+        <Modal.Title>Detail Aset Tanah - {asset.nama || "Unknown"}</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <Row>
+          {/* Detail Informasi */}
+          <Col md={6}>
+            <div className="card h-100">
+              <div className="card-header bg-primary text-white">
+                <h5 className="mb-0">Informasi Aset Tanah</h5>
               </div>
-            </Col>
-
-            {/* Peta dengan polygon/shape yang sudah digambar */}
-            <Col md={6}>
-              <div className="card h-100">
-                <div className="card-header bg-info text-white">
-                  <h5 className="mb-0">
-                    <i className="fas fa-map me-2"></i>
-                    Lokasi di Peta
-                  </h5>
-                </div>
-                <div className="card-body p-0">
-                  <div style={{ height: "500px", width: "100%" }}>
-                    {hasValidLocation && assetForMap ? (
-                      <PetaAset
-                        assets={[assetForMap]}
-                        isDrawing={false} // Disable drawing mode untuk detail view
-                        onDrawingCreated={() => {}} // Empty handler karena tidak digunakan
-                        jatengBoundary={jatengBoundary}
-                        diyBoundary={diyBoundary}
-                        fitBounds={true} // Auto fit ke lokasi aset
-                      />
-                    ) : (
-                      <div className="d-flex align-items-center justify-content-center h-100 text-muted">
-                        <div className="text-center">
-                          <i className="fas fa-map-marker-alt fa-3x mb-3"></i>
-                          <p>Lokasi tidak tersedia</p>
-                          <small>Belum ada data koordinat untuk aset ini</small>
-                          {asset.lokasi && (
-                            <div className="mt-2">
-                              <small className="text-danger">
-                                Data lokasi tidak valid atau rusak
-                              </small>
-                              <br />
+              <div className="card-body">
+                <table className="table table-borderless">
+                  <tbody>
+                    <tr>
+                      <td>
+                        <strong>NUP:</strong>
+                      </td>
+                      <td>{asset.nama || "-"}</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Wilayah Korem:</strong>
+                      </td>
+                      <td>{korem?.nama || "-"}</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Wilayah Kodim:</strong>
+                      </td>
+                      <td>{kodim?.nama || asset.kodim || "-"}</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Alamat:</strong>
+                      </td>
+                      <td>{asset.alamat || "-"}</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Peruntukan:</strong>
+                      </td>
+                      <td>{asset.peruntukan || asset.fungsi || "-"}</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Status:</strong>
+                      </td>
+                      <td>
+                        <span
+                          className={`badge ${
+                            asset.status === "Aktif"
+                              ? "bg-success"
+                              : asset.status === "Tidak Aktif"
+                              ? "bg-secondary"
+                              : asset.status === "Dalam Proses"
+                              ? "bg-warning"
+                              : asset.status === "Sengketa"
+                              ? "bg-danger"
+                              : "bg-light text-dark"
+                          }`}
+                        >
+                          {asset.status || "-"}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Luas Sertifikat:</strong>
+                      </td>
+                      <td>
+                        {asset.sertifikat_luas
+                          ? `${parseFloat(asset.sertifikat_luas).toLocaleString(
+                              "id-ID"
+                            )} m²`
+                          : "-"}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Luas Belum Sertifikat:</strong>
+                      </td>
+                      <td>
+                        {asset.belum_sertifikat_luas
+                          ? `${parseFloat(
+                              asset.belum_sertifikat_luas
+                            ).toLocaleString("id-ID")} m²`
+                          : "-"}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Luas Peta:</strong>
+                      </td>
+                      <td>
+                        {asset.luas
+                          ? `${parseFloat(asset.luas).toLocaleString(
+                              "id-ID"
+                            )} m²`
+                          : "-"}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Keterangan:</strong>
+                      </td>
+                      <td>{asset.keterangan || "-"}</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Bukti Pemilikan:</strong>
+                      </td>
+                      <td>
+                        {imageUrl ? (
+                          <div className="d-flex align-items-center gap-2">
+                            {hasValidImage && (
+                              <div
+                                style={{
+                                  width: "60px",
+                                  height: "60px",
+                                  border: "1px solid #ddd",
+                                  borderRadius: "4px",
+                                  overflow: "hidden",
+                                  cursor: "pointer",
+                                }}
+                                onClick={() => window.open(imageUrl, "_blank")}
+                                title="Klik untuk lihat gambar penuh"
+                              >
+                                <img
+                                  src={imageUrl}
+                                  alt="Preview"
+                                  style={{
+                                    width: "100%",
+                                    height: "100%",
+                                    objectFit: "cover",
+                                  }}
+                                />
+                              </div>
+                            )}
+                            {hasPdf && (
+                              <Button
+                                variant="outline-danger"
+                                size="sm"
+                                onClick={() => window.open(imageUrl, "_blank")}
+                                title="Lihat PDF"
+                              >
+                                Lihat PDF
+                              </Button>
+                            )}
+                            <div>
+                              <div>{filename}</div>
                               <small className="text-muted">
-                                Format: {typeof asset.lokasi}
+                                <Button
+                                  variant="link"
+                                  size="sm"
+                                  onClick={() =>
+                                    window.open(imageUrl, "_blank")
+                                  }
+                                  className="p-0"
+                                >
+                                  Buka File
+                                </Button>
                               </small>
                             </div>
-                          )}
-                        </div>
+                          </div>
+                        ) : (
+                          <span className="text-muted">Tidak ada file</span>
+                        )}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Koordinat:</strong>
+                      </td>
+                      <td>
+                        {hasValidLocation && validatedLocation ? (
+                          <div>
+                            <small className="text-muted">
+                              Polygon dengan{" "}
+                              {Array.isArray(validatedLocation)
+                                ? validatedLocation[0]?.length || 0
+                                : 0}{" "}
+                              titik
+                            </small>
+                            <details className="mt-1">
+                              <summary
+                                style={{
+                                  cursor: "pointer",
+                                  fontSize: "0.85em",
+                                }}
+                              >
+                                Lihat koordinat
+                              </summary>
+                              <div
+                                style={{
+                                  maxHeight: "100px",
+                                  overflowY: "auto",
+                                  fontSize: "0.8em",
+                                }}
+                              >
+                                {Array.isArray(validatedLocation) &&
+                                validatedLocation[0] ? (
+                                  validatedLocation[0].map((coord, idx) => (
+                                    <div key={idx}>
+                                      {idx + 1}: [
+                                      {coord[0]?.toFixed(6) || "N/A"},{" "}
+                                      {coord[1]?.toFixed(6) || "N/A"}]
+                                    </div>
+                                  ))
+                                ) : (
+                                  <span className="text-muted">
+                                    Format koordinat tidak valid
+                                  </span>
+                                )}
+                              </div>
+                            </details>
+                          </div>
+                        ) : (
+                          <span className="text-muted">Tidak tersedia</span>
+                        )}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Tanggal Dibuat:</strong>
+                      </td>
+                      <td>
+                        {asset.created_at
+                          ? (() => {
+                              try {
+                                const date = new Date(asset.created_at);
+                                return isNaN(date.getTime())
+                                  ? asset.created_at
+                                  : date.toLocaleString("id-ID");
+                              } catch (e) {
+                                return String(asset.created_at);
+                              }
+                            })()
+                          : "-"}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </Col>
+
+          {/* Peta dengan polygon/shape yang sudah digambar */}
+          <Col md={6}>
+            <div className="card h-100">
+              <div className="card-header bg-info text-white">
+                <h5 className="mb-0">Lokasi di Peta</h5>
+              </div>
+              <div className="card-body p-0">
+                <div style={{ height: "500px", width: "100%" }}>
+                  {hasValidLocation && assetForMap ? (
+                    <PetaAset
+                      assets={[assetForMap]}
+                      isDrawing={false} // Disable drawing mode untuk detail view
+                      onDrawingCreated={() => {}} // Empty handler karena tidak digunakan
+                      jatengBoundary={jatengBoundary}
+                      diyBoundary={diyBoundary}
+                      fitBounds={true} // Auto fit ke lokasi aset
+                    />
+                  ) : (
+                    <div className="d-flex align-items-center justify-content-center h-100 text-muted">
+                      <div className="text-center">
+                        <i className="fas fa-map-marker-alt fa-3x mb-3"></i>
+                        <p>Lokasi tidak tersedia</p>
+                        <small>Belum ada data koordinat untuk aset ini</small>
+                        {asset.lokasi && (
+                          <div className="mt-2">
+                            <small className="text-danger">
+                              Data lokasi tidak valid atau rusak
+                            </small>
+                            <br />
+                            <small className="text-muted">
+                              Format: {typeof asset.lokasi}
+                            </small>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
-
-                {/* Info tambahan tentang lokasi */}
-                {hasValidLocation && assetForMap && (
-                  <div className="card-footer bg-light">
-                    <small className="text-muted">
-                      <i className="fas fa-info-circle me-1"></i>
-                      Peta menampilkan area yang telah digambar untuk aset ini
-                    </small>
-                  </div>
-                )}
               </div>
-            </Col>
-          </Row>
 
-          {/* Bukti Pemilikan Section - Full Width */}
-          <Row className="mt-4">
-            <Col md={12}>
-              <div className="card">
-                <div className="card-header bg-success text-white">
-                  <h5 className="mb-0">
-                    <FaImage className="me-2" />
-                    Bukti Pemilikan
-                  </h5>
+              {/* Info tambahan tentang lokasi */}
+              {hasValidLocation && assetForMap && (
+                <div className="card-footer bg-light">
+                  <small className="text-muted">
+                    <i className="fas fa-info-circle me-1"></i>
+                    Peta menampilkan area yang telah digambar untuk aset ini
+                  </small>
                 </div>
-                <div className="card-body">{renderBuktiPemilikan()}</div>
-              </div>
-            </Col>
-          </Row>
+              )}
+            </div>
+          </Col>
+        </Row>
 
-          {/* Koordinat Section */}
+        {/* Additional Information Row */}
+        {hasValidLocation && assetForMap && (
           <Row className="mt-3">
             <Col md={12}>
               <div className="card">
                 <div className="card-header bg-warning text-dark">
-                  <h6 className="mb-0">
-                    <i className="fas fa-globe me-1"></i>
-                    Informasi Geografis
-                  </h6>
+                  <h6 className="mb-0">Informasi Geografis</h6>
                 </div>
                 <div className="card-body">
                   <Row>
                     <Col md={4}>
-                      <strong>Koordinat:</strong>
-                      <br />
-                      {hasValidLocation && validatedLocation ? (
-                        <div>
-                          <small className="text-success">
-                            <i className="fas fa-check-circle me-1"></i>
-                            Polygon dengan{" "}
-                            {Array.isArray(validatedLocation)
-                              ? validatedLocation[0]?.length || 0
-                              : 0}{" "}
-                            titik
-                          </small>
-                          <details className="mt-1">
-                            <summary
-                              style={{
-                                cursor: "pointer",
-                                fontSize: "0.85em",
-                              }}
-                            >
-                              <i className="fas fa-eye me-1"></i>
-                              Lihat koordinat detail
-                            </summary>
-                            <div
-                              style={{
-                                maxHeight: "120px",
-                                overflowY: "auto",
-                                fontSize: "0.8em",
-                                backgroundColor: "#f8f9fa",
-                                padding: "8px",
-                                borderRadius: "4px",
-                                marginTop: "4px",
-                                border: "1px solid #dee2e6",
-                              }}
-                            >
-                              {Array.isArray(validatedLocation) &&
-                              validatedLocation[0] ? (
-                                validatedLocation[0].map((coord, idx) => (
-                                  <div key={idx} className="font-monospace">
-                                    <i className="fas fa-map-pin me-1 text-danger"></i>
-                                    Titik {idx + 1}: [
-                                    {coord[0]?.toFixed(6) || "N/A"},{" "}
-                                    {coord[1]?.toFixed(6) || "N/A"}]
-                                  </div>
-                                ))
-                              ) : (
-                                <span className="text-muted">
-                                  <i className="fas fa-exclamation-triangle me-1"></i>
-                                  Format koordinat tidak valid
-                                </span>
-                              )}
-                            </div>
-                          </details>
-                        </div>
-                      ) : (
-                        <span className="text-muted">
-                          <i className="fas fa-times-circle me-1"></i>
-                          Tidak tersedia
-                        </span>
-                      )}
-                    </Col>
-                    <Col md={4}>
                       <strong>Tipe Geometri:</strong>
                       <br />
+                      <span className="text-muted">Polygon</span>
+                    </Col>
+                    <Col md={4}>
+                      <strong>Jumlah Koordinat:</strong>
+                      <br />
                       <span className="text-muted">
-                        {hasValidLocation ? (
-                          <span>
-                            <i className="fas fa-shapes me-1 text-info"></i>
-                            Polygon
-                          </span>
-                        ) : (
-                          <span>
-                            <i className="fas fa-times me-1"></i>
-                            Tidak ada
-                          </span>
-                        )}
+                        {Array.isArray(validatedLocation) &&
+                        validatedLocation[0]
+                          ? validatedLocation[0].length
+                          : 0}{" "}
+                        titik
                       </span>
                     </Col>
                     <Col md={4}>
                       <strong>Luas Kalkulasi:</strong>
                       <br />
                       <span className="text-muted">
-                        {asset.luas ? (
-                          <span>
-                            <i className="fas fa-calculator me-1 text-success"></i>
-                            {Number(asset.luas).toFixed(2)} m²
-                          </span>
-                        ) : (
-                          <span>
-                            <i className="fas fa-times me-1"></i>
-                            Tidak tersedia
-                          </span>
-                        )}
+                        {asset.luas
+                          ? `${Number(asset.luas).toFixed(2)} m²`
+                          : "Tidak tersedia"}
                       </span>
                     </Col>
                   </Row>
@@ -1063,65 +858,14 @@ const DetailModalAset = ({ asset, show, onHide, koremList, kodimList }) => {
               </div>
             </Col>
           </Row>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={onHide}>
-            <i className="fas fa-times me-1"></i>
-            Tutup
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-      {/* Image Viewing Modal */}
-      <Modal
-        show={showImageModal}
-        onHide={() => setShowImageModal(false)}
-        size="lg"
-        centered
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>
-            <i className="fas fa-image me-2"></i>
-            Bukti Pemilikan - {filename}
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body className="text-center">
-          {currentImageUrl && (
-            <img
-              src={currentImageUrl}
-              alt="Bukti Pemilikan"
-              style={{
-                maxWidth: "100%",
-                maxHeight: "70vh",
-                objectFit: "contain",
-              }}
-              onError={(e) => {
-                console.error("Image load error in modal:", currentImageUrl);
-                e.target.style.display = "none";
-                e.target.parentNode.innerHTML = `
-                  <div class="alert alert-danger">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    Gagal memuat gambar. Silakan coba refresh halaman atau hubungi administrator.
-                    <br><br>
-                    <small class="text-muted">URL: ${currentImageUrl}</small>
-                  </div>
-                `;
-              }}
-            />
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="outline-success" onClick={handleDownloadFile}>
-            <FaDownload className="me-1" />
-            Unduh File
-          </Button>
-          <Button variant="secondary" onClick={() => setShowImageModal(false)}>
-            <i className="fas fa-times me-1"></i>
-            Tutup
-          </Button>
-        </Modal.Footer>
-      </Modal>
-    </>
+        )}
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={onHide}>
+          Tutup
+        </Button>
+      </Modal.Footer>
+    </Modal>
   );
 };
 
@@ -1709,6 +1453,9 @@ const DataAsetTanahPage = () => {
     return [assetForMap];
   };
 
+  if (loading) return <Spinner animation="border" variant="primary" />;
+
+  // Main table view with new layout following Yardip structure
   return (
     <Container fluid className="mt-4">
       <h3>Data Aset Tanah</h3>
@@ -1845,147 +1592,318 @@ const DataAsetTanahPage = () => {
                     </div>
                   </Col>
                   <Col md={3}>
-                    <div>
-                      <h5 className="text-danger">
-                        {
-                          filteredAssets.filter((a) => a.status === "Sengketa")
-                            .length
-                        }
-                      </h5>
-                      <small className="text-muted">Sengketa</small>
-                    </div>
+                    <h5 className="text-danger">
+                      {
+                        filteredAssets.filter((a) => a.status === "Sengketa")
+                          .length
+                      }
+                    </h5>
+                    <small className="text-muted">Sengketa</small>
                   </Col>
                 </Row>
               </Card.Body>
             </Card>
           )}
         </Col>
-      </Row>
 
-      {/* Form Edit - Muncul di bawah tabel jika ada asset yang sedang diedit */}
-      {editingAsset && (
-        <Row className="mt-4">
-          <Col md={12}>
-            <Card className="border-warning">
-              <Card.Header className="bg-warning text-dark">
-                <h5 className="mb-0">
-                  <i className="fas fa-edit me-2"></i>
-                  Edit Aset Tanah - {editingAsset.nama}
+        {/* Form Edit - Pindah ke bawah dengan layout yang lebih baik */}
+        {editingAsset && (
+          <Col md={12} className="mt-4">
+            <div className="card shadow-sm">
+              <div className="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                <span>Edit Aset Tanah - {editingAsset.nama}</span>
+                <div className="d-flex gap-2">
                   <Button
                     variant="outline-dark"
                     size="sm"
-                    className="float-end"
+                    onClick={handleEditLocation}
+                    disabled={isEditingLocation}
+                  >
+                    {isEditingLocation
+                      ? "Sedang Edit Lokasi..."
+                      : "Edit Lokasi"}
+                  </Button>
+                  <Button
+                    variant="outline-dark"
+                    size="sm"
                     onClick={handleCancelEdit}
                   >
-                    <i className="fas fa-times me-1"></i>
-                    Batal Edit
+                    ✕
                   </Button>
-                </h5>
-              </Card.Header>
-              <Card.Body>
+                </div>
+              </div>
+              <div className="card-body">
                 <Row>
-                  {/* Form Column */}
                   <Col md={6}>
                     <FormAset
-                      initialData={editingAsset}
                       onSave={handleSaveAsset}
                       onCancel={handleCancelEdit}
                       koremList={koremList}
                       kodimList={kodimList}
-                      selectedKorem={selectedKorem}
+                      selectedKorem={selectedKorem?.id || ""}
                       selectedKodim={selectedKodim}
-                      onKoremChange={handleKoremChange}
-                      onKodimChange={handleKodimChange}
-                      isEditMode={true}
-                      editedLocationData={editedLocationData}
+                      assetToEdit={editingAsset}
+                      isEnabled={true}
+                      viewMode={false}
+                      initialGeometry={
+                        editedLocationData ? editedLocationData.geometry : null
+                      }
+                      initialArea={
+                        editedLocationData ? editedLocationData.area : null
+                      }
                     />
-                  </Col>
 
-                  {/* Map Column */}
+                    {/* Status edit lokasi */}
+                    {editedLocationData && (
+                      <div className="alert alert-success mt-2">
+                        <small>
+                          <i className="fas fa-map-marked-alt me-1"></i>
+                          <strong>Lokasi baru telah digambar!</strong>
+                          <br />
+                          Luas: {editedLocationData.area?.toFixed(2)} m²
+                          <br />
+                          <button
+                            className="btn btn-link btn-sm p-0 text-decoration-none"
+                            onClick={handleCancelEditLocation}
+                          >
+                            <i className="fas fa-undo me-1"></i>
+                            Batalkan perubahan lokasi
+                          </button>
+                        </small>
+                      </div>
+                    )}
+
+                    {/* Informasi editing */}
+                    <div className="alert alert-info mt-2">
+                      <small>
+                        <i className="fas fa-info-circle me-1"></i>
+                        <strong>Tips Editing:</strong>
+                        <br />
+                        • Gunakan tombol "Edit Lokasi" untuk mengubah area di
+                        peta
+                        <br />
+                        • Semua perubahan akan disimpan setelah klik "Simpan"
+                        <br />• Data asli tetap aman sampai Anda menyimpan
+                        perubahan
+                      </small>
+                    </div>
+                  </Col>
                   <Col md={6}>
-                    <Card>
-                      <Card.Header className="bg-info text-white d-flex justify-content-between align-items-center">
-                        <h6 className="mb-0">
-                          <i className="fas fa-map me-1"></i>
-                          Peta Lokasi
-                        </h6>
-                        <div>
-                          {!isEditingLocation ? (
-                            <Button
-                              variant="warning"
-                              size="sm"
-                              onClick={handleEditLocation}
-                            >
-                              <i className="fas fa-edit me-1"></i>
-                              Edit Lokasi
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={handleCancelEditLocation}
-                            >
-                              <i className="fas fa-times me-1"></i>
-                              Batal Edit Lokasi
-                            </Button>
-                          )}
-                        </div>
-                      </Card.Header>
-                      <Card.Body className="p-0">
-                        <div style={{ height: "500px", width: "100%" }}>
-                          <PetaAset
-                            key={`map-edit-${editingAsset.id}-${
-                              isEditingLocation ? "editing" : "viewing"
-                            }`}
-                            assets={prepareEditAssetForMap()}
-                            isDrawing={isEditingLocation}
-                            onDrawingCreated={handleLocationDrawingCreated}
-                            jatengBoundary={jatengBoundary}
-                            diyBoundary={diyBoundary}
-                            fitBounds={!isEditingLocation}
-                            showControls={true}
-                          />
-                        </div>
-                      </Card.Body>
-                      {isEditingLocation && (
-                        <Card.Footer className="bg-warning">
-                          <small>
-                            <i className="fas fa-info-circle me-1"></i>
-                            <strong>Mode Edit Lokasi Aktif:</strong> Klik dan
-                            gambar polygon baru di peta untuk mengupdate lokasi
-                            aset ini.
-                          </small>
-                        </Card.Footer>
-                      )}
-                      {editedLocationData && (
-                        <Card.Footer className="bg-success text-white">
-                          <small>
-                            <i className="fas fa-check me-1"></i>
-                            <strong>Lokasi Baru Tersimpan:</strong> Luas{" "}
-                            {editedLocationData.area?.toFixed(2)} m². Klik
-                            "Simpan" untuk menyimpan perubahan.
-                          </small>
-                        </Card.Footer>
-                      )}
-                    </Card>
+                    {/* Preview area atau informasi tambahan */}
+                    <div className="bg-light p-3 rounded">
+                      <h6 className="text-muted mb-3">Preview Data</h6>
+                      <small>
+                        <strong>NUP:</strong> {editingAsset.nama}
+                        <br />
+                        <strong>Status Saat Ini:</strong>{" "}
+                        <span
+                          className={`badge ${
+                            editingAsset.status === "Aktif"
+                              ? "bg-success"
+                              : editingAsset.status === "Tidak Aktif"
+                              ? "bg-secondary"
+                              : editingAsset.status === "Dalam Proses"
+                              ? "bg-warning"
+                              : editingAsset.status === "Sengketa"
+                              ? "bg-danger"
+                              : "bg-light text-dark"
+                          }`}
+                        >
+                          {editingAsset.status}
+                        </span>
+                        <br />
+                        <strong>Alamat:</strong> {editingAsset.alamat || "-"}
+                        <br />
+                        <strong>Peruntukan:</strong>{" "}
+                        {editingAsset.peruntukan || editingAsset.fungsi || "-"}
+                        <br />
+                        {editingAsset.luas && (
+                          <>
+                            <strong>Luas Peta:</strong>{" "}
+                            {Number(editingAsset.luas).toLocaleString("id-ID")}{" "}
+                            m²
+                            <br />
+                          </>
+                        )}
+                        {editingAsset.sertifikat_luas && (
+                          <>
+                            <strong>Luas Sertifikat:</strong>{" "}
+                            {Number(
+                              editingAsset.sertifikat_luas
+                            ).toLocaleString("id-ID")}{" "}
+                            m²
+                            <br />
+                          </>
+                        )}
+                        {editingAsset.belum_sertifikat_luas && (
+                          <>
+                            <strong>Luas Belum Sertifikat:</strong>{" "}
+                            {Number(
+                              editingAsset.belum_sertifikat_luas
+                            ).toLocaleString("id-ID")}{" "}
+                            m²
+                            <br />
+                          </>
+                        )}
+                        <strong>Terakhir Diupdate:</strong>{" "}
+                        {editingAsset.updated_at
+                          ? new Date(editingAsset.updated_at).toLocaleString(
+                              "id-ID"
+                            )
+                          : "-"}
+                      </small>
+                    </div>
                   </Col>
                 </Row>
-              </Card.Body>
-            </Card>
+              </div>
+            </div>
           </Col>
-        </Row>
-      )}
+        )}
 
-      {/* Detail Modal */}
-      {selectedAssetDetail && (
-        <DetailModalAset
-          asset={selectedAssetDetail}
-          show={showDetailModal}
-          onHide={handleCloseDetailModal}
-          koremList={koremList}
-          kodimList={allKodimList}
-        />
-      )}
+        {/* Peta Edit - Tampil di bawah ketika sedang edit lokasi */}
+        {editingAsset && isEditingLocation && (
+          <Col md={12} className="mt-3">
+            <div className="card shadow-sm">
+              <div className="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 className="mb-0">
+                    Edit Lokasi Aset Tanah - {editingAsset.nama}
+                  </h6>
+                  <small>Gambar ulang polygon untuk lokasi aset ini</small>
+                </div>
+                <div className="d-flex gap-2">
+                  {editedLocationData && (
+                    <span className="badge bg-success">
+                      <i className="fas fa-check me-1"></i>
+                      Lokasi Baru Siap
+                    </span>
+                  )}
+                  <Button
+                    variant="outline-light"
+                    size="sm"
+                    onClick={handleCancelEditLocation}
+                  >
+                    <i className="fas fa-times me-1"></i>
+                    Selesai Edit Lokasi
+                  </Button>
+                </div>
+              </div>
+              <div className="card-body p-2">
+                <div style={{ height: "60vh", width: "100%" }}>
+                  {/* Map container with proper key to force re-render */}
+                  <div
+                    key={`map-edit-${editingAsset.id}-${isEditingLocation}`}
+                    className="position-relative w-100 h-100"
+                  >
+                    <PetaAset
+                      key={`peta-${editingAsset.id}-${Date.now()}`} // Force re-render
+                      assets={prepareEditAssetForMap()} // Tampilkan asset yang sedang diedit
+                      isDrawing={true} // Enable drawing mode
+                      onDrawingCreated={handleLocationDrawingCreated}
+                      jatengBoundary={jatengBoundary}
+                      diyBoundary={diyBoundary}
+                      fitBounds={true} // Auto fit ke lokasi existing
+                      selectedKorem={selectedKorem?.id}
+                      selectedKodim={selectedKodim}
+                      drawingMode="polygon" // Explicitly set polygon mode
+                      editMode={true} // Flag untuk edit mode
+                      allowEdit={true} // Allow editing
+                      showDrawingTools={true} // Show drawing tools
+                    />
+                  </div>
+                </div>
+                <div className="mt-2 p-2 bg-light rounded">
+                  <Row>
+                    <Col md={8}>
+                      <small className="text-muted">
+                        <i className="fas fa-info-circle me-1"></i>
+                        <strong>Instruksi:</strong>
+                        {prepareEditAssetForMap().length > 0
+                          ? "Polygon hijau menunjukkan lokasi saat ini. Gambar polygon baru untuk mengubah lokasi aset."
+                          : "Belum ada lokasi sebelumnya. Gambar polygon baru untuk menentukan lokasi aset."}
+                      </small>
+                    </Col>
+                    <Col md={4} className="text-end">
+                      {editedLocationData ? (
+                        <small className="text-success">
+                          <i className="fas fa-check-circle me-1"></i>
+                          Luas baru: {editedLocationData.area?.toFixed(2)} m²
+                        </small>
+                      ) : (
+                        <small className="text-warning">
+                          <i className="fas fa-draw-polygon me-1"></i>
+                          Belum ada polygon baru
+                        </small>
+                      )}
+                    </Col>
+                  </Row>
+
+                  {/* Drawing Instructions Panel */}
+                  <Row className="mt-2">
+                    <Col md={12}>
+                      <div className="alert alert-info py-2 mb-0">
+                        <small>
+                          <strong>Cara Menggambar Polygon:</strong>
+                          <br />
+                          1. Klik pada peta untuk memulai menggambar
+                          <br />
+                          2. Klik beberapa titik untuk membuat bentuk polygon
+                          <br />
+                          3. Klik pada titik pertama atau double-click untuk
+                          menyelesaikan
+                          <br />
+                          4. Polygon akan otomatis tersimpan dan luas akan
+                          dihitung
+                        </small>
+                      </div>
+                    </Col>
+                  </Row>
+
+                  {/* Real-time Map Debug Info - Development Only */}
+                  {process.env.NODE_ENV === "development" && (
+                    <Row className="mt-2">
+                      <Col md={12}>
+                        <div className="alert alert-secondary py-2 mb-0">
+                          <small>
+                            <strong>Map Debug Info:</strong>
+                            <br />- Map Key: peta-{editingAsset.id}-{Date.now()}
+                            <br />- Assets for Map:{" "}
+                            {prepareEditAssetForMap().length} items
+                            <br />- Is Drawing Mode:{" "}
+                            {isEditingLocation ? "Active" : "Inactive"}
+                            <br />- Drawing Callback:{" "}
+                            {typeof handleLocationDrawingCreated === "function"
+                              ? "Available"
+                              : "Missing"}
+                            <br />- Boundaries: Jateng=
+                            {jatengBoundary ? "Loaded" : "Missing"}, DIY=
+                            {diyBoundary ? "Loaded" : "Missing"}
+                            {prepareEditAssetForMap().map((asset, idx) => (
+                              <div key={idx}>
+                                - Asset {idx + 1}: {asset.nama} (lokasi:{" "}
+                                {asset.lokasi ? "Available" : "None"})
+                              </div>
+                            ))}
+                          </small>
+                        </div>
+                      </Col>
+                    </Row>
+                  )}
+                </div>
+              </div>
+            </div>
+          </Col>
+        )}
+      </Row>
+
+      {/* Enhanced Modal Detail Aset with Map */}
+      <DetailModalAset
+        asset={selectedAssetDetail}
+        show={showDetailModal}
+        onHide={handleCloseDetailModal}
+        koremList={koremList}
+        kodimList={allKodimList}
+      />
     </Container>
   );
 };

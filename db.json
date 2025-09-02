@@ -9,168 +9,23 @@
   ],
   "assets": [
     {
-      "id": "T1756777256142",
-      "nama": "Kakakakak",
-      "korem_id": "1",
-      "kodim": "Kodim 0702/Purbalingga",
-      "luas": 11768453020.426308,
-      "lokasi_nama": "Lokasi dari Peta",
-      "kib_kode_barang": "Q1",
-      "kode_barang": "Q1",
-      "nomor_registrasi": "asas12",
-      "no_registrasi": "asas12",
-      "registrasi": "asas12",
-      "nomorRegistrasi": "asas12",
-      "noRegistrasi": "asas12",
-      "no_reg": "asas12",
-      "alamat": "asad",
-      "peruntukan": "asdasd",
-      "fungsi": "asdasd",
-      "status": "Dalam Proses",
-      "asal_milik": "Tukar Menukar",
-      "bukti_pemilikan": "",
-      "bukti_kepemilikan": "",
-      "bukti_pemilikan_url": "",
-      "pemilikan_sertifikat": "Ya",
-      "sertifikat_bidang": "11211",
-      "sertifikat_luas": "1211",
-      "belum_sertifikat_bidang": "1211",
-      "belum_sertifikat_luas": "121",
-      "keterangan": "sasa",
-      "keterangan_bukti_pemilikan": "asa",
-      "atas_nama_pemilik_sertifikat": "",
-      "lokasi": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              109.238247,
-              -6.863733
-            ],
-            [
-              111.132712,
-              -6.841929
-            ],
-            [
-              110.127822,
-              -7.359505
-            ],
-            [
-              109.397492,
-              -7.20157
-            ],
-            [
-              109.441422,
-              -7.571811
-            ],
-            [
-              109.035073,
-              -7.517383
-            ],
-            [
-              109.029582,
-              -7.234251
-            ],
-            [
-              108.870337,
-              -7.506497
-            ],
-            [
-              108.38162,
-              -7.397619
-            ],
-            [
-              109.238247,
-              -6.863733
-            ]
-          ]
-        ]
-      },
-      "bukti_pemilikan_file": {},
-      "bukti_pemilikan_filename": "22.png",
-      "luas_total": 1332,
-      "luas_gambar": 11768453020.426308,
-      "kodim_id": "1_2"
-    },
-    {
-      "id": "T1756777748535",
-      "nama": "Ahmad Imtiyaz Najih",
+      "id": "T1756785779986",
+      "nama": "Semarang Tank",
       "korem_id": "5",
-      "kodim": "Kodim 0733/Kota Semarang",
-      "luas": 12548756702.22,
-      "lokasi_nama": "Lokasi dari Peta",
-      "kib_kode_barang": "A6",
-      "kode_barang": "A6",
-      "nomor_registrasi": "csdbhcbsd",
-      "no_registrasi": "csdbhcbsd",
-      "registrasi": "csdbhcbsd",
-      "nomorRegistrasi": "csdbhcbsd",
-      "noRegistrasi": "csdbhcbsd",
-      "no_reg": "csdbhcbsd",
-      "alamat": "demak",
-      "peruntukan": "kantor pusat",
-      "fungsi": "kantor pusat",
-      "status": "Aktif",
-      "asal_milik": "Tukar Menukar",
-      "bukti_pemilikan": "",
-      "bukti_kepemilikan": "",
-      "bukti_pemilikan_url": "",
-      "pemilikan_sertifikat": "Ya",
-      "sertifikat_bidang": "1212",
-      "sertifikat_luas": "121",
-      "belum_sertifikat_bidang": "2121",
-      "belum_sertifikat_luas": "2121",
-      "keterangan": "ada",
-      "keterangan_bukti_pemilikan": "ada",
-      "atas_nama_pemilik_sertifikat": "",
-      "lokasi": [
-        [
-          [
-            109.962596,
-            -7.107917
-          ],
-          [
-            111.386496,
-            -7.026219
-          ],
-          [
-            111.194077,
-            -8.027343
-          ],
-          [
-            110.165975,
-            -7.777471
-          ],
-          [
-            109.962596,
-            -7.107917
-          ]
-        ]
-      ],
-      "bukti_pemilikan_file": {},
-      "bukti_pemilikan_filename": "C.jpg",
-      "luas_total": 2242,
-      "luas_gambar": 12548756702.22338,
-      "kodim_id": "5_6"
-    },
-    {
-      "id": "T1756781205470",
-      "nama": "Admin",
-      "korem_id": 5,
-      "kodim": "Kodim 0714/Salatiga",
-      "luas": 19392196072.48,
-      "lokasi_nama": "Lokasi dari Peta",
-      "kib_kode_barang": "a1",
-      "kode_barang": "a1",
-      "nomor_registrasi": "11",
-      "no_registrasi": "11",
-      "registrasi": "11",
-      "nomorRegistrasi": "11",
-      "noRegistrasi": "11",
-      "no_reg": "11",
-      "alamat": "asa",
-      "peruntukan": "kantor pusat",
-      "fungsi": "kantor pusat",
+      "kodim": "",
+      "luas": 398973757.42,
+      "lokasi_nama": "Semarang Banyumanik",
+      "kib_kode_barang": "1.21.21.212.121",
+      "kode_barang": "1.21.21.212.121",
+      "nomor_registrasi": "a55d123",
+      "no_registrasi": "a55d123",
+      "registrasi": "a55d123",
+      "nomorRegistrasi": "a55d123",
+      "noRegistrasi": "a55d123",
+      "no_reg": "a55d123",
+      "alamat": "Semarang Banyumanik",
+      "peruntukan": "Kantor Badan Pemerintahan",
+      "fungsi": "Kantor Badan Pemerintahan",
       "status": "Aktif",
       "asal_milik": "Pembelian",
       "bukti_pemilikan": "",
@@ -178,120 +33,109 @@
       "bukti_pemilikan_url": "",
       "pemilikan_sertifikat": "Ya",
       "sertifikat_bidang": "11",
-      "sertifikat_luas": "11",
+      "sertifikat_luas": "10000",
       "belum_sertifikat_bidang": "11",
-      "belum_sertifikat_luas": "11",
-      "keterangan": "ada",
-      "keterangan_bukti_pemilikan": "ada",
+      "belum_sertifikat_luas": "99.98",
+      "keterangan": "tanah milik tentara",
+      "keterangan_bukti_pemilikan": "gambar dumy",
       "atas_nama_pemilik_sertifikat": "",
       "lokasi": [
         [
           [
-            109.660987,
-            -7.135059
+            110.318719,
+            -6.938284
           ],
           [
-            110.815501,
-            -7.200403
+            110.270614,
+            -6.973015
           ],
           [
-            110.842989,
-            -7.771755
+            110.28642,
+            -7.014551
           ],
           [
-            109.589518,
-            -7.695619
+            110.272676,
+            -7.034977
           ],
           [
-            109.611508,
-            -8.141363
+            110.311159,
+            -7.109186
           ],
           [
-            109.105722,
-            -8.179391
+            110.339335,
+            -7.105782
           ],
           [
-            109.144205,
-            -7.646666
+            110.347582,
+            -7.079232
           ],
           [
-            108.995768,
-            -8.163094
+            110.352392,
+            -7.111228
           ],
           [
-            108.687898,
-            -8.168527
+            110.381255,
+            -7.125524
           ],
           [
-            108.687898,
-            -7.184068
+            110.417677,
+            -7.107824
           ],
           [
-            109.660987,
-            -7.135059
+            110.426611,
+            -7.117355
+          ],
+          [
+            110.453412,
+            -7.080593
+          ],
+          [
+            110.487085,
+            -7.090124
+          ],
+          [
+            110.500829,
+            -7.063573
+          ],
+          [
+            110.466469,
+            -7.03702
+          ],
+          [
+            110.509763,
+            -6.975738
+          ],
+          [
+            110.502204,
+            -6.948499
+          ],
+          [
+            110.462346,
+            -6.948499
+          ],
+          [
+            110.448601,
+            -6.956671
+          ],
+          [
+            110.423862,
+            -6.93556
+          ],
+          [
+            110.370259,
+            -6.955309
+          ],
+          [
+            110.318719,
+            -6.938284
           ]
         ]
       ],
       "bukti_pemilikan_file": {},
-      "bukti_pemilikan_filename": "aff0d52c10703b492b1330580382f355.jpg",
-      "luas_total": 22,
-      "luas_gambar": 19392196072.479107
-    },
-    {
-      "id": "T1756782626943",
-      "nama": "aaaa",
-      "korem_id": "1",
-      "kodim": "",
-      "luas": 4509149475.73,
-      "lokasi_nama": "Lokasi dari Peta",
-      "kib_kode_barang": "fbsds",
-      "kode_barang": "fbsds",
-      "nomor_registrasi": "adada1211dasd",
-      "no_registrasi": "adada1211dasd",
-      "registrasi": "adada1211dasd",
-      "nomorRegistrasi": "adada1211dasd",
-      "noRegistrasi": "adada1211dasd",
-      "no_reg": "adada1211dasd",
-      "alamat": "aaaa",
-      "peruntukan": "aaaa",
-      "fungsi": "aaaa",
-      "status": "Aktif",
-      "asal_milik": "Pembelian",
-      "bukti_pemilikan": "",
-      "bukti_kepemilikan": "",
-      "bukti_pemilikan_url": "",
-      "pemilikan_sertifikat": "Ya",
-      "sertifikat_bidang": "111",
-      "sertifikat_luas": "11",
-      "belum_sertifikat_bidang": "11",
-      "belum_sertifikat_luas": "10.98",
-      "keterangan": "dada",
-      "keterangan_bukti_pemilikan": "aaaa",
-      "atas_nama_pemilik_sertifikat": "",
-      "lokasi": [
-        [
-          [
-            109.962818,
-            -7.227549
-          ],
-          [
-            111.150317,
-            -7.020606
-          ],
-          [
-            111.018373,
-            -7.662906
-          ],
-          [
-            109.962818,
-            -7.227549
-          ]
-        ]
-      ],
-      "bukti_pemilikan_file": {},
-      "bukti_pemilikan_filename": "dinosaurs-funny-wallpaper-preview.jpg",
-      "luas_total": 21.98,
-      "luas_gambar": 4509149475.725679
+      "bukti_pemilikan_filename": "pp dc.jpg",
+      "luas_total": 10099.98,
+      "luas_gambar": null,
+      "kodim_id": ""
     }
   ],
   "yarsip_assets": [
