@@ -9,299 +9,214 @@
   ],
   "assets": [
     {
-      "id": "T1756430898263",
-      "nama": "-",
-      "korem_id": "1",
-      "kodim": "kodim 0701/Banyumas",
-      "luas": 4171052779.68,
-      "status": "dimiliki",
-      "fungsi": "asrama",
-      "lokasi": [
-        [
-          [
-            108.85258,
-            -7.244484
-          ],
-          [
-            109.528276,
-            -7.729567
-          ],
-          [
-            110.006207,
-            -7.397152
-          ],
-          [
-            109.495315,
-            -7.135403
-          ],
-          [
-            108.85258,
-            -7.244484
-          ]
-        ]
-      ],
-      "kode_barang": "A2",
-      "no_reg": "Sp09wf",
-      "alamat": "JLmajengna",
-      "asal_milik": "pembelian tahun 1960",
-      "bukti_kepemilikan": "shp no 7",
-      "atas_nama_pemilik_sertifikat": "pemerinta RI"
-    },
-    {
-      "id": "T1756430976891",
-      "nama": "-",
-      "korem_id": 2,
-      "kodim": "Kodim 0709/Bantul",
-      "luas": 4077395390.36,
-      "status": "dimiliki",
-      "fungsi": "Kosong",
-      "lokasi": [
-        [
-          [
-            110.808252,
-            -6.955364
-          ],
-          [
-            110.874174,
-            -7.478917
-          ],
-          [
-            111.489441,
-            -7.473467
-          ],
-          [
-            111.368585,
-            -6.90625
-          ],
-          [
-            110.74233,
-            -6.928079
-          ],
-          [
-            110.808252,
-            -6.955364
-          ]
-        ]
-      ],
-      "kode_barang": "A3",
-      "no_reg": "adsaad09a",
-      "alamat": "Jl. ahajs",
-      "asal_milik": "pembelian tahun 1960",
-      "bukti_kepemilikan": "shp no 7",
-      "atas_nama_pemilik_sertifikat": "pemerinta RI"
-    },
-    {
-      "id": "T1756431060254",
-      "nama": "-",
-      "korem_id": "1",
-      "kodim": "Kodim 0702/Purbalingga",
-      "luas": 165523991.95,
-      "status": "dimiliki",
-      "fungsi": "Kosong",
-      "lokasi": [
-        [
-          [
-            110.072128,
-            -6.966277
-          ],
-          [
-            110.105089,
-            -7.059031
-          ],
-          [
-            110.225945,
-            -7.059031
-          ],
-          [
-            110.214958,
-            -6.949907
-          ],
-          [
-            110.072128,
-            -6.966277
-          ]
-        ]
-      ],
-      "kode_barang": "A4",
-      "no_reg": "qweq23",
-      "alamat": "Jl.dvrd",
-      "asal_milik": "pembelian tahun 1960",
-      "bukti_kepemilikan": "shp no 7",
-      "atas_nama_pemilik_sertifikat": "pemerinta RI"
-    },
-    {
-      "id": "T1756431125951",
-      "nama": "-",
-      "korem_id": 2,
-      "kodim": "Kodim 0709/Bantul",
-      "luas": 3198644931.27,
-      "status": "dimiliki",
-      "fungsi": "gedung",
-      "lokasi": [
-        [
-          [
-            109.921007,
-            -7.167091
-          ],
-          [
-            110.05285,
-            -7.635915
-          ],
-          [
-            110.679104,
-            -7.385211
-          ],
-          [
-            110.426405,
-            -7.055265
-          ],
-          [
-            109.921007,
-            -7.167091
-          ]
-        ]
-      ],
-      "kode_barang": "A6",
-      "no_reg": "dadcaea54",
-      "alamat": "Jl. hkfv",
-      "asal_milik": "pembelian tahun 1960",
-      "bukti_kepemilikan": "shp no 7",
-      "atas_nama_pemilik_sertifikat": "pemerinta RI"
-    },
-    {
-      "id": "T1756431220171",
-      "nama": "-",
-      "korem_id": 3,
-      "kodim": "Kodim 0714/Salatiga",
-      "luas": 4956609666.4,
-      "status": "dimiliki",
-      "fungsi": "tanah",
-      "lokasi": [
-        [
-          [
-            109.275576,
-            -7.233577
-          ],
-          [
-            110.253412,
-            -7.77859
-          ],
-          [
-            110.539072,
-            -7.309919
-          ],
-          [
-            109.929298,
-            -7.119039
-          ],
-          [
-            109.275576,
-            -7.233577
-          ]
-        ]
-      ],
-      "kode_barang": "A9",
-      "no_reg": "fwgfsc32",
-      "alamat": "JL. hksfjbs",
-      "asal_milik": "pembelian tahun 1960",
-      "bukti_kepemilikan": "shp no 7",
-      "atas_nama_pemilik_sertifikat": "pemerinta RI"
-    },
-    {
-      "id": "T1756433191655",
-      "nama": "-",
-      "korem_id": 4,
-      "kodim": "Kodim 0723/Klaten",
-      "luas": 1597055143.02,
-      "status": "dimiliki",
-      "fungsi": "gedung",
-      "lokasi": [
-        [
-          [
-            109.547455,
-            -7.156369
-          ],
-          [
-            109.712259,
-            -7.491692
-          ],
-          [
-            110.077574,
-            -7.388123
-          ],
-          [
-            109.956718,
-            -7.107277
-          ],
-          [
-            109.547455,
-            -7.156369
-          ]
-        ]
-      ],
-      "kode_barang": "Ag0",
-      "no_reg": "aefaef34",
-      "alamat": "Jl. bkuk",
-      "asal_milik": "pembelian tahun 1960",
-      "bukti_kepemilikan": "shp no 7",
-      "atas_nama_pemilik_sertifikat": "pemerinta RI"
-    },
-    {
-      "id": "T1756711099402",
-      "nama": "Prince Yazna",
-      "korem_id": "5",
-      "kodim": "Kodim 0733/Kota Semarang",
-      "luas": 460691012.59,
+      "id": "T1756752520108",
+      "nama": "asdasd",
+      "korem_id": "2",
+      "kodim": "Kodim 0703/Cilacap",
+      "luas": 8353792232.63,
       "lokasi_nama": "Lokasi dari Peta",
-      "kib_kode_barang": "fbsds",
-      "kode_barang": "fbsds",
-      "nomor_registrasi": "csdbhcbsd",
-      "no_registrasi": "csdbhcbsd",
-      "registrasi": "csdbhcbsd",
-      "nomorRegistrasi": "csdbhcbsd",
-      "noRegistrasi": "csdbhcbsd",
-      "no_reg": "csdbhcbsd",
-      "alamat": "cbsdjhcbcjhsdc",
-      "peruntukan": "bcjhcs",
-      "fungsi": "bcjhcs",
-      "status": "Aktif",
+      "kib_kode_barang": "asad",
+      "kode_barang": "asad",
+      "nomor_registrasi": "asdasd",
+      "no_registrasi": "asdasd",
+      "registrasi": "asdasd",
+      "nomorRegistrasi": "asdasd",
+      "noRegistrasi": "asdasd",
+      "no_reg": "asdasd",
+      "alamat": "asdasd",
+      "peruntukan": "asdasd",
+      "fungsi": "asdasd",
+      "status": "Tidak Aktif",
       "asal_milik": "Hibah",
-      "bukti_pemilikan": "Letter C",
-      "bukti_kepemilikan": "Letter C",
-      "pemilikan_sertifikat": "Ya",
-      "sertifikat_bidang": "111",
-      "sertifikat_luas": "2121",
-      "belum_sertifikat_bidang": "",
-      "belum_sertifikat_luas": "",
-      "keterangan": "cbscbscsb",
-      "atas_nama_pemilik_sertifikat": "adnkjaj",
+      "bukti_pemilikan": "Sertifikat Hak Guna Bangunan",
+      "bukti_kepemilikan": "Sertifikat Hak Guna Bangunan",
+      "pemilikan_sertifikat": "Tidak",
+      "sertifikat_bidang": "1",
+      "sertifikat_luas": "111111111",
+      "belum_sertifikat_bidang": "1",
+      "belum_sertifikat_luas": "1111111",
+      "keterangan": "asdasd",
+      "atas_nama_pemilik_sertifikat": "asdasd",
       "lokasi": [
         [
           [
-            106.703666,
-            -7.195411
+            109.335407,
+            -7.153896
           ],
           [
-            106.904332,
-            -7.252581
+            109.236582,
+            -7.720506
           ],
           [
-            106.908455,
-            -7.415881
+            110.373057,
+            -7.829383
           ],
           [
-            106.674803,
-            -7.37234
+            110.400508,
+            -7.164798
           ],
           [
-            106.703666,
-            -7.195411
+            109.335407,
+            -7.153896
           ]
         ]
       ],
-      "luas_total": 2121,
-      "luas_gambar": 460691012.59431577,
-      "kodim_id": "5_6"
+      "luas_total": 112222222,
+      "luas_gambar": 8353792232.63395,
+      "kodim_id": "2_3"
+    }
+  ],
+  "yarsip_assets": [
+    {
+      "pengelola": "nanda",
+      "bidang": "Tanah",
+      "kabkota": "jogja",
+      "kecamatan": "jogja",
+      "kelurahan": "karangsemut",
+      "peruntukan": "majeed",
+      "status": "Tidak Aktif",
+      "keterangan": "yaaa",
+      "type": "yarsip",
+      "lokasi": [
+        [
+          [
+            108.205749,
+            -7.07473
+          ],
+          [
+            112.31428,
+            -7.483625
+          ],
+          [
+            111.880358,
+            -8.398128
+          ],
+          [
+            108.073924,
+            -7.756009
+          ],
+          [
+            108.205749,
+            -7.07473
+          ]
+        ]
+      ],
+      "area": 40508947743.59162,
+      "updated_at": "2025-09-01T18:49:29.092Z",
+      "id": "Y1756750648747"
+    },
+    {
+      "id": "Y1756752447188",
+      "pengelola": "mjeed",
+      "bidang": "Fasilitas Umum",
+      "kabkota": "smf",
+      "kecamatan": "smg",
+      "kelurahan": "smg",
+      "peruntukan": "majeed",
+      "status": "Cadangan",
+      "keterangan": "ass",
+      "type": "yarsip",
+      "lokasi": [
+        [
+          [
+            108.786376,
+            -7.108794
+          ],
+          [
+            108.791866,
+            -7.621007
+          ],
+          [
+            109.368349,
+            -7.201472
+          ],
+          [
+            108.786376,
+            -7.108794
+          ]
+        ]
+      ],
+      "area": 1824538506.7253392,
+      "created_at": "2025-09-01T18:47:27.188Z",
+      "updated_at": "2025-09-01T18:47:27.188Z"
+    },
+    {
+      "pengelola": "Adytya",
+      "bidang": "Perkantoran",
+      "kabkota": "semarang",
+      "kecamatan": "semarang",
+      "kelurahan": "kaliwungu",
+      "peruntukan": "nanda",
+      "status": "Aktif",
+      "keterangan": "ini test terakhir",
+      "type": "yarsip",
+      "lokasi": [
+        [
+          [
+            108.787974,
+            -6.900157
+          ],
+          [
+            108.584745,
+            -7.538115
+          ],
+          [
+            109.67779,
+            -7.685206
+          ],
+          [
+            109.771165,
+            -6.883787
+          ],
+          [
+            108.787974,
+            -6.900157
+          ]
+        ]
+      ],
+      "area": 9282406394.259338,
+      "created_at": "2025-09-01T18:50:13.052Z",
+      "updated_at": "2025-09-01T18:50:49.445Z",
+      "id": "Y1756752613052"
+    },
+    {
+      "pengelola": "Bgas",
+      "bidang": "Ruko",
+      "kabkota": "jol",
+      "kecamatan": "aaa",
+      "kelurahan": "aa",
+      "peruntukan": "yaaaz",
+      "status": "Aktif",
+      "keterangan": "tidak",
+      "type": "yarsip",
+      "lokasi": [
+        [
+          [
+            107.304469,
+            -6.655153
+          ],
+          [
+            107.200116,
+            -7.124555
+          ],
+          [
+            108.100844,
+            -7.200925
+          ],
+          [
+            108.012428,
+            -6.562713
+          ],
+          [
+            107.304469,
+            -6.655153
+          ]
+        ]
+      ],
+      "area": 5467177438.907601,
+      "created_at": "2025-09-01T18:53:12.869Z",
+      "updated_at": "2025-09-01T18:54:09.517Z",
+      "id": "Y1756752792869"
     }
   ],
   "korem": [

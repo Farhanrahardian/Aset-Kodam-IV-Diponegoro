@@ -33,7 +33,7 @@ const TabelAset = ({
   if (!assets || assets.length === 0) {
     return (
       <div className="text-center py-5">
-        <p className="text-muted">Tidak ada data aset yang ditemukan.</p>
+        <p className="text-muted">Tidak ada data aset tanah yang ditemukan.</p>
       </div>
     );
   }
@@ -42,9 +42,10 @@ const TabelAset = ({
     <Table striped bordered hover responsive>
       <thead className="table-dark">
         <tr>
-          <th style={{ width: "30%" }}>Nama Aset</th>
-          <th style={{ width: "25%" }}>Wilayah Korem</th>
-          <th style={{ width: "25%" }}>Kodim</th>
+          <th style={{ width: "25%" }}>Nama Aset</th>
+          <th style={{ width: "20%" }}>Wilayah Korem</th>
+          <th style={{ width: "20%" }}>Kodim</th>
+          <th style={{ width: "15%" }}>Status</th>
           <th style={{ width: "20%" }}>Aksi</th>
         </tr>
       </thead>
@@ -65,6 +66,19 @@ const TabelAset = ({
               <td>{asset.nama || "-"}</td>
               <td>{korem?.nama || "-"}</td>
               <td>{kodim?.nama || asset.kodim || "-"}</td>
+              <td>
+                <span 
+                  className={`badge ${
+                    asset.status === 'Aktif' ? 'bg-success' : 
+                    asset.status === 'Tidak Aktif' ? 'bg-danger' : 
+                    asset.status === 'Dalam Proses' ? 'bg-warning' :
+                    asset.status === 'Sengketa' ? 'bg-danger' :
+                    'bg-secondary'
+                  }`}
+                >
+                  {asset.status || "-"}
+                </span>
+              </td>
               <td>
                 <div className="d-flex gap-1">
                   <Button
@@ -184,43 +198,40 @@ const DataAsetTanahPage = () => {
               err3.message
             );
 
-            // Option 4: Mock data as fallback (temporary solution)
-            console.log("All endpoints failed, using mock data");
-            kodimRes = {
-              data: [
-                {
-                  id: `${koremId}_1`,
-                  nama: "Kodim 0701/Banyumas",
+            // Option 4: Generate kodim from korem data
+            const korem = koremList.find(k => k.id == koremId);
+            if (korem && korem.kodim && Array.isArray(korem.kodim)) {
+              kodimRes = {
+                data: korem.kodim.map((kodimName, index) => ({
+                  id: `${koremId}_${index + 1}`,
+                  nama: kodimName,
                   korem_id: koremId,
-                },
-                {
-                  id: `${koremId}_2`,
-                  nama: "Kodim 0702/Purbalingga",
-                  korem_id: koremId,
-                },
-                {
-                  id: `${koremId}_3`,
-                  nama: "Kodim 0703/Cilacap",
-                  korem_id: koremId,
-                },
-                {
-                  id: `${koremId}_4`,
-                  nama: "Kodim 0704/Banjarnegara",
-                  korem_id: koremId,
-                },
-                {
-                  id: `${koremId}_5`,
-                  nama: "Kodim 0705/Magelang",
-                  korem_id: koremId,
-                },
-                {
-                  id: `${koremId}_6`,
-                  nama: "Kodim 0733/Kota Semarang",
-                  korem_id: koremId,
-                },
-              ],
-            };
-            endpointUsed = "mock data";
+                }))
+              };
+              endpointUsed = "generated from korem data";
+            } else {
+              // Fallback mock data
+              kodimRes = {
+                data: [
+                  {
+                    id: `${koremId}_1`,
+                    nama: "Kodim 0701/Banyumas",
+                    korem_id: koremId,
+                  },
+                  {
+                    id: `${koremId}_2`,
+                    nama: "Kodim 0702/Purbalingga",
+                    korem_id: koremId,
+                  },
+                  {
+                    id: `${koremId}_3`,
+                    nama: "Kodim 0703/Cilacap",
+                    korem_id: koremId,
+                  },
+                ],
+              };
+              endpointUsed = "mock data";
+            }
           }
         }
       }
@@ -241,14 +252,19 @@ const DataAsetTanahPage = () => {
     } finally {
       setKodimLoading(false);
     }
-  }, []);
+  }, [koremList]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
+      // Fetch only regular assets (not yarsip)
       const assetsRes = await axios.get(`${API_URL}/assets`);
       const koremRes = await axios.get(`${API_URL}/korem`);
-      setAssets(assetsRes.data);
+      
+      // Filter out yarsip assets if they somehow got mixed in
+      const regularAssets = assetsRes.data.filter(asset => asset.type !== 'yarsip');
+      
+      setAssets(regularAssets);
       setKoremList(koremRes.data);
       setError(null);
     } catch (err) {
@@ -312,6 +328,29 @@ const DataAsetTanahPage = () => {
     setSelectedKorem(null);
     setSelectedKodim("");
     setKodimList([]);
+  };
+
+  // Prepare asset for map display
+  const prepareAssetForMap = (asset) => {
+    if (!asset.lokasi) return null;
+    
+    let geometry = asset.lokasi;
+    
+    // Handle different geometry formats
+    if (typeof geometry === 'string') {
+      try {
+        geometry = JSON.parse(geometry);
+      } catch (e) {
+        console.error('Failed to parse geometry:', e);
+        return null;
+      }
+    }
+    
+    // Convert to expected format for PetaAset
+    return {
+      ...asset,
+      lokasi: geometry.coordinates || geometry
+    };
   };
 
   const handleSaveAsset = async (assetData) => {
@@ -398,6 +437,8 @@ const DataAsetTanahPage = () => {
 
   // Detail view layout (like TambahAsetPage)
   if (showDetailView && selectedAssetDetail) {
+    const preparedAsset = prepareAssetForMap(selectedAssetDetail);
+    
     return (
       <Container fluid className="mt-4">
         <div className="mb-3">
@@ -412,7 +453,7 @@ const DataAsetTanahPage = () => {
           <Col md={7}>
             <div style={{ height: "70vh", width: "100%" }}>
               <PetaAset
-                assets={[selectedAssetDetail]} // Show only this asset on map
+                assets={preparedAsset ? [preparedAsset] : []} // Show only this asset on map
                 isDrawing={false}
                 onDrawingCreated={() => {}}
                 jatengBoundary={jatengBoundary}
@@ -463,14 +504,7 @@ const DataAsetTanahPage = () => {
             <br />- Editing Asset: {editingAsset?.id || "None"}
             <br />- Show Detail View: {showDetailView ? "Yes" : "No"}
             <br />- API URL: {API_URL}
-            <br />- Sample Asset Kodim Field:{" "}
-            {assets[0]
-              ? JSON.stringify({
-                  kodim_id: assets[0].kodim_id,
-                  kodim: assets[0].kodim,
-                  kodim_id_val: assets[0].kodim_id_val,
-                })
-              : "No assets"}
+            <br />- Asset Type Filter: Regular Assets (excluding yarsip)
           </small>
         </Alert>
       )}
@@ -488,7 +522,14 @@ const DataAsetTanahPage = () => {
           </Col>
         )}
         <Col md={assets.length > 0 ? 9 : 12}>
-          <h2 className="mt-3"></h2>
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <h2>Daftar Aset Tanah ({filteredAssets.length} items)</h2>
+            {assets.length === 0 && (
+              <div className="text-muted">
+                <em>Belum ada data aset tanah. Silakan tambah aset baru di halaman Tambah Aset.</em>
+              </div>
+            )}
+          </div>
           <div style={{ height: "calc(100vh - 180px)", overflowY: "auto" }}>
             <TabelAset
               assets={filteredAssets}

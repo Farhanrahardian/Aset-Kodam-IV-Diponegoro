@@ -33,7 +33,12 @@ const Sidebar = ({ show }) => {
         <NavLink to="/tambah-aset" className="nav-link" style={navLinkStyle}>
           Tambah Aset
         </NavLink>
-        
+        <NavLink to="/tambah-aset-yardip" className="nav-link" style={navLinkStyle}>
+          Tambah Aset Yardip
+        </NavLink>
+        <NavLink to="/Data-aset-Yardip" className="nav-link" style={navLinkStyle}>
+          Data Aset Yardip
+        </NavLink>
         <NavLink
           to="/data-aset-tanah"
           className="nav-link"
