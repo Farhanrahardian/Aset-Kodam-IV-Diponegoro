@@ -54,10 +54,7 @@ const FormYardip = ({
     "Tanah",
     "Tanah Bangunan",
     "Tanah Gudang Kantor",
-    "Ruko",
-    "Perkantoran",
-    "Fasilitas Umum",
-    "Lainnya"
+    "Ruko"
   ];
 
   const statusOptions = [

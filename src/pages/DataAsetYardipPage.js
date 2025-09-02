@@ -621,7 +621,8 @@ const DataAsetYardipPage = () => {
       )}
 
       <Row>
-        <Col md={editingAsset ? 8 : 12}>
+        {/* Tabel selalu full width, form edit akan muncul di bawah */}
+        <Col md={12}>
           <div className="mb-3">
             <Row>
               <Col md={6}>
@@ -669,46 +670,82 @@ const DataAsetYardipPage = () => {
           </div>
         </Col>
 
+        {/* Form Edit - Pindah ke bawah dengan layout yang lebih baik */}
         {editingAsset && (
-          <Col md={4}>
-            <div className="card shadow-sm mb-3">
+          <Col md={12} className="mt-4">
+            <div className="card shadow-sm">
               <div className="card-header bg-success text-white d-flex justify-content-between align-items-center">
                 <span>Edit Aset Yarsip - {editingAsset.pengelola}</span>
-                <Button
-                  variant="outline-light"
-                  size="sm"
-                  onClick={handleEditLocation}
-                  disabled={isEditingLocation}
-                >
-                  {isEditingLocation ? "Sedang Edit Lokasi..." : "Edit Lokasi"}
-                </Button>
+                <div className="d-flex gap-2">
+                  <Button
+                    variant="outline-light"
+                    size="sm"
+                    onClick={handleEditLocation}
+                    disabled={isEditingLocation}
+                  >
+                    {isEditingLocation ? "Sedang Edit Lokasi..." : "Edit Lokasi"}
+                  </Button>
+                  <Button
+                    variant="outline-light"
+                    size="sm"
+                    onClick={handleCancelEdit}
+                  >
+                    ✕
+                  </Button>
+                </div>
               </div>
               <div className="card-body">
-                <FormYardip
-                  onSave={handleSaveAsset}
-                  onCancel={handleCancelEdit}
-                  assetToEdit={editingAsset}
-                  isEnabled={true}
-                  initialGeometry={editedLocationData ? editedLocationData.geometry : null}
-                  initialArea={editedLocationData ? editedLocationData.area : null}
-                />
-                
-                {/* Status edit lokasi */}
-                {editedLocationData && (
-                  <div className="alert alert-info mt-2">
-                    <small>
-                      <i className="fas fa-map-marked-alt me-1"></i>
-                      Lokasi baru telah digambar (Luas: {editedLocationData.area?.toFixed(2)} m²)
-                      <br/>
-                      <button 
-                        className="btn btn-link btn-sm p-0 text-decoration-none"
-                        onClick={handleCancelEditLocation}
-                      >
-                        Batalkan perubahan lokasi
-                      </button>
-                    </small>
-                  </div>
-                )}
+                <Row>
+                  <Col md={6}>
+                    <FormYardip
+                      onSave={handleSaveAsset}
+                      onCancel={handleCancelEdit}
+                      assetToEdit={editingAsset}
+                      isEnabled={true}
+                      initialGeometry={editedLocationData ? editedLocationData.geometry : null}
+                      initialArea={editedLocationData ? editedLocationData.area : null}
+                    />
+                    
+                    {/* Status edit lokasi */}
+                    {editedLocationData && (
+                      <div className="alert alert-info mt-2">
+                        <small>
+                          <i className="fas fa-map-marked-alt me-1"></i>
+                          Lokasi baru telah digambar (Luas: {editedLocationData.area?.toFixed(2)} m²)
+                          <br/>
+                          <button 
+                            className="btn btn-link btn-sm p-0 text-decoration-none"
+                            onClick={handleCancelEditLocation}
+                          >
+                            Batalkan perubahan lokasi
+                          </button>
+                        </small>
+                      </div>
+                    )}
+                  </Col>
+                  <Col md={6}>
+                    {/* Preview area atau informasi tambahan */}
+                    <div className="bg-light p-3 rounded">
+                      <h6 className="text-muted mb-3">Preview Data</h6>
+                      <small>
+                        <strong>ID:</strong> {editingAsset.id}<br/>
+                        <strong>Status Saat Ini:</strong> <span className={`badge ${
+                          editingAsset.status === 'Aktif' ? 'bg-success' : 
+                          editingAsset.status === 'Tidak Aktif' ? 'bg-danger' : 
+                          editingAsset.status === 'Cadangan' ? 'bg-warning' :
+                          'bg-secondary'
+                        }`}>{editingAsset.status}</span><br/>
+                        <strong>Lokasi:</strong> {editingAsset.kabkota}, {editingAsset.kecamatan}<br/>
+                        {editingAsset.area && (
+                          <>
+                            <strong>Luas Area:</strong> {Number(editingAsset.area).toFixed(2)} m²<br/>
+                          </>
+                        )}
+                        <strong>Terakhir Diupdate:</strong> {editingAsset.updated_at ? new Date(editingAsset.updated_at).toLocaleString('id-ID') : '-'}
+                      </small>
+                    </div>
+                  </Col>
+                </Row>
               </div>
             </div>
           </Col>
