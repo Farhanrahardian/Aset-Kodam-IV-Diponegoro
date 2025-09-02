@@ -19,7 +19,7 @@ const FormYardip = ({
     status: "",
     keterangan: "",
   });
-  
+
   const [errors, setErrors] = useState({});
 
   // Initialize form data
@@ -54,21 +54,16 @@ const FormYardip = ({
     "Tanah",
     "Tanah Bangunan",
     "Tanah Gudang Kantor",
-    "Ruko"
+    "Ruko",
   ];
 
-  const statusOptions = [
-    "Aktif", 
-    "Tidak Aktif", 
-    "Cadangan", 
-    "Dalam Proses"
-  ];
+  const statusOptions = ["Aktif", "Tidak Aktif", "Cadangan", "Dalam Proses"];
 
   // Handle input change
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    
+
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors((prev) => ({
@@ -83,12 +78,17 @@ const FormYardip = ({
     const newErrors = {};
 
     // Required fields validation
-    if (!formData.pengelola?.trim()) newErrors.pengelola = "Pengelola harus diisi";
+    if (!formData.pengelola?.trim())
+      newErrors.pengelola = "Pengelola harus diisi";
     if (!formData.bidang?.trim()) newErrors.bidang = "Bidang harus dipilih";
-    if (!formData.kabkota?.trim()) newErrors.kabkota = "Kabupaten/Kota harus diisi";
-    if (!formData.kecamatan?.trim()) newErrors.kecamatan = "Kecamatan harus diisi";
-    if (!formData.kelurahan?.trim()) newErrors.kelurahan = "Kelurahan/Desa harus diisi";
-    if (!formData.peruntukan?.trim()) newErrors.peruntukan = "Peruntukan harus diisi";
+    if (!formData.kabkota?.trim())
+      newErrors.kabkota = "Kabupaten/Kota harus diisi";
+    if (!formData.kecamatan?.trim())
+      newErrors.kecamatan = "Kecamatan harus diisi";
+    if (!formData.kelurahan?.trim())
+      newErrors.kelurahan = "Kelurahan/Desa harus diisi";
+    if (!formData.peruntukan?.trim())
+      newErrors.peruntukan = "Peruntukan harus diisi";
     if (!formData.status?.trim()) newErrors.status = "Status harus dipilih";
 
     setErrors(newErrors);
@@ -98,7 +98,7 @@ const FormYardip = ({
   // Submit
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (!initialGeometry && !assetToEdit) {
       alert("Silakan gambar lokasi aset di peta terlebih dahulu");
       return;
@@ -108,11 +108,13 @@ const FormYardip = ({
       // Prepare data untuk yarsip dengan struktur yang sesuai dengan db.json
       const yarsipData = {
         ...formData,
-        type: 'yarsip', // Identifier untuk jenis aset
+        type: "yarsip", // Identifier untuk jenis aset
         lokasi: initialGeometry || (assetToEdit ? assetToEdit.lokasi : null),
         area: initialArea || (assetToEdit ? assetToEdit.area : null),
         // Tambahkan timestamp untuk tracking
-        created_at: assetToEdit ? assetToEdit.created_at : new Date().toISOString(),
+        created_at: assetToEdit
+          ? assetToEdit.created_at
+          : new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
 
@@ -137,7 +139,7 @@ const FormYardip = ({
   return (
     <Card>
       <Card.Header>
-        <h5>{assetToEdit ? "Edit Aset Yarsip" : "Form Aset Yarsip"}</h5>
+        <h5>{assetToEdit ? "Edit Aset Yarsip" : "Form Aset Yardip"}</h5>
       </Card.Header>
       <Card.Body>
         {!isEnabled && !assetToEdit && (
@@ -155,9 +157,11 @@ const FormYardip = ({
             <small>
               <strong>Debug Info:</strong>
               <br />- Geometry Type: {initialGeometry.type || "Unknown"}
-              <br />- Area: {initialArea ? initialArea.toFixed(2) + " m²" : "No area"}
+              <br />- Area:{" "}
+              {initialArea ? initialArea.toFixed(2) + " m²" : "No area"}
               <br />- Storage: yarsip_assets collection
-              <br />- Asset to Edit: {assetToEdit ? assetToEdit.id : "New Asset"}
+              <br />- Asset to Edit:{" "}
+              {assetToEdit ? assetToEdit.id : "New Asset"}
             </small>
           </Alert>
         )}
@@ -347,20 +351,20 @@ const FormYardip = ({
                       <small className="text-muted">
                         <strong>Area Tergambar:</strong>
                         <br />
-                        {initialArea ? 
-                          `${initialArea.toFixed(2)} m²` : 
-                          (assetToEdit && assetToEdit.area ? 
-                            `${Number(assetToEdit.area).toFixed(2)} m²` : 
-                            "Tidak tersedia"
-                          )
-                        }
+                        {initialArea
+                          ? `${initialArea.toFixed(2)} m²`
+                          : assetToEdit && assetToEdit.area
+                          ? `${Number(assetToEdit.area).toFixed(2)} m²`
+                          : "Tidak tersedia"}
                       </small>
                     </Col>
                     <Col md={6}>
                       <small className="text-muted">
                         <strong>Lokasi Lengkap:</strong>
                         <br />
-                        {`${formData.kabkota || "-"}, ${formData.kecamatan || "-"}, ${formData.kelurahan || "-"}`}
+                        {`${formData.kabkota || "-"}, ${
+                          formData.kecamatan || "-"
+                        }, ${formData.kelurahan || "-"}`}
                       </small>
                     </Col>
                   </Row>
@@ -370,10 +374,11 @@ const FormYardip = ({
                         <small className="text-muted">
                           <strong>Terakhir Diupdate:</strong>
                           <br />
-                          {assetToEdit.updated_at ? 
-                            new Date(assetToEdit.updated_at).toLocaleString('id-ID') : 
-                            "Tidak tersedia"
-                          }
+                          {assetToEdit.updated_at
+                            ? new Date(assetToEdit.updated_at).toLocaleString(
+                                "id-ID"
+                              )
+                            : "Tidak tersedia"}
                         </small>
                       </Col>
                     </Row>
@@ -388,17 +393,17 @@ const FormYardip = ({
                 Batal
               </Button>
               <div>
-                <Button 
-                  variant="warning" 
-                  onClick={handleReset} 
+                <Button
+                  variant="warning"
+                  onClick={handleReset}
                   className="me-2"
                   disabled={!isEnabled && !assetToEdit}
                 >
                   Reset
                 </Button>
-                <Button 
-                  type="submit" 
-                  variant="success" 
+                <Button
+                  type="submit"
+                  variant="success"
                   disabled={!isEnabled && !assetToEdit}
                   style={{ backgroundColor: "#28a745", border: "none" }}
                 >

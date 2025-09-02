@@ -24,7 +24,7 @@ const TambahAsetYarsipPage = () => {
   };
 
   const handleSaveAsset = async (assetData) => {
-    const toastId = toast.loading("Menyimpan data aset yarsip...");
+    const toastId = toast.loading("Menyimpan data aset yardip...");
     try {
       // PENTING: Menggunakan endpoint yarsip_assets untuk penyimpanan yarsip
       await axios.post(`${API_URL}/yarsip_assets`, {
@@ -32,9 +32,9 @@ const TambahAsetYarsipPage = () => {
         id: `Y${Date.now()}`, // Prefix Y untuk Yarsip
         lokasi: newAssetData.geometry,
         area: newAssetData.area,
-        type: 'yarsip', // Identifier type
+        type: "yarsip", // Identifier type
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       });
       toast.success("Aset Yarsip berhasil ditambahkan!", { id: toastId });
       setTimeout(() => {
@@ -58,9 +58,9 @@ const TambahAsetYarsipPage = () => {
 
   return (
     <Container fluid className="mt-4">
-      <h3>Tambah Aset Yarsip Baru</h3>
+      <h3>Tambah Aset Yardip Baru</h3>
       {error && <Alert variant="danger">{error}</Alert>}
-      
+
       {/* Debug info untuk development */}
       {process.env.NODE_ENV === "development" && (
         <Alert variant="info" className="mb-3">
@@ -81,7 +81,9 @@ const TambahAsetYarsipPage = () => {
               onClick={() => setIsDrawing(!isDrawing)}
               variant={isDrawing ? "danger" : "primary"}
             >
-              {isDrawing ? "Batalkan Menggambar" : "📍 Gambar Lokasi Aset di Peta"}
+              {isDrawing
+                ? "Batalkan Menggambar"
+                : "📍 Gambar Lokasi Aset di Peta"}
             </Button>
           </div>
           <div style={{ height: "70vh", width: "100%" }}>

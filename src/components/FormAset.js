@@ -105,9 +105,6 @@ const FormAset = ({
       try {
         let lat, lng;
 
-        // Debug: Log the geometry structure
-        console.log("Processing geometry:", initialGeometry);
-
         // Handle different GeoJSON geometry types
         if (initialGeometry.type === "Point") {
           // Point geometry: coordinates = [lng, lat]
@@ -338,7 +335,7 @@ const FormAset = ({
     // Required fields validation
     if (!formData.nama?.trim()) newErrors.nama = "Nama aset harus diisi";
     if (!formData.korem_id) newErrors.korem_id = "Korem harus dipilih";
-    if (!formData.kodim?.trim()) newErrors.kodim = "Kodim harus diisi";
+    // Kodim tidak wajib diisi lagi
     if (!formData.lokasi_nama?.trim())
       newErrors.lokasi_nama = "Alamat harus diisi";
     if (!formData.kib_kode_barang?.trim())
@@ -517,24 +514,6 @@ const FormAset = ({
             </div>
           )}
 
-          {/* Debug geometry info in development */}
-          {process.env.NODE_ENV === "development" && initialGeometry && (
-            <Alert variant="info" className="mb-3">
-              <small>
-                <strong>Debug Geometry:</strong>
-                <br />- Type: {initialGeometry.type || "Unknown"}
-                <br />- Has coordinates:{" "}
-                {initialGeometry.coordinates ? "Yes" : "No"}
-                <br />- Coordinates length:{" "}
-                {Array.isArray(initialGeometry.coordinates)
-                  ? initialGeometry.coordinates.length
-                  : "Not array"}
-                <br />- Area:{" "}
-                {initialArea ? initialArea.toFixed(2) + " m²" : "No area"}
-              </small>
-            </Alert>
-          )}
-
           <fieldset disabled={(!isEnabled && !assetToEdit) || viewMode}>
             <Form>
               {/* Basic Asset Info */}
@@ -585,40 +564,45 @@ const FormAset = ({
                     </Col>
                     <Col md={6}>
                       <Form.Group className="mb-3">
-                        <Form.Label>2. Kodim *</Form.Label>
-                        {kodimList.length > 0 ? (
-                          <Form.Select
-                            name="kodim"
-                            value={formData.kodim || ""}
-                            onChange={handleChange}
-                            isInvalid={!!errors.kodim}
-                            disabled={viewMode}
-                          >
-                            <option value="">-- Pilih Kodim --</option>
-                            {kodimList.map((kodim) => (
-                              <option key={kodim.id} value={kodim.id}>
-                                {kodim.nama}
-                              </option>
-                            ))}
-                          </Form.Select>
-                        ) : (
-                          <Form.Control
-                            type="text"
-                            name="kodim"
-                            value={formData.kodim || ""}
-                            onChange={handleChange}
-                            placeholder="Contoh: Kodim 0701/Banyumas"
-                            isInvalid={!!errors.kodim}
-                            required
-                            readOnly={viewMode}
-                          />
-                        )}
-                        <Form.Control.Feedback type="invalid">
-                          {errors.kodim}
-                        </Form.Control.Feedback>
+                        <Form.Label>2. Kodim</Form.Label>
+                        <Form.Select
+                          name="kodim"
+                          value={formData.kodim || ""}
+                          onChange={handleChange}
+                          disabled={viewMode}
+                        >
+                          <option value="">-- Pilih Kodim (Opsional) --</option>
+                          {kodimList.map((kodim) => (
+                            <option key={kodim.id} value={kodim.id}>
+                              {kodim.nama}
+                            </option>
+                          ))}
+                        </Form.Select>
+                        <Form.Text className="text-muted">
+                          Kodim tidak wajib diisi
+                        </Form.Text>
                       </Form.Group>
                     </Col>
                   </Row>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>3. Lokasi (dari Peta)</Form.Label>
+                    <Form.Control
+                      type="text"
+                      name="lokasi_nama"
+                      value={formData.lokasi_nama || ""}
+                      onChange={handleChange}
+                      placeholder="Lokasi akan otomatis terisi dari peta"
+                      isInvalid={!!errors.lokasi_nama}
+                      readOnly={viewMode}
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.lokasi_nama}
+                    </Form.Control.Feedback>
+                    <Form.Text className="text-muted">
+                      Lokasi otomatis dari koordinat yang digambar di peta
+                    </Form.Text>
+                  </Form.Group>
                 </Card.Body>
               </Card>
 
@@ -773,140 +757,121 @@ const FormAset = ({
                     </Col>
                   </Row>
 
-                  <Form.Group as={Col} md={6}>
-                    <Form.Label>
-                      10. Bukti Pemilikan (Upload PNG, JPG, PDF - Max{" "}
-                      {MAX_FILE_SIZE_MB}MB)
-                    </Form.Label>
-                    <Form.Control
-                      type="file"
-                      name="bukti_pemilikan_file"
-                      accept=".png,.jpg,.jpeg,.pdf"
-                      onChange={(e) => {
-                        const file = e.target.files[0];
-                        if (file) {
-                          // simpan file ke state
-                          setFormData({
-                            ...formData,
-                            bukti_pemilikan_file: file,
-                            bukti_pemilikan_filename: file.name,
-                          });
-                          // buat preview
-                          setImagePreview(URL.createObjectURL(file));
-                        }
-                      }}
-                      disabled={viewMode}
-                    />
-                    <Form.Text className="text-muted">
-                      Format yang didukung: PNG, JPG, PDF (maksimal{" "}
-                      {MAX_FILE_SIZE_MB}MB)
-                    </Form.Text>
+                  <Row>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label>
+                          10. Bukti Pemilikan (Upload PNG, JPG, PDF - Max{" "}
+                          {MAX_FILE_SIZE_MB}MB)
+                        </Form.Label>
+                        <Form.Control
+                          type="file"
+                          name="bukti_pemilikan_file"
+                          accept=".png,.jpg,.jpeg,.pdf"
+                          onChange={handleFileChange}
+                          disabled={viewMode}
+                        />
+                        <Form.Text className="text-muted">
+                          Format yang didukung: PNG, JPG, PDF (maksimal{" "}
+                          {MAX_FILE_SIZE_MB}MB)
+                        </Form.Text>
 
-                    {/* File Preview Section */}
-                    {(imagePreview || formData.bukti_pemilikan_file) && (
-                      <div className="mt-3">
-                        <div className="d-flex align-items-center gap-2">
-                          <div
-                            className="file-preview-container"
-                            style={{ width: "100px", height: "100px" }}
-                          >
-                            {formData.bukti_pemilikan_filename
-                              ?.toLowerCase()
-                              .includes(".pdf") ? (
+                        {/* File Preview Section - Popup Style */}
+                        {(imagePreview || formData.bukti_pemilikan_file) && (
+                          <div className="mt-3">
+                            <div className="d-flex align-items-center gap-2">
                               <div
-                                className="pdf-preview d-flex align-items-center justify-content-center border"
+                                className="file-preview-thumbnail"
                                 style={{
-                                  width: "100%",
-                                  height: "100%",
-                                  backgroundColor: "#f8f9fa",
+                                  width: "60px",
+                                  height: "60px",
+                                  cursor: "pointer",
                                 }}
+                                onClick={handleViewImage}
                               >
-                                <span className="text-muted">PDF</span>
+                                {formData.bukti_pemilikan_filename
+                                  ?.toLowerCase()
+                                  .includes(".pdf") ? (
+                                  <div
+                                    className="pdf-thumbnail d-flex align-items-center justify-content-center border rounded"
+                                    style={{
+                                      width: "100%",
+                                      height: "100%",
+                                      backgroundColor: "#f8f9fa",
+                                    }}
+                                  >
+                                    <span className="text-muted small">
+                                      PDF
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <Image
+                                    src={imagePreview}
+                                    alt="Thumbnail"
+                                    thumbnail
+                                    style={{
+                                      width: "100%",
+                                      height: "100%",
+                                      objectFit: "cover",
+                                    }}
+                                  />
+                                )}
                               </div>
-                            ) : (
-                              <Image
-                                src={imagePreview}
-                                alt="Preview"
-                                thumbnail
-                                style={{
-                                  width: "100%",
-                                  height: "100%",
-                                  objectFit: "cover",
-                                }}
-                              />
-                            )}
-                          </div>
-                          <div className="flex-grow-1">
-                            <small className="text-muted d-block">
-                              {formData.bukti_pemilikan_filename ||
-                                "File bukti pemilikan"}
-                            </small>
-                            <div className="mt-2">
-                              <Button
-                                variant="outline-primary"
-                                size="sm"
-                                onClick={() =>
-                                  window.open(
-                                    imagePreview,
-                                    "_blank",
-                                    "noopener,noreferrer"
-                                  )
-                                }
-                                className="me-2"
-                                disabled={viewMode}
-                              >
-                                <FaEye /> Lihat
-                              </Button>
-                              <Button
-                                variant="outline-success"
-                                size="sm"
-                                onClick={() => {
-                                  const url = imagePreview;
-                                  const a = document.createElement("a");
-                                  a.href = url;
-                                  a.download =
-                                    formData.bukti_pemilikan_filename || "file";
-                                  a.click();
-                                }}
-                                className="me-2"
-                              >
-                                <FaDownload /> Unduh
-                              </Button>
-                              {!viewMode && (
-                                <Button
-                                  variant="outline-danger"
-                                  size="sm"
-                                  onClick={() => {
-                                    setFormData({
-                                      ...formData,
-                                      bukti_pemilikan_file: null,
-                                      bukti_pemilikan_filename: "",
-                                    });
-                                    setImagePreview(null);
-                                  }}
-                                >
-                                  <FaTrash /> Hapus
-                                </Button>
-                              )}
+                              <div className="flex-grow-1">
+                                <small className="text-muted d-block">
+                                  {formData.bukti_pemilikan_filename ||
+                                    "File bukti pemilikan"}
+                                </small>
+                                <div className="mt-2">
+                                  <Button
+                                    variant="outline-primary"
+                                    size="sm"
+                                    onClick={handleViewImage}
+                                    className="me-2"
+                                  >
+                                    <FaEye /> Lihat
+                                  </Button>
+                                  <Button
+                                    variant="outline-success"
+                                    size="sm"
+                                    onClick={handleDownloadImage}
+                                    className="me-2"
+                                  >
+                                    <FaDownload /> Unduh
+                                  </Button>
+                                  {!viewMode && (
+                                    <Button
+                                      variant="outline-danger"
+                                      size="sm"
+                                      onClick={handleRemoveImage}
+                                    >
+                                      <FaTrash /> Hapus
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </div>
-                    )}
-                  </Form.Group>
+                        )}
+                      </Form.Group>
+                    </Col>
+                  </Row>
 
-                  <Form.Group className="mb-3">
-                    <Form.Label>Keterangan Bukti Pemilikan</Form.Label>
-                    <Form.Control
-                      as="textarea"
-                      rows={2}
-                      name="keterangan_bukti_pemilikan"
-                      value={formData.keterangan_bukti_pemilikan || ""}
-                      onChange={handleChange}
-                      placeholder="Keterangan tambahan mengenai bukti pemilikan"
-                      readOnly={viewMode}
-                    />
-                  </Form.Group>
+                  {/* Keterangan Bukti Pemilikan - Hanya muncul jika ada file */}
+                  {(imagePreview || formData.bukti_pemilikan_file) && (
+                    <Form.Group className="mb-3">
+                      <Form.Label>Keterangan Bukti Pemilikan</Form.Label>
+                      <Form.Control
+                        as="textarea"
+                        rows={2}
+                        name="keterangan_bukti_pemilikan"
+                        value={formData.keterangan_bukti_pemilikan || ""}
+                        onChange={handleChange}
+                        placeholder="Keterangan tambahan mengenai bukti pemilikan"
+                        readOnly={viewMode}
+                      />
+                    </Form.Group>
+                  )}
                 </Card.Body>
               </Card>
 
@@ -920,93 +885,90 @@ const FormAset = ({
                     <Alert variant="danger">{errors.tanah_data}</Alert>
                   )}
 
-                  <Row>
-                    <Col md={6}>
-                      <Card className="h-100">
-                        <Card.Header>
-                          <strong>Tanah dengan Sertifikat</strong>
-                        </Card.Header>
-                        <Card.Body>
-                          <Form.Group className="mb-3">
-                            <Form.Label>Jumlah Bidang</Form.Label>
-                            <Form.Control
-                              type="number"
-                              name="sertifikat_bidang"
-                              value={formData.sertifikat_bidang || ""}
-                              onChange={handleChange}
-                              placeholder="Jumlah bidang"
-                              isInvalid={!!errors.sertifikat_bidang}
-                              readOnly={viewMode}
-                            />
-                            <Form.Control.Feedback type="invalid">
-                              {errors.sertifikat_bidang}
-                            </Form.Control.Feedback>
-                          </Form.Group>
-                          <Form.Group className="mb-3">
-                            <Form.Label>Luas (m²)</Form.Label>
-                            <Form.Control
-                              type="number"
-                              step="0.01"
-                              name="sertifikat_luas"
-                              value={formData.sertifikat_luas || ""}
-                              onChange={handleChange}
-                              placeholder="Luas dalam m²"
-                              isInvalid={!!errors.sertifikat_luas}
-                              readOnly={viewMode}
-                            />
-                            <Form.Control.Feedback type="invalid">
-                              {errors.sertifikat_luas}
-                            </Form.Control.Feedback>
-                          </Form.Group>
-                        </Card.Body>
-                      </Card>
-                    </Col>
-                    <Col md={6}>
-                      <Card className="h-100">
-                        <Card.Header>
-                          <strong>Tanah Belum Sertifikat</strong>
-                        </Card.Header>
-                        <Card.Body>
-                          <Form.Group className="mb-3">
-                            <Form.Label>Jumlah Bidang</Form.Label>
-                            <Form.Control
-                              type="number"
-                              name="belum_sertifikat_bidang"
-                              value={formData.belum_sertifikat_bidang || ""}
-                              onChange={handleChange}
-                              placeholder="Jumlah bidang"
-                              isInvalid={!!errors.belum_sertifikat_bidang}
-                              readOnly={viewMode}
-                            />
-                            <Form.Control.Feedback type="invalid">
-                              {errors.belum_sertifikat_bidang}
-                            </Form.Control.Feedback>
-                          </Form.Group>
-                          <Form.Group className="mb-3">
-                            <Form.Label>Luas (m²)</Form.Label>
-                            <Form.Control
-                              type="number"
-                              step="0.01"
-                              name="belum_sertifikat_luas"
-                              value={formData.belum_sertifikat_luas || ""}
-                              onChange={handleChange}
-                              placeholder="Luas dalam m²"
-                              isInvalid={!!errors.belum_sertifikat_luas}
-                              readOnly={viewMode}
-                            />
-                            <Form.Control.Feedback type="invalid">
-                              {errors.belum_sertifikat_luas}
-                            </Form.Control.Feedback>
-                          </Form.Group>
-                        </Card.Body>
-                      </Card>
-                    </Col>
-                  </Row>
+                  {/* Tanah dengan Sertifikat */}
+                  <Card className="mb-3">
+                    <Card.Header>
+                      <strong>Tanah dengan Sertifikat</strong>
+                    </Card.Header>
+                    <Card.Body>
+                      <Form.Group className="mb-3">
+                        <Form.Label>Jumlah Bidang</Form.Label>
+                        <Form.Control
+                          type="number"
+                          name="sertifikat_bidang"
+                          value={formData.sertifikat_bidang || ""}
+                          onChange={handleChange}
+                          placeholder="Jumlah bidang"
+                          isInvalid={!!errors.sertifikat_bidang}
+                          readOnly={viewMode}
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {errors.sertifikat_bidang}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+                      <Form.Group className="mb-3">
+                        <Form.Label>Luas (m²)</Form.Label>
+                        <Form.Control
+                          type="number"
+                          step="0.01"
+                          name="sertifikat_luas"
+                          value={formData.sertifikat_luas || ""}
+                          onChange={handleChange}
+                          placeholder="Luas dalam m²"
+                          isInvalid={!!errors.sertifikat_luas}
+                          readOnly={viewMode}
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {errors.sertifikat_luas}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+                    </Card.Body>
+                  </Card>
+
+                  {/* Tanah Belum Sertifikat */}
+                  <Card className="mb-3">
+                    <Card.Header>
+                      <strong>Tanah Belum Sertifikat</strong>
+                    </Card.Header>
+                    <Card.Body>
+                      <Form.Group className="mb-3">
+                        <Form.Label>Jumlah Bidang</Form.Label>
+                        <Form.Control
+                          type="number"
+                          name="belum_sertifikat_bidang"
+                          value={formData.belum_sertifikat_bidang || ""}
+                          onChange={handleChange}
+                          placeholder="Jumlah bidang"
+                          isInvalid={!!errors.belum_sertifikat_bidang}
+                          readOnly={viewMode}
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {errors.belum_sertifikat_bidang}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+                      <Form.Group className="mb-3">
+                        <Form.Label>Luas (m²)</Form.Label>
+                        <Form.Control
+                          type="number"
+                          step="0.01"
+                          name="belum_sertifikat_luas"
+                          value={formData.belum_sertifikat_luas || ""}
+                          onChange={handleChange}
+                          placeholder="Luas dalam m²"
+                          isInvalid={!!errors.belum_sertifikat_luas}
+                          readOnly={viewMode}
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {errors.belum_sertifikat_luas}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+                    </Card.Body>
+                  </Card>
 
                   {/* Summary of total area */}
                   {(formData.sertifikat_luas ||
                     formData.belum_sertifikat_luas) && (
-                    <Alert variant="info" className="mt-3">
+                    <Alert variant="info">
                       <strong>Total Luas Tanah: </strong>
                       {(
                         (parseFloat(formData.sertifikat_luas) || 0) +
@@ -1029,25 +991,6 @@ const FormAset = ({
                   <strong>Informasi Tambahan</strong>
                 </Card.Header>
                 <Card.Body>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Lokasi (dari Peta)</Form.Label>
-                    <Form.Control
-                      type="text"
-                      name="lokasi_nama"
-                      value={formData.lokasi_nama || ""}
-                      onChange={handleChange}
-                      placeholder="Lokasi akan otomatis terisi dari peta"
-                      isInvalid={!!errors.lokasi_nama}
-                      readOnly={viewMode}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {errors.lokasi_nama}
-                    </Form.Control.Feedback>
-                    <Form.Text className="text-muted">
-                      Lokasi otomatis dari koordinat yang digambar di peta
-                    </Form.Text>
-                  </Form.Group>
-
                   <Form.Group className="mb-3">
                     <Form.Label>Keterangan</Form.Label>
                     <Form.Control

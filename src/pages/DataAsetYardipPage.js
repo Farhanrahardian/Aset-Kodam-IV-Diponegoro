@@ -26,7 +26,7 @@ const TabelAsetYardip = ({ assets, onEdit, onDelete, onViewDetail }) => {
   if (!assets || assets.length === 0) {
     return (
       <div className="text-center py-5">
-        <p className="text-muted">Tidak ada data aset yarsip yang ditemukan.</p>
+        <p className="text-muted">Tidak ada data aset yardip yang ditemukan.</p>
       </div>
     );
   }
@@ -59,13 +59,17 @@ const TabelAsetYardip = ({ assets, onEdit, onDelete, onViewDetail }) => {
               </div>
             </td>
             <td>
-              <span 
+              <span
                 className={`badge ${
-                  asset.status === 'Aktif' ? 'bg-success' : 
-                  asset.status === 'Tidak Aktif' ? 'bg-danger' : 
-                  asset.status === 'Cadangan' ? 'bg-warning' :
-                  asset.status === 'Dalam Proses' ? 'bg-info' :
-                  'bg-secondary'
+                  asset.status === "Aktif"
+                    ? "bg-success"
+                    : asset.status === "Tidak Aktif"
+                    ? "bg-danger"
+                    : asset.status === "Cadangan"
+                    ? "bg-warning"
+                    : asset.status === "Dalam Proses"
+                    ? "bg-info"
+                    : "bg-secondary"
                 }`}
               >
                 {asset.status || "-"}
@@ -114,28 +118,28 @@ const TabelAsetYardip = ({ assets, onEdit, onDelete, onViewDetail }) => {
 const DetailModalYardip = ({ asset, show, onHide }) => {
   if (!asset) return null;
 
-  console.log('Yarsip Asset data in modal:', asset);
-  console.log('Yarsip Asset lokasi:', asset.lokasi);
+  console.log("Yarsip Asset data in modal:", asset);
+  console.log("Yarsip Asset lokasi:", asset.lokasi);
 
   // Validasi dan sanitasi data lokasi untuk Yarsip
   const validateLocationData = (asset) => {
     if (!asset.lokasi) {
-      console.log('No lokasi data found');
+      console.log("No lokasi data found");
       return null;
     }
-    
+
     let lokasi = asset.lokasi;
-    
+
     // Jika lokasi adalah string, coba parse JSON
-    if (typeof lokasi === 'string') {
+    if (typeof lokasi === "string") {
       try {
         lokasi = JSON.parse(lokasi);
       } catch (e) {
-        console.error('Failed to parse location JSON:', e);
+        console.error("Failed to parse location JSON:", e);
         return null;
       }
     }
-    
+
     // Handle jika lokasi berupa array koordinat langsung (format yarsip)
     if (Array.isArray(lokasi) && lokasi.length > 0) {
       // Check if it's nested array [[coords]]
@@ -143,20 +147,20 @@ const DetailModalYardip = ({ asset, show, onHide }) => {
         return lokasi;
       }
     }
-    
+
     // Handle jika lokasi sudah berupa geometry object
-    if (lokasi.type === 'Polygon' && lokasi.coordinates) {
+    if (lokasi.type === "Polygon" && lokasi.coordinates) {
       return lokasi.coordinates;
     }
-    
+
     // Handle jika dalam format geometry wrapper
     if (lokasi.coordinates) {
       if (Array.isArray(lokasi.coordinates)) {
         return lokasi.coordinates;
       }
     }
-    
-    console.warn('Unrecognized location format:', lokasi);
+
+    console.warn("Unrecognized location format:", lokasi);
     return null;
   };
 
@@ -166,19 +170,19 @@ const DetailModalYardip = ({ asset, show, onHide }) => {
   // Prepare asset data untuk PetaAset component
   const prepareAssetForMap = (asset) => {
     if (!hasValidLocation) return null;
-    
+
     return {
       id: asset.id || `temp-${Date.now()}`,
-      nama: asset.pengelola || 'Unknown', // Map pengelola ke nama
-      kodim: asset.bidang || '', // Map bidang ke kodim  
+      nama: asset.pengelola || "Unknown", // Map pengelola ke nama
+      kodim: asset.bidang || "", // Map bidang ke kodim
       lokasi: validatedLocation, // Koordinat langsung
       luas: Number(asset.area) || 0, // Map area ke luas
-      status: asset.status || '',
-      kabkota: asset.kabkota || '',
-      kecamatan: asset.kecamatan || '',
-      kelurahan: asset.kelurahan || '',
-      keterangan: asset.keterangan || '',
-      type: 'yarsip' // Mark as yarsip asset
+      status: asset.status || "",
+      kabkota: asset.kabkota || "",
+      kecamatan: asset.kecamatan || "",
+      kelurahan: asset.kelurahan || "",
+      keterangan: asset.keterangan || "",
+      type: "yarsip", // Mark as yarsip asset
     };
   };
 
@@ -187,7 +191,9 @@ const DetailModalYardip = ({ asset, show, onHide }) => {
   return (
     <Modal show={show} onHide={onHide} size="xl" centered>
       <Modal.Header closeButton>
-        <Modal.Title>Detail Aset Yarsip - {asset.pengelola || 'Unknown'}</Modal.Title>
+        <Modal.Title>
+          Detail Aset Yarsip - {asset.pengelola || "Unknown"}
+        </Modal.Title>
       </Modal.Header>
       <Modal.Body>
         <Row>
@@ -195,51 +201,73 @@ const DetailModalYardip = ({ asset, show, onHide }) => {
           <Col md={6}>
             <div className="card h-100">
               <div className="card-header bg-success text-white">
-                <h5 className="mb-0">Informasi Aset Yarsip</h5>
+                <h5 className="mb-0">Informasi Aset Yardip</h5>
               </div>
               <div className="card-body">
                 <table className="table table-borderless">
                   <tbody>
                     <tr>
-                      <td><strong>ID:</strong></td>
+                      <td>
+                        <strong>ID:</strong>
+                      </td>
                       <td>{asset.id || "-"}</td>
                     </tr>
                     <tr>
-                      <td><strong>Pengelola:</strong></td>
+                      <td>
+                        <strong>Pengelola:</strong>
+                      </td>
                       <td>{asset.pengelola || "-"}</td>
                     </tr>
                     <tr>
-                      <td><strong>Bidang:</strong></td>
                       <td>
-                        <span className="badge bg-info">{asset.bidang || "-"}</span>
+                        <strong>Bidang:</strong>
+                      </td>
+                      <td>
+                        <span className="badge bg-info">
+                          {asset.bidang || "-"}
+                        </span>
                       </td>
                     </tr>
                     <tr>
-                      <td><strong>Kabupaten/Kota:</strong></td>
+                      <td>
+                        <strong>Kabupaten/Kota:</strong>
+                      </td>
                       <td>{asset.kabkota || "-"}</td>
                     </tr>
                     <tr>
-                      <td><strong>Kecamatan:</strong></td>
+                      <td>
+                        <strong>Kecamatan:</strong>
+                      </td>
                       <td>{asset.kecamatan || "-"}</td>
                     </tr>
                     <tr>
-                      <td><strong>Kelurahan/Desa:</strong></td>
+                      <td>
+                        <strong>Kelurahan/Desa:</strong>
+                      </td>
                       <td>{asset.kelurahan || "-"}</td>
                     </tr>
                     <tr>
-                      <td><strong>Peruntukan:</strong></td>
+                      <td>
+                        <strong>Peruntukan:</strong>
+                      </td>
                       <td>{asset.peruntukan || "-"}</td>
                     </tr>
                     <tr>
-                      <td><strong>Status:</strong></td>
                       <td>
-                        <span 
+                        <strong>Status:</strong>
+                      </td>
+                      <td>
+                        <span
                           className={`badge ${
-                            asset.status === 'Aktif' ? 'bg-success' : 
-                            asset.status === 'Tidak Aktif' ? 'bg-danger' : 
-                            asset.status === 'Cadangan' ? 'bg-warning' :
-                            asset.status === 'Dalam Proses' ? 'bg-info' :
-                            'bg-secondary'
+                            asset.status === "Aktif"
+                              ? "bg-success"
+                              : asset.status === "Tidak Aktif"
+                              ? "bg-danger"
+                              : asset.status === "Cadangan"
+                              ? "bg-warning"
+                              : asset.status === "Dalam Proses"
+                              ? "bg-info"
+                              : "bg-secondary"
                           }`}
                         >
                           {asset.status || "-"}
@@ -247,36 +275,63 @@ const DetailModalYardip = ({ asset, show, onHide }) => {
                       </td>
                     </tr>
                     <tr>
-                      <td><strong>Keterangan:</strong></td>
+                      <td>
+                        <strong>Keterangan:</strong>
+                      </td>
                       <td>{asset.keterangan || "-"}</td>
                     </tr>
                     {asset.area && (
                       <tr>
-                        <td><strong>Luas Area:</strong></td>
-                        <td>{Number(asset.area).toFixed(2)} m²</td>
+                        <td>
+                          <strong>Luas Area:</strong>
+                        </td>
+                        <td>{Number(asset.area).toFixed(2)} mÂ²</td>
                       </tr>
                     )}
                     <tr>
-                      <td><strong>Koordinat:</strong></td>
+                      <td>
+                        <strong>Koordinat:</strong>
+                      </td>
                       <td>
                         {hasValidLocation && validatedLocation ? (
                           <div>
                             <small className="text-muted">
-                              Polygon dengan {Array.isArray(validatedLocation) ? validatedLocation[0]?.length || 0 : 0} titik
+                              Polygon dengan{" "}
+                              {Array.isArray(validatedLocation)
+                                ? validatedLocation[0]?.length || 0
+                                : 0}{" "}
+                              titik
                             </small>
                             <details className="mt-1">
-                              <summary style={{ cursor: 'pointer', fontSize: '0.85em' }}>
+                              <summary
+                                style={{
+                                  cursor: "pointer",
+                                  fontSize: "0.85em",
+                                }}
+                              >
                                 Lihat koordinat
                               </summary>
-                              <div style={{ maxHeight: '100px', overflowY: 'auto', fontSize: '0.8em' }}>
-                                {Array.isArray(validatedLocation) && validatedLocation[0] ? 
+                              <div
+                                style={{
+                                  maxHeight: "100px",
+                                  overflowY: "auto",
+                                  fontSize: "0.8em",
+                                }}
+                              >
+                                {Array.isArray(validatedLocation) &&
+                                validatedLocation[0] ? (
                                   validatedLocation[0].map((coord, idx) => (
                                     <div key={idx}>
-                                      {idx + 1}: [{coord[0]?.toFixed(6) || 'N/A'}, {coord[1]?.toFixed(6) || 'N/A'}]
+                                      {idx + 1}: [
+                                      {coord[0]?.toFixed(6) || "N/A"},{" "}
+                                      {coord[1]?.toFixed(6) || "N/A"}]
                                     </div>
-                                  )) : 
-                                  <span className="text-muted">Format koordinat tidak valid</span>
-                                }
+                                  ))
+                                ) : (
+                                  <span className="text-muted">
+                                    Format koordinat tidak valid
+                                  </span>
+                                )}
                               </div>
                             </details>
                           </div>
@@ -286,19 +341,22 @@ const DetailModalYardip = ({ asset, show, onHide }) => {
                       </td>
                     </tr>
                     <tr>
-                      <td><strong>Tanggal Dibuat:</strong></td>
                       <td>
-                        {asset.created_at 
+                        <strong>Tanggal Dibuat:</strong>
+                      </td>
+                      <td>
+                        {asset.created_at
                           ? (() => {
                               try {
                                 const date = new Date(asset.created_at);
-                                return isNaN(date.getTime()) ? asset.created_at : date.toLocaleString('id-ID');
+                                return isNaN(date.getTime())
+                                  ? asset.created_at
+                                  : date.toLocaleString("id-ID");
                               } catch (e) {
                                 return String(asset.created_at);
                               }
                             })()
-                          : "-"
-                        }
+                          : "-"}
                       </td>
                     </tr>
                   </tbody>
@@ -335,7 +393,7 @@ const DetailModalYardip = ({ asset, show, onHide }) => {
                             <small className="text-danger">
                               Data lokasi tidak valid atau rusak
                             </small>
-                            <br/>
+                            <br />
                             <small className="text-muted">
                               Format: {typeof asset.lokasi}
                             </small>
@@ -346,7 +404,7 @@ const DetailModalYardip = ({ asset, show, onHide }) => {
                   )}
                 </div>
               </div>
-              
+
               {/* Info tambahan tentang lokasi */}
               {hasValidLocation && assetForMap && (
                 <div className="card-footer bg-light">
@@ -371,22 +429,28 @@ const DetailModalYardip = ({ asset, show, onHide }) => {
                 <div className="card-body">
                   <Row>
                     <Col md={4}>
-                      <strong>Tipe Geometri:</strong><br/>
+                      <strong>Tipe Geometri:</strong>
+                      <br />
+                      <span className="text-muted">Polygon</span>
+                    </Col>
+                    <Col md={4}>
+                      <strong>Jumlah Koordinat:</strong>
+                      <br />
                       <span className="text-muted">
-                        Polygon
+                        {Array.isArray(validatedLocation) &&
+                        validatedLocation[0]
+                          ? validatedLocation[0].length
+                          : 0}{" "}
+                        titik
                       </span>
                     </Col>
                     <Col md={4}>
-                      <strong>Jumlah Koordinat:</strong><br/>
+                      <strong>Luas Kalkulasi:</strong>
+                      <br />
                       <span className="text-muted">
-                        {Array.isArray(validatedLocation) && validatedLocation[0] ? 
-                          validatedLocation[0].length : 0} titik
-                      </span>
-                    </Col>
-                    <Col md={4}>
-                      <strong>Luas Kalkulasi:</strong><br/>
-                      <span className="text-muted">
-                        {asset.area ? `${Number(asset.area).toFixed(2)} m²` : "Tidak tersedia"}
+                        {asset.area
+                          ? `${Number(asset.area).toFixed(2)} mÂ²`
+                          : "Tidak tersedia"}
                       </span>
                     </Col>
                   </Row>
@@ -417,7 +481,7 @@ const DataAsetYardipPage = () => {
   // State untuk modal detail
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedAssetDetail, setSelectedAssetDetail] = useState(null);
-  
+
   // State untuk edit mode dengan peta
   const [isEditingLocation, setIsEditingLocation] = useState(false);
   const [editedLocationData, setEditedLocationData] = useState(null);
@@ -452,7 +516,9 @@ const DataAsetYardipPage = () => {
   }, [selectedBidang, assets]);
 
   // Get unique bidang options from assets
-  const bidangOptions = [...new Set(assets.map(asset => asset.bidang).filter(Boolean))];
+  const bidangOptions = [
+    ...new Set(assets.map((asset) => asset.bidang).filter(Boolean)),
+  ];
 
   const handleDeleteAsset = async (id) => {
     Swal.fire({
@@ -508,16 +574,16 @@ const DataAsetYardipPage = () => {
 
   const handleSaveAsset = async (updatedData) => {
     if (!editingAsset) return;
-    
+
     // Gabungkan data form dengan data lokasi yang baru jika ada
     const finalData = {
       ...updatedData,
       ...(editedLocationData && {
         lokasi: editedLocationData.geometry || editedLocationData.coordinates,
-        area: editedLocationData.area
-      })
+        area: editedLocationData.area,
+      }),
     };
-    
+
     const toastId = toast.loading("Menyimpan perubahan...");
     try {
       const response = await axios.put(
@@ -539,7 +605,7 @@ const DataAsetYardipPage = () => {
 
   // Handler untuk tombol detail
   const handleViewDetail = (asset) => {
-    console.log('Yarsip Asset data for detail:', asset);
+    console.log("Yarsip Asset data for detail:", asset);
     setSelectedAssetDetail(asset);
     setShowDetailModal(true);
   };
@@ -552,48 +618,50 @@ const DataAsetYardipPage = () => {
   // Prepare current asset for map display during editing
   const prepareEditAssetForMap = () => {
     if (!editingAsset) return [];
-    
+
     const validateLocationData = (asset) => {
       if (!asset.lokasi) return null;
-      
+
       let lokasi = asset.lokasi;
-      
-      if (typeof lokasi === 'string') {
+
+      if (typeof lokasi === "string") {
         try {
           lokasi = JSON.parse(lokasi);
         } catch (e) {
           return null;
         }
       }
-      
+
       // Handle yarsip format - array of coordinates
       if (Array.isArray(lokasi) && lokasi.length > 0) {
         return lokasi;
       }
-      
-      if (lokasi.type === 'Polygon' && lokasi.coordinates) {
+
+      if (lokasi.type === "Polygon" && lokasi.coordinates) {
         return lokasi.coordinates;
       }
-      
+
       if (lokasi.coordinates && Array.isArray(lokasi.coordinates)) {
         return lokasi.coordinates;
       }
-      
+
       return null;
     };
 
     const validatedLocation = validateLocationData(editingAsset);
     if (!validatedLocation) return [];
 
-    return [{
-      id: editingAsset.id,
-      nama: editingAsset.pengelola || 'Unknown',
-      kodim: editingAsset.bidang || '',
-      lokasi: validatedLocation,
-      luas: Number(editingAsset.area) || 0,
-      status: editingAsset.status || '',
-      type: 'yarsip'
-    }];
+    return [
+      {
+        id: editingAsset.id,
+        nama: editingAsset.pengelola || "Unknown",
+        kodim: editingAsset.bidang || "",
+        lokasi: validatedLocation,
+        luas: Number(editingAsset.area) || 0,
+        status: editingAsset.status || "",
+        type: "yarsip",
+      },
+    ];
   };
 
   if (loading) return <Spinner animation="border" variant="primary" />;
@@ -601,21 +669,22 @@ const DataAsetYardipPage = () => {
   // Main view
   return (
     <Container fluid className="mt-4">
-      <h3>Data Aset Yarsip</h3>
+      <h3>Data Aset Yardip</h3>
       {error && <Alert variant="danger">{error}</Alert>}
 
       {/* Debug Panel - Remove this in production */}
       {process.env.NODE_ENV === "development" && (
         <Alert variant="success" className="mb-3">
           <small>
-            <strong>Debug Info Yarsip:</strong>
+            <strong>Debug Info Yardip:</strong>
             <br />- Total Assets: {assets.length} items
-            <br />- Filtered Assets: {filteredAssets.length} items  
+            <br />- Filtered Assets: {filteredAssets.length} items
             <br />- Selected Bidang: {selectedBidang || "All"}
-            <br />- Available Bidang Options: {bidangOptions.join(', ') || "None"}
+            <br />- Available Bidang Options:{" "}
+            {bidangOptions.join(", ") || "None"}
             <br />- Editing Asset: {editingAsset?.id || "None"}
-            <br />- API Endpoint: {API_URL}/yarsip_assets
-            <br />- Asset Type: Yarsip Assets Only
+            <br />- API Endpoint: {API_URL}/yardip_assets
+            <br />- Asset Type: Yardip Assets Only
           </small>
         </Alert>
       )}
@@ -643,7 +712,8 @@ const DataAsetYardipPage = () => {
               <Col md={6} className="d-flex align-items-end">
                 <div className="text-muted">
                   <small>
-                    Menampilkan {filteredAssets.length} dari {assets.length} aset yarsip
+                    Menampilkan {filteredAssets.length} dari {assets.length}{" "}
+                    aset yardip
                   </small>
                 </div>
               </Col>
@@ -655,8 +725,11 @@ const DataAsetYardipPage = () => {
               <div className="text-center py-5">
                 <div className="text-muted">
                   <i className="fas fa-folder-open fa-3x mb-3"></i>
-                  <h5>Belum Ada Data Aset Yarsip</h5>
-                  <p>Silakan tambah aset yarsip baru di halaman Tambah Aset Yarsip.</p>
+                  <h5>Belum Ada Data Aset Yardip</h5>
+                  <p>
+                    Silakan tambah aset yardip baru di halaman Tambah Aset
+                    Yardip.
+                  </p>
                 </div>
               </div>
             ) : (
@@ -675,7 +748,7 @@ const DataAsetYardipPage = () => {
           <Col md={12} className="mt-4">
             <div className="card shadow-sm">
               <div className="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                <span>Edit Aset Yarsip - {editingAsset.pengelola}</span>
+                <span>Edit Aset Yardip - {editingAsset.pengelola}</span>
                 <div className="d-flex gap-2">
                   <Button
                     variant="outline-light"
@@ -683,14 +756,16 @@ const DataAsetYardipPage = () => {
                     onClick={handleEditLocation}
                     disabled={isEditingLocation}
                   >
-                    {isEditingLocation ? "Sedang Edit Lokasi..." : "Edit Lokasi"}
+                    {isEditingLocation
+                      ? "Sedang Edit Lokasi..."
+                      : "Edit Lokasi"}
                   </Button>
                   <Button
                     variant="outline-light"
                     size="sm"
                     onClick={handleCancelEdit}
                   >
-                    ✕
+                    âœ•
                   </Button>
                 </div>
               </div>
@@ -702,18 +777,23 @@ const DataAsetYardipPage = () => {
                       onCancel={handleCancelEdit}
                       assetToEdit={editingAsset}
                       isEnabled={true}
-                      initialGeometry={editedLocationData ? editedLocationData.geometry : null}
-                      initialArea={editedLocationData ? editedLocationData.area : null}
+                      initialGeometry={
+                        editedLocationData ? editedLocationData.geometry : null
+                      }
+                      initialArea={
+                        editedLocationData ? editedLocationData.area : null
+                      }
                     />
-                    
+
                     {/* Status edit lokasi */}
                     {editedLocationData && (
                       <div className="alert alert-info mt-2">
                         <small>
                           <i className="fas fa-map-marked-alt me-1"></i>
-                          Lokasi baru telah digambar (Luas: {editedLocationData.area?.toFixed(2)} m²)
-                          <br/>
-                          <button 
+                          Lokasi baru telah digambar (Luas:{" "}
+                          {editedLocationData.area?.toFixed(2)} mÂ²)
+                          <br />
+                          <button
                             className="btn btn-link btn-sm p-0 text-decoration-none"
                             onClick={handleCancelEditLocation}
                           >
@@ -728,20 +808,39 @@ const DataAsetYardipPage = () => {
                     <div className="bg-light p-3 rounded">
                       <h6 className="text-muted mb-3">Preview Data</h6>
                       <small>
-                        <strong>ID:</strong> {editingAsset.id}<br/>
-                        <strong>Status Saat Ini:</strong> <span className={`badge ${
-                          editingAsset.status === 'Aktif' ? 'bg-success' : 
-                          editingAsset.status === 'Tidak Aktif' ? 'bg-danger' : 
-                          editingAsset.status === 'Cadangan' ? 'bg-warning' :
-                          'bg-secondary'
-                        }`}>{editingAsset.status}</span><br/>
-                        <strong>Lokasi:</strong> {editingAsset.kabkota}, {editingAsset.kecamatan}<br/>
+                        <strong>ID:</strong> {editingAsset.id}
+                        <br />
+                        <strong>Status Saat Ini:</strong>{" "}
+                        <span
+                          className={`badge ${
+                            editingAsset.status === "Aktif"
+                              ? "bg-success"
+                              : editingAsset.status === "Tidak Aktif"
+                              ? "bg-danger"
+                              : editingAsset.status === "Cadangan"
+                              ? "bg-warning"
+                              : "bg-secondary"
+                          }`}
+                        >
+                          {editingAsset.status}
+                        </span>
+                        <br />
+                        <strong>Lokasi:</strong> {editingAsset.kabkota},{" "}
+                        {editingAsset.kecamatan}
+                        <br />
                         {editingAsset.area && (
                           <>
-                            <strong>Luas Area:</strong> {Number(editingAsset.area).toFixed(2)} m²<br/>
+                            <strong>Luas Area:</strong>{" "}
+                            {Number(editingAsset.area).toFixed(2)} mÂ²
+                            <br />
                           </>
                         )}
-                        <strong>Terakhir Diupdate:</strong> {editingAsset.updated_at ? new Date(editingAsset.updated_at).toLocaleString('id-ID') : '-'}
+                        <strong>Terakhir Diupdate:</strong>{" "}
+                        {editingAsset.updated_at
+                          ? new Date(editingAsset.updated_at).toLocaleString(
+                              "id-ID"
+                            )
+                          : "-"}
                       </small>
                     </div>
                   </Col>
@@ -757,7 +856,9 @@ const DataAsetYardipPage = () => {
             <div className="card shadow-sm">
               <div className="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
                 <div>
-                  <h6 className="mb-0">Edit Lokasi Aset Yarsip - {editingAsset.pengelola}</h6>
+                  <h6 className="mb-0">
+                    Edit Lokasi Aset Yardip - {editingAsset.pengelola}
+                  </h6>
                   <small>Gambar ulang polygon untuk lokasi aset ini</small>
                 </div>
                 <Button
@@ -782,7 +883,8 @@ const DataAsetYardipPage = () => {
                 <div className="mt-2">
                   <small className="text-muted">
                     <i className="fas fa-info-circle me-1"></i>
-                    Polygon hijau menunjukkan lokasi saat ini. Gambar polygon baru untuk mengubah lokasi.
+                    Polygon hijau menunjukkan lokasi saat ini. Gambar polygon
+                    baru untuk mengubah lokasi.
                   </small>
                 </div>
               </div>

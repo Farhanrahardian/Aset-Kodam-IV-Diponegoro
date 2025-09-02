@@ -9,897 +9,434 @@
   ],
   "assets": [
     {
-      "id": "T1756752520108",
-      "nama": "asdasd",
-      "korem_id": "2",
-      "kodim": "Kodim 0703/Cilacap",
-      "luas": 8353792232.63,
-      "lokasi_nama": "Lokasi dari Peta",
-      "kib_kode_barang": "asad",
-      "kode_barang": "asad",
-      "nomor_registrasi": "asdasd",
-      "no_registrasi": "asdasd",
-      "registrasi": "asdasd",
-      "nomorRegistrasi": "asdasd",
-      "noRegistrasi": "asdasd",
-      "no_reg": "asdasd",
-      "alamat": "asdasd",
-      "peruntukan": "asdasd",
-      "fungsi": "asdasd",
-      "status": "Tidak Aktif",
-      "asal_milik": "Hibah",
-      "bukti_pemilikan": "Sertifikat Hak Guna Bangunan",
-      "bukti_kepemilikan": "Sertifikat Hak Guna Bangunan",
-      "pemilikan_sertifikat": "Tidak",
-      "sertifikat_bidang": "1",
-      "sertifikat_luas": "111111111",
-      "belum_sertifikat_bidang": "1",
-      "belum_sertifikat_luas": "1111111",
-      "keterangan": "asdasd",
-      "atas_nama_pemilik_sertifikat": "asdasd",
-      "lokasi": [
-        [
-          [109.335407, -7.153896],
-          [109.236582, -7.720506],
-          [110.373057, -7.829383],
-          [110.400508, -7.164798],
-          [109.335407, -7.153896]
-        ]
-      ],
-      "kode_barang": "A2",
-      "no_reg": "Sp09wf",
-      "alamat": "JLmajengna",
-      "asal_milik": "pembelian tahun 1960",
-      "bukti_kepemilikan": "shp no 7",
-      "atas_nama_pemilik_sertifikat": "pemerinta RI"
-    },
-    {
-      "id": "T1756430976891",
-      "nama": "-",
-      "korem_id": 2,
-      "kodim": "Kodim 0709/Bantul",
-      "luas": 4077395390.36,
-      "status": "dimiliki",
-      "fungsi": "Kosong",
-      "lokasi": [
-        [
-          [110.808252, -6.955364],
-          [110.874174, -7.478917],
-          [111.489441, -7.473467],
-          [111.368585, -6.90625],
-          [110.74233, -6.928079],
-          [110.808252, -6.955364]
-        ]
-      ],
-      "kode_barang": "A3",
-      "no_reg": "adsaad09a",
-      "alamat": "Jl. ahajs",
-      "asal_milik": "pembelian tahun 1960",
-      "bukti_kepemilikan": "shp no 7",
-      "atas_nama_pemilik_sertifikat": "pemerinta RI"
-    },
-    {
-      "id": "T1756431060254",
-      "nama": "asasas",
+      "id": "T1756777256142",
+      "nama": "Kakakakak",
       "korem_id": "1",
       "kodim": "Kodim 0702/Purbalingga",
-      "luas": 165523991.95,
-      "status": "dimiliki",
-      "fungsi": "kantor puat",
-      "lokasi": [
-        [
-          [111.188279, -7.162988],
-          [110.463244, -7.685572],
-          [111.836416, -7.837873],
-          [110.214958, -6.949907],
-          [110.072128, -6.966277]
-        ]
-      ],
-      "kode_barang": "A6",
-      "no_reg": "q1",
-      "alamat": "Jl.dvrd",
-      "asal_milik": "pembelian tahun 1960",
-      "bukti_kepemilikan": "shp no 7",
-      "atas_nama_pemilik_sertifikat": "pemerinta RI",
-      "lokasi_nama": "Lokasi dari Peta",
-      "sertifikat_bidang": "1",
-      "sertifikat_luas": "11",
-      "belum_sertifikat_bidang": "1",
-      "belum_sertifikat_luas": "11",
-      "peruntukan": "kantor puat",
-      "kib_kode_barang": "A6",
-      "nomor_registrasi": "q1",
-      "no_registrasi": "q1",
-      "registrasi": "q1",
-      "nomorRegistrasi": "q1",
-      "noRegistrasi": "q1",
-      "luas_total": 22,
-      "kodim_id": "Kodim 0702/Purbalingga"
-    },
-    {
-      "id": "T1756431125951",
-      "nama": "-",
-      "korem_id": 2,
-      "kodim": "Kodim 0709/Bantul",
-      "luas": 3198644931.27,
-      "status": "dimiliki",
-      "fungsi": "gedung",
-      "lokasi": [
-        [
-          [108.786376, -7.108794],
-          [108.791866, -7.621007],
-          [109.368349, -7.201472],
-          [108.786376, -7.108794]
-        ]
-      ],
-      "kode_barang": "A6",
-      "no_reg": "dadcaea54",
-      "alamat": "Jl. hkfv",
-      "asal_milik": "pembelian tahun 1960",
-      "bukti_kepemilikan": "shp no 7",
-      "atas_nama_pemilik_sertifikat": "pemerinta RI"
-    },
-    {
-      "id": "T1756433191655",
-      "nama": "Gan",
-      "korem_id": "4",
-      "kodim": "Kodim 0723/Klaten",
-      "luas": 1597055143.02,
-      "status": "Dalam Proses",
-      "fungsi": "kantor puat",
-      "lokasi": [
-        [
-          [109.547455, -7.156369],
-          [109.712259, -7.491692],
-          [110.077574, -7.388123],
-          [109.956718, -7.107277],
-          [109.547455, -7.156369]
-        ]
-      ],
-      "kode_barang": "11ajna",
-      "no_reg": "xah11",
-      "alamat": "Jl. bkuk",
-      "asal_milik": "Pembelian",
-      "bukti_kepemilikan": "Sertifikat Hak Guna Bangunan",
-      "atas_nama_pemilik_sertifikat": "pemerinta RI",
-      "belum_sertifikat_bidang": "1",
-      "belum_sertifikat_luas": "1",
-      "bukti_pemilikan": "Sertifikat Hak Guna Bangunan",
-      "pemilikan_sertifikat": "Ya",
-      "peruntukan": "kantor puat",
-      "kib_kode_barang": "11ajna",
-      "nomor_registrasi": "xah11",
-      "no_registrasi": "xah11",
-      "registrasi": "xah11",
-      "nomorRegistrasi": "xah11",
-      "noRegistrasi": "xah11",
-      "lokasi_nama": "Lokasi dari Peta",
-      "luas_total": 1,
-      "kodim_id": "Kodim 0723/Klaten"
-    },
-    {
-      "id": "T1756711099402",
-      "nama": "Prince Yazna",
-      "korem_id": "5",
-      "kodim": "Kodim 0733/Kota Semarang",
-      "luas": 460691012.59,
-      "lokasi_nama": "Lokasi dari Peta",
-      "kib_kode_barang": "fbsds",
-      "kode_barang": "fbsds",
-      "nomor_registrasi": "csdbhcbsd",
-      "no_registrasi": "csdbhcbsd",
-      "registrasi": "csdbhcbsd",
-      "nomorRegistrasi": "csdbhcbsd",
-      "noRegistrasi": "csdbhcbsd",
-      "no_reg": "csdbhcbsd",
-      "alamat": "cbsdjhcbcjhsdc",
-      "peruntukan": "bcjhcs",
-      "fungsi": "bcjhcs",
-      "status": "Aktif",
-      "keterangan": "tidak",
-      "type": "yarsip",
-      "lokasi": [
-        [
-          [107.304469, -6.655153],
-          [107.200116, -7.124555],
-          [108.100844, -7.200925],
-          [108.012428, -6.562713],
-          [107.304469, -6.655153]
-        ]
-      ],
-      "luas_total": 2121,
-      "luas_gambar": 460691012.59431577,
-      "kodim_id": "5_6"
-    },
-    {
-      "id": "T1756716755592",
-      "nama": "1",
-      "korem_id": "5",
-      "kodim": "Kodim 0733/Kota Semarang",
-      "luas": 406952210.8,
-      "lokasi_nama": "Lokasi dari Peta",
-      "kib_kode_barang": "a1",
-      "kode_barang": "a1",
-      "nomor_registrasi": "adada1211dasd",
-      "no_registrasi": "adada1211dasd",
-      "registrasi": "adada1211dasd",
-      "nomorRegistrasi": "adada1211dasd",
-      "noRegistrasi": "adada1211dasd",
-      "no_reg": "adada1211dasd",
-      "alamat": "asa",
-      "peruntukan": "kantor puat",
-      "fungsi": "kantor puat",
-      "status": "Aktif",
-      "asal_milik": "Pembelian",
-      "bukti_pemilikan": "Sertifikat Hak Milik",
-      "bukti_kepemilikan": "Sertifikat Hak Milik",
-      "pemilikan_sertifikat": "Ya",
-      "sertifikat_bidang": "1",
-      "sertifikat_luas": "9999.99",
-      "belum_sertifikat_bidang": "1",
-      "belum_sertifikat_luas": "1",
-      "keterangan": "",
-      "atas_nama_pemilik_sertifikat": "",
-      "lokasi": [
-        [
-<<<<<<< Updated upstream
-          [110.455567, -7.079477],
-          [110.481681, -7.089008],
-          [110.500923, -7.060414],
-          [110.463814, -7.035903],
-          [110.513293, -6.973259],
-          [110.507795, -6.94602],
-          [110.447321, -6.948744],
-          [110.422581, -6.929676],
-          [110.367604, -6.955554],
-          [110.315376, -6.937848],
-          [110.265897, -6.974621],
-          [110.283766, -7.010027],
-          [110.274145, -7.033177],
-          [110.305757, -7.109428],
-          [110.342866, -7.106705],
-          [110.346989, -7.079474],
-          [110.357985, -7.114874],
-          [110.379975, -7.12032],
-          [110.418459, -7.101259],
-          [110.429454, -7.121682],
-          [110.455567, -7.079477]
-=======
-          [
-            110.455567,
-            -7.079477
-          ],
-          [
-            110.481681,
-            -7.089008
-          ],
-          [
-            110.500923,
-            -7.060414
-          ],
-          [
-            110.463814,
-            -7.035903
-          ],
-          [
-            110.513293,
-            -6.973259
-          ],
-          [
-            110.507795,
-            -6.94602
-          ],
-          [
-            110.447321,
-            -6.948744
-          ],
-          [
-            110.422581,
-            -6.929676
-          ],
-          [
-            110.367604,
-            -6.955554
-          ],
-          [
-            110.315376,
-            -6.937848
-          ],
-          [
-            110.265897,
-            -6.974621
-          ],
-          [
-            110.283766,
-            -7.010027
-          ],
-          [
-            110.274145,
-            -7.033177
-          ],
-          [
-            110.305757,
-            -7.109428
-          ],
-          [
-            110.342866,
-            -7.106705
-          ],
-          [
-            110.346989,
-            -7.079474
-          ],
-          [
-            110.357985,
-            -7.114874
-          ],
-          [
-            110.379975,
-            -7.12032
-          ],
-          [
-            110.418459,
-            -7.101259
-          ],
-          [
-            110.429454,
-            -7.121682
-          ],
-          [
-            110.455567,
-            -7.079477
-          ]
->>>>>>> Stashed changes
-        ]
-      ],
-      "luas_total": 10000.99,
-      "kodim_id": "5_6"
-    },
-    {
-      "id": "T1756725275016",
-      "nama": "ww",
-      "korem_id": "3",
-      "kodim": "Kodim 0702/Purbalingga",
-      "luas": 846067265.06,
-      "lokasi_nama": "Lokasi dari Peta",
-      "kib_kode_barang": "q",
-      "kode_barang": "q",
-      "nomor_registrasi": "q",
-      "no_registrasi": "q",
-      "registrasi": "q",
-      "nomorRegistrasi": "q",
-      "noRegistrasi": "q",
-      "no_reg": "q",
-      "alamat": "q",
-      "peruntukan": "q",
-      "fungsi": "q",
-      "status": "Aktif",
-      "asal_milik": "Pembelian",
-      "bukti_pemilikan": "Sertifikat Hak Guna Bangunan",
-      "bukti_kepemilikan": "Sertifikat Hak Guna Bangunan",
-      "pemilikan_sertifikat": "Ya",
-      "sertifikat_bidang": "1",
-      "sertifikat_luas": "1",
-      "belum_sertifikat_bidang": "",
-      "belum_sertifikat_luas": "",
-      "keterangan": "1",
-      "atas_nama_pemilik_sertifikat": "q",
-      "lokasi": [
-        [
-<<<<<<< Updated upstream
-          [109.644494, -7.276626],
-          [110.172272, -7.565067],
-          [109.534541, -7.478011],
-          [109.644494, -7.276626]
-=======
-          [
-            109.644494,
-            -7.276626
-          ],
-          [
-            110.172272,
-            -7.565067
-          ],
-          [
-            109.534541,
-            -7.478011
-          ],
-          [
-            109.644494,
-            -7.276626
-          ]
->>>>>>> Stashed changes
-        ]
-      ],
-      "luas_total": 1,
-      "kodim_id": "3_2"
-    },
-    {
-      "id": "T1756727655606",
-      "nama": "Ahmad Imtiyaz Najih",
-      "korem_id": "1",
-      "kodim": "Kodim 0701/Banyumas",
-      "luas": 2703734456.13,
-      "lokasi_nama": "Lokasi dari Peta",
-      "kib_kode_barang": "q",
-      "kode_barang": "q",
-      "nomor_registrasi": "q",
-      "no_registrasi": "q",
-      "registrasi": "q",
-      "nomorRegistrasi": "q",
-      "noRegistrasi": "q",
-      "no_reg": "q",
-      "alamat": "q",
-      "peruntukan": "q",
-      "fungsi": "q",
-      "status": "Dalam Proses",
-      "asal_milik": "Pembelian",
-      "bukti_pemilikan": "",
-      "bukti_kepemilikan": "",
-      "pemilikan_sertifikat": "Ya",
-      "sertifikat_bidang": "1",
-      "sertifikat_luas": "2",
-      "belum_sertifikat_bidang": "2",
-      "belum_sertifikat_luas": "2",
-      "keterangan": "q",
-      "atas_nama_pemilik_sertifikat": "w",
-      "lokasi": [
-        [
-<<<<<<< Updated upstream
-          [109.430085, -7.222183],
-          [109.677481, -7.565067],
-          [110.447156, -7.271182],
-          [109.864402, -7.140505],
-          [109.430085, -7.222183]
-=======
-          [
-            109.430085,
-            -7.222183
-          ],
-          [
-            109.677481,
-            -7.565067
-          ],
-          [
-            110.447156,
-            -7.271182
-          ],
-          [
-            109.864402,
-            -7.140505
-          ],
-          [
-            109.430085,
-            -7.222183
-          ]
->>>>>>> Stashed changes
-        ]
-      ],
-      "bukti_pemilikan_file": null,
-      "keterangan_bukti_pemilikan": "w",
-      "luas_total": 4,
-      "kodim_id": "1_1",
-      "bukti_pemilikan_filename": "",
-      "bukti_pemilikan_url": ""
-    },
-    {
-      "id": "T1756741534336",
-      "nama": "Admin",
-      "korem_id": "2",
-      "kodim": "",
-      "luas": 727436151.88,
-      "kib_kode_barang": "Q1",
-      "kode_barang": "Q1",
-      "nomor_registrasi": "q",
-      "no_registrasi": "q",
-      "registrasi": "q",
-      "nomorRegistrasi": "q",
-      "noRegistrasi": "q",
-      "no_reg": "q",
-      "alamat": "xx",
-      "peruntukan": "kantor puat",
-      "fungsi": "kantor puat",
-      "status": "Aktif",
-      "asal_milik": "Hibah",
-      "bukti_pemilikan": "",
-      "bukti_kepemilikan": "",
-      "bukti_pemilikan_file": {},
-      "keterangan_bukti_pemilikan": "aa",
-      "pemilikan_sertifikat": "Ya",
-      "sertifikat_bidang": "34",
-      "sertifikat_luas": "667668",
-      "belum_sertifikat_bidang": "11",
-      "belum_sertifikat_luas": "31111",
-      "keterangan": "sxsxs",
-      "atas_nama_pemilik_sertifikat": "yazna",
-      "lokasi": [
-        [
-<<<<<<< Updated upstream
-          [108.92451, -7.183849],
-          [109.336837, -7.232852],
-          [109.28186, -6.938751],
-          [108.92451, -7.183849]
-=======
-          [
-            108.92451,
-            -7.183849
-          ],
-          [
-            109.336837,
-            -7.232852
-          ],
-          [
-            109.28186,
-            -6.938751
-          ],
-          [
-            108.92451,
-            -7.183849
-          ]
->>>>>>> Stashed changes
-        ]
-      ],
-      "luas_total": 698779,
-      "kodim_id": ""
-    },
-    {
-      "id": "T1756760749801",
-      "nama": "Ahmad Imtiyaz Najihuhu",
-      "korem_id": "1",
-      "kodim": "Kodim 0701/Banyumas",
-      "luas": 16931611973.82,
+      "luas": 11768453020.426308,
       "lokasi_nama": "Lokasi dari Peta",
       "kib_kode_barang": "Q1",
       "kode_barang": "Q1",
-      "nomor_registrasi": "csdbhcbsd",
-      "no_registrasi": "csdbhcbsd",
-      "registrasi": "csdbhcbsd",
-      "nomorRegistrasi": "csdbhcbsd",
-      "noRegistrasi": "csdbhcbsd",
-      "no_reg": "csdbhcbsd",
-      "alamat": "q",
-      "peruntukan": "qqq",
-      "fungsi": "qqq",
-      "status": "Aktif",
-      "asal_milik": "Pembelian",
-      "bukti_pemilikan": "Letter C",
-      "bukti_kepemilikan": "Letter C",
-      "bukti_pemilikan_url": "",
-      "pemilikan_sertifikat": "Ya",
-      "sertifikat_bidang": "1",
-      "sertifikat_luas": "11",
-      "belum_sertifikat_bidang": "1",
-      "belum_sertifikat_luas": "11",
-      "keterangan": "ada",
-      "keterangan_bukti_pemilikan": "asa",
-      "atas_nama_pemilik_sertifikat": "pemerinta RI",
-      "lokasi": [
-        [
-<<<<<<< Updated upstream
-          [109.974355, -6.998895],
-          [111.414748, -7.211293],
-          [110.79351, -8.11963],
-          [109.303638, -7.695619],
-          [109.974355, -6.998895]
-=======
-          [
-            109.974355,
-            -6.998895
-          ],
-          [
-            111.414748,
-            -7.211293
-          ],
-          [
-            110.79351,
-            -8.11963
-          ],
-          [
-            109.303638,
-            -7.695619
-          ],
-          [
-            109.974355,
-            -6.998895
-          ]
->>>>>>> Stashed changes
-        ]
-      ],
-      "bukti_pemilikan_file": null,
-      "bukti_pemilikan_filename": "",
-      "luas_total": 22,
-      "kodim_id": "1_1"
-    },
-    {
-      "id": "T1756762265594",
-      "nama": "ICHINOSE HONAMI",
-      "korem_id": "4",
-      "kodim": "Kodim 0703/Cilacap",
-      "luas": 75997415803.64,
-      "lokasi_nama": "Lokasi dari Peta",
-      "kib_kode_barang": "fbsds",
-      "kode_barang": "fbsds",
       "nomor_registrasi": "asas12",
       "no_registrasi": "asas12",
       "registrasi": "asas12",
       "nomorRegistrasi": "asas12",
       "noRegistrasi": "asas12",
       "no_reg": "asas12",
-      "alamat": "1zz",
-      "peruntukan": "kantor puat",
-      "fungsi": "kantor puat",
-      "status": "Sengketa",
-      "asal_milik": "Hibah",
-      "bukti_pemilikan": "Lainnya",
-      "bukti_kepemilikan": "Lainnya",
+      "alamat": "asad",
+      "peruntukan": "asdasd",
+      "fungsi": "asdasd",
+      "status": "Dalam Proses",
+      "asal_milik": "Tukar Menukar",
+      "bukti_pemilikan": "",
+      "bukti_kepemilikan": "",
       "bukti_pemilikan_url": "",
       "pemilikan_sertifikat": "Ya",
-      "sertifikat_bidang": "12",
-      "sertifikat_luas": "121",
-      "belum_sertifikat_bidang": "12",
-      "belum_sertifikat_luas": "120.98",
-      "keterangan": "ada",
-      "keterangan_bukti_pemilikan": "xwwxw",
-      "atas_nama_pemilik_sertifikat": "q",
-      "lokasi": [
-        [
-<<<<<<< Updated upstream
-          [110.469987, -7.104528],
-          [112.603088, -8.203259],
-          [110.513969, -10.855143],
-          [108.259919, -8.67014],
-          [110.887811, -8.550759],
-          [110.469987, -7.104528]
-=======
+      "sertifikat_bidang": "11211",
+      "sertifikat_luas": "1211",
+      "belum_sertifikat_bidang": "1211",
+      "belum_sertifikat_luas": "121",
+      "keterangan": "sasa",
+      "keterangan_bukti_pemilikan": "asa",
+      "atas_nama_pemilik_sertifikat": "",
+      "lokasi": {
+        "type": "Polygon",
+        "coordinates": [
           [
-            110.469987,
-            -7.104528
-          ],
-          [
-            112.603088,
-            -8.203259
-          ],
-          [
-            110.513969,
-            -10.855143
-          ],
-          [
-            108.259919,
-            -8.67014
-          ],
-          [
-            110.887811,
-            -8.550759
-          ],
-          [
-            110.469987,
-            -7.104528
+            [
+              109.238247,
+              -6.863733
+            ],
+            [
+              111.132712,
+              -6.841929
+            ],
+            [
+              110.127822,
+              -7.359505
+            ],
+            [
+              109.397492,
+              -7.20157
+            ],
+            [
+              109.441422,
+              -7.571811
+            ],
+            [
+              109.035073,
+              -7.517383
+            ],
+            [
+              109.029582,
+              -7.234251
+            ],
+            [
+              108.870337,
+              -7.506497
+            ],
+            [
+              108.38162,
+              -7.397619
+            ],
+            [
+              109.238247,
+              -6.863733
+            ]
           ]
->>>>>>> Stashed changes
         ]
-      ],
+      },
       "bukti_pemilikan_file": {},
-      "bukti_pemilikan_filename": "ChatGPT Image Aug 8, 2025, 04_36_11 AM (1).png",
-      "luas_total": 241.98000000000002,
-      "luas_gambar": 75997415803.64304,
-      "kodim_id": "4_3"
-    },
-    {
-      "id": "T1756763566980",
-      "nama": "Admin",
-      "korem_id": "1",
-      "kodim": "Kodim 0702/Purbalingga",
-      "luas": 9916726138.71,
-      "lokasi_nama": "Lokasi dari Peta",
-      "kib_kode_barang": "2312",
-      "kode_barang": "2312",
-      "nomor_registrasi": "13231",
-      "no_registrasi": "13231",
-      "registrasi": "13231",
-      "nomorRegistrasi": "13231",
-      "noRegistrasi": "13231",
-      "no_reg": "13231",
-      "alamat": "djhdw jjxqd",
-      "peruntukan": "dq q x",
-      "fungsi": "dq q x",
-      "status": "Tidak Aktif",
-      "asal_milik": "Hibah",
-      "bukti_pemilikan": "Sertifikat Hak Milik",
-      "bukti_kepemilikan": "Sertifikat Hak Milik",
-      "bukti_pemilikan_url": "",
-      "pemilikan_sertifikat": "Ya",
-      "sertifikat_bidang": "112",
-      "sertifikat_luas": "23213",
-      "belum_sertifikat_bidang": "3131",
-      "belum_sertifikat_luas": "1321",
-      "keterangan": "",
-      "keterangan_bukti_pemilikan": "wxwqdq",
-      "atas_nama_pemilik_sertifikat": "qxdqw",
-      "lokasi": [
-        [
-<<<<<<< Updated upstream
-          [110.348198, -6.977105],
-          [110.848487, -7.744565],
-          [108.654912, -7.559626],
-          [109.51255, -7.113275],
-          [110.194263, -7.390937],
-          [110.12829, -6.949866],
-          [110.348198, -6.977105]
-=======
-          [
-            110.348198,
-            -6.977105
-          ],
-          [
-            110.848487,
-            -7.744565
-          ],
-          [
-            108.654912,
-            -7.559626
-          ],
-          [
-            109.51255,
-            -7.113275
-          ],
-          [
-            110.194263,
-            -7.390937
-          ],
-          [
-            110.12829,
-            -6.949866
-          ],
-          [
-            110.348198,
-            -6.977105
-          ]
->>>>>>> Stashed changes
-        ]
-      ],
-      "bukti_pemilikan_file": {},
-      "bukti_pemilikan_filename": "ChatGPT Image Aug 8, 2025, 04_30_11 AM.png",
-      "luas_total": 24534,
-      "luas_gambar": 9916726138.708336,
+      "bukti_pemilikan_filename": "22.png",
+      "luas_total": 1332,
+      "luas_gambar": 11768453020.426308,
       "kodim_id": "1_2"
     },
     {
-      "id": "T1756765055645",
-      "nama": "21",
-      "korem_id": "1",
-      "kodim": "Kodim 0702/Purbalingga",
-      "luas": 17447953588.6,
+      "id": "T1756777748535",
+      "nama": "Ahmad Imtiyaz Najih",
+      "korem_id": "5",
+      "kodim": "Kodim 0733/Kota Semarang",
+      "luas": 12548756702.22,
       "lokasi_nama": "Lokasi dari Peta",
-      "kib_kode_barang": "123",
-      "kode_barang": "123",
-      "nomor_registrasi": "12312",
-      "no_registrasi": "12312",
-      "registrasi": "12312",
-      "nomorRegistrasi": "12312",
-      "noRegistrasi": "12312",
-      "no_reg": "12312",
-      "alamat": "312",
-      "peruntukan": "123",
-      "fungsi": "123",
+      "kib_kode_barang": "A6",
+      "kode_barang": "A6",
+      "nomor_registrasi": "csdbhcbsd",
+      "no_registrasi": "csdbhcbsd",
+      "registrasi": "csdbhcbsd",
+      "nomorRegistrasi": "csdbhcbsd",
+      "noRegistrasi": "csdbhcbsd",
+      "no_reg": "csdbhcbsd",
+      "alamat": "demak",
+      "peruntukan": "kantor pusat",
+      "fungsi": "kantor pusat",
       "status": "Aktif",
       "asal_milik": "Tukar Menukar",
-      "bukti_pemilikan": "Girik",
-      "bukti_kepemilikan": "Girik",
+      "bukti_pemilikan": "",
+      "bukti_kepemilikan": "",
       "bukti_pemilikan_url": "",
       "pemilikan_sertifikat": "Ya",
-      "sertifikat_bidang": "123",
-      "sertifikat_luas": "312",
-      "belum_sertifikat_bidang": "1231",
-      "belum_sertifikat_luas": "1231312",
-      "keterangan": "dxwdqcwd",
-      "keterangan_bukti_pemilikan": "312312",
-      "atas_nama_pemilik_sertifikat": "12321",
+      "sertifikat_bidang": "1212",
+      "sertifikat_luas": "121",
+      "belum_sertifikat_bidang": "2121",
+      "belum_sertifikat_luas": "2121",
+      "keterangan": "ada",
+      "keterangan_bukti_pemilikan": "ada",
+      "atas_nama_pemilik_sertifikat": "",
       "lokasi": [
         [
-<<<<<<< Updated upstream
-          [109.463071, -7.243961],
-          [110.886971, -7.276626],
-          [110.661566, -8.157661],
-          [109.089229, -8.282594],
-          [109.463071, -7.243961]
-=======
           [
-            109.463071,
-            -7.243961
+            109.962596,
+            -7.107917
           ],
           [
-            110.886971,
-            -7.276626
+            111.386496,
+            -7.026219
           ],
           [
-            110.661566,
-            -8.157661
+            111.194077,
+            -8.027343
           ],
           [
-            109.089229,
-            -8.282594
+            110.165975,
+            -7.777471
           ],
           [
-            109.463071,
-            -7.243961
+            109.962596,
+            -7.107917
           ]
->>>>>>> Stashed changes
         ]
       ],
       "bukti_pemilikan_file": {},
-      "bukti_pemilikan_filename": "ChatGPT Image Aug 8, 2025, 04_36_11 AM.png",
-      "luas_total": 1231624,
-      "luas_gambar": 17447953588.59969,
-      "kodim_id": "1_2"
+      "bukti_pemilikan_filename": "C.jpg",
+      "luas_total": 2242,
+      "luas_gambar": 12548756702.22338,
+      "kodim_id": "5_6"
     },
     {
-      "id": "T1756767591370",
-      "nama": "ddq",
-      "korem_id": "3",
-      "kodim": "Kodim 0703/Cilacap",
-      "luas": 7914458410.79,
+      "id": "T1756781205470",
+      "nama": "Admin",
+      "korem_id": 5,
+      "kodim": "Kodim 0714/Salatiga",
+      "luas": 19392196072.48,
       "lokasi_nama": "Lokasi dari Peta",
-      "kib_kode_barang": "111",
-      "kode_barang": "111",
+      "kib_kode_barang": "a1",
+      "kode_barang": "a1",
       "nomor_registrasi": "11",
       "no_registrasi": "11",
       "registrasi": "11",
       "nomorRegistrasi": "11",
       "noRegistrasi": "11",
       "no_reg": "11",
-      "alamat": "1111",
-      "peruntukan": "111",
-      "fungsi": "111",
-      "status": "Tidak Aktif",
+      "alamat": "asa",
+      "peruntukan": "kantor pusat",
+      "fungsi": "kantor pusat",
+      "status": "Aktif",
       "asal_milik": "Pembelian",
       "bukti_pemilikan": "",
       "bukti_kepemilikan": "",
       "bukti_pemilikan_url": "",
       "pemilikan_sertifikat": "Ya",
       "sertifikat_bidang": "11",
-      "sertifikat_luas": "1111",
-      "belum_sertifikat_bidang": "111",
-      "belum_sertifikat_luas": "111",
-      "keterangan": "1111",
-      "keterangan_bukti_pemilikan": "ssqsq",
+      "sertifikat_luas": "11",
+      "belum_sertifikat_bidang": "11",
+      "belum_sertifikat_luas": "11",
+      "keterangan": "ada",
+      "keterangan_bukti_pemilikan": "ada",
       "atas_nama_pemilik_sertifikat": "",
       "lokasi": [
         [
-<<<<<<< Updated upstream
-          [109.155201, -7.227627],
-          [110.425165, -7.292958],
-          [109.985351, -7.885934],
-          [109.067238, -7.771755],
-          [109.155201, -7.227627]
-=======
           [
-            109.155201,
-            -7.227627
+            109.660987,
+            -7.135059
           ],
           [
-            110.425165,
-            -7.292958
+            110.815501,
+            -7.200403
           ],
           [
-            109.985351,
-            -7.885934
-          ],
-          [
-            109.067238,
+            110.842989,
             -7.771755
           ],
           [
-            109.155201,
-            -7.227627
+            109.589518,
+            -7.695619
+          ],
+          [
+            109.611508,
+            -8.141363
+          ],
+          [
+            109.105722,
+            -8.179391
+          ],
+          [
+            109.144205,
+            -7.646666
+          ],
+          [
+            108.995768,
+            -8.163094
+          ],
+          [
+            108.687898,
+            -8.168527
+          ],
+          [
+            108.687898,
+            -7.184068
+          ],
+          [
+            109.660987,
+            -7.135059
           ]
->>>>>>> Stashed changes
         ]
       ],
       "bukti_pemilikan_file": {},
-      "bukti_pemilikan_filename": "11.png",
-      "luas_total": 1222,
-      "luas_gambar": 7914458410.785881,
-      "kodim_id": "3_3"
+      "bukti_pemilikan_filename": "aff0d52c10703b492b1330580382f355.jpg",
+      "luas_total": 22,
+      "luas_gambar": 19392196072.479107
+    },
+    {
+      "id": "T1756782626943",
+      "nama": "aaaa",
+      "korem_id": "1",
+      "kodim": "",
+      "luas": 4509149475.73,
+      "lokasi_nama": "Lokasi dari Peta",
+      "kib_kode_barang": "fbsds",
+      "kode_barang": "fbsds",
+      "nomor_registrasi": "adada1211dasd",
+      "no_registrasi": "adada1211dasd",
+      "registrasi": "adada1211dasd",
+      "nomorRegistrasi": "adada1211dasd",
+      "noRegistrasi": "adada1211dasd",
+      "no_reg": "adada1211dasd",
+      "alamat": "aaaa",
+      "peruntukan": "aaaa",
+      "fungsi": "aaaa",
+      "status": "Aktif",
+      "asal_milik": "Pembelian",
+      "bukti_pemilikan": "",
+      "bukti_kepemilikan": "",
+      "bukti_pemilikan_url": "",
+      "pemilikan_sertifikat": "Ya",
+      "sertifikat_bidang": "111",
+      "sertifikat_luas": "11",
+      "belum_sertifikat_bidang": "11",
+      "belum_sertifikat_luas": "10.98",
+      "keterangan": "dada",
+      "keterangan_bukti_pemilikan": "aaaa",
+      "atas_nama_pemilik_sertifikat": "",
+      "lokasi": [
+        [
+          [
+            109.962818,
+            -7.227549
+          ],
+          [
+            111.150317,
+            -7.020606
+          ],
+          [
+            111.018373,
+            -7.662906
+          ],
+          [
+            109.962818,
+            -7.227549
+          ]
+        ]
+      ],
+      "bukti_pemilikan_file": {},
+      "bukti_pemilikan_filename": "dinosaurs-funny-wallpaper-preview.jpg",
+      "luas_total": 21.98,
+      "luas_gambar": 4509149475.725679
+    }
+  ],
+  "yarsip_assets": [
+    {
+      "pengelola": "nanda",
+      "bidang": "Tanah",
+      "kabkota": "jogja",
+      "kecamatan": "jogja",
+      "kelurahan": "karangsemut",
+      "peruntukan": "majeed",
+      "status": "Tidak Aktif",
+      "keterangan": "yaaa",
+      "type": "yarsip",
+      "lokasi": [
+        [
+          [
+            111.188279,
+            -7.162988
+          ],
+          [
+            110.463244,
+            -7.685572
+          ],
+          [
+            111.836416,
+            -7.837873
+          ],
+          [
+            111.188279,
+            -7.162988
+          ]
+        ]
+      ],
+      "area": 5075509079.112641,
+      "updated_at": "2025-09-02T01:08:51.267Z",
+      "id": "Y1756750648747"
+    },
+    {
+      "id": "Y1756752447188",
+      "pengelola": "mjeed",
+      "bidang": "Fasilitas Umum",
+      "kabkota": "smf",
+      "kecamatan": "smg",
+      "kelurahan": "smg",
+      "peruntukan": "majeed",
+      "status": "Cadangan",
+      "keterangan": "ass",
+      "type": "yarsip",
+      "lokasi": [
+        [
+          [
+            108.786376,
+            -7.108794
+          ],
+          [
+            108.791866,
+            -7.621007
+          ],
+          [
+            109.368349,
+            -7.201472
+          ],
+          [
+            108.786376,
+            -7.108794
+          ]
+        ]
+      ],
+      "area": 1824538506.7253392,
+      "created_at": "2025-09-01T18:47:27.188Z",
+      "updated_at": "2025-09-01T18:47:27.188Z"
+    },
+    {
+      "pengelola": "Adytya",
+      "bidang": "Perkantoran",
+      "kabkota": "semarang",
+      "kecamatan": "semarang",
+      "kelurahan": "kaliwungu",
+      "peruntukan": "nanda",
+      "status": "Aktif",
+      "keterangan": "ini test terakhir",
+      "type": "yarsip",
+      "lokasi": [
+        [
+          [
+            108.787974,
+            -6.900157
+          ],
+          [
+            108.584745,
+            -7.538115
+          ],
+          [
+            109.67779,
+            -7.685206
+          ],
+          [
+            109.771165,
+            -6.883787
+          ],
+          [
+            108.787974,
+            -6.900157
+          ]
+        ]
+      ],
+      "area": 9282406394.259338,
+      "created_at": "2025-09-01T18:50:13.052Z",
+      "updated_at": "2025-09-01T18:50:49.445Z",
+      "id": "Y1756752613052"
+    },
+    {
+      "id": "Y1756777202287",
+      "pengelola": "Yayasan Rumpun Diponegoro",
+      "bidang": "Tanah",
+      "kabkota": "demak",
+      "kecamatan": "bonang",
+      "kelurahan": "moro",
+      "peruntukan": "kantor puat",
+      "status": "Aktif",
+      "keterangan": "ada",
+      "type": "yarsip",
+      "lokasi": [
+        [
+          [
+            109.325629,
+            -7.298402
+          ],
+          [
+            110.155779,
+            -7.260294
+          ],
+          [
+            110.100802,
+            -7.847878
+          ],
+          [
+            109.325629,
+            -7.298402
+          ]
+        ]
+      ],
+      "area": 2976525819.193603,
+      "created_at": "2025-09-02T01:40:02.287Z",
+      "updated_at": "2025-09-02T01:40:02.287Z"
     }
   ],
   "korem": [

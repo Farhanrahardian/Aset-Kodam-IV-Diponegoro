@@ -14,10 +14,7 @@ const TambahAsetPage = () => {
   const navigate = useNavigate();
   const [koremList, setKoremList] = useState([]);
   const [kodimList, setKodimList] = useState([]);
-  const [selectedKorem, setSelectedKorem] = useState("");
-  const [selectedKodim, setSelectedKodim] = useState("");
   const [loading, setLoading] = useState(true);
-  const [kodimLoading, setKodimLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const [isDrawing, setIsDrawing] = useState(false);
@@ -46,7 +43,6 @@ const TambahAsetPage = () => {
       return;
     }
 
-    setKodimLoading(true);
     console.log(`Fetching Kodim for Korem ID: ${koremId}`);
 
     try {
@@ -130,7 +126,6 @@ const TambahAsetPage = () => {
 
       console.log(`Kodim data loaded using: ${endpointUsed}`, kodimRes.data);
       setKodimList(kodimRes.data || []);
-      setSelectedKodim(""); // Reset selection when korem changes
       setError(null);
     } catch (err) {
       const errorMsg = `Gagal memuat data Kodim. ${
@@ -141,30 +136,12 @@ const TambahAsetPage = () => {
       setError(errorMsg);
       console.error("Error fetching Kodim:", err);
       setKodimList([]);
-    } finally {
-      setKodimLoading(false);
     }
   }, []);
 
   useEffect(() => {
     fetchKorem();
   }, [fetchKorem]);
-
-  // Handle Korem selection change
-  const handleKoremChange = (koremId) => {
-    setSelectedKorem(koremId);
-    if (koremId) {
-      fetchKodim(koremId);
-    } else {
-      setKodimList([]);
-      setSelectedKodim("");
-    }
-  };
-
-  // Handle Kodim selection change
-  const handleKodimChange = (kodimId) => {
-    setSelectedKodim(kodimId);
-  };
 
   const handleDrawingCreated = (data) => {
     // data now contains { geometry, area }
@@ -176,19 +153,10 @@ const TambahAsetPage = () => {
   const handleSaveAsset = async (assetData) => {
     const toastId = toast.loading("Menyimpan data aset...");
     try {
-      // Get kodim name instead of ID for saving
-      const selectedKodimObj = kodimList.find((k) => k.id === selectedKodim);
-      const kodimName = selectedKodimObj
-        ? selectedKodimObj.nama
-        : selectedKodim;
-
       await axios.post(`${API_URL}/assets`, {
         ...assetData,
         id: `T${Date.now()}`,
         lokasi: newAssetData.geometry,
-        korem_id: selectedKorem,
-        kodim_id: selectedKodim, // Keep ID for backend reference
-        kodim: kodimName, // Save name for display purposes
       });
       toast.success("Aset berhasil ditambahkan!", { id: toastId });
       setTimeout(() => {
@@ -218,88 +186,17 @@ const TambahAsetPage = () => {
       <h3>Tambah Aset Tanah Baru</h3>
       {error && <Alert variant="danger">{error}</Alert>}
 
-      {/* Debug Panel - Remove this in production */}
-      {process.env.NODE_ENV === "development" && (
-        <Alert variant="info" className="mb-3">
-          <small>
-            <strong>Debug Info:</strong>
-            <br />- Korem List: {koremList.length} items
-            <br />- Selected Korem: {selectedKorem || "None"}
-            <br />- Kodim List: {kodimList.length} items
-            <br />- Selected Kodim: {selectedKodim || "None"}
-            <br />- Selected Kodim Name:{" "}
-            {kodimList.find((k) => k.id === selectedKodim)?.nama || "None"}
-            <br />- Kodim Loading: {kodimLoading ? "Yes" : "No"}
-            <br />- API URL: {API_URL}
-          </small>
-        </Alert>
-      )}
-
-      {/* Step 1 & 2: Korem and Kodim Selection */}
-      <Row className="mb-4">
-        <Col md={6}>
-          <div className="mb-3">
-            <label className="form-label">1. Pilih Korem</label>
-            <select
-              className="form-select"
-              value={selectedKorem}
-              onChange={(e) => handleKoremChange(e.target.value)}
-            >
-              <option value="">-- Pilih Korem --</option>
-              {koremList.map((korem) => (
-                <option key={korem.id} value={korem.id}>
-                  {korem.nama}
-                </option>
-              ))}
-            </select>
-          </div>
-        </Col>
-        <Col md={6}>
-          <div className="mb-3">
-            <label className="form-label">2. Pilih Kodim</label>
-            <select
-              className="form-select"
-              value={selectedKodim}
-              onChange={(e) => handleKodimChange(e.target.value)}
-              disabled={!selectedKorem || kodimLoading}
-            >
-              <option value="">
-                {kodimLoading
-                  ? "Loading..."
-                  : !selectedKorem
-                  ? "Pilih Korem dulu"
-                  : "-- Pilih Kodim --"}
-              </option>
-              {kodimList.map((kodim) => (
-                <option key={kodim.id} value={kodim.id}>
-                  {kodim.nama}
-                </option>
-              ))}
-            </select>
-            {kodimLoading && (
-              <small className="text-muted">Memuat data Kodim...</small>
-            )}
-          </div>
-        </Col>
-      </Row>
-
       <Row>
         <Col md={7}>
           <div className="mb-3">
             <Button
               onClick={() => setIsDrawing(!isDrawing)}
               variant={isDrawing ? "danger" : "primary"}
-              disabled={!selectedKorem || !selectedKodim}
             >
               {isDrawing
                 ? "Batalkan Menggambar"
                 : "📍 Gambar Lokasi Aset di Peta"}
             </Button>
-            {(!selectedKorem || !selectedKodim) && (
-              <small className="text-muted d-block mt-1">
-                Pilih Korem dan Kodim terlebih dahulu untuk mengaktifkan peta
-              </small>
-            )}
           </div>
           <div style={{ height: "70vh", width: "100%" }}>
             <PetaAset
@@ -308,8 +205,6 @@ const TambahAsetPage = () => {
               onDrawingCreated={handleDrawingCreated}
               jatengBoundary={jatengBoundary}
               diyBoundary={diyBoundary}
-              selectedKorem={selectedKorem}
-              selectedKodim={selectedKodim}
             />
           </div>
         </Col>
@@ -319,8 +214,6 @@ const TambahAsetPage = () => {
             onCancel={handleCancel}
             koremList={koremList}
             kodimList={kodimList}
-            selectedKorem={selectedKorem}
-            selectedKodim={selectedKodim}
             initialGeometry={newAssetData ? newAssetData.geometry : null}
             initialArea={newAssetData ? newAssetData.area : null}
             isEnabled={isFormEnabled}
