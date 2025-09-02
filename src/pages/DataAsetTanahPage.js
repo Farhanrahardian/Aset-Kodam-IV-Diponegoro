@@ -199,7 +199,6 @@ const TabelAset = ({
           <th style={{ width: "10%" }}>Peruntukan</th>
           <th style={{ width: "8%" }}>Status</th>
           <th style={{ width: "10%" }}>Luas</th>
-          <th style={{ width: "12%" }}>Bukti Pemilikan</th>
           <th style={{ width: "8%" }}>Aksi</th>
         </tr>
       </thead>
@@ -247,7 +246,6 @@ const TabelAset = ({
                 </span>
               </td>
               <td>{renderLuas(asset)}</td>
-              <td>{renderBuktiPemilikan(asset)}</td>
               <td>
                 <div className="d-flex gap-1 flex-wrap">
                   <Button
