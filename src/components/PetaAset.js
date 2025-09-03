@@ -6,6 +6,7 @@ import {
   GeoJSON,
   Popup,
   LayersControl,
+  useMap,
 } from "react-leaflet";
 import { EditControl } from "react-leaflet-draw";
 import L from "leaflet";
@@ -21,29 +22,57 @@ const assetToGeoJSON = (asset) => ({
   },
 });
 
+// Inner component to handle each polygon, its click event, and zooming
+const AssetPolygon = ({ asset, style, onAssetClick }) => {
+  const map = useMap();
+  const geoJsonData = assetToGeoJSON(asset);
+
+  const handleClick = () => {
+    if (asset.lokasi) {
+      const bounds = L.geoJSON(geoJsonData).getBounds();
+      map.fitBounds(bounds, { padding: [50, 50] }); // Zoom to polygon with padding
+    }
+    if (onAssetClick) {
+      onAssetClick(asset); // Pass asset data up to the parent component
+    }
+  };
+
+  return (
+    <GeoJSON
+      data={geoJsonData}
+      style={style}
+      eventHandlers={{
+        click: handleClick,
+      }}
+    >
+      <Popup>
+        <b>{asset.nama}</b>
+        <br />
+        Kodim: {asset.kodim}
+        <br />
+        Luas: {asset.luas ? asset.luas.toLocaleString("id-ID") : "N/A"} m²
+        <br />
+        Status: {asset.status}
+      </Popup>
+    </GeoJSON>
+  );
+};
+
 const PetaAset = ({
   assets,
   isDrawing,
   onDrawingCreated,
-  fitBounds = false,
-  hideControls = false,
   jatengBoundary,
   diyBoundary,
+  onAssetClick, // Prop to handle click from parent
 }) => {
   const mapCenter = [-7.5, 110.0];
-  let mapBounds = null;
-
-  if (fitBounds && assets && assets.length === 1 && assets[0].lokasi) {
-    const geoJsonData = assetToGeoJSON(assets[0]);
-    mapBounds = L.geoJSON(geoJsonData).getBounds();
-  }
 
   const _onCreated = (e) => {
     const { layerType, layer } = e;
     if (layerType === "polygon") {
       const geoJSON = layer.toGeoJSON();
       const calculatedArea = area(geoJSON);
-      // Pass both geometry and calculated area
       onDrawingCreated({
         geometry: geoJSON.geometry.coordinates,
         area: calculatedArea,
@@ -76,7 +105,6 @@ const PetaAset = ({
     <MapContainer
       center={mapCenter}
       zoom={8}
-      bounds={mapBounds}
       style={{ height: "100%", width: "100%" }}
     >
       <LayersControl position="topright">
@@ -126,34 +154,27 @@ const PetaAset = ({
                   color: "#4CAF50",
                 },
               },
-              // Disable other drawing tools
               rectangle: false,
               circle: false,
               circlemarker: false,
               marker: false,
               polyline: false,
             }}
-            edit={{ remove: false, edit: false }} // Disable editing existing layers for now
+            edit={{ remove: false, edit: false }}
           />
         )}
       </FeatureGroup>
 
-      {/* Render existing assets as polygons */}
+      {/* Render existing assets as polygons using the new component */}
       {assets.map((asset) => {
         if (!asset.lokasi) return null; // Don't render assets without location
-        const geoJsonData = assetToGeoJSON(asset);
         return (
-          <GeoJSON key={asset.id} data={geoJsonData} style={assetStyle}>
-            <Popup>
-              <b>{asset.nama}</b>
-              <br />
-              Kodim: {asset.kodim}
-              <br />
-              Luas: {asset.luas.toLocaleString("id-ID")} m²
-              <br />
-              Status: {asset.status}
-            </Popup>
-          </GeoJSON>
+          <AssetPolygon
+            key={asset.id}
+            asset={asset}
+            style={assetStyle}
+            onAssetClick={onAssetClick}
+          />
         );
       })}
     </MapContainer>

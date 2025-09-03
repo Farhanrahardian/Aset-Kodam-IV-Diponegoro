@@ -584,6 +584,154 @@
       "fungsi": "Kantor Badan Pemerintahan",
       "luas_total": 2,
       "luas_gambar": 6612686610.516461
+    },
+    {
+      "id": "T1756873641718",
+      "nama": "Semarang Tank Bom",
+      "korem_id": 2,
+      "kodim": "0734",
+      "luas": 22050511879.89,
+      "lokasi_nama": "Lokasi dari Peta",
+      "kib_kode_barang": "1.23.232.11",
+      "nomor_registrasi": "a55d123",
+      "alamat": "semarang",
+      "peruntukan": "asa",
+      "status": "Aktif",
+      "asal_milik": "Pembelian",
+      "bukti_pemilikan": "",
+      "bukti_pemilikan_url": "",
+      "bukti_pemilikan_filename": "",
+      "pemilikan_sertifikat": "Ya",
+      "sertifikat_bidang": "12",
+      "sertifikat_luas": "21",
+      "belum_sertifikat_bidang": "12",
+      "belum_sertifikat_luas": "21",
+      "keterangan": "ada",
+      "keterangan_bukti_pemilikan": "",
+      "atas_nama_pemilik_sertifikat": "",
+      "lokasi": [
+        [
+          [
+            109.831416,
+            -6.48657
+          ],
+          [
+            110.996924,
+            -7.292958
+          ],
+          [
+            110.689054,
+            -7.934858
+          ],
+          [
+            109.770941,
+            -8.456348
+          ],
+          [
+            109.391601,
+            -7.913115
+          ],
+          [
+            109.886392,
+            -7.352837
+          ],
+          [
+            109.29814,
+            -7.238516
+          ],
+          [
+            109.831416,
+            -6.48657
+          ]
+        ]
+      ],
+      "kode_barang": "1.23.232.11",
+      "no_registrasi": "a55d123",
+      "registrasi": "a55d123",
+      "nomorRegistrasi": "a55d123",
+      "noRegistrasi": "a55d123",
+      "no_reg": "a55d123",
+      "fungsi": "asa",
+      "luas_total": 42,
+      "luas_gambar": 22050511879.89427
+    },
+    {
+      "id": "T1756875354332",
+      "nama": "Kantor Pesawat Tempur",
+      "korem_id": 4,
+      "kodim": "0725",
+      "luas": 6831893515.67,
+      "lokasi_nama": "Lokasi dari Peta",
+      "kib_kode_barang": "1.23.232.11",
+      "nomor_registrasi": "212",
+      "alamat": "srangen",
+      "peruntukan": "Kantor Badan Pemerintahan",
+      "status": "Aktif",
+      "asal_milik": "Warisan",
+      "bukti_pemilikan": "",
+      "bukti_pemilikan_url": "",
+      "bukti_pemilikan_filename": "",
+      "pemilikan_sertifikat": "Ya",
+      "sertifikat_bidang": "111",
+      "sertifikat_luas": "111",
+      "belum_sertifikat_bidang": "111",
+      "belum_sertifikat_luas": "111",
+      "keterangan": "ada",
+      "keterangan_bukti_pemilikan": "",
+      "atas_nama_pemilik_sertifikat": "",
+      "lokasi": [
+        [
+          [
+            107.500398,
+            -6.808199
+          ],
+          [
+            108.270074,
+            -6.944418
+          ],
+          [
+            108.286567,
+            -7.331064
+          ],
+          [
+            107.643338,
+            -7.135059
+          ],
+          [
+            107.654334,
+            -7.510659
+          ],
+          [
+            107.351961,
+            -7.461686
+          ],
+          [
+            107.346463,
+            -7.189513
+          ],
+          [
+            107.049589,
+            -7.472569
+          ],
+          [
+            106.824184,
+            -7.211293
+          ],
+          [
+            107.500398,
+            -6.808199
+          ]
+        ]
+      ],
+      "kode_barang": "1.23.232.11",
+      "no_registrasi": "212",
+      "registrasi": "212",
+      "nomorRegistrasi": "212",
+      "noRegistrasi": "212",
+      "no_reg": "212",
+      "fungsi": "Kantor Badan Pemerintahan",
+      "luas_total": 222,
+      "luas_gambar": 6831893515.666962
     }
   ],
   "yarsip_assets": [

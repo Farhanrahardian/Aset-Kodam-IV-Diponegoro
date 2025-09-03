@@ -9,25 +9,32 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { MapContainer, TileLayer, GeoJSON } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "./Dashboard.css";
 
 import jatengBoundary from "../data/indonesia_jawatengah.json";
 import diyBoundary from "../data/indonesia_yogyakarta.json";
 import AsetByKoremChart from "../components/AsetByKoremChart";
+import DetailOffcanvasAset from "../components/DetailOffcanvasAset";
+import PetaAset from "../components/PetaAset"; // Import PetaAset
 
 const Dashboard = () => {
   const [totalAset, setTotalAset] = useState(0);
   const [totalLuas, setTotalLuas] = useState(0);
   const [asetByKodim, setAsetByKodim] = useState([]);
+  const [asetList, setAsetList] = useState([]);
+
+  const [selectedAset, setSelectedAset] = useState(null);
+  const [showDetail, setShowDetail] = useState(false);
 
   useEffect(() => {
     fetch("http://localhost:3001/assets")
       .then((res) => res.json())
       .then((data) => {
+        console.log("Data aset dari API:", data);
+        setAsetList(data);
         setTotalAset(data.length);
-        setTotalLuas(data.reduce((acc, item) => acc + item.luas, 0));
+        setTotalLuas(data.reduce((acc, item) => acc + (item.luas || 0), 0));
 
         const counts = data.reduce((acc, curr) => {
           const kodim = curr.kodim || "Lainnya";
@@ -42,26 +49,22 @@ const Dashboard = () => {
       });
   }, []);
 
-  const mapCenter = [-7.5, 110.0];
-  const mapZoom = 7;
-
-  const styleJateng = {
-    color: "#ff7800",
-    weight: 2,
-    fill: false,
+  // Handler for when an asset polygon is clicked on the map
+  const handleAssetClick = (asset) => {
+    setSelectedAset(asset);
+    setShowDetail(true);
   };
 
-  const styleDIY = {
-    color: "#006400",
-    weight: 2,
-    dashArray: "4",
-    fill: false,
+  const handleCloseDetail = () => {
+    setShowDetail(false);
+    setSelectedAset(null);
   };
 
   return (
     <Container fluid className="dashboard-container p-4">
       <h2 className="dashboard-title mb-4">Aset Provinsi Jawa Tengah & DIY</h2>
 
+      {/* Summary Cards */}
       <Row>
         <Col md={6} className="mb-4">
           <Card className="summary-card h-100">
@@ -83,28 +86,26 @@ const Dashboard = () => {
         </Col>
       </Row>
 
+      {/* Peta */}
       <Row className="mb-4">
         <Col>
           <Card className="map-card">
             <Card.Body>
-              <Card.Title>Peta Batas Administrasi</Card.Title>
-              <MapContainer
-                center={mapCenter}
-                zoom={mapZoom}
-                style={{ height: "500px", width: "100%" }}
-              >
-                <TileLayer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  attribution="&copy; OpenStreetMap contributors"
+              <Card.Title>Peta Sebaran Aset</Card.Title>
+              <div style={{ height: "500px", width: "100%" }}>
+                <PetaAset
+                  assets={asetList}
+                  jatengBoundary={jatengBoundary}
+                  diyBoundary={diyBoundary}
+                  onAssetClick={handleAssetClick}
                 />
-                <GeoJSON data={jatengBoundary} style={styleJateng} />
-                <GeoJSON data={diyBoundary} style={styleDIY} />
-              </MapContainer>
+              </div>
             </Card.Body>
           </Card>
         </Col>
       </Row>
 
+      {/* Chart */}
       <Row>
         <Col md={6} className="mb-4">
           <AsetByKoremChart />
@@ -135,6 +136,13 @@ const Dashboard = () => {
           </Card>
         </Col>
       </Row>
+
+      {/* Offcanvas Detail */}
+      <DetailOffcanvasAset
+        show={showDetail}
+        handleClose={handleCloseDetail}
+        aset={selectedAset}
+      />
     </Container>
   );
 };
