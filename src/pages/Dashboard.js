@@ -98,6 +98,8 @@ const Dashboard = () => {
                   jatengBoundary={jatengBoundary}
                   diyBoundary={diyBoundary}
                   onAssetClick={handleAssetClick}
+                  tampilan="titik" // <-- Menampilkan aset sebagai titik
+                  asetPilihan={selectedAset} // <-- Memberitahu peta aset mana yang dipilih
                 />
               </div>
             </Card.Body>

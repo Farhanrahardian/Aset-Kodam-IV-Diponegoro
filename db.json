@@ -656,82 +656,70 @@
       "luas_gambar": 22050511879.89427
     },
     {
-      "id": "T1756875354332",
-      "nama": "Kantor Pesawat Tempur",
-      "korem_id": 4,
-      "kodim": "0725",
-      "luas": 6831893515.67,
+      "id": "T1756896020306",
+      "nama": "Kolam",
+      "korem_id": 5,
+      "kodim": "0733",
+      "luas": 4812997144.7,
       "lokasi_nama": "Lokasi dari Peta",
       "kib_kode_barang": "1.23.232.11",
-      "nomor_registrasi": "212",
-      "alamat": "srangen",
+      "nomor_registrasi": "a55daa3rrd",
+      "alamat": "asasaasa",
       "peruntukan": "Kantor Badan Pemerintahan",
       "status": "Aktif",
-      "asal_milik": "Warisan",
+      "asal_milik": "Pembelian",
       "bukti_pemilikan": "",
       "bukti_pemilikan_url": "",
       "bukti_pemilikan_filename": "",
       "pemilikan_sertifikat": "Ya",
       "sertifikat_bidang": "111",
-      "sertifikat_luas": "111",
-      "belum_sertifikat_bidang": "111",
-      "belum_sertifikat_luas": "111",
-      "keterangan": "ada",
+      "sertifikat_luas": "11",
+      "belum_sertifikat_bidang": "",
+      "belum_sertifikat_luas": "",
+      "keterangan": "qqsaas",
       "keterangan_bukti_pemilikan": "",
       "atas_nama_pemilik_sertifikat": "",
       "lokasi": [
         [
           [
-            107.500398,
-            -6.808199
+            107.901729,
+            -7.031578
           ],
           [
-            108.270074,
-            -6.944418
+            108.599935,
+            -7.390937
           ],
           [
-            108.286567,
-            -7.331064
+            108.347041,
+            -7.951165
           ],
           [
-            107.643338,
-            -7.135059
+            107.934715,
+            -7.439918
           ],
           [
-            107.654334,
-            -7.510659
+            107.555375,
+            -7.401822
           ],
           [
-            107.351961,
-            -7.461686
+            107.688187,
+            -7.265694
           ],
           [
-            107.346463,
-            -7.189513
-          ],
-          [
-            107.049589,
-            -7.472569
-          ],
-          [
-            106.824184,
-            -7.211293
-          ],
-          [
-            107.500398,
-            -6.808199
+            107.901729,
+            -7.031578
           ]
         ]
       ],
       "kode_barang": "1.23.232.11",
-      "no_registrasi": "212",
-      "registrasi": "212",
-      "nomorRegistrasi": "212",
-      "noRegistrasi": "212",
-      "no_reg": "212",
+      "no_registrasi": "a55daa3rrd",
+      "registrasi": "a55daa3rrd",
+      "nomorRegistrasi": "a55daa3rrd",
+      "noRegistrasi": "a55daa3rrd",
+      "no_reg": "a55daa3rrd",
       "fungsi": "Kantor Badan Pemerintahan",
-      "luas_total": 222,
-      "luas_gambar": 6831893515.666962
+      "luas_total": 11,
+      "luas_gambar": 4812997144.703391
     }
   ],
   "yarsip_assets": [
