@@ -27,7 +27,7 @@
       "peruntukan": "Kantor Badan Pemerintahan",
       "fungsi": "Kantor Badan Pemerintahan",
       "status": "Aktif",
-      "asal_milik": "Pembelian",
+      "asal_milik": "Hibah",
       "bukti_pemilikan": "",
       "bukti_kepemilikan": "",
       "bukti_pemilikan_url": "",
@@ -136,6 +136,454 @@
       "luas_total": 10099.98,
       "luas_gambar": null,
       "kodim_id": ""
+    },
+    {
+      "id": "T1756804316529",
+      "nama": "Kantor Pesawat",
+      "korem_id": 2,
+      "kodim": "",
+      "luas": 1213791330.98,
+      "lokasi_nama": "korem dadakan ",
+      "kib_kode_barang": "1.23.232.11",
+      "kode_barang": "1.23.232.11",
+      "nomor_registrasi": "a55daa3rrd",
+      "no_registrasi": "a55daa3rrd",
+      "registrasi": "a55daa3rrd",
+      "nomorRegistrasi": "a55daa3rrd",
+      "noRegistrasi": "a55daa3rrd",
+      "no_reg": "a55daa3rrd",
+      "alamat": "pandanaran",
+      "peruntukan": "Koperasi",
+      "fungsi": "Koperasi",
+      "status": "Aktif",
+      "asal_milik": "Hibah",
+      "bukti_pemilikan": "",
+      "bukti_kepemilikan": "",
+      "bukti_pemilikan_url": "",
+      "pemilikan_sertifikat": "Ya",
+      "sertifikat_bidang": "23",
+      "sertifikat_luas": "12",
+      "belum_sertifikat_bidang": "11",
+      "belum_sertifikat_luas": "121",
+      "keterangan": "aman",
+      "keterangan_bukti_pemilikan": "",
+      "atas_nama_pemilik_sertifikat": "",
+      "lokasi": [
+        [
+          [
+            109.819851,
+            -7.166975
+          ],
+          [
+            109.712646,
+            -7.194201
+          ],
+          [
+            109.643925,
+            -7.166975
+          ],
+          [
+            109.517478,
+            -7.229592
+          ],
+          [
+            109.599944,
+            -7.267703
+          ],
+          [
+            109.564209,
+            -7.33575
+          ],
+          [
+            109.492739,
+            -7.300367
+          ],
+          [
+            109.550465,
+            -7.422834
+          ],
+          [
+            109.437762,
+            -7.439161
+          ],
+          [
+            109.349799,
+            -7.474533
+          ],
+          [
+            109.374539,
+            -7.523505
+          ],
+          [
+            109.429516,
+            -7.534386
+          ],
+          [
+            109.51473,
+            -7.50174
+          ],
+          [
+            109.610939,
+            -7.520784
+          ],
+          [
+            109.641176,
+            -7.46637
+          ],
+          [
+            109.676911,
+            -7.512622
+          ],
+          [
+            109.742883,
+            -7.485416
+          ],
+          [
+            109.764874,
+            -7.43644
+          ],
+          [
+            109.850088,
+            -7.430998
+          ],
+          [
+            109.759376,
+            -7.37113
+          ],
+          [
+            109.863832,
+            -7.229592
+          ],
+          [
+            109.935302,
+            -7.183311
+          ],
+          [
+            109.819851,
+            -7.166975
+          ]
+        ]
+      ],
+      "bukti_pemilikan_file": {},
+      "bukti_pemilikan_filename": "aff0d52c10703b492b1330580382f355.jpg",
+      "luas_total": 133,
+      "luas_gambar": 1213791330.9780378
+    },
+    {
+      "id": "T1756804869246",
+      "nama": "Kantor Pesawat dadan",
+      "korem_id": 3,
+      "kodim": "0703",
+      "luas": 1142794937.69,
+      "lokasi_nama": "CIlacap",
+      "kib_kode_barang": "1.21.44.121.28",
+      "kode_barang": "1.21.44.121.28",
+      "nomor_registrasi": "R09ad21",
+      "no_registrasi": "R09ad21",
+      "registrasi": "R09ad21",
+      "nomorRegistrasi": "R09ad21",
+      "noRegistrasi": "R09ad21",
+      "no_reg": "R09ad21",
+      "alamat": "Cilacap Barat",
+      "peruntukan": "Kantor Badan Pemerintahan",
+      "fungsi": "Kantor Badan Pemerintahan",
+      "status": "Dalam Proses",
+      "asal_milik": "Warisan",
+      "bukti_pemilikan": "",
+      "bukti_kepemilikan": "",
+      "bukti_pemilikan_url": "",
+      "pemilikan_sertifikat": "Ya",
+      "sertifikat_bidang": "121",
+      "sertifikat_luas": "1112221",
+      "belum_sertifikat_bidang": "",
+      "belum_sertifikat_luas": "",
+      "keterangan": "masuk data",
+      "keterangan_bukti_pemilikan": "dummy 2",
+      "atas_nama_pemilik_sertifikat": "",
+      "lokasi": [
+        [
+          [
+            109.764683,
+            -7.381752
+          ],
+          [
+            109.851272,
+            -7.411686
+          ],
+          [
+            109.865016,
+            -7.449781
+          ],
+          [
+            109.759186,
+            -7.441618
+          ],
+          [
+            109.694588,
+            -7.493314
+          ],
+          [
+            109.632739,
+            -7.471548
+          ],
+          [
+            109.591506,
+            -7.512359
+          ],
+          [
+            109.503543,
+            -7.493314
+          ],
+          [
+            109.400462,
+            -7.542284
+          ],
+          [
+            109.377097,
+            -7.501476
+          ],
+          [
+            109.418329,
+            -7.468827
+          ],
+          [
+            109.517288,
+            -7.451141
+          ],
+          [
+            109.498046,
+            -7.388555
+          ],
+          [
+            109.560191,
+            -7.388634
+          ],
+          [
+            109.529953,
+            -7.304265
+          ],
+          [
+            109.602798,
+            -7.249824
+          ],
+          [
+            109.547821,
+            -7.228046
+          ],
+          [
+            109.648153,
+            -7.179042
+          ],
+          [
+            109.686637,
+            -7.162706
+          ],
+          [
+            109.718249,
+            -7.200822
+          ],
+          [
+            109.815833,
+            -7.168151
+          ],
+          [
+            109.85844,
+            -7.179042
+          ],
+          [
+            109.942279,
+            -7.192655
+          ],
+          [
+            109.901047,
+            -7.217157
+          ],
+          [
+            109.874933,
+            -7.230769
+          ],
+          [
+            109.764683,
+            -7.381752
+          ]
+        ]
+      ],
+      "bukti_pemilikan_file": {},
+      "bukti_pemilikan_filename": "dinosaurs-funny-wallpaper-preview.jpg",
+      "luas_total": 1112221,
+      "luas_gambar": 1142794937.6938362
+    },
+    {
+      "id": "T1756807307549",
+      "nama": "Kantor Pesawat 2",
+      "korem_id": 5,
+      "kodim": "0733",
+      "luas": 4768677824.1,
+      "lokasi_nama": "Lokasi dari Peta",
+      "kib_kode_barang": "1.23.232.11",
+      "kode_barang": "1.23.232.11",
+      "nomor_registrasi": "a55d123",
+      "no_registrasi": "a55d123",
+      "registrasi": "a55d123",
+      "nomorRegistrasi": "a55d123",
+      "noRegistrasi": "a55d123",
+      "no_reg": "a55d123",
+      "alamat": "ada",
+      "peruntukan": "Kantor Badan Pemerintahan",
+      "fungsi": "Kantor Badan Pemerintahan",
+      "status": "Sengketa",
+      "asal_milik": "Tukar Menukar",
+      "bukti_pemilikan": "",
+      "bukti_kepemilikan": "",
+      "bukti_pemilikan_url": "",
+      "pemilikan_sertifikat": "Ya",
+      "sertifikat_bidang": "12112",
+      "sertifikat_luas": "23224",
+      "belum_sertifikat_bidang": "3242",
+      "belum_sertifikat_luas": "23222",
+      "keterangan": "ada",
+      "keterangan_bukti_pemilikan": "ada",
+      "atas_nama_pemilik_sertifikat": "",
+      "lokasi": [
+        [
+          [
+            109.083731,
+            -7.069705
+          ],
+          [
+            110.3427,
+            -7.298402
+          ],
+          [
+            109.649988,
+            -7.782587
+          ],
+          [
+            109.017754,
+            -7.004299
+          ],
+          [
+            109.083731,
+            -7.069705
+          ]
+        ]
+      ],
+      "bukti_pemilikan_file": {},
+      "bukti_pemilikan_filename": "D.jpg",
+      "luas_total": 46446,
+      "luas_gambar": 4768677824.101338
+    },
+    {
+      "id": "T1756809438892",
+      "nama": "Kantor Pesawat dadan",
+      "korem_id": 3,
+      "kodim": "0703",
+      "luas": 790077827.34,
+      "lokasi_nama": "cap",
+      "kib_kode_barang": "1",
+      "kode_barang": "1",
+      "nomor_registrasi": "1",
+      "no_registrasi": "1",
+      "registrasi": "1",
+      "nomorRegistrasi": "1",
+      "noRegistrasi": "1",
+      "no_reg": "1",
+      "alamat": "1",
+      "peruntukan": "1",
+      "fungsi": "1",
+      "status": "Tidak Aktif",
+      "asal_milik": "Hibah",
+      "bukti_pemilikan": "",
+      "bukti_kepemilikan": "",
+      "bukti_pemilikan_url": "",
+      "pemilikan_sertifikat": "Ya",
+      "sertifikat_bidang": "1",
+      "sertifikat_luas": "1",
+      "belum_sertifikat_bidang": "1",
+      "belum_sertifikat_luas": "1",
+      "keterangan": "",
+      "keterangan_bukti_pemilikan": "",
+      "atas_nama_pemilik_sertifikat": "",
+      "lokasi": [
+        [
+          [
+            110.690795,
+            -7.436954
+          ],
+          [
+            110.899707,
+            -7.804138
+          ],
+          [
+            110.591837,
+            -7.880255
+          ],
+          [
+            110.690795,
+            -7.436954
+          ]
+        ]
+      ],
+      "luas_total": 2,
+      "luas_gambar": 790077827.3434011
+    },
+    {
+      "id": "T1756870434892",
+      "nama": "Kantor Pesawat dadan 23",
+      "korem_id": 5,
+      "kodim": "",
+      "luas": 6612686610.52,
+      "lokasi_nama": "Semarang Tengah",
+      "kib_kode_barang": "1.21.44.121.28",
+      "nomor_registrasi": "a55daa3rrd",
+      "alamat": "Semarang Barat",
+      "peruntukan": "Kantor Badan Pemerintahan",
+      "status": "Aktif",
+      "asal_milik": "Pembelian",
+      "bukti_pemilikan": "",
+      "bukti_pemilikan_url": "",
+      "bukti_pemilikan_filename": "",
+      "pemilikan_sertifikat": "Ya",
+      "sertifikat_bidang": "1",
+      "sertifikat_luas": "1",
+      "belum_sertifikat_bidang": "1",
+      "belum_sertifikat_luas": "1",
+      "keterangan": "1",
+      "keterangan_bukti_pemilikan": "",
+      "atas_nama_pemilik_sertifikat": "",
+      "lokasi": [
+        [
+          [
+            110.161277,
+            -7.107829
+          ],
+          [
+            110.606589,
+            -8.000082
+          ],
+          [
+            109.127712,
+            -7.439918
+          ],
+          [
+            109.693974,
+            -7.249405
+          ],
+          [
+            110.161277,
+            -7.107829
+          ]
+        ]
+      ],
+      "kode_barang": "1.21.44.121.28",
+      "no_registrasi": "a55daa3rrd",
+      "registrasi": "a55daa3rrd",
+      "nomorRegistrasi": "a55daa3rrd",
+      "noRegistrasi": "a55daa3rrd",
+      "no_reg": "a55daa3rrd",
+      "fungsi": "Kantor Badan Pemerintahan",
+      "luas_total": 2,
+      "luas_gambar": 6612686610.516461
     }
   ],
   "yarsip_assets": [
@@ -281,6 +729,61 @@
       "area": 2976525819.193603,
       "created_at": "2025-09-02T01:40:02.287Z",
       "updated_at": "2025-09-02T01:40:02.287Z"
+    },
+    {
+      "id": "Y1756811131033",
+      "pengelola": "asasasasasa",
+      "bidang": "Tanah",
+      "kabkota": "asas",
+      "kecamatan": "sasa",
+      "kelurahan": "sa",
+      "peruntukan": "asasas",
+      "status": "Aktif",
+      "keterangan": "asa",
+      "type": "yarsip",
+      "lokasi": [
+        [
+          [
+            110.68525,
+            -6.826619
+          ],
+          [
+            111.061841,
+            -7.316803
+          ],
+          [
+            110.723734,
+            -7.714002
+          ],
+          [
+            109.981547,
+            -7.643295
+          ],
+          [
+            109.965054,
+            -7.333133
+          ],
+          [
+            110.495736,
+            -7.319512
+          ],
+          [
+            110.710146,
+            -7.167068
+          ],
+          [
+            110.655169,
+            -6.965545
+          ],
+          [
+            110.68525,
+            -6.826619
+          ]
+        ]
+      ],
+      "area": 5400138049.871251,
+      "created_at": "2025-09-02T11:05:31.033Z",
+      "updated_at": "2025-09-02T11:05:31.033Z"
     }
   ],
   "korem": [

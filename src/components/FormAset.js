@@ -10,6 +10,8 @@ import {
   Image,
 } from "react-bootstrap";
 import { FaEye, FaEdit, FaTrash, FaDownload } from "react-icons/fa";
+import axios from "axios";
+import toast from "react-hot-toast";
 
 const FormAset = ({
   onSave,
@@ -29,70 +31,96 @@ const FormAset = ({
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [filteredKodimList, setFilteredKodimList] = useState([]);
 
-  // File size limit in MB (increased from 5MB to 50MB)
+  // File size limit in MB
   const MAX_FILE_SIZE_MB = 50;
   const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
+  // Static kodim data based on your db.json structure
+  const staticKodimData = [
+    { id: "0701", nama: "Kodim 0701/Banyumas", korem_id: 1 },
+    { id: "0729", nama: "Kodim 0729/Bantul", korem_id: 2 },
+    { id: "0732", nama: "Kodim 0732/Sleman", korem_id: 2 },
+    { id: "0733", nama: "Kodim 0733/Kota Semarang", korem_id: 5 },
+    { id: "0725", nama: "Kodim 0725/Sragen", korem_id: 4 },
+    { id: "0734", nama: "Kodim 0734/Yogyakarta", korem_id: 2 },
+    { id: "0702", nama: "Kodim 0702/Purbalingga", korem_id: 1 },
+    { id: "0703", nama: "Kodim 0703/Cilacap", korem_id: 1 },
+  ];
+
+  // Filter kodim based on selected korem
+  useEffect(() => {
+    const koremId = formData.korem_id || selectedKorem;
+    if (koremId) {
+      const filtered = staticKodimData.filter(
+        (kodim) => kodim.korem_id === parseInt(koremId)
+      );
+      setFilteredKodimList(filtered);
+    } else {
+      setFilteredKodimList(staticKodimData);
+    }
+  }, [formData.korem_id, selectedKorem]);
+
+  // Helper function untuk membuat URL gambar dari public/uploads
+  const getImageUrl = (filename) => {
+    if (!filename) return null;
+
+    // Jika sudah URL lengkap, return as is
+    if (filename.startsWith("http://") || filename.startsWith("https://")) {
+      return filename;
+    }
+
+    // Jika path relatif dari public/uploads
+    if (filename.startsWith("/uploads/") || filename.startsWith("uploads/")) {
+      return `/${filename.replace(/^\/+/, "")}`;
+    }
+
+    // Jika hanya nama file, tambahkan path uploads
+    return `/uploads/${filename}`;
+  };
 
   useEffect(() => {
     if (assetToEdit) {
       setFormData(assetToEdit);
-      // If there's an existing bukti_pemilikan file URL, set it for preview
-      if (assetToEdit.bukti_pemilikan_url || assetToEdit.bukti_pemilikan) {
-        setImagePreview(
-          assetToEdit.bukti_pemilikan_url || assetToEdit.bukti_pemilikan
-        );
+      // Set preview untuk file yang sudah ada
+      if (assetToEdit.bukti_pemilikan_filename) {
+        const imageUrl = getImageUrl(assetToEdit.bukti_pemilikan_filename);
+        setImagePreview(imageUrl);
       }
     } else {
       // Reset form for new entry with all required fields
-      setFormData({
-        // From original form
+      const initialFormData = {
         nama: "",
         korem_id:
           selectedKorem || (koremList.length > 0 ? koremList[0].id : ""),
         kodim: selectedKodim || "",
         luas: initialArea ? parseFloat(initialArea.toFixed(2)) : 0,
-
-        // New required fields based on specification
-        lokasi_nama: "", // Will be auto-filled from coordinates
-        kib_kode_barang: "", // KIB/Kode Barang
-        kode_barang: "", // Alternative field name
-        nomor_registrasi: "", // Nomor Registrasi
-        no_registrasi: "", // Alternative field name
-        registrasi: "", // Another alternative
-        nomorRegistrasi: "", // camelCase alternative
-        noRegistrasi: "", // camelCase alternative
-        no_reg: "", // EXACT field name used in RingkasanAset
+        lokasi_nama: "",
+        kib_kode_barang: "",
+        nomor_registrasi: "",
         alamat: "",
-        peruntukan: "", // Renamed from 'fungsi'
-        fungsi: "", // Alternative field name
+        peruntukan: "",
         status: "",
         asal_milik: "",
-        bukti_pemilikan: "", // Renamed from 'bukti_kepemilikan'
-        bukti_kepemilikan: "", // Alternative field name
-        bukti_pemilikan_url: "", // URL for uploaded file
-        pemilikan_sertifikat: "Ya", // New field
-
-        // Tanah dengan sertifikat
+        bukti_pemilikan: "",
+        bukti_pemilikan_url: "",
+        bukti_pemilikan_filename: "",
+        pemilikan_sertifikat: "Ya",
         sertifikat_bidang: "",
         sertifikat_luas: "",
-
-        // Tanah belum sertifikat
         belum_sertifikat_bidang: "",
         belum_sertifikat_luas: "",
-
-        // Additional info
-        keterangan: "", // New field
-        keterangan_bukti_pemilikan: "", // New field
-        atas_nama_pemilik_sertifikat: "", // Keep from original
-
+        keterangan: "",
+        keterangan_bukti_pemilikan: "",
+        atas_nama_pemilik_sertifikat: "",
         lokasi: initialGeometry || null,
-      });
+      };
+      setFormData(initialFormData);
     }
   }, [
     assetToEdit,
     koremList,
-    kodimList,
     selectedKorem,
     selectedKodim,
     initialGeometry,
@@ -107,7 +135,6 @@ const FormAset = ({
 
         // Handle different GeoJSON geometry types
         if (initialGeometry.type === "Point") {
-          // Point geometry: coordinates = [lng, lat]
           if (
             Array.isArray(initialGeometry.coordinates) &&
             initialGeometry.coordinates.length >= 2
@@ -116,53 +143,14 @@ const FormAset = ({
             lat = initialGeometry.coordinates[1];
           }
         } else if (initialGeometry.type === "Polygon") {
-          // Polygon geometry: coordinates = [[[lng, lat], [lng, lat], ...]]
-          if (
-            Array.isArray(initialGeometry.coordinates) &&
-            initialGeometry.coordinates.length > 0 &&
-            Array.isArray(initialGeometry.coordinates[0]) &&
-            initialGeometry.coordinates[0].length > 0 &&
-            Array.isArray(initialGeometry.coordinates[0][0]) &&
-            initialGeometry.coordinates[0][0].length >= 2
-          ) {
+          if (initialGeometry.coordinates?.[0]?.[0]?.length >= 2) {
             lng = initialGeometry.coordinates[0][0][0];
             lat = initialGeometry.coordinates[0][0][1];
           }
         } else if (initialGeometry.type === "LineString") {
-          // LineString geometry: coordinates = [[lng, lat], [lng, lat], ...]
-          if (
-            Array.isArray(initialGeometry.coordinates) &&
-            initialGeometry.coordinates.length > 0 &&
-            Array.isArray(initialGeometry.coordinates[0]) &&
-            initialGeometry.coordinates[0].length >= 2
-          ) {
+          if (initialGeometry.coordinates?.[0]?.length >= 2) {
             lng = initialGeometry.coordinates[0][0];
             lat = initialGeometry.coordinates[0][1];
-          }
-        } else {
-          // Fallback: try to access as nested array
-          if (
-            initialGeometry.coordinates &&
-            Array.isArray(initialGeometry.coordinates) &&
-            initialGeometry.coordinates.length > 0
-          ) {
-            // Try different access patterns
-            const coords = initialGeometry.coordinates;
-            if (Array.isArray(coords[0])) {
-              if (Array.isArray(coords[0][0])) {
-                // Triple nested: [[[lng, lat]]]
-                lng = coords[0][0][0];
-                lat = coords[0][0][1];
-              } else {
-                // Double nested: [[lng, lat]]
-                lng = coords[0][0];
-                lat = coords[0][1];
-              }
-            } else {
-              // Single level: [lng, lat]
-              lng = coords[0];
-              lat = coords[1];
-            }
           }
         }
 
@@ -178,10 +166,6 @@ const FormAset = ({
             lokasi_nama: `Lokasi ${lat.toFixed(6)}, ${lng.toFixed(6)}`,
           }));
         } else {
-          console.warn(
-            "Could not extract valid coordinates from geometry:",
-            initialGeometry
-          );
           setFormData((prev) => ({
             ...prev,
             lokasi_nama: "Lokasi dari Peta",
@@ -189,7 +173,6 @@ const FormAset = ({
         }
       } catch (error) {
         console.error("Error processing geometry coordinates:", error);
-        console.error("Geometry object:", initialGeometry);
         setFormData((prev) => ({
           ...prev,
           lokasi_nama: "Lokasi dari Peta",
@@ -200,43 +183,39 @@ const FormAset = ({
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const newValue =
-      name === "korem_id" || name === "luas" ? Number(value) : value;
+    const newValue = ["korem_id", "luas"].includes(name)
+      ? Number(value)
+      : value;
 
     setFormData((prev) => {
       const updated = { ...prev, [name]: newValue };
 
       // Sync alternative field names for compatibility
-      if (name === "kib_kode_barang") {
-        updated.kode_barang = newValue;
-      } else if (name === "kode_barang") {
-        updated.kib_kode_barang = newValue;
-      } else if (name === "nomor_registrasi") {
-        updated.no_registrasi = newValue;
-        updated.registrasi = newValue;
-        updated.nomorRegistrasi = newValue;
-        updated.noRegistrasi = newValue;
-        updated.no_reg = newValue; // EXACT field name used in RingkasanAset
-      } else if (name === "no_registrasi") {
-        updated.nomor_registrasi = newValue;
-        updated.registrasi = newValue;
-        updated.nomorRegistrasi = newValue;
-        updated.noRegistrasi = newValue;
-        updated.no_reg = newValue;
-      } else if (name === "registrasi") {
-        updated.nomor_registrasi = newValue;
-        updated.no_registrasi = newValue;
-        updated.nomorRegistrasi = newValue;
-        updated.noRegistrasi = newValue;
-        updated.no_reg = newValue;
-      } else if (name === "peruntukan") {
-        updated.fungsi = newValue;
-      } else if (name === "fungsi") {
-        updated.peruntukan = newValue;
-      } else if (name === "bukti_pemilikan") {
-        updated.bukti_kepemilikan = newValue;
-      } else if (name === "bukti_kepemilikan") {
-        updated.bukti_pemilikan = newValue;
+      const fieldMappings = {
+        kib_kode_barang: ["kode_barang"],
+        kode_barang: ["kib_kode_barang"],
+        nomor_registrasi: [
+          "no_registrasi",
+          "registrasi",
+          "nomorRegistrasi",
+          "noRegistrasi",
+          "no_reg",
+        ],
+        peruntukan: ["fungsi"],
+        fungsi: ["peruntukan"],
+        bukti_pemilikan: ["bukti_kepemilikan"],
+        bukti_kepemilikan: ["bukti_pemilikan"],
+      };
+
+      if (fieldMappings[name]) {
+        fieldMappings[name].forEach((field) => {
+          updated[field] = newValue;
+        });
+      }
+
+      // Reset kodim when korem changes
+      if (name === "korem_id") {
+        updated.kodim = "";
       }
 
       return updated;
@@ -244,23 +223,19 @@ const FormAset = ({
 
     // Clear error when user starts typing
     if (errors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: "",
-      }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
-  // Enhanced file handling with larger size support
-  const handleFileChange = (e) => {
+  // Enhanced file handling dengan upload ke public/uploads
+  const handleFileChange = async (e) => {
     const file = e.target.files[0];
-
     if (!file) return;
 
     // Validate file size
     if (file.size > MAX_FILE_SIZE_BYTES) {
-      alert(`File terlalu besar. Maksimal ${MAX_FILE_SIZE_MB}MB.`);
-      e.target.value = ""; // Clear the input
+      toast.error(`File terlalu besar. Maksimal ${MAX_FILE_SIZE_MB}MB.`);
+      e.target.value = "";
       return;
     }
 
@@ -272,49 +247,88 @@ const FormAset = ({
       "application/pdf",
     ];
     if (!allowedTypes.includes(file.type)) {
-      alert("Format file tidak didukung. Gunakan PNG, JPG, atau PDF.");
-      e.target.value = ""; // Clear the input
+      toast.error("Format file tidak didukung. Gunakan PNG, JPG, atau PDF.");
+      e.target.value = "";
       return;
     }
 
-    // Create preview for images
-    if (file.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target.result);
-      };
-      reader.readAsDataURL(file);
-    } else {
-      setImagePreview(null); // PDF files don't have image preview
-    }
+    const uploadToastId = toast.loading("Mengupload file...");
 
-    setFormData((prev) => ({
-      ...prev,
-      bukti_pemilikan_file: file,
-      bukti_pemilikan_filename: file.name,
-    }));
+    try {
+      const formDataUpload = new FormData();
+      formDataUpload.append("bukti_pemilikan", file);
+
+      const response = await axios.post(
+        "/api/upload-bukti-pemilikan",
+        formDataUpload,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+
+      const { filename, url } = response.data;
+
+      // Set preview
+      if (file.type.startsWith("image/")) {
+        setImagePreview(url);
+      } else {
+        setImagePreview(null);
+      }
+
+      // Update form data
+      setFormData((prev) => ({
+        ...prev,
+        bukti_pemilikan_file: null,
+        bukti_pemilikan_filename: filename,
+        bukti_pemilikan_url: url,
+      }));
+
+      toast.success("File berhasil diupload!", { id: uploadToastId });
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error("Gagal mengupload file. Silakan coba lagi.", {
+        id: uploadToastId,
+      });
+      e.target.value = "";
+    }
   };
 
   // Handle image view
   const handleViewImage = () => {
-    if (imagePreview || formData.bukti_pemilikan_url) {
-      setSelectedImage(imagePreview || formData.bukti_pemilikan_url);
+    const imageUrl =
+      imagePreview || getImageUrl(formData.bukti_pemilikan_filename);
+    if (imageUrl) {
+      setSelectedImage(imageUrl);
       setShowImageModal(true);
     }
   };
 
   // Handle image download
   const handleDownloadImage = () => {
-    if (imagePreview || formData.bukti_pemilikan_url) {
+    const imageUrl =
+      imagePreview || getImageUrl(formData.bukti_pemilikan_filename);
+    if (imageUrl) {
       const link = document.createElement("a");
-      link.href = imagePreview || formData.bukti_pemilikan_url;
+      link.href = imageUrl;
       link.download = formData.bukti_pemilikan_filename || "bukti_pemilikan";
       link.click();
     }
   };
 
   // Handle image removal
-  const handleRemoveImage = () => {
+  const handleRemoveImage = async () => {
+    if (formData.bukti_pemilikan_filename) {
+      try {
+        await axios.delete(
+          `/api/delete-bukti-pemilikan/${formData.bukti_pemilikan_filename}`
+        );
+        toast.success("File berhasil dihapus dari server");
+      } catch (error) {
+        console.error("Error deleting file:", error);
+        toast.error("Gagal menghapus file dari server");
+      }
+    }
+
     setImagePreview(null);
     setFormData((prev) => ({
       ...prev,
@@ -322,7 +336,7 @@ const FormAset = ({
       bukti_pemilikan_filename: "",
       bukti_pemilikan_url: "",
     }));
-    // Clear the file input
+
     const fileInput = document.querySelector(
       'input[name="bukti_pemilikan_file"]'
     );
@@ -331,45 +345,37 @@ const FormAset = ({
 
   const validateForm = () => {
     const newErrors = {};
+    const requiredFields = {
+      nama: "Nama aset harus diisi",
+      korem_id: "Korem harus dipilih",
+      lokasi_nama: "Alamat harus diisi",
+      kib_kode_barang: "KIB/Kode Barang harus diisi",
+      nomor_registrasi: "Nomor Registrasi harus diisi",
+      alamat: "Alamat harus diisi",
+      peruntukan: "Peruntukan harus diisi",
+      status: "Status harus dipilih",
+      asal_milik: "Asal Milik harus diisi",
+    };
 
-    // Required fields validation
-    if (!formData.nama?.trim()) newErrors.nama = "Nama aset harus diisi";
-    if (!formData.korem_id) newErrors.korem_id = "Korem harus dipilih";
-    // Kodim tidak wajib diisi lagi
-    if (!formData.lokasi_nama?.trim())
-      newErrors.lokasi_nama = "Alamat harus diisi";
-    if (!formData.kib_kode_barang?.trim())
-      newErrors.kib_kode_barang = "KIB/Kode Barang harus diisi";
-    if (!formData.nomor_registrasi?.trim())
-      newErrors.nomor_registrasi = "Nomor Registrasi harus diisi";
-    if (!formData.alamat?.trim()) newErrors.alamat = "Alamat harus diisi";
-    if (!formData.peruntukan?.trim())
-      newErrors.peruntukan = "Peruntukan harus diisi";
-    if (!formData.status?.trim()) newErrors.status = "Status harus dipilih";
-    if (!formData.asal_milik?.trim())
-      newErrors.asal_milik = "Asal Milik harus diisi";
+    Object.entries(requiredFields).forEach(([field, message]) => {
+      if (!formData[field]?.toString().trim()) {
+        newErrors[field] = message;
+      }
+    });
 
     // Validate numbers
-    if (formData.sertifikat_bidang && isNaN(formData.sertifikat_bidang)) {
-      newErrors.sertifikat_bidang = "Bidang sertifikat harus berupa angka";
-    }
-    if (formData.sertifikat_luas && isNaN(formData.sertifikat_luas)) {
-      newErrors.sertifikat_luas = "Luas sertifikat harus berupa angka";
-    }
-    if (
-      formData.belum_sertifikat_bidang &&
-      isNaN(formData.belum_sertifikat_bidang)
-    ) {
-      newErrors.belum_sertifikat_bidang =
-        "Bidang belum sertifikat harus berupa angka";
-    }
-    if (
-      formData.belum_sertifikat_luas &&
-      isNaN(formData.belum_sertifikat_luas)
-    ) {
-      newErrors.belum_sertifikat_luas =
-        "Luas belum sertifikat harus berupa angka";
-    }
+    const numberFields = {
+      sertifikat_bidang: "Bidang sertifikat harus berupa angka",
+      sertifikat_luas: "Luas sertifikat harus berupa angka",
+      belum_sertifikat_bidang: "Bidang belum sertifikat harus berupa angka",
+      belum_sertifikat_luas: "Luas belum sertifikat harus berupa angka",
+    };
+
+    Object.entries(numberFields).forEach(([field, message]) => {
+      if (formData[field] && isNaN(formData[field])) {
+        newErrors[field] = message;
+      }
+    });
 
     // Validate that at least one of sertifikat or belum sertifikat is filled
     const hasSertifikat =
@@ -388,12 +394,11 @@ const FormAset = ({
 
   const handleSave = () => {
     if (!initialGeometry && !assetToEdit) {
-      alert("Silakan gambar lokasi aset di peta terlebih dahulu");
+      toast.error("Silakan gambar lokasi aset di peta terlebih dahulu");
       return;
     }
 
     if (validateForm()) {
-      // Calculate total luas
       const totalLuas =
         (parseFloat(formData.sertifikat_luas) || 0) +
         (parseFloat(formData.belum_sertifikat_luas) || 0);
@@ -401,29 +406,7 @@ const FormAset = ({
       const assetData = {
         ...formData,
         luas_total: totalLuas,
-        luas_gambar: initialArea, // From map drawing
-
-        // Ensure compatibility with RingkasanAset component
-        kode_barang: formData.kib_kode_barang || formData.kode_barang || "",
-        no_registrasi:
-          formData.nomor_registrasi ||
-          formData.no_registrasi ||
-          formData.registrasi ||
-          "",
-        registrasi:
-          formData.nomor_registrasi ||
-          formData.no_registrasi ||
-          formData.registrasi ||
-          "",
-        no_reg:
-          formData.nomor_registrasi ||
-          formData.no_registrasi ||
-          formData.registrasi ||
-          formData.no_reg ||
-          "",
-        fungsi: formData.peruntukan || formData.fungsi || "",
-        bukti_kepemilikan:
-          formData.bukti_pemilikan || formData.bukti_kepemilikan || "",
+        luas_gambar: initialArea,
       };
 
       onSave(assetData);
@@ -431,26 +414,21 @@ const FormAset = ({
   };
 
   const handleReset = () => {
-    setFormData({
+    const initialFormData = {
       nama: "",
       korem_id: selectedKorem || (koremList.length > 0 ? koremList[0].id : ""),
       kodim: selectedKodim || "",
       luas: initialArea ? parseFloat(initialArea.toFixed(2)) : 0,
       lokasi_nama: "",
       kib_kode_barang: "",
-      kode_barang: "", // Alternative field name
       nomor_registrasi: "",
-      no_registrasi: "", // Alternative field name
-      registrasi: "", // Another alternative
-      nomorRegistrasi: "", // camelCase alternative
-      noRegistrasi: "", // camelCase alternative
       alamat: "",
       peruntukan: "",
-      fungsi: "", // Alternative field name
       status: "",
       asal_milik: "",
       bukti_pemilikan: "",
-      bukti_kepemilikan: "", // Alternative field name
+      bukti_pemilikan_url: "",
+      bukti_pemilikan_filename: "",
       pemilikan_sertifikat: "Ya",
       sertifikat_bidang: "",
       sertifikat_luas: "",
@@ -460,7 +438,9 @@ const FormAset = ({
       keterangan_bukti_pemilikan: "",
       atas_nama_pemilik_sertifikat: "",
       lokasi: initialGeometry || null,
-    });
+    };
+
+    setFormData(initialFormData);
     setErrors({});
     setImagePreview(null);
   };
@@ -480,17 +460,7 @@ const FormAset = ({
     { value: "Lainnya", label: "Lainnya" },
   ];
 
-  const buktiPemilikanOptions = [
-    { value: "Sertifikat Hak Milik", label: "Sertifikat Hak Milik" },
-    {
-      value: "Sertifikat Hak Guna Bangunan",
-      label: "Sertifikat Hak Guna Bangunan",
-    },
-    { value: "Sertifikat Hak Pakai", label: "Sertifikat Hak Pakai" },
-    { value: "Girik", label: "Girik" },
-    { value: "Letter C", label: "Letter C" },
-    { value: "Lainnya", label: "Lainnya" },
-  ];
+  const hasExistingFile = formData.bukti_pemilikan_filename || imagePreview;
 
   return (
     <>
@@ -569,39 +539,38 @@ const FormAset = ({
                           name="kodim"
                           value={formData.kodim || ""}
                           onChange={handleChange}
-                          disabled={viewMode}
+                          disabled={viewMode || !formData.korem_id}
                         >
                           <option value="">-- Pilih Kodim (Opsional) --</option>
-                          {kodimList.map((kodim) => (
+                          {filteredKodimList.map((kodim) => (
                             <option key={kodim.id} value={kodim.id}>
                               {kodim.nama}
                             </option>
                           ))}
                         </Form.Select>
                         <Form.Text className="text-muted">
-                          Kodim tidak wajib diisi
+                          {!formData.korem_id
+                            ? "Pilih Korem terlebih dahulu"
+                            : "Kodim tidak wajib diisi"}
                         </Form.Text>
                       </Form.Group>
                     </Col>
                   </Row>
 
                   <Form.Group className="mb-3">
-                    <Form.Label>3. Lokasi (dari Peta)</Form.Label>
+                    <Form.Label>3. Lokasi *</Form.Label>
                     <Form.Control
                       type="text"
                       name="lokasi_nama"
                       value={formData.lokasi_nama || ""}
                       onChange={handleChange}
-                      placeholder="Lokasi akan otomatis terisi dari peta"
+                      placeholder="Otomatis dari peta atau isi manual"
                       isInvalid={!!errors.lokasi_nama}
                       readOnly={viewMode}
                     />
                     <Form.Control.Feedback type="invalid">
                       {errors.lokasi_nama}
                     </Form.Control.Feedback>
-                    <Form.Text className="text-muted">
-                      Lokasi otomatis dari koordinat yang digambar di peta
-                    </Form.Text>
                   </Form.Group>
                 </Card.Body>
               </Card>
@@ -757,108 +726,109 @@ const FormAset = ({
                     </Col>
                   </Row>
 
-                  <Row>
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>
-                          10. Bukti Pemilikan (Upload PNG, JPG, PDF - Max{" "}
-                          {MAX_FILE_SIZE_MB}MB)
-                        </Form.Label>
-                        <Form.Control
-                          type="file"
-                          name="bukti_pemilikan_file"
-                          accept=".png,.jpg,.jpeg,.pdf"
-                          onChange={handleFileChange}
-                          disabled={viewMode}
-                        />
-                        <Form.Text className="text-muted">
-                          Format yang didukung: PNG, JPG, PDF (maksimal{" "}
-                          {MAX_FILE_SIZE_MB}MB)
-                        </Form.Text>
+                  <Form.Group className="mb-3">
+                    <Form.Label>
+                      10. Bukti Pemilikan (Upload PNG, JPG, PDF - Max{" "}
+                      {MAX_FILE_SIZE_MB}MB)
+                    </Form.Label>
+                    <Form.Control
+                      type="file"
+                      name="bukti_pemilikan_file"
+                      accept=".png,.jpg,.jpeg,.pdf"
+                      onChange={handleFileChange}
+                      disabled={viewMode}
+                    />
+                    <Form.Text className="text-muted">
+                      Format yang didukung: PNG, JPG, PDF (maksimal{" "}
+                      {MAX_FILE_SIZE_MB}MB).
+                    </Form.Text>
 
-                        {/* File Preview Section - Popup Style */}
-                        {(imagePreview || formData.bukti_pemilikan_file) && (
-                          <div className="mt-3">
-                            <div className="d-flex align-items-center gap-2">
+                    {/* File Preview Section */}
+                    {hasExistingFile && (
+                      <div className="mt-3">
+                        <div className="d-flex align-items-center gap-2">
+                          <div
+                            className="file-preview-thumbnail"
+                            style={{
+                              width: "60px",
+                              height: "60px",
+                              cursor: "pointer",
+                            }}
+                            onClick={handleViewImage}
+                          >
+                            {formData.bukti_pemilikan_filename
+                              ?.toLowerCase()
+                              .includes(".pdf") ? (
                               <div
-                                className="file-preview-thumbnail"
+                                className="pdf-thumbnail d-flex align-items-center justify-content-center border rounded"
                                 style={{
-                                  width: "60px",
-                                  height: "60px",
-                                  cursor: "pointer",
+                                  width: "100%",
+                                  height: "100%",
+                                  backgroundColor: "#f8f9fa",
                                 }}
-                                onClick={handleViewImage}
                               >
-                                {formData.bukti_pemilikan_filename
-                                  ?.toLowerCase()
-                                  .includes(".pdf") ? (
-                                  <div
-                                    className="pdf-thumbnail d-flex align-items-center justify-content-center border rounded"
-                                    style={{
-                                      width: "100%",
-                                      height: "100%",
-                                      backgroundColor: "#f8f9fa",
-                                    }}
-                                  >
-                                    <span className="text-muted small">
-                                      PDF
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <Image
-                                    src={imagePreview}
-                                    alt="Thumbnail"
-                                    thumbnail
-                                    style={{
-                                      width: "100%",
-                                      height: "100%",
-                                      objectFit: "cover",
-                                    }}
-                                  />
-                                )}
+                                <span className="text-muted small">PDF</span>
                               </div>
-                              <div className="flex-grow-1">
-                                <small className="text-muted d-block">
-                                  {formData.bukti_pemilikan_filename ||
-                                    "File bukti pemilikan"}
-                                </small>
-                                <div className="mt-2">
-                                  <Button
-                                    variant="outline-primary"
-                                    size="sm"
-                                    onClick={handleViewImage}
-                                    className="me-2"
-                                  >
-                                    <FaEye /> Lihat
-                                  </Button>
-                                  <Button
-                                    variant="outline-success"
-                                    size="sm"
-                                    onClick={handleDownloadImage}
-                                    className="me-2"
-                                  >
-                                    <FaDownload /> Unduh
-                                  </Button>
-                                  {!viewMode && (
-                                    <Button
-                                      variant="outline-danger"
-                                      size="sm"
-                                      onClick={handleRemoveImage}
-                                    >
-                                      <FaTrash /> Hapus
-                                    </Button>
-                                  )}
-                                </div>
-                              </div>
+                            ) : (
+                              <Image
+                                src={
+                                  imagePreview ||
+                                  getImageUrl(formData.bukti_pemilikan_filename)
+                                }
+                                alt="Thumbnail"
+                                thumbnail
+                                style={{
+                                  width: "100%",
+                                  height: "100%",
+                                  objectFit: "cover",
+                                }}
+                                onError={(e) => {
+                                  e.target.style.display = "none";
+                                  e.target.parentNode.innerHTML =
+                                    '<div class="d-flex align-items-center justify-content-center border rounded h-100"><span class="text-muted small">Error</span></div>';
+                                }}
+                              />
+                            )}
+                          </div>
+                          <div className="flex-grow-1">
+                            <small className="text-muted d-block">
+                              {formData.bukti_pemilikan_filename ||
+                                "File bukti pemilikan"}
+                            </small>
+                            <div className="mt-2">
+                              <Button
+                                variant="outline-primary"
+                                size="sm"
+                                onClick={handleViewImage}
+                                className="me-2"
+                              >
+                                <FaEye /> Lihat
+                              </Button>
+                              <Button
+                                variant="outline-success"
+                                size="sm"
+                                onClick={handleDownloadImage}
+                                className="me-2"
+                              >
+                                <FaDownload /> Unduh
+                              </Button>
+                              {!viewMode && (
+                                <Button
+                                  variant="outline-danger"
+                                  size="sm"
+                                  onClick={handleRemoveImage}
+                                >
+                                  <FaTrash /> Hapus
+                                </Button>
+                              )}
                             </div>
                           </div>
-                        )}
-                      </Form.Group>
-                    </Col>
-                  </Row>
+                        </div>
+                      </div>
+                    )}
+                  </Form.Group>
 
-                  {/* Keterangan Bukti Pemilikan - Hanya muncul jika ada file */}
-                  {(imagePreview || formData.bukti_pemilikan_file) && (
+                  {hasExistingFile && (
                     <Form.Group className="mb-3">
                       <Form.Label>Keterangan Bukti Pemilikan</Form.Label>
                       <Form.Control
@@ -1071,6 +1041,11 @@ const FormAset = ({
                   alt="Bukti Pemilikan"
                   fluid
                   style={{ maxHeight: "70vh" }}
+                  onError={(e) => {
+                    e.target.style.display = "none";
+                    e.target.parentNode.innerHTML =
+                      '<div class="alert alert-warning">Gambar tidak dapat dimuat</div>';
+                  }}
                 />
               )}
             </>
