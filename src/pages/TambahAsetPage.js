@@ -18,8 +18,9 @@ const TambahAsetPage = () => {
   const [error, setError] = useState(null);
 
   const [isDrawing, setIsDrawing] = useState(false);
-  const [newAssetData, setNewAssetData] = useState(null); // { geometry, area }
+  const [newAssetData, setNewAssetData] = useState(null);
   const [isFormEnabled, setIsFormEnabled] = useState(false);
+  const [drawnAssets, setDrawnAssets] = useState([]);
 
   // Fetch Korem data
   const fetchKorem = useCallback(async () => {
@@ -49,7 +50,6 @@ const TambahAsetPage = () => {
       let kodimRes;
       let endpointUsed = "";
 
-      // Option 1: Try kodim endpoint with korem filter
       try {
         console.log(`Trying: ${API_URL}/kodim?korem_id=${koremId}`);
         kodimRes = await axios.get(`${API_URL}/kodim?korem_id=${koremId}`);
@@ -58,7 +58,6 @@ const TambahAsetPage = () => {
       } catch (err1) {
         console.log("Option 1 failed:", err1.response?.status, err1.message);
 
-        // Option 2: Try nested endpoint
         try {
           console.log(`Trying: ${API_URL}/korem/${koremId}/kodim`);
           kodimRes = await axios.get(`${API_URL}/korem/${koremId}/kodim`);
@@ -67,7 +66,6 @@ const TambahAsetPage = () => {
         } catch (err2) {
           console.log("Option 2 failed:", err2.response?.status, err2.message);
 
-          // Option 3: Get all kodim and filter
           try {
             console.log(`Trying: ${API_URL}/kodim (all)`);
             kodimRes = await axios.get(`${API_URL}/kodim`);
@@ -83,7 +81,6 @@ const TambahAsetPage = () => {
               err3.message
             );
 
-            // Option 4: Mock data as fallback (temporary solution)
             console.log("All endpoints failed, using mock data");
             kodimRes = {
               data: [
@@ -143,39 +140,148 @@ const TambahAsetPage = () => {
     fetchKorem();
   }, [fetchKorem]);
 
+  // PERBAIKAN: Handler untuk drawing yang konsisten
   const handleDrawingCreated = (data) => {
-    // data now contains { geometry, area }
-    setNewAssetData(data);
+    console.log("=== Drawing created in TambahAsetPage ===");
+    console.log("Raw data received:", JSON.stringify(data, null, 2));
+
+    if (!data || !data.geometry) {
+      console.error("Invalid drawing data - missing geometry:", data);
+      toast.error("Data gambar tidak valid");
+      return;
+    }
+
+    // Extract coordinates from GeoJSON geometry
+    let coordinates = null;
+
+    if (
+      data.geometry.coordinates &&
+      Array.isArray(data.geometry.coordinates[0])
+    ) {
+      // GeoJSON format: geometry.coordinates[0] adalah exterior ring
+      coordinates = data.geometry.coordinates[0];
+      console.log("Extracted coordinates from GeoJSON:", coordinates);
+    } else {
+      console.error("Invalid geometry format:", data.geometry);
+      toast.error("Format geometry tidak valid");
+      return;
+    }
+
+    // Validasi minimum 3 points untuk polygon
+    if (!Array.isArray(coordinates) || coordinates.length < 3) {
+      toast.error(
+        `Polygon harus minimal 3 titik. Saat ini: ${coordinates?.length || 0}`
+      );
+      return;
+    }
+
+    // Store data dalam format yang konsisten
+    const processedData = {
+      geometry: coordinates, // Store sebagai array koordinat [[lng,lat], [lng,lat], ...]
+      area: data.area || 0,
+      type: "polygon",
+    };
+
+    console.log("Processed data for storage:", processedData);
+
+    setNewAssetData(processedData);
     setIsDrawing(false);
     setIsFormEnabled(true);
+
+    // Create temp asset untuk display di peta
+    const tempAsset = {
+      id: "temp_drawn_polygon",
+      nama: "Area Baru (Belum Tersimpan)",
+      lokasi: coordinates, // Format: [[lng,lat], [lng,lat], ...]
+      luas: data.area,
+      status: "draft",
+      alamat: "Menunggu input detail...",
+    };
+
+    console.log("Temp asset for display:", tempAsset);
+    setDrawnAssets([tempAsset]);
+
+    toast.success(
+      `Polygon berhasil digambar! Luas: ${(data.area / 10000).toFixed(2)} Ha`
+    );
   };
 
+  // PERBAIKAN: Handler save asset yang konsisten
   const handleSaveAsset = async (assetData) => {
     const toastId = toast.loading("Menyimpan data aset...");
+
     try {
-      await axios.post(`${API_URL}/assets`, {
+      if (!newAssetData || !newAssetData.geometry) {
+        toast.error("Data lokasi tidak tersedia", { id: toastId });
+        return;
+      }
+
+      console.log("=== Saving asset ===");
+      console.log("Asset form data:", assetData);
+      console.log("New asset location data:", newAssetData);
+
+      // Format final data untuk disimpan
+      const finalAssetData = {
         ...assetData,
         id: `T${Date.now()}`,
-        lokasi: newAssetData.geometry,
-      });
+        lokasi: newAssetData.geometry, // Simpan koordinat dalam format [[lng,lat], [lng,lat], ...]
+        luas: newAssetData.area,
+      };
+
+      console.log("Final data to save:", finalAssetData);
+
+      const response = await axios.post(`${API_URL}/assets`, finalAssetData);
+      console.log("Save response:", response.data);
+
       toast.success("Aset berhasil ditambahkan!", { id: toastId });
+
+      // Clear states
+      setDrawnAssets([]);
+      setNewAssetData(null);
+      setIsFormEnabled(false);
+
       setTimeout(() => {
-        navigate("/data-aset-tanah"); // Redirect after saving
-      }, 1500); // Delay for toast to be seen
+        navigate("/data-aset-tanah");
+      }, 1500);
     } catch (err) {
+      console.error("Save failed:", err);
       toast.error("Gagal menyimpan aset.", { id: toastId });
-      console.error("Gagal menyimpan aset", err);
       setError("Gagal menyimpan aset.");
     }
   };
 
   const handleCancel = () => {
-    // Navigate back or reset the state
     if (isFormEnabled) {
       setIsFormEnabled(false);
       setNewAssetData(null);
+      setDrawnAssets([]);
+      setIsDrawing(false);
+      toast("Polygon dibatalkan");
     } else {
-      navigate(-1); // Go back to previous page if nothing has been drawn
+      navigate(-1);
+    }
+  };
+
+  const handleDrawingToggle = () => {
+    if (isDrawing) {
+      // Cancel drawing mode
+      setIsDrawing(false);
+      setDrawnAssets([]);
+      setNewAssetData(null);
+      setIsFormEnabled(false);
+      toast("Mode menggambar dibatalkan", {
+        style: {
+          border: "1px solid #f59e0b",
+          color: "#f59e0b",
+        },
+      });
+    } else {
+      // Start drawing mode
+      setIsDrawing(true);
+      setDrawnAssets([]);
+      setNewAssetData(null);
+      setIsFormEnabled(false);
+      toast("Mode menggambar aktif. Klik di peta untuk membuat polygon.");
     }
   };
 
@@ -190,21 +296,48 @@ const TambahAsetPage = () => {
         <Col md={7}>
           <div className="mb-3">
             <Button
-              onClick={() => setIsDrawing(!isDrawing)}
+              onClick={handleDrawingToggle}
               variant={isDrawing ? "danger" : "primary"}
+              className="me-2"
             >
               {isDrawing
-                ? "Batalkan Menggambar"
+                ? "❌ Batalkan Menggambar"
                 : "📍 Gambar Lokasi Aset di Peta"}
             </Button>
+
+            {drawnAssets.length > 0 && !isDrawing && (
+              <Button
+                onClick={() => setDrawnAssets([])}
+                variant="outline-warning"
+                size="sm"
+              >
+                🗑️ Hapus Gambar
+              </Button>
+            )}
           </div>
+
+          {drawnAssets.length > 0 && (
+            <Alert variant="success" className="mb-3">
+              ✅ Polygon berhasil digambar! Luas:{" "}
+              {(newAssetData?.area / 10000).toFixed(2)} Ha
+              <br />
+              <small>
+                Silakan lengkapi form di sebelah kanan untuk menyimpan aset.
+              </small>
+            </Alert>
+          )}
+
           <div style={{ height: "70vh", width: "100%" }}>
             <PetaAset
-              assets={[]}
+              assets={drawnAssets}
+              tampilan="poligon"
               isDrawing={isDrawing}
               onDrawingCreated={handleDrawingCreated}
               jatengBoundary={jatengBoundary}
               diyBoundary={diyBoundary}
+              key={`peta-tambah-${
+                drawnAssets.length
+              }-${isDrawing}-${Date.now()}`}
             />
           </div>
         </Col>
@@ -214,6 +347,7 @@ const TambahAsetPage = () => {
             onCancel={handleCancel}
             koremList={koremList}
             kodimList={kodimList}
+            onKoremChange={fetchKodim}
             initialGeometry={newAssetData ? newAssetData.geometry : null}
             initialArea={newAssetData ? newAssetData.area : null}
             isEnabled={isFormEnabled}

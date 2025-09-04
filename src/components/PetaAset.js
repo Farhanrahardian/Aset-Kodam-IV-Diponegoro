@@ -15,14 +15,85 @@ import area from "@turf/area";
 
 // --- Helper Functions & Components ---
 
-const assetToGeoJSON = (asset) => ({
-  type: "Feature",
-  properties: { ...asset },
-  geometry: {
-    type: "Polygon",
-    coordinates: asset.lokasi,
-  },
-});
+// Improved coordinate validation
+const validateCoordinates = (coords) => {
+  if (!Array.isArray(coords)) return false;
+
+  for (const coord of coords) {
+    if (!Array.isArray(coord) || coord.length !== 2) return false;
+    if (typeof coord[0] !== "number" || typeof coord[1] !== "number")
+      return false;
+    if (isNaN(coord[0]) || isNaN(coord[1])) return false;
+    if (!isFinite(coord[0]) || !isFinite(coord[1])) return false;
+  }
+  return true;
+};
+
+// Safe asset to GeoJSON conversion with validation
+const assetToGeoJSON = (asset) => {
+  if (!asset || !asset.lokasi) {
+    console.warn("Asset missing lokasi data:", asset?.id);
+    return null;
+  }
+
+  let coordinates = asset.lokasi;
+
+  // Handle different coordinate formats
+  if (Array.isArray(coordinates)) {
+    // Check if coordinates need wrapping
+    if (coordinates.length > 0 && Array.isArray(coordinates[0])) {
+      if (typeof coordinates[0][0] === "number") {
+        // Format: [[lng,lat], [lng,lat], ...] - needs wrapping
+        if (!validateCoordinates(coordinates)) {
+          console.warn("Invalid coordinates for asset:", asset.id, coordinates);
+          return null;
+        }
+        coordinates = [coordinates];
+      } else if (Array.isArray(coordinates[0][0])) {
+        // Format: [[[lng,lat], [lng,lat], ...]] - check inner array
+        if (!validateCoordinates(coordinates[0])) {
+          console.warn(
+            "Invalid nested coordinates for asset:",
+            asset.id,
+            coordinates[0]
+          );
+          return null;
+        }
+      } else {
+        console.warn(
+          "Unrecognized coordinate structure for asset:",
+          asset.id,
+          coordinates
+        );
+        return null;
+      }
+    } else {
+      console.warn("Empty or invalid coordinate array for asset:", asset.id);
+      return null;
+    }
+  } else {
+    console.warn(
+      "Invalid coordinate format for asset:",
+      asset.id,
+      typeof coordinates
+    );
+    return null;
+  }
+
+  try {
+    return {
+      type: "Feature",
+      properties: { ...asset },
+      geometry: {
+        type: "Polygon",
+        coordinates: coordinates,
+      },
+    };
+  } catch (error) {
+    console.error("Error creating GeoJSON for asset:", asset.id, error);
+    return null;
+  }
+};
 
 const asetIcon = new L.Icon({
   iconUrl: "https://cdn-icons-png.flaticon.com/512/854/854878.png",
@@ -31,73 +102,115 @@ const asetIcon = new L.Icon({
   popupAnchor: [0, -30],
 });
 
+const selectedAsetIcon = new L.Icon({
+  iconUrl: "https://cdn-icons-png.flaticon.com/512/2776/2776067.png", // Different icon for selected
+  iconSize: [35, 35],
+  iconAnchor: [17, 35],
+  popupAnchor: [0, -35],
+});
+
+// Safe centroid calculation with better error handling
 const getCentroid = (lokasiData) => {
   if (!lokasiData) return null;
 
-  let geometry;
+  let coordinates;
 
-  if (typeof lokasiData === "string") {
-    try {
-      geometry = JSON.parse(lokasiData);
-    } catch (e) {
-      return null;
-    }
-  } else {
-    geometry = lokasiData;
-  }
-
-  let coords;
-  if (geometry.type === "Polygon" && geometry.coordinates) {
-    coords = geometry.coordinates[0];
-  } else if (
-    geometry.geometry &&
-    geometry.geometry.type === "Polygon" &&
-    geometry.geometry.coordinates
-  ) {
-    coords = geometry.geometry.coordinates[0];
-  } else if (
-    Array.isArray(geometry) &&
-    Array.isArray(geometry[0]) &&
-    Array.isArray(geometry[0][0])
-  ) {
-    coords = geometry[0];
-  } else if (geometry.coordinates && Array.isArray(geometry.coordinates[0])) {
-    coords = geometry.coordinates[0];
-  } else {
-    return null;
-  }
-
-  if (!coords || !Array.isArray(coords) || coords.length === 0) {
-    return null;
-  }
-
-  let x = 0,
-    y = 0,
-    len = coords.length;
-  for (const coord of coords) {
-    if (Array.isArray(coord) && coord.length === 2) {
-      x += coord[0];
-      y += coord[1];
+  try {
+    // Handle string input
+    if (typeof lokasiData === "string") {
+      coordinates = JSON.parse(lokasiData);
     } else {
+      coordinates = lokasiData;
+    }
+
+    // Extract coordinate array from various formats
+    let coordArray = null;
+
+    if (Array.isArray(coordinates)) {
+      if (coordinates.length > 0) {
+        if (Array.isArray(coordinates[0])) {
+          if (typeof coordinates[0][0] === "number") {
+            // Format: [[lng,lat], [lng,lat], ...]
+            coordArray = coordinates;
+          } else if (Array.isArray(coordinates[0][0])) {
+            // Format: [[[lng,lat], [lng,lat], ...]]
+            coordArray = coordinates[0];
+          }
+        }
+      }
+    } else if (coordinates.type === "Polygon" && coordinates.coordinates) {
+      // GeoJSON format
+      coordArray = coordinates.coordinates[0];
+    } else if (
+      coordinates.coordinates &&
+      Array.isArray(coordinates.coordinates[0])
+    ) {
+      // Wrapped coordinates
+      coordArray = coordinates.coordinates[0];
+    }
+
+    if (!validateCoordinates(coordArray)) {
+      console.warn("Invalid coordinates for centroid calculation:", coordArray);
       return null;
     }
-  }
 
-  return [y / len, x / len];
+    // Calculate centroid
+    let x = 0,
+      y = 0,
+      validPoints = 0;
+
+    for (const coord of coordArray) {
+      x += coord[0]; // longitude
+      y += coord[1]; // latitude
+      validPoints++;
+    }
+
+    if (validPoints === 0) {
+      return null;
+    }
+
+    const centroid = [y / validPoints, x / validPoints];
+
+    // Validate centroid coordinates
+    if (
+      isNaN(centroid[0]) ||
+      isNaN(centroid[1]) ||
+      !isFinite(centroid[0]) ||
+      !isFinite(centroid[1])
+    ) {
+      console.warn("Invalid centroid calculated:", centroid);
+      return null;
+    }
+
+    return centroid;
+  } catch (e) {
+    console.error("Error calculating centroid:", e, lokasiData);
+    return null;
+  }
 };
 
 // --- Child Components ---
 
-const AssetPolygon = ({ asset, style, onAssetClick }) => {
+const AssetPolygon = ({ asset, style, onAssetClick, showMarker = false }) => {
   const map = useMap();
   const geoJsonData = assetToGeoJSON(asset);
+  const centroid = getCentroid(asset.lokasi);
+
+  if (!geoJsonData) {
+    console.warn("Could not create GeoJSON for asset:", asset.id);
+    return null;
+  }
 
   const handleClick = () => {
     if (asset.lokasi) {
-      const layer = L.geoJSON(geoJsonData);
-      const bounds = layer.getBounds();
-      if (bounds.isValid()) {
-        map.fitBounds(bounds, { padding: [50, 50] });
+      try {
+        const layer = L.geoJSON(geoJsonData);
+        const bounds = layer.getBounds();
+        if (bounds.isValid()) {
+          map.fitBounds(bounds, { padding: [50, 50] });
+        }
+      } catch (e) {
+        console.error("Error fitting bounds for asset:", asset.id, e);
       }
     }
     if (onAssetClick) {
@@ -106,17 +219,51 @@ const AssetPolygon = ({ asset, style, onAssetClick }) => {
   };
 
   return (
-    <GeoJSON
-      data={geoJsonData}
-      style={style}
-      eventHandlers={{ click: handleClick }}
-    >
-      <Popup>
-        <b>{asset.nama}</b>
-        <br />
-        Luas: {asset.luas ? asset.luas.toLocaleString("id-ID") : "N/A"} m²
-      </Popup>
-    </GeoJSON>
+    <>
+      <GeoJSON
+        key={`polygon-${asset.id}`}
+        data={geoJsonData}
+        style={style}
+        eventHandlers={{ click: handleClick }}
+      >
+        <Popup>
+          <div>
+            <strong>{asset.nama}</strong>
+            <br />
+            Luas:{" "}
+            {asset.luas ? Number(asset.luas).toLocaleString("id-ID") : "N/A"} m²
+            <br />
+            Status: {asset.status || "N/A"}
+            <br />
+            {asset.alamat && <span>Alamat: {asset.alamat}</span>}
+          </div>
+        </Popup>
+      </GeoJSON>
+
+      {/* Show marker on polygon when specified */}
+      {showMarker && centroid && (
+        <Marker
+          key={`polygon-marker-${asset.id}`}
+          position={centroid}
+          icon={selectedAsetIcon}
+          eventHandlers={{ click: handleClick }}
+        >
+          <Popup>
+            <div>
+              <strong>{asset.nama}</strong>
+              <br />
+              Status: {asset.status || "N/A"}
+              <br />
+              Luas:{" "}
+              {asset.luas
+                ? Number(asset.luas).toLocaleString("id-ID")
+                : "N/A"}{" "}
+              m²
+            </div>
+          </Popup>
+        </Marker>
+      )}
+    </>
   );
 };
 
@@ -124,15 +271,23 @@ const AssetMarker = ({ asset, onAssetClick }) => {
   const map = useMap();
   const centroid = getCentroid(asset.lokasi);
 
-  if (!centroid) return null;
+  if (!centroid) {
+    console.warn("Could not calculate centroid for asset:", asset.id);
+    return null;
+  }
 
   const handleClick = () => {
     const geoJsonData = assetToGeoJSON(asset);
-    const layer = L.geoJSON(geoJsonData);
-    const bounds = layer.getBounds();
-
-    if (bounds.isValid()) {
-      map.fitBounds(bounds, { padding: [50, 50] });
+    if (geoJsonData) {
+      try {
+        const layer = L.geoJSON(geoJsonData);
+        const bounds = layer.getBounds();
+        if (bounds.isValid()) {
+          map.fitBounds(bounds, { padding: [50, 50] });
+        }
+      } catch (e) {
+        console.error("Error fitting bounds for asset:", asset.id, e);
+      }
     }
 
     if (onAssetClick) {
@@ -142,12 +297,20 @@ const AssetMarker = ({ asset, onAssetClick }) => {
 
   return (
     <Marker
+      key={`marker-${asset.id}`}
       position={centroid}
       icon={asetIcon}
       eventHandlers={{ click: handleClick }}
     >
       <Popup>
-        <b>{asset.nama}</b>
+        <div>
+          <strong>{asset.nama}</strong>
+          <br />
+          Status: {asset.status || "N/A"}
+          <br />
+          Luas:{" "}
+          {asset.luas ? Number(asset.luas).toLocaleString("id-ID") : "N/A"} m²
+        </div>
       </Popup>
     </Marker>
   );
@@ -160,12 +323,36 @@ const PetaAset = ({
   tampilan = "poligon",
   asetPilihan = null,
   onAssetClick,
-  isDrawing,
+  isDrawing = false,
   onDrawingCreated,
   jatengBoundary,
   diyBoundary,
 }) => {
   const mapCenter = [-7.5, 110.0];
+
+  console.log("PetaAset render:", {
+    assetsCount: assets.length,
+    tampilan,
+    isDrawing,
+    selectedAsset: asetPilihan?.id || null,
+  });
+
+  // Filter and validate assets before rendering
+  const validAssets = assets.filter((asset) => {
+    if (!asset || !asset.lokasi) return false;
+
+    try {
+      const geoJsonData = assetToGeoJSON(asset);
+      return geoJsonData !== null;
+    } catch (e) {
+      console.warn("Asset failed validation:", asset.id, e);
+      return false;
+    }
+  });
+
+  console.log(
+    `Valid assets for rendering: ${validAssets.length} / ${assets.length}`
+  );
 
   const defaultStyle = {
     fillColor: "#2E7D32",
@@ -180,11 +367,23 @@ const PetaAset = ({
     weight: 3,
     opacity: 1,
     color: "#f59e0b",
-    fillOpacity: 0.7,
+    fillOpacity: 0.8,
   };
 
-  const styleJateng = { color: "#ff7800", weight: 2, fill: false };
-  const styleDIY = { color: "#006400", weight: 2, dashArray: "4", fill: false };
+  const styleJateng = {
+    color: "#ff7800",
+    weight: 2,
+    fill: false,
+    opacity: 0.8,
+  };
+
+  const styleDIY = {
+    color: "#006400",
+    weight: 2,
+    dashArray: "4",
+    fill: false,
+    opacity: 0.8,
+  };
 
   return (
     <MapContainer
@@ -207,56 +406,88 @@ const PetaAset = ({
         </LayersControl.BaseLayer>
       </LayersControl>
 
-      {jatengBoundary && <GeoJSON data={jatengBoundary} style={styleJateng} />}
-      {diyBoundary && <GeoJSON data={diyBoundary} style={styleDIY} />}
+      {/* Province boundaries */}
+      {jatengBoundary && (
+        <GeoJSON
+          key="jateng-boundary"
+          data={jatengBoundary}
+          style={styleJateng}
+        />
+      )}
+      {diyBoundary && (
+        <GeoJSON key="diy-boundary" data={diyBoundary} style={styleDIY} />
+      )}
 
+      {/* Drawing mode */}
       {isDrawing ? (
         <FeatureGroup>
           <EditControl
             position="topleft"
+            // Di PetaAset.js, ganti handler onCreated di EditControl dengan ini:
+
+            // Di PetaAset.js, ganti handler onCreated di EditControl dengan ini:
+
             onCreated={(e) => {
+              console.log("PetaAset onCreated:", e);
+
               const { layerType, layer } = e;
+
               if (layerType === "polygon" && onDrawingCreated) {
-                const geoJSON = layer.toGeoJSON();
-                const calculatedArea = area(geoJSON);
-                onDrawingCreated({
-                  geometry: geoJSON.geometry.coordinates,
-                  area: calculatedArea,
-                });
+                try {
+                  const geoJSON = layer.toGeoJSON();
+                  const calculatedArea = area(geoJSON);
+
+                  console.log("GeoJSON:", geoJSON);
+                  console.log("Area:", calculatedArea);
+
+                  onDrawingCreated({
+                    geometry: geoJSON.geometry,
+                    area: calculatedArea,
+                    type: "polygon",
+                  });
+                } catch (error) {
+                  console.error("Error in PetaAset onCreated:", error);
+                }
               }
             }}
+            onDeleted={(e) => {
+              console.log("Drawing deleted:", e);
+              // Handle polygon deletion if needed
+            }}
             draw={{
-              polygon: { shapeOptions: { color: "#4CAF50" } },
+              polygon: {
+                shapeOptions: {
+                  color: "#4CAF50",
+                  weight: 2,
+                  fillOpacity: 0.5,
+                },
+                allowIntersection: false,
+                showArea: true,
+                metric: true,
+              },
               rectangle: false,
               circle: false,
               circlemarker: false,
               marker: false,
               polyline: false,
             }}
-            edit={{ remove: false, edit: false }}
+            edit={{
+              remove: true, // Allow deletion
+              edit: false, // Disable editing for now
+            }}
           />
 
-          {/* aset ikut dimasukkan ke dalam FeatureGroup supaya tetap muncul saat edit */}
-          {assets.map((asset) => {
-            if (!asset.lokasi) return null;
-
+          {/* Render existing assets in drawing mode with reduced opacity */}
+          {validAssets.map((asset) => {
             const isSelected = asetPilihan && asset.id === asetPilihan.id;
-
-            if (isSelected) {
-              return (
-                <AssetPolygon
-                  key={asset.id + "-selected"}
-                  asset={asset}
-                  style={selectedStyle}
-                  onAssetClick={onAssetClick}
-                />
-              );
-            }
+            const drawingModeStyle = isSelected
+              ? { ...selectedStyle, fillOpacity: 0.3, opacity: 0.6 }
+              : { ...defaultStyle, fillOpacity: 0.2, opacity: 0.4 };
 
             if (tampilan === "titik") {
               return (
                 <AssetMarker
-                  key={asset.id}
+                  key={`draw-marker-${asset.id}`}
                   asset={asset}
                   onAssetClick={onAssetClick}
                 />
@@ -264,53 +495,56 @@ const PetaAset = ({
             } else {
               return (
                 <AssetPolygon
-                  key={asset.id}
+                  key={`draw-polygon-${asset.id}`}
                   asset={asset}
-                  style={defaultStyle}
+                  style={drawingModeStyle}
                   onAssetClick={onAssetClick}
+                  showMarker={isSelected}
                 />
               );
             }
           })}
         </FeatureGroup>
       ) : (
-        <>
-          {assets.map((asset) => {
-            if (!asset.lokasi) return null;
+        /* Normal display mode */
+        validAssets.map((asset) => {
+          const isSelected = asetPilihan && asset.id === asetPilihan.id;
+          const style = isSelected ? selectedStyle : defaultStyle;
 
-            const isSelected = asetPilihan && asset.id === asetPilihan.id;
-
+          if (tampilan === "titik") {
+            // In marker mode, show selected asset as polygon + marker
             if (isSelected) {
               return (
                 <AssetPolygon
-                  key={asset.id + "-selected"}
+                  key={`selected-polygon-${asset.id}`}
                   asset={asset}
                   style={selectedStyle}
                   onAssetClick={onAssetClick}
-                />
-              );
-            }
-
-            if (tampilan === "titik") {
-              return (
-                <AssetMarker
-                  key={asset.id}
-                  asset={asset}
-                  onAssetClick={onAssetClick}
+                  showMarker={true}
                 />
               );
             } else {
               return (
-                <AssetPolygon
-                  key={asset.id}
+                <AssetMarker
+                  key={`marker-${asset.id}`}
                   asset={asset}
-                  style={defaultStyle}
                   onAssetClick={onAssetClick}
                 />
               );
             }
-          })}
-        </>
+          } else {
+            // In polygon mode, always show polygons
+            return (
+              <AssetPolygon
+                key={`polygon-${asset.id}`}
+                asset={asset}
+                style={style}
+                onAssetClick={onAssetClick}
+                showMarker={isSelected}
+              />
+            );
+          }
+        })
       )}
     </MapContainer>
   );

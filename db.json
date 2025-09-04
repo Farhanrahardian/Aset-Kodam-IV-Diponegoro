@@ -658,9 +658,9 @@
     {
       "id": "T1756896020306",
       "nama": "Kolam",
-      "korem_id": 5,
+      "korem_id": "5",
       "kodim": "0733",
-      "luas": 4812997144.7,
+      "luas": 846802703.738132,
       "lokasi_nama": "Lokasi dari Peta",
       "kib_kode_barang": "1.23.232.11",
       "nomor_registrasi": "a55daa3rrd",
@@ -681,34 +681,24 @@
       "atas_nama_pemilik_sertifikat": "",
       "lokasi": [
         [
-          [
-            107.901729,
-            -7.031578
-          ],
-          [
-            108.599935,
-            -7.390937
-          ],
-          [
-            108.347041,
-            -7.951165
-          ],
-          [
-            107.934715,
-            -7.439918
-          ],
-          [
-            107.555375,
-            -7.401822
-          ],
-          [
-            107.688187,
-            -7.265694
-          ],
-          [
-            107.901729,
-            -7.031578
-          ]
+          109.182692,
+          -7.301564
+        ],
+        [
+          109.44627,
+          -7.421355
+        ],
+        [
+          109.317244,
+          -7.682625
+        ],
+        [
+          109.105833,
+          -7.483982
+        ],
+        [
+          109.182692,
+          -7.301564
         ]
       ],
       "kode_barang": "1.23.232.11",
@@ -719,7 +709,69 @@
       "no_reg": "a55daa3rrd",
       "fungsi": "Kantor Badan Pemerintahan",
       "luas_total": 11,
-      "luas_gambar": 4812997144.703391
+      "luas_gambar": 846802703.738132,
+      "kodim_id": "0733"
+    },
+    {
+      "id": "T1756947733188",
+      "nama": "Admin Real",
+      "korem_id": "2",
+      "kodim": "0729",
+      "luas": 4368003483.76639,
+      "lokasi_nama": "Lokasi dari Peta",
+      "kib_kode_barang": "q",
+      "nomor_registrasi": "csdbhcbsd",
+      "alamat": "jateng",
+      "peruntukan": "bcjhcs",
+      "status": "Aktif",
+      "asal_milik": "Pembelian",
+      "bukti_pemilikan": "",
+      "bukti_pemilikan_url": "",
+      "bukti_pemilikan_filename": "",
+      "pemilikan_sertifikat": "Ya",
+      "sertifikat_bidang": "12",
+      "sertifikat_luas": "11.99",
+      "belum_sertifikat_bidang": "12",
+      "belum_sertifikat_luas": "120.98",
+      "keterangan": "axas",
+      "keterangan_bukti_pemilikan": "",
+      "atas_nama_pemilik_sertifikat": "",
+      "lokasi": [
+        [
+          109.430471,
+          -6.226174
+        ],
+        [
+          109.013139,
+          -6.471722
+        ],
+        [
+          109.271226,
+          -6.820739
+        ],
+        [
+          109.880749,
+          -6.531727
+        ],
+        [
+          110.078433,
+          -6.253463
+        ],
+        [
+          109.430471,
+          -6.226174
+        ]
+      ],
+      "kode_barang": "q",
+      "no_registrasi": "csdbhcbsd",
+      "registrasi": "csdbhcbsd",
+      "nomorRegistrasi": "csdbhcbsd",
+      "noRegistrasi": "csdbhcbsd",
+      "no_reg": "csdbhcbsd",
+      "fungsi": "bcjhcs",
+      "luas_total": 132.97,
+      "luas_gambar": 4368003483.76639,
+      "kodim_id": "0729"
     }
   ],
   "yarsip_assets": [

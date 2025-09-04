@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Card } from "react-bootstrap";
+import React, { useState, useEffect, useCallback } from "react";
+import { Container, Row, Col, Card, Button } from "react-bootstrap";
 import {
   BarChart,
   Bar,
@@ -16,18 +16,22 @@ import jatengBoundary from "../data/indonesia_jawatengah.json";
 import diyBoundary from "../data/indonesia_yogyakarta.json";
 import AsetByKoremChart from "../components/AsetByKoremChart";
 import DetailOffcanvasAset from "../components/DetailOffcanvasAset";
-import PetaAset from "../components/PetaAset"; // Import PetaAset
+import PetaAset from "../components/PetaAset";
 
 const Dashboard = () => {
   const [totalAset, setTotalAset] = useState(0);
   const [totalLuas, setTotalLuas] = useState(0);
   const [asetByKodim, setAsetByKodim] = useState([]);
   const [asetList, setAsetList] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
 
   const [selectedAset, setSelectedAset] = useState(null);
   const [showDetail, setShowDetail] = useState(false);
 
-  useEffect(() => {
+  // Function to fetch data - tetap seperti original tapi dengan refresh capability
+  const fetchData = useCallback(() => {
+    setLoading(true);
     fetch("http://localhost:3001/assets")
       .then((res) => res.json())
       .then((data) => {
@@ -46,8 +50,34 @@ const Dashboard = () => {
             .map(([name, jumlah]) => ({ name, jumlah }))
             .sort((a, b) => b.jumlah - a.jumlah)
         );
+
+        setLastUpdated(new Date());
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Error fetching data:", error);
+        setLoading(false);
       });
   }, []);
+
+  // Initial load
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Auto-refresh setiap 15 detik (lebih sering untuk sinkronisasi cepat)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchData();
+    }, 15000); // 15 seconds
+
+    return () => clearInterval(interval);
+  }, [fetchData]);
+
+  // Handler for manual refresh
+  const handleRefresh = () => {
+    fetchData();
+  };
 
   // Handler for when an asset polygon is clicked on the map
   const handleAssetClick = (asset) => {
@@ -62,7 +92,33 @@ const Dashboard = () => {
 
   return (
     <Container fluid className="dashboard-container p-4">
-      <h2 className="dashboard-title mb-4">Aset Provinsi Jawa Tengah & DIY</h2>
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h2 className="dashboard-title">Aset Provinsi Jawa Tengah & DIY</h2>
+        <div className="d-flex align-items-center gap-2">
+          <small className="text-muted">
+            Update: {lastUpdated.toLocaleTimeString()}
+          </small>
+          <Button
+            variant="outline-primary"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <span
+                  className="spinner-border spinner-border-sm me-1"
+                  role="status"
+                  aria-hidden="true"
+                ></span>
+                Loading...
+              </>
+            ) : (
+              "Refresh"
+            )}
+          </Button>
+        </div>
+      </div>
 
       {/* Summary Cards */}
       <Row>
@@ -94,12 +150,13 @@ const Dashboard = () => {
               <Card.Title>Peta Sebaran Aset</Card.Title>
               <div style={{ height: "500px", width: "100%" }}>
                 <PetaAset
+                  key={`dashboard-map-${lastUpdated.getTime()}`} // Force refresh ketika data berubah
                   assets={asetList}
                   jatengBoundary={jatengBoundary}
                   diyBoundary={diyBoundary}
                   onAssetClick={handleAssetClick}
-                  tampilan="titik" // <-- Menampilkan aset sebagai titik
-                  asetPilihan={selectedAset} // <-- Memberitahu peta aset mana yang dipilih
+                  tampilan="titik" // Tetap tampilkan sebagai titik seperti original
+                  asetPilihan={selectedAset}
                 />
               </div>
             </Card.Body>

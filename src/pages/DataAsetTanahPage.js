@@ -1111,6 +1111,7 @@ const DataAsetTanahPage = () => {
     setSelectedAssetDetail(null);
   };
 
+  // PERBAIKAN: Handler save asset yang konsisten
   const handleSaveAsset = async (assetData) => {
     if (!editingAsset) {
       toast.error("Tidak ada aset yang sedang diedit");
@@ -1118,10 +1119,8 @@ const DataAsetTanahPage = () => {
     }
 
     const toastId = toast.loading("Menyimpan perubahan...");
-    try {
-      // Get the selected kodim ID for saving (gunakan ID, bukan nama)
-      const kodimId = selectedKodim || editingAsset.kodim;
 
+    try {
       // Handle file upload if there's a new file
       let fileUploadData = {};
 
@@ -1141,15 +1140,12 @@ const DataAsetTanahPage = () => {
             `${API_URL}/upload/bukti-pemilikan`,
             formData,
             {
-              headers: {
-                "Content-Type": "multipart/form-data",
-              },
-              timeout: 30000, // 30 seconds timeout
+              headers: { "Content-Type": "multipart/form-data" },
+              timeout: 30000,
             }
           );
 
           console.log("Upload response:", uploadRes.data);
-
           fileUploadData = {
             bukti_pemilikan_url: uploadRes.data.url,
             bukti_pemilikan_filename: uploadRes.data.filename,
@@ -1175,45 +1171,70 @@ const DataAsetTanahPage = () => {
         }
       }
 
-      // Gabungkan data form dengan data lokasi yang baru jika ada
+      // Handle location data yang sudah diedit
+      let locationData = {};
+
+      if (editedLocationData) {
+        console.log("=== Processing edited location data ===");
+        console.log("Edited location data:", editedLocationData);
+
+        // Gunakan format yang konsisten dengan TambahAsetPage
+        if (
+          editedLocationData.geometry &&
+          Array.isArray(editedLocationData.geometry)
+        ) {
+          locationData = {
+            lokasi: editedLocationData.geometry, // Format: [[lng,lat], [lng,lat], ...]
+            luas: editedLocationData.area,
+          };
+          console.log("Location data ready for save:", locationData);
+        } else {
+          console.error(
+            "Invalid edited location geometry:",
+            editedLocationData.geometry
+          );
+          toast.error("Data koordinat tidak valid", { id: toastId });
+          return;
+        }
+      }
+
+      // Get the selected kodim ID for saving
+      const kodimId = selectedKodim || editingAsset.kodim;
+
+      // Gabungkan semua data
       const finalData = {
         ...assetData,
         ...fileUploadData,
-        ...(editedLocationData && {
-          lokasi: editedLocationData.geometry || editedLocationData.coordinates,
-          luas: editedLocationData.area,
-        }),
+        ...locationData, // Hanya include location data jika ada perubahan
         korem_id: selectedKorem?.id || editingAsset.korem_id,
-        kodim: kodimId, // Simpan sebagai kodim ID (sesuai dengan FormAset.js)
-        kodim_id: kodimId, // Compatibility dengan field lama
+        kodim: kodimId,
+        kodim_id: kodimId,
       };
 
-      console.log("Saving asset data:", finalData);
+      console.log("Final data to save:", finalData);
 
       const response = await axios.put(
         `${API_URL}/assets/${editingAsset.id}`,
         finalData,
-        {
-          timeout: 15000, // 15 seconds timeout
-        }
+        { timeout: 15000 }
       );
 
       console.log("Save response:", response.data);
 
-      // Update the assets state and refresh data
+      // Update assets state
       const updatedAssets = assets.map((a) =>
         a.id === editingAsset.id ? response.data : a
       );
       setAssets(updatedAssets);
 
-      // If we're viewing this asset detail, update it too
+      // Update selected asset detail if viewing
       if (selectedAssetDetail && selectedAssetDetail.id === editingAsset.id) {
         setSelectedAssetDetail(response.data);
       }
 
       toast.success("Aset berhasil diperbarui!", { id: toastId });
 
-      // Close editing states
+      // Clear editing states
       setEditingAsset(null);
       setIsEditingLocation(false);
       setEditedLocationData(null);
@@ -1335,60 +1356,66 @@ const DataAsetTanahPage = () => {
     });
   };
 
+  // PERBAIKAN: Handler untuk location drawing yang konsisten dengan TambahAsetPage
   const handleLocationDrawingCreated = (data) => {
-    console.log("Location drawing created:", data);
+    console.log("=== Location drawing created in Edit Mode ===");
+    console.log("Raw data received:", JSON.stringify(data, null, 2));
 
-    // Validate drawing data
-    if (!data) {
+    if (!data || !data.geometry) {
+      console.error("Invalid drawing data - missing geometry:", data);
       toast.error("Data lokasi tidak valid");
       return;
     }
 
-    // Handle different data formats that might come from PetaAset
+    // Extract coordinates from GeoJSON geometry (sama seperti TambahAsetPage)
     let coordinates = null;
-    let area = 0;
 
-    if (data.geometry) {
-      // GeoJSON format
-      coordinates = data.geometry.coordinates || data.geometry;
-      area = data.area || 0;
-    } else if (data.coordinates) {
-      // Direct coordinates format
-      coordinates = data.coordinates;
-      area = data.area || 0;
-    } else if (Array.isArray(data) && data.length > 0) {
-      // Array of coordinates
-      coordinates = [data]; // Wrap in array to match polygon format
-      area = data.area || 0;
+    if (
+      data.geometry.coordinates &&
+      Array.isArray(data.geometry.coordinates[0])
+    ) {
+      // GeoJSON format: geometry.coordinates[0] adalah exterior ring
+      coordinates = data.geometry.coordinates[0];
+      console.log("Extracted coordinates from GeoJSON:", coordinates);
     } else {
-      console.error("Unrecognized drawing data format:", data);
-      toast.error("Format data gambar tidak dikenali");
+      console.error("Invalid geometry format:", data.geometry);
+      toast.error("Format geometry tidak valid");
       return;
     }
 
+    // Validasi minimum 3 points untuk polygon
+    if (!Array.isArray(coordinates) || coordinates.length < 3) {
+      toast.error(
+        `Polygon harus minimal 3 titik. Saat ini: ${coordinates?.length || 0}`
+      );
+      return;
+    }
+
+    // Set data dalam format yang konsisten dengan TambahAsetPage
     const locationData = {
-      geometry: {
-        type: "Polygon",
-        coordinates: coordinates,
-      },
-      coordinates: coordinates,
-      area: area,
+      geometry: coordinates, // Store sebagai array koordinat [[lng,lat], [lng,lat], ...]
+      area: data.area || 0,
+      type: "polygon",
     };
 
-    console.log("Processed location data:", locationData);
+    console.log("Processed location data for edit:", locationData);
 
     setEditedLocationData(locationData);
     setIsEditingLocation(false);
 
-    toast.success(`Lokasi berhasil digambar! Luas: ${area.toFixed(2)} m²`);
+    toast.success(
+      `Lokasi berhasil digambar! Luas: ${(data.area / 10000).toFixed(2)} Ha`
+    );
   };
 
-  // Prepare current asset for map display during editing
+  // PERBAIKAN: Function prepareEditAssetForMap yang konsisten
   const prepareEditAssetForMap = () => {
     if (!editingAsset) return [];
 
-    console.log("Preparing asset for map editing:", editingAsset);
+    console.log("=== Preparing asset for map editing ===");
+    console.log("Editing asset:", editingAsset);
 
+    // Function untuk validasi dan ekstrak lokasi data (sama seperti di DetailModalAset)
     const validateLocationData = (asset) => {
       if (!asset.lokasi) {
         console.log("No lokasi data found for editing");
@@ -1397,6 +1424,7 @@ const DataAsetTanahPage = () => {
 
       let lokasi = asset.lokasi;
 
+      // Parse jika berupa string
       if (typeof lokasi === "string") {
         try {
           lokasi = JSON.parse(lokasi);
@@ -1407,22 +1435,38 @@ const DataAsetTanahPage = () => {
         }
       }
 
-      // Handle asset format - array of coordinates
+      // Handle format array koordinat langsung [[lng,lat], [lng,lat], ...]
       if (Array.isArray(lokasi) && lokasi.length > 0) {
-        console.log("Location is array format:", lokasi);
-        return lokasi;
+        // Check if it's array of coordinates
+        if (Array.isArray(lokasi[0]) && typeof lokasi[0][0] === "number") {
+          console.log("Location is direct coordinate array format:", lokasi);
+          return lokasi; // Return langsung karena sudah dalam format yang benar
+        }
+        // Check if it's nested array [[[lng,lat], [lng,lat], ...]]
+        else if (Array.isArray(lokasi[0]) && Array.isArray(lokasi[0][0])) {
+          console.log("Location is nested array format:", lokasi[0]);
+          return lokasi[0]; // Ambil array pertama
+        }
       }
 
-      // Handle GeoJSON format
+      // Handle format GeoJSON
       if (lokasi.type === "Polygon" && lokasi.coordinates) {
-        console.log("Location is GeoJSON Polygon format:", lokasi.coordinates);
-        return lokasi.coordinates;
+        console.log(
+          "Location is GeoJSON Polygon format:",
+          lokasi.coordinates[0]
+        );
+        return lokasi.coordinates[0]; // Ambil exterior ring
       }
 
-      // Handle wrapped coordinates
+      // Handle format dengan wrapper coordinates
       if (lokasi.coordinates && Array.isArray(lokasi.coordinates)) {
-        console.log("Location has coordinates property:", lokasi.coordinates);
-        return lokasi.coordinates;
+        if (Array.isArray(lokasi.coordinates[0])) {
+          console.log(
+            "Location has coordinates wrapper:",
+            lokasi.coordinates[0]
+          );
+          return lokasi.coordinates[0];
+        }
       }
 
       console.warn("Unrecognized location format for editing:", lokasi);
@@ -1436,17 +1480,18 @@ const DataAsetTanahPage = () => {
       return [];
     }
 
+    // Buat asset object untuk ditampilkan di peta
     const assetForMap = {
       id: editingAsset.id || `edit-${Date.now()}`,
       nama: editingAsset.nama || "Asset Tanah",
       kodim: editingAsset.kodim || "",
-      lokasi: validatedLocation,
+      lokasi: validatedLocation, // Format: [[lng,lat], [lng,lat], ...]
       luas: Number(editingAsset.luas) || 0,
       status: editingAsset.status || "",
       alamat: editingAsset.alamat || "",
       peruntukan: editingAsset.peruntukan || editingAsset.fungsi || "",
-      type: "aset_tanah", // Specify type for map rendering
-      isEditing: true, // Flag to indicate this is being edited
+      type: "aset_tanah",
+      isEditing: true,
     };
 
     console.log("Asset prepared for map:", assetForMap);

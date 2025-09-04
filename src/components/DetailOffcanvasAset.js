@@ -8,7 +8,7 @@ import {
   FaLandmark,
   FaBuilding,
 } from "react-icons/fa";
-import PetaAset from "./PetaAset"; // Impor PetaAset untuk mini-map
+import PetaAset from "./PetaAset";
 
 // Helper untuk mendapatkan warna badge berdasarkan status
 const getStatusBadgeVariant = (status) => {
@@ -29,7 +29,7 @@ const getStatusBadgeVariant = (status) => {
 const DetailOffcanvasAset = ({ show, handleClose, aset }) => {
   if (!aset) return null;
 
-  // Siapkan data untuk mini-map
+  // Siapkan data untuk mini-map - tetap sederhana seperti original
   const assetForMap = aset.lokasi ? [{ ...aset }] : [];
 
   return (
@@ -38,17 +38,18 @@ const DetailOffcanvasAset = ({ show, handleClose, aset }) => {
       onHide={handleClose}
       placement="end"
       backdrop={true}
-      style={{ width: "500px" }} // Lebarkan sedikit untuk konten
+      style={{ width: "500px" }}
     >
       <Offcanvas.Header closeButton className="bg-light border-bottom">
         <Offcanvas.Title as="h5">Detail Aset Tanah</Offcanvas.Title>
       </Offcanvas.Header>
 
       <Offcanvas.Body style={{ padding: 0 }}>
-        {/* Mini Map Preview */}
+        {/* Mini Map Preview - dengan key untuk refresh */}
         {aset.lokasi && (
           <div style={{ height: "200px", width: "100%" }}>
             <PetaAset
+              key={`detail-${aset.id}-${aset.updated_at || Date.now()}`} // Key berdasarkan update time
               assets={assetForMap}
               tampilan="poligon" // Selalu poligon di detail
               asetPilihan={aset} // Highlight aset ini
