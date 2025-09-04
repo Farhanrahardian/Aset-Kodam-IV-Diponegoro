@@ -12,8 +12,7 @@ import {
 import "leaflet/dist/leaflet.css";
 import "./Dashboard.css";
 
-import jatengBoundary from "../data/indonesia_jawatengah.json";
-import diyBoundary from "../data/indonesia_yogyakarta.json";
+
 import AsetByKoremChart from "../components/AsetByKoremChart";
 import DetailOffcanvasAset from "../components/DetailOffcanvasAset";
 import PetaAset from "../components/PetaAset";
@@ -152,8 +151,6 @@ const Dashboard = () => {
                 <PetaAset
                   key={`dashboard-map-${lastUpdated.getTime()}`} // Force refresh ketika data berubah
                   assets={asetList}
-                  jatengBoundary={jatengBoundary}
-                  diyBoundary={diyBoundary}
                   onAssetClick={handleAssetClick}
                   tampilan="titik" // Tetap tampilkan sebagai titik seperti original
                   asetPilihan={selectedAset}
