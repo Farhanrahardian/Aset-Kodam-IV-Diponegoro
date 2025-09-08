@@ -58,8 +58,8 @@
   bottom: 0;
   background: linear-gradient(
     45deg,
-    rgba(0, 0, 0, 0.7) 0%,
-    rgba(0, 0, 0, 0.3) 100%
+    rgba(0, 0, 0, 0.3) 0%,
+    rgba(0, 0, 0, 0.1) 100%
   );
   display: flex;
   flex-direction: column;
@@ -359,4 +359,12 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #a1a1a1;
+}
+.slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }

@@ -24,9 +24,9 @@ const Dashboard = () => {
 
   // Slider images
   const slides = [
-    { src: "/uploads/slide1.jpg", alt: "Slide 1" },
-    { src: "/uploads/slide2.jpg", alt: "Slide 2" },
-    { src: "/uploads/slide3.jpg", alt: "Slide 3" },
+    { src: "/uploads/slide1.png", alt: "Slide 1" },
+    { src: "/uploads/slide2.png", alt: "Slide 2" },
+    { src: "/uploads/slide3.png", alt: "Slide 3" },
   ];
 
   // Fetch data for charts
@@ -108,13 +108,6 @@ const Dashboard = () => {
 
   return (
     <Container fluid className="dashboard-container p-4">
-      {/* Header - Simple title only */}
-      <div className="text-center mb-4">
-        <h2 className="dashboard-title">
-          Dashboard Aset Provinsi Jawa Tengah & DIY
-        </h2>
-      </div>
-
       {/* Hero Slider - No arrows, only dots */}
       <Row className="mb-4">
         <Col>
@@ -127,8 +120,8 @@ const Dashboard = () => {
                 >
                   <img src={slide.src} alt={slide.alt} />
                   <div className="slide-overlay">
-                    <h3>Sistem Informasi Aset</h3>
-                    <p>Provinsi Jawa Tengah & DIY</p>
+                    {/* <h3>Sistem Informasi Aset</h3>
+                    <p>Provinsi Jawa Tengah & DIY</p> */}
                   </div>
                 </div>
               ))}
