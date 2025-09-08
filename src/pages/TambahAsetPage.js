@@ -1,357 +1,242 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Container, Row, Col, Button, Spinner, Alert } from "react-bootstrap";
+import {
+  Container,
+  Row,
+  Col,
+  Button,
+  Spinner,
+  Alert,
+  Card,
+  Form,
+} from "react-bootstrap";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import PetaAset from "../components/PetaAset";
+import PetaGambarAset from "../components/PetaGambarAset";
 import FormAset from "../components/FormAset";
-import jatengBoundary from "../data/indonesia_jawatengah.json";
-import diyBoundary from "../data/indonesia_yogyakarta.json";
 
 const API_URL = "http://localhost:3001";
 
 const TambahAsetPage = () => {
   const navigate = useNavigate();
+  const [step, setStep] = useState(1);
+
   const [koremList, setKoremList] = useState([]);
   const [kodimList, setKodimList] = useState([]);
+
+  // We only need one boundary file as they appear to be the same
+  const [kodimBoundaries, setKodimBoundaries] = useState(null);
+
+  const [selectedKoremId, setSelectedKoremId] = useState("");
+  const [selectedKodimId, setSelectedKodimId] = useState(""); // This will now store the Kodim name
+
+  const [selectedKorem, setSelectedKorem] = useState(null); // This will hold the GeoJSON feature
+  const [selectedKodim, setSelectedKodim] = useState(null); // This will hold the GeoJSON feature
+
+  const [drawnAsset, setDrawnAsset] = useState(null);
+  const [isFormEnabled, setIsFormEnabled] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [newAssetData, setNewAssetData] = useState(null);
-  const [isFormEnabled, setIsFormEnabled] = useState(false);
-  const [drawnAssets, setDrawnAssets] = useState([]);
-
-  // Fetch Korem data
-  const fetchKorem = useCallback(async () => {
-    setLoading(true);
-    try {
-      const koremRes = await axios.get(`${API_URL}/korem`);
-      setKoremList(koremRes.data);
-      setError(null);
-    } catch (err) {
-      setError("Gagal memuat data Korem.");
-      console.error("Error fetching Korem:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Fetch Kodim data based on selected Korem
-  const fetchKodim = useCallback(async (koremId) => {
-    if (!koremId) {
-      setKodimList([]);
-      return;
-    }
-
-    console.log(`Fetching Kodim for Korem ID: ${koremId}`);
-
-    try {
-      let kodimRes;
-      let endpointUsed = "";
-
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      setLoading(true);
       try {
-        console.log(`Trying: ${API_URL}/kodim?korem_id=${koremId}`);
-        kodimRes = await axios.get(`${API_URL}/kodim?korem_id=${koremId}`);
-        endpointUsed = "kodim?korem_id";
-        console.log("Success with Option 1:", kodimRes.data);
-      } catch (err1) {
-        console.log("Option 1 failed:", err1.response?.status, err1.message);
-
-        try {
-          console.log(`Trying: ${API_URL}/korem/${koremId}/kodim`);
-          kodimRes = await axios.get(`${API_URL}/korem/${koremId}/kodim`);
-          endpointUsed = "korem/id/kodim";
-          console.log("Success with Option 2:", kodimRes.data);
-        } catch (err2) {
-          console.log("Option 2 failed:", err2.response?.status, err2.message);
-
-          try {
-            console.log(`Trying: ${API_URL}/kodim (all)`);
-            kodimRes = await axios.get(`${API_URL}/kodim`);
-            kodimRes.data = kodimRes.data.filter(
-              (kodim) => kodim.korem_id == koremId || kodim.korem_id === koremId
-            );
-            endpointUsed = "kodim (filtered)";
-            console.log("Success with Option 3:", kodimRes.data);
-          } catch (err3) {
-            console.log(
-              "Option 3 failed:",
-              err3.response?.status,
-              err3.message
-            );
-
-            console.log("All endpoints failed, using mock data");
-            kodimRes = {
-              data: [
-                {
-                  id: `${koremId}_1`,
-                  nama: "Kodim 0701/Banyumas",
-                  korem_id: koremId,
-                },
-                {
-                  id: `${koremId}_2`,
-                  nama: "Kodim 0702/Purbalingga",
-                  korem_id: koremId,
-                },
-                {
-                  id: `${koremId}_3`,
-                  nama: "Kodim 0703/Cilacap",
-                  korem_id: koremId,
-                },
-                {
-                  id: `${koremId}_4`,
-                  nama: "Kodim 0704/Banjarnegara",
-                  korem_id: koremId,
-                },
-                {
-                  id: `${koremId}_5`,
-                  nama: "Kodim 0705/Magelang",
-                  korem_id: koremId,
-                },
-                {
-                  id: `${koremId}_6`,
-                  nama: "Kodim 0733/Kota Semarang",
-                  korem_id: koremId,
-                },
-              ],
-            };
-            endpointUsed = "mock data";
-          }
-        }
+        const [koremRes, kodimGeoRes] = await Promise.all([
+          axios.get(`${API_URL}/korem`),
+          axios.get(`/data/Kodim.geojson`),
+        ]);
+        setKoremList(koremRes.data);
+        setKodimBoundaries(kodimGeoRes.data);
+      } catch (err) {
+        setError("Gagal memuat data. Coba muat ulang halaman.");
+        console.error("Error fetching data:", err);
+      } finally {
+        setLoading(false);
       }
-
-      console.log(`Kodim data loaded using: ${endpointUsed}`, kodimRes.data);
-      setKodimList(kodimRes.data || []);
-      setError(null);
-    } catch (err) {
-      const errorMsg = `Gagal memuat data Kodim. ${
-        err.response?.status
-          ? `Status: ${err.response.status}`
-          : "Server tidak merespons"
-      }`;
-      setError(errorMsg);
-      console.error("Error fetching Kodim:", err);
-      setKodimList([]);
-    }
+    };
+    fetchInitialData();
   }, []);
+
+  const proceedToStep2 = useCallback((koremId, kodimName) => {
+    if (!kodimBoundaries) return;
+
+    // Find the boundary for the selected Kodim
+    const kodimFeature = kodimBoundaries.features.find(
+      (f) => {
+        const featureName = f.properties.listkodim_Kodim;
+        // Handle the specific mismatch for Semarang
+        if (kodimName === "Kodim 0733/Kota Semarang") {
+          return featureName.startsWith("Kodim 0733/Semarang");
+        }
+        return featureName === kodimName;
+      }
+    );
+
+    // For the Korem boundary, we'll just find the first Kodim that belongs to it as a representative area
+    const koremData = koremList.find(k => k.id === koremId);
+    const firstKodimName = koremData?.kodim[0] || kodimName; // Fallback to current kodim if no list
+    const koremFeature = kodimBoundaries.features.find(
+        (f) => f.properties.listkodim_Kodim === firstKodimName
+    );
+
+    setSelectedKorem(koremFeature);
+    setSelectedKodim(kodimFeature);
+    setStep(2);
+    toast.success("Lokasi dipilih! Silakan gambar area aset di peta.");
+
+  }, [kodimBoundaries, koremList]);
+
 
   useEffect(() => {
-    fetchKorem();
-  }, [fetchKorem]);
-
-  // PERBAIKAN: Handler untuk drawing yang konsisten
-  const handleDrawingCreated = (data) => {
-    console.log("=== Drawing created in TambahAsetPage ===");
-    console.log("Raw data received:", JSON.stringify(data, null, 2));
-
-    if (!data || !data.geometry) {
-      console.error("Invalid drawing data - missing geometry:", data);
-      toast.error("Data gambar tidak valid");
+    if (!selectedKoremId) {
+      setKodimList([]);
+      setSelectedKodimId("");
       return;
     }
 
-    // Extract coordinates from GeoJSON geometry
-    let coordinates = null;
+    const korem = koremList.find(k => k.id === selectedKoremId);
+    if (korem) {
+      if (korem.kodim && korem.kodim.length === 0) {
+        setSelectedKodimId(korem.nama);
+        proceedToStep2(selectedKoremId, korem.nama);
+      } else {
+        const kodimObjects = korem.kodim.map(kName => ({ id: kName, nama: kName }));
+        setKodimList(kodimObjects);
+        setSelectedKodimId("");
+      }
+    }
+  }, [selectedKoremId, koremList, proceedToStep2]);
 
-    if (
-      data.geometry.coordinates &&
-      Array.isArray(data.geometry.coordinates[0])
-    ) {
-      // GeoJSON format: geometry.coordinates[0] adalah exterior ring
-      coordinates = data.geometry.coordinates[0];
-      console.log("Extracted coordinates from GeoJSON:", coordinates);
-    } else {
-      console.error("Invalid geometry format:", data.geometry);
-      toast.error("Format geometry tidak valid");
+  const handleNextStep = () => {
+    if (!selectedKoremId || !selectedKodimId) {
+      toast.error("Pilih Korem dan Kodim terlebih dahulu.");
       return;
     }
-
-    // Validasi minimum 3 points untuk polygon
-    if (!Array.isArray(coordinates) || coordinates.length < 3) {
-      toast.error(
-        `Polygon harus minimal 3 titik. Saat ini: ${coordinates?.length || 0}`
-      );
-      return;
-    }
-
-    // Store data dalam format yang konsisten
-    const processedData = {
-      geometry: coordinates, // Store sebagai array koordinat [[lng,lat], [lng,lat], ...]
-      area: data.area || 0,
-      type: "polygon",
-    };
-
-    console.log("Processed data for storage:", processedData);
-
-    setNewAssetData(processedData);
-    setIsDrawing(false);
-    setIsFormEnabled(true);
-
-    // Create temp asset untuk display di peta
-    const tempAsset = {
-      id: "temp_drawn_polygon",
-      nama: "Area Baru (Belum Tersimpan)",
-      lokasi: coordinates, // Format: [[lng,lat], [lng,lat], ...]
-      luas: data.area,
-      status: "draft",
-      alamat: "Menunggu input detail...",
-    };
-
-    console.log("Temp asset for display:", tempAsset);
-    setDrawnAssets([tempAsset]);
-
-    toast.success(
-      `Polygon berhasil digambar! Luas: ${(data.area / 10000).toFixed(2)} Ha`
-    );
+    proceedToStep2(selectedKoremId, selectedKodimId);
   };
 
-  // PERBAIKAN: Handler save asset yang konsisten
+  const handleDrawingCreated = (data) => {
+    if (!data || !data.geometry) {
+      toast.error("Data gambar tidak valid.");
+      return;
+    }
+    setDrawnAsset(data);
+    setIsFormEnabled(true);
+    toast.success(`Polygon berhasil digambar! Luas: ${data.area.toFixed(2)} m²`);
+  };
+
   const handleSaveAsset = async (assetData) => {
     const toastId = toast.loading("Menyimpan data aset...");
-
     try {
-      if (!newAssetData || !newAssetData.geometry) {
-        toast.error("Data lokasi tidak tersedia", { id: toastId });
+      if (!drawnAsset || !drawnAsset.geometry) {
+        toast.error("Data lokasi dari gambar tidak tersedia.", { id: toastId });
         return;
       }
-
-      console.log("=== Saving asset ===");
-      console.log("Asset form data:", assetData);
-      console.log("New asset location data:", newAssetData);
-
-      // Format final data untuk disimpan
       const finalAssetData = {
         ...assetData,
         id: `T${Date.now()}`,
-        lokasi: newAssetData.geometry, // Simpan koordinat dalam format [[lng,lat], [lng,lat], ...]
-        luas: newAssetData.area,
+        lokasi: drawnAsset.geometry,
+        luas: drawnAsset.area,
+        korem_id: selectedKoremId,
+        kodim: selectedKodimId,
       };
-
-      console.log("Final data to save:", finalAssetData);
-
-      const response = await axios.post(`${API_URL}/assets`, finalAssetData);
-      console.log("Save response:", response.data);
-
+      await axios.post(`${API_URL}/assets`, finalAssetData);
       toast.success("Aset berhasil ditambahkan!", { id: toastId });
-
-      // Clear states
-      setDrawnAssets([]);
-      setNewAssetData(null);
-      setIsFormEnabled(false);
-
-      setTimeout(() => {
-        navigate("/data-aset-tanah");
-      }, 1500);
+      navigate("/data-aset-tanah");
     } catch (err) {
-      console.error("Save failed:", err);
       toast.error("Gagal menyimpan aset.", { id: toastId });
-      setError("Gagal menyimpan aset.");
     }
   };
 
-  const handleCancel = () => {
-    if (isFormEnabled) {
-      setIsFormEnabled(false);
-      setNewAssetData(null);
-      setDrawnAssets([]);
-      setIsDrawing(false);
-      toast("Polygon dibatalkan");
-    } else {
-      navigate(-1);
-    }
-  };
-
-  const handleDrawingToggle = () => {
-    if (isDrawing) {
-      // Cancel drawing mode
-      setIsDrawing(false);
-      setDrawnAssets([]);
-      setNewAssetData(null);
-      setIsFormEnabled(false);
-      toast("Mode menggambar dibatalkan", {
-        style: {
-          border: "1px solid #f59e0b",
-          color: "#f59e0b",
-        },
-      });
-    } else {
-      // Start drawing mode
-      setIsDrawing(true);
-      setDrawnAssets([]);
-      setNewAssetData(null);
-      setIsFormEnabled(false);
-      toast("Mode menggambar aktif. Klik di peta untuk membuat polygon.");
-    }
+  const handleBackToSelection = () => {
+    setStep(1);
+    setDrawnAsset(null);
+    setIsFormEnabled(false);
+    setSelectedKoremId("");
+    setSelectedKodimId("");
   };
 
   if (loading) return <Spinner animation="border" variant="primary" />;
+  if (error) return <Alert variant="danger">{error}</Alert>;
 
   return (
     <Container fluid className="mt-4">
-      <h3>Tambah Aset Tanah Baru</h3>
-      {error && <Alert variant="danger">{error}</Alert>}
-
       <Row>
-        <Col md={7}>
-          <div className="mb-3">
-            <Button
-              onClick={handleDrawingToggle}
-              variant={isDrawing ? "danger" : "primary"}
-              className="me-2"
-            >
-              {isDrawing
-                ? "❌ Batalkan Menggambar"
-                : "📍 Gambar Lokasi Aset di Peta"}
-            </Button>
+        <Col>
+          <Card>
+            <Card.Header>
+              <div className="d-flex justify-content-between align-items-center">
+                <h4 className="mb-0">Tambah Aset Tanah Baru</h4>
+                {step === 2 && (
+                  <Button variant="secondary" size="sm" onClick={handleBackToSelection}>
+                    Kembali ke Pemilihan Lokasi
+                  </Button>
+                )}
+              </div>
+            </Card.Header>
+            <Card.Body>
+              {step === 1 && (
+                <div>
+                  <h5>Langkah 1: Pilih Lokasi Aset</h5>
+                  <hr />
+                  <Row>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label>Pilih Korem</Form.Label>
+                        <Form.Select value={selectedKoremId} onChange={(e) => setSelectedKoremId(e.target.value)}>
+                          <option value="">-- Pilih Korem --</option>
+                          {koremList.map((korem) => (<option key={korem.id} value={korem.id}>{korem.nama}</option>))}
+                        </Form.Select>
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label>Pilih Kodim</Form.Label>
+                        <Form.Select value={selectedKodimId} onChange={(e) => setSelectedKodimId(e.target.value)} disabled={!selectedKoremId || (kodimList && kodimList.length === 0)}>
+                          <option value="">-- Pilih Kodim --</option>
+                          {kodimList.map((kodim) => (<option key={kodim.id} value={kodim.id}>{kodim.nama}</option>))}
+                        </Form.Select>
+                      </Form.Group>
+                    </Col>
+                  </Row>
+                  <div className="d-flex justify-content-end">
+                    <Button onClick={handleNextStep} disabled={!selectedKoremId || !selectedKodimId}>
+                      Lanjutkan ke Peta
+                    </Button>
+                  </div>
+                </div>
+              )}
 
-            {drawnAssets.length > 0 && !isDrawing && (
-              <Button
-                onClick={() => setDrawnAssets([])}
-                variant="outline-warning"
-                size="sm"
-              >
-                🗑️ Hapus Gambar
-              </Button>
-            )}
-          </div>
-
-          {drawnAssets.length > 0 && (
-            <Alert variant="success" className="mb-3">
-              ✅ Polygon berhasil digambar! Luas:{" "}
-              {(newAssetData?.area / 10000).toFixed(2)} Ha
-              <br />
-              <small>
-                Silakan lengkapi form di sebelah kanan untuk menyimpan aset.
-              </small>
-            </Alert>
-          )}
-
-          <div style={{ height: "70vh", width: "100%" }}>
-            <PetaAset
-              assets={drawnAssets}
-              tampilan="poligon"
-              isDrawing={isDrawing}
-              onDrawingCreated={handleDrawingCreated}
-              jatengBoundary={jatengBoundary}
-              diyBoundary={diyBoundary}
-              key={`peta-tambah-${
-                drawnAssets.length
-              }-${isDrawing}-${Date.now()}`}
-            />
-          </div>
-        </Col>
-        <Col md={5}>
-          <FormAset
-            onSave={handleSaveAsset}
-            onCancel={handleCancel}
-            koremList={koremList}
-            kodimList={kodimList}
-            onKoremChange={fetchKodim}
-            initialGeometry={newAssetData ? newAssetData.geometry : null}
-            initialArea={newAssetData ? newAssetData.area : null}
-            isEnabled={isFormEnabled}
-          />
+              {step === 2 && (
+                <Row>
+                  <Col md={7}>
+                    <h5>Langkah 2: Gambar Lokasi & Lengkapi Detail</h5>
+                    <Alert variant="info" className="mt-3">
+                      Gunakan kontrol di pojok kanan atas peta untuk menggambar batas area aset (polygon).
+                    </Alert>
+                    <div style={{ height: "70vh", width: "100%" }}>
+                      <PetaGambarAset onPolygonCreated={handleDrawingCreated} selectedKorem={selectedKorem} selectedKodim={selectedKodim} />
+                    </div>
+                  </Col>
+                  <Col md={5}>
+                    <FormAset
+                      onSave={handleSaveAsset}
+                      onCancel={handleBackToSelection}
+                      koremList={koremList}
+                      kodimList={kodimList}
+                      selectedKorem={selectedKoremId}
+                      selectedKodim={selectedKodimId}
+                      initialGeometry={drawnAsset ? drawnAsset.geometry : null}
+                      initialArea={drawnAsset ? drawnAsset.area : null}
+                      isEnabled={isFormEnabled}
+                    />
+                  </Col>
+                </Row>
+              )}
+            </Card.Body>
+          </Card>
         </Col>
       </Row>
     </Container>
