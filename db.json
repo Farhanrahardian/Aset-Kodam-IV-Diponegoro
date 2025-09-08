@@ -1036,6 +1036,108 @@
           ]
         ]
       }
+    },
+    {
+      "id": "T1757332705861",
+      "nama": "kodam",
+      "korem_id": "1",
+      "kodim": "Kodim 0701/Banyumas",
+      "luas": 181404587.16132942,
+      "lokasi_nama": "Lokasi sekitar -7.39290, 109.01094",
+      "kib_kode_barang": "1.21.21.212.121",
+      "nomor_registrasi": "2",
+      "alamat": "efes",
+      "peruntukan": "gedung",
+      "status": "Dimiliki",
+      "asal_milik": "aea",
+      "pemilikan_sertifikat": "Tidak",
+      "keterangan_bukti_pemilikan": "",
+      "sertifikat_bidang": 0,
+      "sertifikat_luas": 0,
+      "belum_sertifikat_bidang": "2",
+      "belum_sertifikat_luas": "3452",
+      "keterangan": "",
+      "atas_nama_pemilik_sertifikat": "",
+      "lokasi": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              109.010941,
+              -7.392903
+            ],
+            [
+              109.093391,
+              -7.50192
+            ],
+            [
+              109.190958,
+              -7.463767
+            ],
+            [
+              109.171719,
+              -7.36837
+            ],
+            [
+              109.010941,
+              -7.392903
+            ]
+          ]
+        ]
+      },
+      "bukti_pemilikan_url": "",
+      "bukti_pemilikan_filename": ""
+    },
+    {
+      "id": "T1757332804680",
+      "nama": "fahan",
+      "korem_id": "3",
+      "kodim": "Kodim 0717/Grobogan",
+      "luas": 49924984.16122873,
+      "lokasi_nama": "Lokasi sekitar -7.06151, 110.87793",
+      "kib_kode_barang": "qq",
+      "nomor_registrasi": "q3d",
+      "alamat": "qdqw",
+      "peruntukan": "kantor",
+      "status": "Dikuasai",
+      "asal_milik": "qwq",
+      "pemilikan_sertifikat": "Ya",
+      "keterangan_bukti_pemilikan": "",
+      "sertifikat_bidang": "21",
+      "sertifikat_luas": 0,
+      "belum_sertifikat_bidang": 0,
+      "belum_sertifikat_luas": 0,
+      "keterangan": "",
+      "atas_nama_pemilik_sertifikat": "",
+      "lokasi": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              110.87793,
+              -7.061515
+            ],
+            [
+              110.879992,
+              -7.10993
+            ],
+            [
+              110.966221,
+              -7.112317
+            ],
+            [
+              110.95248,
+              -7.059469
+            ],
+            [
+              110.87793,
+              -7.061515
+            ]
+          ]
+        ]
+      },
+      "bukti_pemilikan_url": "",
+      "bukti_pemilikan_filename": ""
     }
   ],
   "yarsip_assets": [

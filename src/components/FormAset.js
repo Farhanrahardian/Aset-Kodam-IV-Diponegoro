@@ -5,55 +5,35 @@ import {
   Row,
   Col,
   Card,
-  Alert,
-  Modal,
-  Image,
+  Alert
 } from "react-bootstrap";
-import { FaEye, FaTrash, FaDownload } from "react-icons/fa";
-import axios from "axios";
 import toast from "react-hot-toast";
 
 const FormAset = ({
   onSave,
   onCancel,
   koremList,
-  kodimList = [],
-  selectedKorem,
-  selectedKodim,
+  onLocationChange,
   assetToEdit,
   initialGeometry,
   initialArea,
-  isEnabled = false, // Default to false, enabled after drawing
+  isEnabled = false,
   viewMode = false,
 }) => {
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
-  const [showImageModal, setShowImageModal] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
-
-  const MAX_FILE_SIZE_MB = 50;
-  const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
-
-  const getImageUrl = (filename) => {
-    if (!filename) return null;
-    if (filename.startsWith("http://") || filename.startsWith("https://")) {
-      return filename;
-    }
-    return `/uploads/${filename}`;
-  };
+  const [kodimList, setKodimList] = useState([]);
+  const [buktiPemilikanFile, setBuktiPemilikanFile] = useState(null);
+  const [assetPhotos, setAssetPhotos] = useState([]);
 
   useEffect(() => {
     if (assetToEdit) {
       setFormData(assetToEdit);
-      if (assetToEdit.bukti_pemilikan_filename) {
-        setImagePreview(getImageUrl(assetToEdit.bukti_pemilikan_filename));
-      }
     } else {
       const initialFormData = {
         nama: "",
-        korem_id: selectedKorem || "",
-        kodim: selectedKodim || "",
+        korem_id: "",
+        kodim: "",
         luas: initialArea ? parseFloat(initialArea.toFixed(2)) : 0,
         lokasi_nama: "",
         kib_kode_barang: "",
@@ -62,22 +42,43 @@ const FormAset = ({
         peruntukan: "",
         status: "",
         asal_milik: "",
-        bukti_pemilikan: "",
-        bukti_pemilikan_url: "",
-        bukti_pemilikan_filename: "",
         pemilikan_sertifikat: "Ya",
+        keterangan_bukti_pemilikan: "",
         sertifikat_bidang: "",
         sertifikat_luas: "",
         belum_sertifikat_bidang: "",
         belum_sertifikat_luas: "",
         keterangan: "",
-        keterangan_bukti_pemilikan: "",
         atas_nama_pemilik_sertifikat: "",
         lokasi: initialGeometry || null,
       };
       setFormData(initialFormData);
     }
-  }, [assetToEdit, selectedKorem, selectedKodim, initialGeometry, initialArea]);
+  }, [assetToEdit, initialGeometry, initialArea]);
+
+  useEffect(() => {
+    if (formData.korem_id) {
+      const selectedKoremData = koremList.find((k) => k.id === formData.korem_id);
+      if (selectedKoremData) {
+        const kodimObjects =
+          selectedKoremData.kodim?.map((kName) => ({
+            id: kName,
+            nama: kName,
+          })) || [];
+        setKodimList(kodimObjects);
+
+        if (kodimObjects.length === 0) {
+          const newKodim = selectedKoremData.nama;
+          setFormData((prev) => ({ ...prev, kodim: newKodim }));
+          onLocationChange(formData.korem_id, newKodim);
+        }
+      }
+    } else {
+      setKodimList([]);
+    }
+  }, [formData.korem_id, koremList, onLocationChange]);
+
+  
 
   useEffect(() => {
     if (initialGeometry && !formData.lokasi_nama) {
@@ -103,10 +104,30 @@ const FormAset = ({
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (name === "korem_id") {
+      setFormData({
+        ...formData,
+        korem_id: value,
+        kodim: "",
+      });
+      onLocationChange(value, "");
+    } else {
+      setFormData({ ...formData, [name]: value });
+      if (name === "kodim") {
+        onLocationChange(formData.korem_id, value);
+      }
+    }
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
+  };
+
+  const handleFileChange = (e) => {
+    setBuktiPemilikanFile(e.target.files[0]);
+  };
+
+  const handleAssetPhotosChange = (e) => {
+    setAssetPhotos(Array.from(e.target.files));
   };
 
   const handleSave = () => {
@@ -114,23 +135,12 @@ const FormAset = ({
       toast.error("Gambar lokasi aset di peta terlebih dahulu.");
       return;
     }
-    // Add validation logic here if needed
-    onSave(formData);
+    onSave(formData, buktiPemilikanFile, assetPhotos);
   };
 
   const statusOptions = [
-    { value: "Aktif", label: "Aktif" },
-    { value: "Tidak Aktif", label: "Tidak Aktif" },
-    { value: "Dalam Proses", label: "Dalam Proses" },
-    { value: "Sengketa", label: "Sengketa" },
-  ];
-
-  const asalMilikOptions = [
-    { value: "Pembelian", label: "Pembelian" },
-    { value: "Hibah", label: "Hibah" },
-    { value: "Warisan", label: "Warisan" },
-    { value: "Tukar Menukar", label: "Tukar Menukar" },
-    { value: "Lainnya", label: "Lainnya" },
+    { value: "Dimiliki", label: "Dimiliki" },
+    { value: "Dikuasai", label: "Dikuasai" },
   ];
 
   return (
@@ -140,12 +150,6 @@ const FormAset = ({
           <h5>Lengkapi Detail Aset</h5>
         </Card.Header>
         <Card.Body>
-          {!isEnabled && !viewMode && (
-            <Alert variant="warning" className="text-center p-4">
-              <p className="mb-0">Gambar lokasi di peta untuk mengaktifkan formulir ini.</p>
-            </Alert>
-          )}
-          <fieldset disabled={!isEnabled || viewMode}>
             <Form>
               <Card className="mb-3">
                 <Card.Header><strong>Informasi Dasar Aset</strong></Card.Header>
@@ -153,159 +157,208 @@ const FormAset = ({
                   <Row>
                     <Col md={6}>
                       <Form.Group className="mb-3">
-                        <Form.Label>Wilayah Korem</Form.Label>
-                        <Form.Select name="korem_id" value={formData.korem_id || ""} disabled>
-                          <option value="">-- Dipilih pada langkah sebelumnya --</option>
-                          {koremList.map((korem) => (<option key={korem.id} value={korem.id}>{korem.nama}</option>))}
+                        <Form.Label>Wilayah Korem *</Form.Label>
+                        <Form.Select
+                          name="korem_id"
+                          value={formData.korem_id || ""}
+                          onChange={handleChange}
+                          required
+                          disabled={viewMode}
+                        >
+                          <option value="">-- Pilih Korem --</option>
+                          {koremList.map((korem) => (
+                            <option key={korem.id} value={korem.id}>
+                              {korem.nama}
+                            </option>
+                          ))}
                         </Form.Select>
                       </Form.Group>
                     </Col>
                     <Col md={6}>
                       <Form.Group className="mb-3">
-                        <Form.Label>Kodim</Form.Label>
-                        <Form.Select name="kodim" value={formData.kodim || ""} disabled>
-                          <option value="">-- Dipilih pada langkah sebelumnya --</option>
-                          {kodimList.map((kodim) => (<option key={kodim.id} value={kodim.id}>{kodim.nama}</option>))}
+                        <Form.Label>Kodim *</Form.Label>
+                        <Form.Select
+                          name="kodim"
+                          value={formData.kodim || ""}
+                          onChange={handleChange}
+                          disabled={viewMode || !formData.korem_id || kodimList.length === 0}
+                          required
+                        >
+                          <option value="">-- Pilih Kodim --</option>
+                          {kodimList.map((kodim) => (
+                            <option key={kodim.id} value={kodim.id}>
+                              {kodim.nama}
+                            </option>
+                          ))}
                         </Form.Select>
                       </Form.Group>
                     </Col>
                   </Row>
-                  <Form.Group className="mb-3">
-                    <Form.Label>NUP *</Form.Label>
-                    <Form.Control type="text" name="nama" value={formData.nama || ""} onChange={handleChange} placeholder="Masukkan NUP" required />
-                  </Form.Group>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Lokasi *</Form.Label>
-                    <Form.Control type="text" name="lokasi_nama" value={formData.lokasi_nama || ""} onChange={handleChange} placeholder="Otomatis dari peta atau isi manual" />
-                  </Form.Group>
+                  
+                  <fieldset disabled={!isEnabled || viewMode}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>NUP *</Form.Label>
+                      <Form.Control type="text" name="nama" value={formData.nama || ""} onChange={handleChange} placeholder="Masukkan NUP" required />
+                    </Form.Group>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Lokasi *</Form.Label>
+                      <Form.Control type="text" name="lokasi_nama" value={formData.lokasi_nama || ""} onChange={handleChange} placeholder="Otomatis dari peta atau isi manual" />
+                    </Form.Group>
+                  </fieldset>
                 </Card.Body>
               </Card>
+              
+              {!isEnabled && !viewMode && (
+                <Alert variant="warning" className="text-center p-4 mt-3">
+                  <p className="mb-0">Pilih Korem/Kodim lalu gambar lokasi di peta untuk mengaktifkan sisa formulir.</p>
+                </Alert>
+              )}
 
-              <Card className="mb-3">
-                <Card.Header><strong>Detail Registrasi Aset</strong></Card.Header>
-                <Card.Body>
-                  <Row>
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>KIB/Kode Barang *</Form.Label>
-                        <Form.Control type="text" name="kib_kode_barang" value={formData.kib_kode_barang || ""} onChange={handleChange} placeholder="Contoh: 1.3.1.01.001" />
-                      </Form.Group>
-                    </Col>
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Nomor Registrasi *</Form.Label>
-                        <Form.Control type="text" name="nomor_registrasi" value={formData.nomor_registrasi || ""} onChange={handleChange} placeholder="Masukkan nomor registrasi" />
-                      </Form.Group>
-                    </Col>
-                  </Row>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Alamat Registrasi Aset*</Form.Label>
-                    <Form.Control as="textarea" rows={2} name="alamat" value={formData.alamat || ""} onChange={handleChange} placeholder="Masukkan alamat lengkap" />
-                  </Form.Group>
-                  <Row>
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Peruntukan *</Form.Label>
-                        <Form.Control type="text" name="peruntukan" value={formData.peruntukan || ""} onChange={handleChange} placeholder="Contoh: Kantor, Gudang, Latihan" />
-                      </Form.Group>
-                    </Col>
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Luas dari Peta (m²)</Form.Label>
-                        <Form.Control type="number" name="luas" value={formData.luas || 0} readOnly />
-                      </Form.Group>
-                    </Col>
-                  </Row>
-                </Card.Body>
-              </Card>
+              <fieldset disabled={!isEnabled || viewMode}>
+                <Card className="mb-3">
+                  <Card.Header><strong>Detail Registrasi Aset</strong></Card.Header>
+                  <Card.Body>
+                    <Row>
+                      <Col md={6}>
+                        <Form.Group className="mb-3">
+                          <Form.Label>KIB/Kode Barang *</Form.Label>
+                          <Form.Control type="text" name="kib_kode_barang" value={formData.kib_kode_barang || ""} onChange={handleChange} placeholder="Contoh: 1.3.1.01.001" />
+                        </Form.Group>
+                      </Col>
+                      <Col md={6}>
+                        <Form.Group className="mb-3">
+                          <Form.Label>Nomor Registrasi *</Form.Label>
+                          <Form.Control type="text" name="nomor_registrasi" value={formData.nomor_registrasi || ""} onChange={handleChange} placeholder="Masukkan nomor registrasi" />
+                        </Form.Group>
+                      </Col>
+                    </Row>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Alamat Registrasi Aset*</Form.Label>
+                      <Form.Control as="textarea" rows={2} name="alamat" value={formData.alamat || ""} onChange={handleChange} placeholder="Masukkan alamat lengkap" />
+                    </Form.Group>
+                    <Row>
+                      <Col md={6}>
+                        <Form.Group className="mb-3">
+                          <Form.Label>Peruntukan *</Form.Label>
+                          <Form.Control type="text" name="peruntukan" value={formData.peruntukan || ""} onChange={handleChange} placeholder="Contoh: Kantor, Gudang, Latihan" />
+                        </Form.Group>
+                      </Col>
+                      
+                    </Row>
+                  </Card.Body>
+                </Card>
 
-              <Card className="mb-3">
-                <Card.Header><strong>Detail Kepemilikan</strong></Card.Header>
-                <Card.Body>
-                  <Row>
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Status *</Form.Label>
-                        <Form.Select name="status" value={formData.status || ""} onChange={handleChange}>
-                          <option value="">-- Pilih Status --</option>
-                          {statusOptions.map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
-                        </Form.Select>
-                      </Form.Group>
-                    </Col>
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Asal Milik *</Form.Label>
-                        <Form.Select name="asal_milik" value={formData.asal_milik || ""} onChange={handleChange}>
-                          <option value="">-- Pilih Asal Milik --</option>
-                          {asalMilikOptions.map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
-                        </Form.Select>
-                      </Form.Group>
-                    </Col>
-                  </Row>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Status Sertifikat</Form.Label>
-                    <div>
-                      <Form.Check type="radio" id="sertifikat-ya" name="pemilikan_sertifikat" value="Ya" label="Sudah Bersertifikat" onChange={handleChange} checked={formData.pemilikan_sertifikat === "Ya"} inline />
-                      <Form.Check type="radio" id="sertifikat-tidak" name="pemilikan_sertifikat" value="Tidak" label="Belum Bersertifikat" onChange={handleChange} checked={formData.pemilikan_sertifikat === "Tidak"} inline />
-                    </div>
-                  </Form.Group>
+                <Card className="mb-3">
+                  <Card.Header><strong>Detail Kepemilikan</strong></Card.Header>
+                  <Card.Body>
+                    <Row>
+                      <Col md={6}>
+                        <Form.Group className="mb-3">
+                          <Form.Label>Status *</Form.Label>
+                          <Form.Select name="status" value={formData.status || ""} onChange={handleChange}>
+                            <option value="">-- Pilih Status --</option>
+                            {statusOptions.map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
+                          </Form.Select>
+                        </Form.Group>
+                      </Col>
+                      <Col md={6}>
+                        <Form.Group className="mb-3">
+                          <Form.Label>Asal Milik *</Form.Label>
+                          <Form.Control 
+                            type="text" 
+                            name="asal_milik" 
+                            value={formData.asal_milik || ""} 
+                            onChange={handleChange} 
+                            placeholder="Masukkan asal usul milik" 
+                          />
+                        </Form.Group>
+                      </Col>
+                    </Row>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Sertifikat</Form.Label>
+                      <div>
+                        <Form.Check type="radio" id="sertifikat-ya" name="pemilikan_sertifikat" value="Ya" label="Ada" onChange={handleChange} checked={formData.pemilikan_sertifikat === "Ya"} inline />
+                        <Form.Check type="radio" id="sertifikat-tidak" name="pemilikan_sertifikat" value="Tidak" label="Tidak" onChange={handleChange} checked={formData.pemilikan_sertifikat === "Tidak"} inline />
+                      </div>
+                    </Form.Group>
 
-                  {formData.pemilikan_sertifikat === "Ya" && (
-                  <Card className="mb-3">
-                    <Card.Header><strong>Data Sertifikat</strong></Card.Header>
-                    <Card.Body>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Atas Nama Pemilik Sertifikat</Form.Label>
-                        <Form.Control type="text" name="atas_nama_pemilik_sertifikat" value={formData.atas_nama_pemilik_sertifikat || ""} onChange={handleChange} placeholder="Masukkan atas nama pemilik sertifikat" />
-                      </Form.Group>
-                      <Row>
-                        <Col md={6}>
-                          <Form.Group className="mb-3">
-                            <Form.Label>Sertifikat (Bidang)</Form.Label>
-                            <Form.Control type="number" name="sertifikat_bidang" value={formData.sertifikat_bidang || ""} onChange={handleChange} placeholder="Jumlah bidang" />
-                          </Form.Group>
-                        </Col>
-                        <Col md={6}>
-                          <Form.Group className="mb-3">
-                            <Form.Label>Sertifikat (Luas m²)</Form.Label>
-                            <Form.Control type="number" name="sertifikat_luas" value={formData.sertifikat_luas || ""} onChange={handleChange} placeholder="Luas dalam meter persegi" />
-                          </Form.Group>
-                        </Col>
-                      </Row>
-                    </Card.Body>
-                  </Card>
-                  )}
+                    <Form.Group className="mb-3">
+                      <Form.Label>Nama Bukti Kepemilikan</Form.Label>
+                      <Form.Control
+                        type="text"
+                        name="keterangan_bukti_pemilikan"
+                        value={formData.keterangan_bukti_pemilikan || ""}
+                        onChange={handleChange}
+                        placeholder="Contoh: Sertifikat Hak Milik No. 123"
+                      />
+                    </Form.Group>
 
-                  {formData.pemilikan_sertifikat === "Tidak" && (
-                  <Card className="mb-3">
-                    <Card.Header><strong>Data Belum Sertifikat</strong></Card.Header>
-                    <Card.Body>
-                      <Row>
-                        <Col md={6}>
-                          <Form.Group className="mb-3">
-                            <Form.Label>Belum Sertifikat (Bidang)</Form.Label>
-                            <Form.Control type="number" name="belum_sertifikat_bidang" value={formData.belum_sertifikat_bidang || ""} onChange={handleChange} placeholder="Jumlah bidang" />
-                          </Form.Group>
-                        </Col>
-                        <Col md={6}>
-                          <Form.Group className="mb-3">
-                            <Form.Label>Belum Sertifikat (Luas m²)</Form.Label>
-                            <Form.Control type="number" name="belum_sertifikat_luas" value={formData.belum_sertifikat_luas || ""} onChange={handleChange} placeholder="Luas dalam meter persegi" />
-                          </Form.Group>
-                        </Col>
-                      </Row>
-                    </Card.Body>
-                  </Card>
-                  )}
-                </Card.Body>
-              </Card>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Upload Bukti Pemilikan</Form.Label>
+                      <Form.Control type="file" name="bukti_pemilikan_file" onChange={handleFileChange} />
+                    </Form.Group>
 
-              <div className="d-flex gap-2 justify-content-end">
+                    <Form.Group className="mb-3">
+                      <Form.Label>Foto Aset</Form.Label>
+                      <Form.Control type="file" name="asset_photos" onChange={handleAssetPhotosChange} multiple />
+                    </Form.Group>
+
+                    {formData.pemilikan_sertifikat === "Ya" && (
+                    <Card className="mb-3">
+                      <Card.Header><strong>Data Sertifikat</strong></Card.Header>
+                      <Card.Body>
+                        <Form.Group className="mb-3">
+                          <Form.Label>Atas Nama Pemilik Sertifikat</Form.Label>
+                          <Form.Control type="text" name="atas_nama_pemilik_sertifikat" value={formData.atas_nama_pemilik_sertifikat || ""} onChange={handleChange} placeholder="Masukkan atas nama pemilik sertifikat" />
+                        </Form.Group>
+                        <Row>
+                          <Col md={6}>
+                            <Form.Group className="mb-3">
+                              <Form.Label>Jumlah Bidang</Form.Label>
+                              <Form.Control type="number" name="sertifikat_bidang" value={formData.sertifikat_bidang || ""} onChange={handleChange} placeholder="Jumlah bidang" />
+                            </Form.Group>
+                          </Col>
+                          <Col md={6}>
+                            <Form.Group className="mb-3">
+                              <Form.Label>Luas (m²)</Form.Label>
+                              <Form.Control type="number" name="luas" value={formData.luas || ""} onChange={handleChange} placeholder="Luas dalam meter persegi" />
+                            </Form.Group>
+                          </Col>
+                        </Row>
+                      </Card.Body>
+                    </Card>
+                    )}
+
+                    {formData.pemilikan_sertifikat === "Tidak" && (
+                    <Card className="mb-3">
+                      <Card.Header><strong>Data Belum Sertifikat</strong></Card.Header>
+                      <Card.Body>
+                        <Row>
+                          <Col md={6}>
+                            <Form.Group className="mb-3">
+                              <Form.Label>Belum Sertifikat (Bidang)</Form.Label>
+                              <Form.Control type="number" name="belum_sertifikat_bidang" value={formData.belum_sertifikat_bidang || ""} onChange={handleChange} placeholder="Jumlah bidang" />
+                            </Form.Group>
+                          </Col>
+                          <Col md={6}>
+                            <Form.Group className="mb-3">
+                              <Form.Label>Belum Sertifikat (Luas m²)</Form.Label>
+                              <Form.Control type="number" name="belum_sertifikat_luas" value={formData.belum_sertifikat_luas || ""} onChange={handleChange} placeholder="Luas dalam meter persegi" />
+                            </Form.Group>
+                          </Col>
+                        </Row>
+                      </Card.Body>
+                    </Card>
+                    )}
+                  </Card.Body>
+                </Card>
+              </fieldset>
+
+              <div className="d-flex gap-2 justify-content-end mt-3">
                 <Button variant="secondary" onClick={onCancel}>Batalkan</Button>
                 <Button variant="primary" onClick={handleSave} disabled={!isEnabled}>Simpan Aset</Button>
               </div>
             </Form>
-          </fieldset>
         </Card.Body>
       </Card>
     </>
