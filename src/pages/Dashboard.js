@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Container, Row, Col, Card, Button } from "react-bootstrap";
 import {
   BarChart,
@@ -9,13 +9,15 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import axios from "axios";
 import "leaflet/dist/leaflet.css";
 import "./Dashboard.css";
-
 
 import AsetByKoremChart from "../components/AsetByKoremChart";
 import DetailOffcanvasAset from "../components/DetailOffcanvasAset";
 import PetaAset from "../components/PetaAset";
+
+const API_URL = "http://localhost:3001";
 
 const Dashboard = () => {
   const [totalAset, setTotalAset] = useState(0);
@@ -28,38 +30,63 @@ const Dashboard = () => {
   const [selectedAset, setSelectedAset] = useState(null);
   const [showDetail, setShowDetail] = useState(false);
 
-  // Function to fetch data - tetap seperti original tapi dengan refresh capability
-  const fetchData = useCallback(() => {
+  // State baru untuk mengontrol tampilan peta
+  const [selectedKoremId, setSelectedKoremId] = useState(null);
+  const [resetMapTrigger, setResetMapTrigger] = useState(false);
+
+  // Fungsi untuk mengambil dan menggabungkan data dari kedua endpoint
+  const fetchData = useCallback(async () => {
     setLoading(true);
-    fetch("http://localhost:3001/assets")
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("Data aset dari API:", data);
-        setAsetList(data);
-        setTotalAset(data.length);
-        setTotalLuas(data.reduce((acc, item) => acc + (item.luas || 0), 0));
+    try {
+      const [assetsRes, yarsipRes] = await Promise.all([
+        axios.get(`${API_URL}/assets`),
+        axios.get(`${API_URL}/yarsip_assets`),
+      ]);
 
-        const counts = data.reduce((acc, curr) => {
-          const kodim = curr.kodim || "Lainnya";
-          acc[kodim] = (acc[kodim] || 0) + 1;
-          return acc;
-        }, {});
-        setAsetByKodim(
-          Object.entries(counts)
-            .map(([name, jumlah]) => ({ name, jumlah }))
-            .sort((a, b) => b.jumlah - a.jumlah)
-        );
+      // Menambahkan properti 'type' dan memastikan struktur data konsisten
+      const asetTanah = assetsRes.data.map((asset) => ({
+        ...asset,
+        type: "tanah",
+        nama: asset.nama,
+        lokasi: asset.lokasi,
+        luas: asset.luas,
+      }));
 
-        setLastUpdated(new Date());
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error("Error fetching data:", error);
-        setLoading(false);
-      });
+      const asetYardip = yarsipRes.data.map((asset) => ({
+        ...asset,
+        type: "yardip",
+        nama: asset.pengelola,
+        lokasi: asset.lokasi,
+        luas: asset.area,
+      }));
+
+      const combinedAssets = [...asetTanah, ...asetYardip];
+      setAsetList(combinedAssets);
+      setTotalAset(combinedAssets.length);
+
+      setTotalLuas(
+        combinedAssets.reduce((acc, item) => acc + (item.luas || 0), 0)
+      );
+
+      const counts = asetTanah.reduce((acc, curr) => {
+        const kodim = curr.kodim || "Lainnya";
+        acc[kodim] = (acc[kodim] || 0) + 1;
+        return acc;
+      }, {});
+      setAsetByKodim(
+        Object.entries(counts)
+          .map(([name, jumlah]) => ({ name, jumlah }))
+          .sort((a, b) => b.jumlah - a.jumlah)
+      );
+
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error("Error fetching combined data:", error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // Initial load
   useEffect(() => {
     fetchData();
   }, [fetchData]);
@@ -68,17 +95,15 @@ const Dashboard = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       fetchData();
-    }, 150000000); // 15 seconds
+    }, 15000); // 15 seconds
 
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  // Handler for manual refresh
   const handleRefresh = () => {
     fetchData();
   };
 
-  // Handler for when an asset polygon is clicked on the map
   const handleAssetClick = (asset) => {
     setSelectedAset(asset);
     setShowDetail(true);
@@ -87,6 +112,17 @@ const Dashboard = () => {
   const handleCloseDetail = () => {
     setShowDetail(false);
     setSelectedAset(null);
+  };
+
+  // Fungsi untuk menangani klik pada Korem
+  const handleKoremClick = (koremId) => {
+    setSelectedKoremId(koremId);
+  };
+
+  // Fungsi untuk mereset tampilan peta
+  const handleResetMap = () => {
+    setSelectedKoremId(null);
+    setResetMapTrigger((prev) => !prev);
   };
 
   return (
@@ -147,14 +183,30 @@ const Dashboard = () => {
           <Card className="map-card">
             <Card.Body>
               <Card.Title>Peta Sebaran Aset</Card.Title>
-              <div style={{ height: "500px", width: "100%" }}>
+              <div
+                style={{ height: "500px", width: "100%", position: "relative" }}
+              >
                 <PetaAset
-                  key={`dashboard-map-${lastUpdated.getTime()}`} // Force refresh ketika data berubah
                   assets={asetList}
                   onAssetClick={handleAssetClick}
-                  tampilan="titik" // Tetap tampilkan sebagai titik seperti original
                   asetPilihan={selectedAset}
+                  // --- PERBAIKAN: Tambahkan props di bawah ini ---
+                  onKoremClick={handleKoremClick}
+                  selectedKoremId={selectedKoremId}
+                  resetMapTrigger={resetMapTrigger}
                 />
+                <Button
+                  variant="secondary"
+                  onClick={handleResetMap}
+                  style={{
+                    position: "absolute",
+                    top: "10px",
+                    right: "10px",
+                    zIndex: 1000,
+                  }}
+                >
+                  Kembali
+                </Button>
               </div>
             </Card.Body>
           </Card>
