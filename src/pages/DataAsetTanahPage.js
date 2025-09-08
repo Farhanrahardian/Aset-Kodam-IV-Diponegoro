@@ -30,18 +30,6 @@ import diyBoundary from "../data/indonesia_yogyakarta.json";
 
 const API_URL = "http://localhost:3001";
 
-// Static kodim data sesuai dengan FormAset.js
-const staticKodimData = [
-  { id: "0701", nama: "Kodim 0701/Banyumas", korem_id: 1 },
-  { id: "0729", nama: "Kodim 0729/Bantul", korem_id: 2 },
-  { id: "0732", nama: "Kodim 0732/Sleman", korem_id: 2 },
-  { id: "0733", nama: "Kodim 0733/Kota Semarang", korem_id: 5 },
-  { id: "0725", nama: "Kodim 0725/Sragen", korem_id: 4 },
-  { id: "0734", nama: "Kodim 0734/Yogyakarta", korem_id: 2 },
-  { id: "0702", nama: "Kodim 0702/Purbalingga", korem_id: 1 },
-  { id: "0703", nama: "Kodim 0703/Cilacap", korem_id: 1 },
-];
-
 // Helper function untuk memperbaiki path gambar
 const getImageUrl = (asset) => {
   if (!asset) return null;
@@ -89,7 +77,7 @@ const TabelAset = ({
   onDelete,
   onViewDetail,
   koremList,
-  kodimList,
+  allKodimList,
 }) => {
   if (!assets || assets.length === 0) {
     return (
@@ -101,20 +89,10 @@ const TabelAset = ({
 
   // Helper function untuk mendapatkan nama kodim
   const getKodimName = (asset) => {
-    // Cari di static kodim data berdasarkan ID kodim
-    const kodimFromStatic = staticKodimData.find((k) => k.id === asset.kodim);
-    if (kodimFromStatic) {
-      return kodimFromStatic.nama;
-    }
-
-    // Fallback ke kodim dari props jika tidak ditemukan di static
-    const kodimFromProps = kodimList.find((k) => k.id === asset.kodim);
-    if (kodimFromProps) {
-      return kodimFromProps.nama;
-    }
-
-    // Jika masih tidak ditemukan, return kodim ID atau field nama lainnya
-    return asset.kodim_nama || asset.kodim || "-";
+    if (!asset.kodim) return "-";
+    const assetKodimIdentifier = String(asset.kodim).trim();
+    const kodim = allKodimList.find(k => k.id === assetKodimIdentifier || k.nama === assetKodimIdentifier);
+    return kodim ? kodim.nama : (asset.kodim_nama || asset.kodim || "-");
   };
 
   // Helper function: tampilkan luas lebih jelas
@@ -154,70 +132,6 @@ const TabelAset = ({
     return items.length > 0 ? items : "-";
   };
 
-  // Helper function: tampilkan preview bukti pemilikan dengan proper URL handling
-  const renderBuktiPemilikan = (asset) => {
-    const imageUrl = getImageUrl(asset);
-    const filename =
-      asset.bukti_pemilikan_filename ||
-      asset.bukti_kepemilikan_filename ||
-      "File";
-
-    if (!imageUrl && !filename) {
-      return <span className="text-muted">-</span>;
-    }
-
-    const hasValidImage = imageUrl && isImageFile(filename);
-    const hasPdf = imageUrl && isPdfFile(filename);
-
-    return (
-      <div className="d-flex align-items-center gap-2">
-        {hasValidImage && (
-          <div
-            style={{
-              width: "40px",
-              height: "40px",
-              border: "1px solid #ddd",
-              borderRadius: "4px",
-              overflow: "hidden",
-              cursor: "pointer",
-            }}
-            onClick={() => onViewDetail(asset)}
-            title="Klik untuk lihat detail"
-          >
-            <img
-              src={imageUrl}
-              alt="Preview"
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-              }}
-              onError={(e) => {
-                console.error("Image load error:", imageUrl);
-                e.target.style.display = "none";
-                e.target.parentNode.innerHTML =
-                  '<span class="text-muted small">Error</span>';
-              }}
-            />
-          </div>
-        )}
-        {hasPdf && (
-          <Button
-            variant="outline-danger"
-            size="sm"
-            onClick={() => onViewDetail(asset)}
-            title="Lihat PDF"
-          >
-            PDF
-          </Button>
-        )}
-        <small className="text-truncate" style={{ maxWidth: "80px" }}>
-          {filename}
-        </small>
-      </div>
-    );
-  };
-
   return (
     <Table striped bordered hover responsive>
       <thead className="table-dark">
@@ -255,7 +169,11 @@ const TabelAset = ({
               <td>
                 <span
                   className={`badge ${
-                    asset.status === "Aktif"
+                    asset.status === "Dimiliki"
+                      ? "bg-success"
+                      : asset.status === "Dikuasai"
+                      ? "bg-info"
+                      : asset.status === "Aktif"
                       ? "bg-success"
                       : asset.status === "Tidak Aktif"
                       ? "bg-secondary"
@@ -316,6 +234,7 @@ const TabelAset = ({
 const FilterPanelTop = ({
   koremList,
   kodimList,
+  allKodimList,
   selectedKorem,
   selectedKodim,
   statusFilter,
@@ -328,16 +247,15 @@ const FilterPanelTop = ({
 }) => {
   const statusOptions = [
     { value: "", label: "Semua Status" },
+    { value: "Dimiliki", label: "Dimiliki" },
+    { value: "Dikuasai", label: "Dikuasai" },
     { value: "Aktif", label: "Aktif" },
     { value: "Tidak Aktif", label: "Tidak Aktif" },
     { value: "Dalam Proses", label: "Dalam Proses" },
     { value: "Sengketa", label: "Sengketa" },
   ];
 
-  // Filter kodim berdasarkan korem yang dipilih
-  const filteredKodimForFilter = selectedKorem
-    ? staticKodimData.filter((k) => k.korem_id === parseInt(selectedKorem.id))
-    : staticKodimData;
+  const filteredKodimForFilter = selectedKorem ? kodimList : allKodimList;
 
   return (
     <Card className="mb-4">
@@ -373,13 +291,12 @@ const FilterPanelTop = ({
                 className="form-select"
                 value={selectedKodim || ""}
                 onChange={(e) => onSelectKodim(e.target.value)}
-                disabled={!selectedKorem}
               >
                 <option value="">
-                  {selectedKorem ? "Semua Kodim" : "Pilih Korem dulu"}
+                  Semua Kodim
                 </option>
                 {filteredKodimForFilter.map((kodim) => (
-                  <option key={kodim.id} value={kodim.id}>
+                  <option key={kodim.id} value={kodim.nama}>
                     {kodim.nama}
                   </option>
                 ))}
@@ -433,9 +350,7 @@ const FilterPanelTop = ({
                 {selectedKodim && (
                   <span>
                     {" "}
-                    • <strong>Kodim:</strong>{" "}
-                    {staticKodimData.find((k) => k.id === selectedKodim)
-                      ?.nama || selectedKodim}
+                    • <strong>Kodim:</strong> {selectedKodim}
                   </span>
                 )}
                 {statusFilter && (
@@ -454,52 +369,41 @@ const FilterPanelTop = ({
 };
 
 // Enhanced Modal Detail Component with Map for Assets
-const DetailModalAset = ({ asset, show, onHide, koremList, kodimList }) => {
+const DetailModalAset = ({ asset, show, onHide, koremList, allKodimList }) => {
   if (!asset) return null;
-
-  console.log("Asset data in modal:", asset);
-  console.log("Asset lokasi:", asset.lokasi);
 
   // Validasi dan sanitasi data lokasi untuk Asset
   const validateLocationData = (asset) => {
     if (!asset.lokasi) {
-      console.log("No lokasi data found");
       return null;
     }
 
     let lokasi = asset.lokasi;
 
-    // Jika lokasi adalah string, coba parse JSON
     if (typeof lokasi === "string") {
       try {
         lokasi = JSON.parse(lokasi);
       } catch (e) {
-        console.error("Failed to parse location JSON:", e);
         return null;
       }
     }
 
-    // Handle jika lokasi berupa array koordinat langsung
     if (Array.isArray(lokasi) && lokasi.length > 0) {
-      // Check if it's nested array [[coords]]
       if (Array.isArray(lokasi[0])) {
         return lokasi;
       }
     }
 
-    // Handle jika lokasi sudah berupa geometry object
     if (lokasi.type === "Polygon" && lokasi.coordinates) {
       return lokasi.coordinates;
     }
 
-    // Handle jika dalam format geometry wrapper
     if (lokasi.coordinates) {
       if (Array.isArray(lokasi.coordinates)) {
         return lokasi.coordinates;
       }
     }
 
-    console.warn("Unrecognized location format:", lokasi);
     return null;
   };
 
@@ -527,11 +431,7 @@ const DetailModalAset = ({ asset, show, onHide, koremList, kodimList }) => {
   const assetForMap = prepareAssetForMap(asset);
 
   const korem = koremList.find((k) => k.id == asset.korem_id);
-
-  // Cari kodim menggunakan static data yang sama dengan FormAset
-  const kodim =
-    staticKodimData.find((k) => k.id === asset.kodim) ||
-    kodimList.find((k) => k.id === asset.kodim);
+  const kodim = allKodimList.find((k) => k.id === asset.kodim || k.nama === asset.kodim);
 
   const imageUrl = getImageUrl(asset);
   const filename =
@@ -594,7 +494,11 @@ const DetailModalAset = ({ asset, show, onHide, koremList, kodimList }) => {
                       <td>
                         <span
                           className={`badge ${
-                            asset.status === "Aktif"
+                            asset.status === "Dimiliki"
+                              ? "bg-success"
+                              : asset.status === "Dikuasai"
+                              ? "bg-info"
+                              : asset.status === "Aktif"
                               ? "bg-success"
                               : asset.status === "Tidak Aktif"
                               ? "bg-secondary"
@@ -735,7 +639,6 @@ const DetailModalAset = ({ asset, show, onHide, koremList, kodimList }) => {
                         )}
                       </td>
                     </tr>
-                    {/* Tambahan keterangan bukti pemilikan */}
                     {asset.keterangan_bukti_pemilikan && (
                       <tr>
                         <td>
@@ -813,11 +716,11 @@ const DetailModalAset = ({ asset, show, onHide, koremList, kodimList }) => {
                   {hasValidLocation && assetForMap ? (
                     <PetaAset
                       assets={[assetForMap]}
-                      isDrawing={false} // Disable drawing mode untuk detail view
-                      onDrawingCreated={() => {}} // Empty handler karena tidak digunakan
+                      isDrawing={false}
+                      onDrawingCreated={() => {}}
                       jatengBoundary={jatengBoundary}
                       diyBoundary={diyBoundary}
-                      fitBounds={true} // Auto fit ke lokasi aset
+                      fitBounds={true}
                     />
                   ) : (
                     <div className="d-flex align-items-center justify-content-center h-100 text-muted">
@@ -842,7 +745,6 @@ const DetailModalAset = ({ asset, show, onHide, koremList, kodimList }) => {
                 </div>
               </div>
 
-              {/* Info tambahan tentang lokasi */}
               {hasValidLocation && assetForMap && (
                 <div className="card-footer bg-light">
                   <small className="text-muted">
@@ -855,7 +757,6 @@ const DetailModalAset = ({ asset, show, onHide, koremList, kodimList }) => {
           </Col>
         </Row>
 
-        {/* Additional Information Row */}
         {hasValidLocation && assetForMap && (
           <Row className="mt-3">
             <Col md={12}>
@@ -923,157 +824,87 @@ const DataAsetTanahPage = () => {
 
   const [editingAsset, setEditingAsset] = useState(null);
 
-  // State untuk modal detail
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedAssetDetail, setSelectedAssetDetail] = useState(null);
 
-  // State untuk edit mode dengan peta
   const [isEditingLocation, setIsEditingLocation] = useState(false);
   const [editedLocationData, setEditedLocationData] = useState(null);
 
-  // Fetch all Kodim data for detail view - gunakan static data
-  const fetchAllKodim = useCallback(async () => {
-    try {
-      // Coba fetch dari API, tapi fallback ke static data
-      try {
-        const kodimRes = await axios.get(`${API_URL}/kodim`);
-        setAllKodimList(kodimRes.data || staticKodimData);
-      } catch (err) {
-        console.warn("Failed to fetch kodim from API, using static data:", err);
-        setAllKodimList(staticKodimData);
-      }
-    } catch (err) {
-      console.error("Error in fetchAllKodim:", err);
-      setAllKodimList(staticKodimData);
-    }
-  }, []);
-
-  // Fetch Kodim data based on selected Korem - gunakan static data yang sudah difilter
-  const fetchKodim = useCallback(async (koremId) => {
+  const fetchKodim = useCallback((koremId) => {
     if (!koremId) {
       setKodimList([]);
       return;
     }
-
     setKodimLoading(true);
-    console.log(`Filtering Kodim for Korem ID: ${koremId}`);
-
     try {
-      // Filter static kodim data berdasarkan korem_id
-      const filteredKodim = staticKodimData.filter(
-        (kodim) => kodim.korem_id === parseInt(koremId)
-      );
-
-      console.log(
-        `Found ${filteredKodim.length} kodim for korem ${koremId}:`,
-        filteredKodim
-      );
-
-      setKodimList(filteredKodim);
-      setSelectedKodim(""); // Reset selection when korem changes
+      const selectedKoremData = koremList.find(k => k.id === koremId);
+      if (selectedKoremData && selectedKoremData.kodim) {
+        const kodimObjects = selectedKoremData.kodim.map(kName => ({ id: kName, nama: kName }));
+        setKodimList(kodimObjects);
+      } else {
+        setKodimList([]);
+      }
+      setSelectedKodim("");
       setError(null);
     } catch (err) {
-      console.error("Error filtering Kodim:", err);
+      console.error("Error fetching Kodim:", err);
       setKodimList([]);
     } finally {
       setKodimLoading(false);
     }
-  }, []);
-
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const assetsRes = await axios.get(`${API_URL}/assets`);
-      const koremRes = await axios.get(`${API_URL}/korem`);
-      setAssets(assetsRes.data);
-      setKoremList(koremRes.data);
-      setError(null);
-    } catch (err) {
-      setError("Gagal memuat data dari server. Pastikan server API berjalan.");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  }, [koremList]);
 
   useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const assetsRes = await axios.get(`${API_URL}/assets`);
+        const koremRes = await axios.get(`${API_URL}/korem`);
+        setAssets(assetsRes.data);
+        setKoremList(koremRes.data);
+        const allKodims = koremRes.data.flatMap(korem => korem.kodim.map(k => ({ id: k, nama: k, korem_id: korem.id })));
+        setAllKodimList(allKodims);
+        setError(null);
+      } catch (err) {
+        setError("Gagal memuat data dari server. Pastikan server API berjalan.");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchData();
-    fetchAllKodim();
-  }, [fetchData, fetchAllKodim]);
+  }, []);
 
-  // Enhanced filtering with status and kodim - FIXED VERSION menggunakan asset.kodim
   useEffect(() => {
     let filtered = assets;
 
-    console.log("🔎 Starting filter process:", {
-      totalAssets: assets.length,
-      selectedKorem: selectedKorem?.id || null,
-      selectedKodim,
-      statusFilter,
-    });
-
-    // 1. Filter by Korem
     if (selectedKorem) {
       filtered = filtered.filter((asset) => asset.korem_id == selectedKorem.id);
-      console.log(`📌 After Korem filter: ${filtered.length} assets`);
-
-      // load Kodim jika Korem dipilih tapi belum ada list
-      if (!kodimList.length) {
-        fetchKodim(selectedKorem.id);
-      }
     }
 
-    // 2. Filter by Kodim - PERBAIKAN UTAMA menggunakan asset.kodim
     if (selectedKodim) {
-      console.log("🏗️ Kodim filtering:", {
-        selectedKodim,
-        selectedKodimType: typeof selectedKodim,
-        assetsBeforeFilter: filtered.length,
-        sampleAssetKodim:
-          filtered.length > 0
-            ? {
-                kodim: filtered[0].kodim,
-                kodimType: typeof filtered[0].kodim,
-              }
-            : null,
-      });
-
       filtered = filtered.filter((asset) => {
-        // Gunakan asset.kodim untuk filtering (sesuai dengan FormAset.js)
         const assetKodim = String(asset.kodim || "").trim();
         const filterKodim = String(selectedKodim || "").trim();
-
-        console.log(
-          `Comparing: asset.kodim="${assetKodim}" vs selectedKodim="${filterKodim}"`
-        );
-
         return assetKodim === filterKodim;
       });
-
-      console.log(`📌 After Kodim filter: ${filtered.length} assets`);
     }
 
-    // 3. Filter by Status
     if (statusFilter) {
       filtered = filtered.filter((asset) => asset.status === statusFilter);
-      console.log(`📌 After Status filter: ${filtered.length} assets`);
     }
 
-    console.log("✅ Final filtered assets:", filtered.length);
     setFilteredAssets(filtered);
   }, [
     selectedKorem,
     selectedKodim,
     statusFilter,
     assets,
-    kodimList.length,
-    fetchKodim,
   ]);
 
-  // Handle filter changes
   const handleKoremChange = (korem) => {
     setSelectedKorem(korem || null);
-    setSelectedKodim(null); // reset ke null, bukan string ""
+    setSelectedKodim("");
     if (korem) {
       fetchKodim(korem.id);
     } else {
@@ -1081,10 +912,8 @@ const DataAsetTanahPage = () => {
     }
   };
 
-  // Perbaikan handler untuk Kodim change
-  const handleKodimChange = (kodimId) => {
-    console.log("🔄 Kodim changed to:", kodimId, typeof kodimId);
-    setSelectedKodim(kodimId || null);
+  const handleKodimChange = (kodimName) => {
+    setSelectedKodim(kodimName || "");
   };
 
   const handleStatusChange = (status) => {
@@ -1093,25 +922,21 @@ const DataAsetTanahPage = () => {
 
   const handleShowAll = () => {
     setSelectedKorem(null);
-    setSelectedKodim(null);
+    setSelectedKodim("");
     setStatusFilter("");
     setKodimList([]);
   };
 
-  // Handle view detail - popup modal
   const handleViewDetail = (asset) => {
-    console.log("Asset data for detail:", asset);
     setSelectedAssetDetail(asset);
     setShowDetailModal(true);
   };
 
-  // Handle close detail modal
   const handleCloseDetailModal = () => {
     setShowDetailModal(false);
     setSelectedAssetDetail(null);
   };
 
-  // PERBAIKAN: Handler save asset yang konsisten
   const handleSaveAsset = async (assetData) => {
     if (!editingAsset) {
       toast.error("Tidak ada aset yang sedang diedit");
@@ -1121,10 +946,7 @@ const DataAsetTanahPage = () => {
     const toastId = toast.loading("Menyimpan perubahan...");
 
     try {
-      // Handle file upload if there's a new file
       let fileUploadData = {};
-
-      console.log("Checking file upload:", assetData.bukti_pemilikan_file);
 
       if (
         assetData.bukti_pemilikan_file &&
@@ -1132,8 +954,6 @@ const DataAsetTanahPage = () => {
       ) {
         const formData = new FormData();
         formData.append("bukti_pemilikan", assetData.bukti_pemilikan_file);
-
-        console.log("Uploading file:", assetData.bukti_pemilikan_file.name);
 
         try {
           const uploadRes = await axios.post(
@@ -1145,7 +965,6 @@ const DataAsetTanahPage = () => {
             }
           );
 
-          console.log("Upload response:", uploadRes.data);
           fileUploadData = {
             bukti_pemilikan_url: uploadRes.data.url,
             bukti_pemilikan_filename: uploadRes.data.filename,
@@ -1153,7 +972,6 @@ const DataAsetTanahPage = () => {
 
           toast.success("File berhasil diupload", { id: toastId });
         } catch (uploadErr) {
-          console.error("File upload failed:", uploadErr);
           let errorMsg = "Gagal mengupload file bukti pemilikan";
 
           if (uploadErr.response) {
@@ -1171,47 +989,33 @@ const DataAsetTanahPage = () => {
         }
       }
 
-      // Handle location data yang sudah diedit
       let locationData = {};
 
       if (editedLocationData) {
-        console.log("=== Processing edited location data ===");
-        console.log("Edited location data:", editedLocationData);
-
-        // Gunakan format yang konsisten dengan TambahAsetPage
         if (
           editedLocationData.geometry &&
           Array.isArray(editedLocationData.geometry)
         ) {
           locationData = {
-            lokasi: editedLocationData.geometry, // Format: [[lng,lat], [lng,lat], ...]
+            lokasi: editedLocationData.geometry,
             luas: editedLocationData.area,
           };
-          console.log("Location data ready for save:", locationData);
         } else {
-          console.error(
-            "Invalid edited location geometry:",
-            editedLocationData.geometry
-          );
           toast.error("Data koordinat tidak valid", { id: toastId });
           return;
         }
       }
 
-      // Get the selected kodim ID for saving
       const kodimId = selectedKodim || editingAsset.kodim;
 
-      // Gabungkan semua data
       const finalData = {
         ...assetData,
         ...fileUploadData,
-        ...locationData, // Hanya include location data jika ada perubahan
+        ...locationData,
         korem_id: selectedKorem?.id || editingAsset.korem_id,
         kodim: kodimId,
         kodim_id: kodimId,
       };
-
-      console.log("Final data to save:", finalData);
 
       const response = await axios.put(
         `${API_URL}/assets/${editingAsset.id}`,
@@ -1219,27 +1023,21 @@ const DataAsetTanahPage = () => {
         { timeout: 15000 }
       );
 
-      console.log("Save response:", response.data);
-
-      // Update assets state
       const updatedAssets = assets.map((a) =>
         a.id === editingAsset.id ? response.data : a
       );
       setAssets(updatedAssets);
 
-      // Update selected asset detail if viewing
       if (selectedAssetDetail && selectedAssetDetail.id === editingAsset.id) {
         setSelectedAssetDetail(response.data);
       }
 
       toast.success("Aset berhasil diperbarui!", { id: toastId });
 
-      // Clear editing states
       setEditingAsset(null);
       setIsEditingLocation(false);
       setEditedLocationData(null);
     } catch (err) {
-      console.error("Save failed:", err);
       let errorMsg = "Gagal menyimpan perubahan";
 
       if (err.response) {
@@ -1288,10 +1086,9 @@ const DataAsetTanahPage = () => {
     setIsEditingLocation(false);
     setEditedLocationData(null);
 
-    // Set up korem and kodim for editing
     const korem = koremList.find((k) => k.id == asset.korem_id);
     setSelectedKorem(korem || null);
-    setSelectedKodim(asset.kodim || ""); // Gunakan asset.kodim
+    setSelectedKodim(asset.kodim || "");
     if (korem) {
       fetchKodim(korem.id);
     }
@@ -1301,23 +1098,17 @@ const DataAsetTanahPage = () => {
     setEditingAsset(null);
     setIsEditingLocation(false);
     setEditedLocationData(null);
-    // Don't reset filters here
   };
 
-  // Handler untuk edit lokasi
   const handleEditLocation = () => {
-    console.log("Starting location edit for asset:", editingAsset);
-
     if (!editingAsset) {
       toast.error("Tidak ada aset yang dipilih untuk edit lokasi");
       return;
     }
 
-    // Reset any previous location data
     setEditedLocationData(null);
     setIsEditingLocation(true);
 
-    // Show instruction toast
     toast("Mode edit lokasi aktif. Gambar polygon baru di peta.", {
       duration: 3000,
       icon: "📍",
@@ -1327,7 +1118,6 @@ const DataAsetTanahPage = () => {
       },
     });
 
-    // Auto scroll to map section after a brief delay
     setTimeout(() => {
       const mapElement = document.querySelector(
         `[key*="map-edit-${editingAsset.id}"]`
@@ -1342,11 +1132,9 @@ const DataAsetTanahPage = () => {
   };
 
   const handleCancelEditLocation = () => {
-    console.log("Cancelling location edit");
     setIsEditingLocation(false);
     setEditedLocationData(null);
 
-    // Ganti toast.info dengan:
     toast("Mode edit lokasi dibatalkan", {
       icon: "↩️",
       style: {
@@ -1356,34 +1144,24 @@ const DataAsetTanahPage = () => {
     });
   };
 
-  // PERBAIKAN: Handler untuk location drawing yang konsisten dengan TambahAsetPage
   const handleLocationDrawingCreated = (data) => {
-    console.log("=== Location drawing created in Edit Mode ===");
-    console.log("Raw data received:", JSON.stringify(data, null, 2));
-
     if (!data || !data.geometry) {
-      console.error("Invalid drawing data - missing geometry:", data);
       toast.error("Data lokasi tidak valid");
       return;
     }
 
-    // Extract coordinates from GeoJSON geometry (sama seperti TambahAsetPage)
     let coordinates = null;
 
     if (
       data.geometry.coordinates &&
       Array.isArray(data.geometry.coordinates[0])
     ) {
-      // GeoJSON format: geometry.coordinates[0] adalah exterior ring
       coordinates = data.geometry.coordinates[0];
-      console.log("Extracted coordinates from GeoJSON:", coordinates);
     } else {
-      console.error("Invalid geometry format:", data.geometry);
       toast.error("Format geometry tidak valid");
       return;
     }
 
-    // Validasi minimum 3 points untuk polygon
     if (!Array.isArray(coordinates) || coordinates.length < 3) {
       toast.error(
         `Polygon harus minimal 3 titik. Saat ini: ${coordinates?.length || 0}`
@@ -1391,14 +1169,11 @@ const DataAsetTanahPage = () => {
       return;
     }
 
-    // Set data dalam format yang konsisten dengan TambahAsetPage
     const locationData = {
-      geometry: coordinates, // Store sebagai array koordinat [[lng,lat], [lng,lat], ...]
+      geometry: coordinates,
       area: data.area || 0,
       type: "polygon",
     };
-
-    console.log("Processed location data for edit:", locationData);
 
     setEditedLocationData(locationData);
     setIsEditingLocation(false);
@@ -1408,84 +1183,56 @@ const DataAsetTanahPage = () => {
     );
   };
 
-  // PERBAIKAN: Function prepareEditAssetForMap yang konsisten
   const prepareEditAssetForMap = () => {
     if (!editingAsset) return [];
 
-    console.log("=== Preparing asset for map editing ===");
-    console.log("Editing asset:", editingAsset);
-
-    // Function untuk validasi dan ekstrak lokasi data (sama seperti di DetailModalAset)
     const validateLocationData = (asset) => {
       if (!asset.lokasi) {
-        console.log("No lokasi data found for editing");
         return null;
       }
 
       let lokasi = asset.lokasi;
 
-      // Parse jika berupa string
       if (typeof lokasi === "string") {
         try {
           lokasi = JSON.parse(lokasi);
-          console.log("Parsed lokasi from string:", lokasi);
         } catch (e) {
-          console.error("Failed to parse location JSON:", e);
           return null;
         }
       }
 
-      // Handle format array koordinat langsung [[lng,lat], [lng,lat], ...]
       if (Array.isArray(lokasi) && lokasi.length > 0) {
-        // Check if it's array of coordinates
         if (Array.isArray(lokasi[0]) && typeof lokasi[0][0] === "number") {
-          console.log("Location is direct coordinate array format:", lokasi);
-          return lokasi; // Return langsung karena sudah dalam format yang benar
-        }
-        // Check if it's nested array [[[lng,lat], [lng,lat], ...]]
-        else if (Array.isArray(lokasi[0]) && Array.isArray(lokasi[0][0])) {
-          console.log("Location is nested array format:", lokasi[0]);
-          return lokasi[0]; // Ambil array pertama
+          return lokasi;
+        } else if (Array.isArray(lokasi[0]) && Array.isArray(lokasi[0][0])) {
+          return lokasi[0];
         }
       }
 
-      // Handle format GeoJSON
       if (lokasi.type === "Polygon" && lokasi.coordinates) {
-        console.log(
-          "Location is GeoJSON Polygon format:",
-          lokasi.coordinates[0]
-        );
-        return lokasi.coordinates[0]; // Ambil exterior ring
+        return lokasi.coordinates[0];
       }
 
-      // Handle format dengan wrapper coordinates
       if (lokasi.coordinates && Array.isArray(lokasi.coordinates)) {
         if (Array.isArray(lokasi.coordinates[0])) {
-          console.log(
-            "Location has coordinates wrapper:",
-            lokasi.coordinates[0]
-          );
           return lokasi.coordinates[0];
         }
       }
 
-      console.warn("Unrecognized location format for editing:", lokasi);
       return null;
     };
 
     const validatedLocation = validateLocationData(editingAsset);
 
     if (!validatedLocation) {
-      console.log("No valid location data, returning empty array");
       return [];
     }
 
-    // Buat asset object untuk ditampilkan di peta
     const assetForMap = {
       id: editingAsset.id || `edit-${Date.now()}`,
       nama: editingAsset.nama || "Asset Tanah",
       kodim: editingAsset.kodim || "",
-      lokasi: validatedLocation, // Format: [[lng,lat], [lng,lat], ...]
+      lokasi: validatedLocation,
       luas: Number(editingAsset.luas) || 0,
       status: editingAsset.status || "",
       alamat: editingAsset.alamat || "",
@@ -1494,73 +1241,22 @@ const DataAsetTanahPage = () => {
       isEditing: true,
     };
 
-    console.log("Asset prepared for map:", assetForMap);
     return [assetForMap];
   };
 
   if (loading) return <Spinner animation="border" variant="primary" />;
 
-  // Main table view with new layout following Yardip structure
   return (
     <Container fluid className="mt-4">
       <h3>Data Aset Tanah</h3>
       {error && <Alert variant="danger">{error}</Alert>}
 
-      {/* Debug Panel - Remove this in production */}
-      {process.env.NODE_ENV === "development" && (
-        <Alert variant="info" className="mb-3">
-          <small>
-            <strong>Debug Info:</strong>
-            <br />- Assets: {assets.length} items
-            <br />- Filtered Assets: {filteredAssets.length} items
-            <br />- Korem List: {koremList.length} items
-            <br />- Selected Korem: {selectedKorem?.nama || "None"}
-            <br />- Kodim List: {kodimList.length} items
-            <br />- Selected Kodim: {selectedKodim || "None"}
-            <br />- Status Filter: {statusFilter || "None"}
-            <br />- All Kodim List: {allKodimList.length} items
-            <br />- Static Kodim Data: {staticKodimData.length} items
-            <br />- Show Detail Modal: {showDetailModal ? "Yes" : "No"}
-            <br />- Editing Asset: {editingAsset ? editingAsset.nama : "No"}
-            <br />- Is Editing Location: {isEditingLocation ? "Yes" : "No"}
-            <br />- Edited Location Data:{" "}
-            {editedLocationData ? "Available" : "None"}
-            {editingAsset && (
-              <>
-                <br />- Edit Asset ID: {editingAsset.id}
-                <br />- Edit Asset kodim field: {editingAsset.kodim || "None"}
-                <br />- Edit Asset has lokasi:{" "}
-                {editingAsset.lokasi ? "Yes" : "No"}
-                <br />- Edit Asset lokasi type:{" "}
-                {editingAsset.lokasi ? typeof editingAsset.lokasi : "N/A"}
-                <br />- Edit Asset luas: {editingAsset.luas || "None"}
-                <br />- Prepared assets for map:{" "}
-                {prepareEditAssetForMap().length} items
-                <br />- Edit Asset bukti_pemilikan_url:{" "}
-                {editingAsset.bukti_pemilikan_url || "None"}
-              </>
-            )}
-            {editedLocationData && (
-              <>
-                <br />- New Location Area:{" "}
-                {editedLocationData.area?.toFixed(2) || "N/A"} m²
-                <br />- New Location Coordinates:{" "}
-                {editedLocationData.coordinates ? "Available" : "None"}
-                <br />- New Location Geometry:{" "}
-                {editedLocationData.geometry ? "Available" : "None"}
-              </>
-            )}
-          </small>
-        </Alert>
-      )}
-
       <Row>
-        {/* Tabel selalu full width, form edit akan muncul di bawah */}
         <Col md={12}>
-          {/* Top Filter Panel */}
           <FilterPanelTop
             koremList={koremList}
             kodimList={kodimList}
+            allKodimList={allKodimList}
             selectedKorem={selectedKorem}
             selectedKodim={selectedKodim}
             statusFilter={statusFilter}
@@ -1572,7 +1268,6 @@ const DataAsetTanahPage = () => {
             filteredAssets={filteredAssets.length}
           />
 
-          {/* Enhanced Table */}
           <Card>
             <Card.Header className="bg-light">
               <h5 className="mb-0">Daftar Aset Tanah</h5>
@@ -1597,14 +1292,13 @@ const DataAsetTanahPage = () => {
                     onDelete={user ? handleDeleteAsset : null}
                     onViewDetail={handleViewDetail}
                     koremList={koremList}
-                    kodimList={allKodimList}
+                    allKodimList={allKodimList}
                   />
                 )}
               </div>
             </Card.Body>
           </Card>
 
-          {/* Summary Card untuk informasi statistik */}
           {filteredAssets.length > 0 && (
             <Card className="mt-3">
               <Card.Body>
@@ -1653,7 +1347,6 @@ const DataAsetTanahPage = () => {
           )}
         </Col>
 
-        {/* Form Edit - Pindah ke bawah dengan layout yang lebih baik */}
         {editingAsset && (
           <Col md={12} className="mt-4">
             <div className="card shadow-sm">
@@ -1700,7 +1393,6 @@ const DataAsetTanahPage = () => {
                       }
                     />
 
-                    {/* Status edit lokasi */}
                     {editedLocationData && (
                       <div className="alert alert-success mt-2">
                         <small>
@@ -1720,7 +1412,6 @@ const DataAsetTanahPage = () => {
                       </div>
                     )}
 
-                    {/* Informasi editing */}
                     <div className="alert alert-info mt-2">
                       <small>
                         <i className="fas fa-info-circle me-1"></i>
@@ -1736,7 +1427,6 @@ const DataAsetTanahPage = () => {
                     </div>
                   </Col>
                   <Col md={6}>
-                    {/* Preview area atau informasi tambahan */}
                     <div className="bg-light p-3 rounded">
                       <h6 className="text-muted mb-3">Preview Data</h6>
                       <small>
@@ -1765,7 +1455,7 @@ const DataAsetTanahPage = () => {
                         {editingAsset.peruntukan || editingAsset.fungsi || "-"}
                         <br />
                         <strong>Kodim:</strong>{" "}
-                        {staticKodimData.find(
+                        {allKodimList.find(
                           (k) => k.id === editingAsset.kodim
                         )?.nama ||
                           editingAsset.kodim ||
@@ -1814,7 +1504,6 @@ const DataAsetTanahPage = () => {
           </Col>
         )}
 
-        {/* Peta Edit - Tampil di bawah ketika sedang edit lokasi */}
         {editingAsset && isEditingLocation && (
           <Col md={12} className="mt-3">
             <div className="card shadow-sm">
@@ -1844,25 +1533,24 @@ const DataAsetTanahPage = () => {
               </div>
               <div className="card-body p-2">
                 <div style={{ height: "60vh", width: "100%" }}>
-                  {/* Map container with proper key to force re-render */}
                   <div
                     key={`map-edit-${editingAsset.id}-${isEditingLocation}`}
                     className="position-relative w-100 h-100"
                   >
                     <PetaAset
-                      key={`peta-${editingAsset.id}-${Date.now()}`} // Force re-render
-                      assets={prepareEditAssetForMap()} // Tampilkan asset yang sedang diedit
-                      isDrawing={true} // Enable drawing mode
+                      key={`peta-${editingAsset.id}-${Date.now()}`}
+                      assets={prepareEditAssetForMap()}
+                      isDrawing={true}
                       onDrawingCreated={handleLocationDrawingCreated}
                       jatengBoundary={jatengBoundary}
                       diyBoundary={diyBoundary}
-                      fitBounds={true} // Auto fit ke lokasi existing
+                      fitBounds={true}
                       selectedKorem={selectedKorem?.id}
                       selectedKodim={selectedKodim}
-                      drawingMode="polygon" // Explicitly set polygon mode
-                      editMode={true} // Flag untuk edit mode
-                      allowEdit={true} // Allow editing
-                      showDrawingTools={true} // Show drawing tools
+                      drawingMode="polygon"
+                      editMode={true}
+                      allowEdit={true}
+                      showDrawingTools={true}
                     />
                   </div>
                 </div>
@@ -1892,7 +1580,6 @@ const DataAsetTanahPage = () => {
                     </Col>
                   </Row>
 
-                  {/* Drawing Instructions Panel */}
                   <Row className="mt-2">
                     <Col md={12}>
                       <div className="alert alert-info py-2 mb-0">
@@ -1913,36 +1600,6 @@ const DataAsetTanahPage = () => {
                     </Col>
                   </Row>
 
-                  {/* Real-time Map Debug Info - Development Only */}
-                  {process.env.NODE_ENV === "development" && (
-                    <Row className="mt-2">
-                      <Col md={12}>
-                        <div className="alert alert-secondary py-2 mb-0">
-                          <small>
-                            <strong>Map Debug Info:</strong>
-                            <br />- Map Key: peta-{editingAsset.id}-{Date.now()}
-                            <br />- Assets for Map:{" "}
-                            {prepareEditAssetForMap().length} items
-                            <br />- Is Drawing Mode:{" "}
-                            {isEditingLocation ? "Active" : "Inactive"}
-                            <br />- Drawing Callback:{" "}
-                            {typeof handleLocationDrawingCreated === "function"
-                              ? "Available"
-                              : "Missing"}
-                            <br />- Boundaries: Jateng=
-                            {jatengBoundary ? "Loaded" : "Missing"}, DIY=
-                            {diyBoundary ? "Loaded" : "Missing"}
-                            {prepareEditAssetForMap().map((asset, idx) => (
-                              <div key={idx}>
-                                - Asset {idx + 1}: {asset.nama} (lokasi:{" "}
-                                {asset.lokasi ? "Available" : "None"})
-                              </div>
-                            ))}
-                          </small>
-                        </div>
-                      </Col>
-                    </Row>
-                  )}
                 </div>
               </div>
             </div>
@@ -1950,13 +1607,12 @@ const DataAsetTanahPage = () => {
         )}
       </Row>
 
-      {/* Enhanced Modal Detail Aset with Map */}
       <DetailModalAset
         asset={selectedAssetDetail}
         show={showDetailModal}
         onHide={handleCloseDetailModal}
         koremList={koremList}
-        kodimList={allKodimList}
+        allKodimList={allKodimList}
       />
     </Container>
   );
