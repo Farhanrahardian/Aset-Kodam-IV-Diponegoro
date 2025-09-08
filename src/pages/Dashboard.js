@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Container, Row, Col, Card, Button } from "react-bootstrap";
 import {
   BarChart,
@@ -9,79 +9,64 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import "leaflet/dist/leaflet.css";
 import "./Dashboard.css";
-
-import AsetByKoremChart from "../components/AsetByKoremChart";
-import DetailOffcanvasAset from "../components/DetailOffcanvasAset";
-import PetaAset from "../components/PetaAset";
 
 const API_URL = "http://localhost:3001";
 
 const Dashboard = () => {
-  const [totalAset, setTotalAset] = useState(0);
-  const [totalLuas, setTotalLuas] = useState(0);
-  const [asetByKodim, setAsetByKodim] = useState([]);
-  const [asetList, setAsetList] = useState([]);
+  const navigate = useNavigate();
+  const [asetTanahData, setAsetTanahData] = useState([]);
+  const [asetYardipData, setAsetYardipData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [currentSlide, setCurrentSlide] = useState(0);
 
-  const [selectedAset, setSelectedAset] = useState(null);
-  const [showDetail, setShowDetail] = useState(false);
+  // Slider images
+  const slides = [
+    { src: "/uploads/slide1.jpg", alt: "Slide 1" },
+    { src: "/uploads/slide2.jpg", alt: "Slide 2" },
+    { src: "/uploads/slide3.jpg", alt: "Slide 3" },
+  ];
 
-  // State baru untuk mengontrol tampilan peta
-  const [selectedKoremId, setSelectedKoremId] = useState(null);
-  const [resetMapTrigger, setResetMapTrigger] = useState(false);
-
-  // Fungsi untuk mengambil dan menggabungkan data dari kedua endpoint
+  // Fetch data for charts
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [assetsRes, yarsipRes] = await Promise.all([
+      const [tanahRes, yardipRes] = await Promise.all([
         axios.get(`${API_URL}/assets`),
         axios.get(`${API_URL}/yarsip_assets`),
       ]);
 
-      // Menambahkan properti 'type' dan memastikan struktur data konsisten
-      const asetTanah = assetsRes.data.map((asset) => ({
-        ...asset,
-        type: "tanah",
-        nama: asset.nama,
-        lokasi: asset.lokasi,
-        luas: asset.luas,
-      }));
-
-      const asetYardip = yarsipRes.data.map((asset) => ({
-        ...asset,
-        type: "yardip",
-        nama: asset.pengelola,
-        lokasi: asset.lokasi,
-        luas: asset.area,
-      }));
-
-      const combinedAssets = [...asetTanah, ...asetYardip];
-      setAsetList(combinedAssets);
-      setTotalAset(combinedAssets.length);
-
-      setTotalLuas(
-        combinedAssets.reduce((acc, item) => acc + (item.luas || 0), 0)
-      );
-
-      const counts = asetTanah.reduce((acc, curr) => {
-        const kodim = curr.kodim || "Lainnya";
-        acc[kodim] = (acc[kodim] || 0) + 1;
+      // Process tanah data by kodim - simple horizontal bar chart
+      const tanahByKodim = tanahRes.data.reduce((acc, asset) => {
+        const kodim = asset.kodim || "Lainnya";
+        if (!acc[kodim]) {
+          acc[kodim] = { name: kodim, jumlah: 0 };
+        }
+        acc[kodim].jumlah += 1;
         return acc;
       }, {});
-      setAsetByKodim(
-        Object.entries(counts)
-          .map(([name, jumlah]) => ({ name, jumlah }))
-          .sort((a, b) => b.jumlah - a.jumlah)
+
+      setAsetTanahData(
+        Object.values(tanahByKodim).sort((a, b) => b.jumlah - a.jumlah)
       );
 
-      setLastUpdated(new Date());
+      // Process yardip data by bidang - simple horizontal bar chart
+      const yardipByBidang = yardipRes.data.reduce((acc, asset) => {
+        const bidang = asset.bidang || "Lainnya";
+        if (!acc[bidang]) {
+          acc[bidang] = { name: bidang, jumlah: 0 };
+        }
+        acc[bidang].jumlah += 1;
+        return acc;
+      }, {});
+
+      setAsetYardipData(
+        Object.values(yardipByBidang).sort((a, b) => b.jumlah - a.jumlah)
+      );
     } catch (error) {
-      console.error("Error fetching combined data:", error);
+      console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
     }
@@ -91,166 +76,334 @@ const Dashboard = () => {
     fetchData();
   }, [fetchData]);
 
-  // Auto-refresh setiap 15 detik (lebih sering untuk sinkronisasi cepat)
+  // Auto slide functionality
   useEffect(() => {
-    const interval = setInterval(() => {
-      fetchData();
-    }, 15000); // 15 seconds
+    const slideInterval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, 5000); // 5 seconds
 
-    return () => clearInterval(interval);
-  }, [fetchData]);
+    return () => clearInterval(slideInterval);
+  }, [slides.length]);
 
-  const handleRefresh = () => {
-    fetchData();
+  const goToSlide = (index) => {
+    setCurrentSlide(index);
   };
 
-  const handleAssetClick = (asset) => {
-    setSelectedAset(asset);
-    setShowDetail(true);
+  const handleNavigateToTanah = () => {
+    navigate("/data-aset-tanah");
   };
 
-  const handleCloseDetail = () => {
-    setShowDetail(false);
-    setSelectedAset(null);
+  const handleNavigateToYardip = () => {
+    navigate("/data-aset-yardip");
   };
 
-  // Fungsi untuk menangani klik pada Korem
-  const handleKoremClick = (koremId) => {
-    setSelectedKoremId(koremId);
-  };
-
-  // Fungsi untuk mereset tampilan peta
-  const handleResetMap = () => {
-    setSelectedKoremId(null);
-    setResetMapTrigger((prev) => !prev);
-  };
+  const totalAsetTanah = asetTanahData.reduce(
+    (sum, item) => sum + item.jumlah,
+    0
+  );
+  const totalAsetYardip = asetYardipData.reduce(
+    (sum, item) => sum + item.jumlah,
+    0
+  );
 
   return (
     <Container fluid className="dashboard-container p-4">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="dashboard-title">Aset Provinsi Jawa Tengah & DIY</h2>
-        <div className="d-flex align-items-center gap-2">
-          <small className="text-muted">
-            Update: {lastUpdated.toLocaleTimeString()}
-          </small>
-          <Button
-            variant="outline-primary"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <span
-                  className="spinner-border spinner-border-sm me-1"
-                  role="status"
-                  aria-hidden="true"
-                ></span>
-                Loading...
-              </>
-            ) : (
-              "Refresh"
-            )}
-          </Button>
-        </div>
+      {/* Header - Simple title only */}
+      <div className="text-center mb-4">
+        <h2 className="dashboard-title">
+          Dashboard Aset Provinsi Jawa Tengah & DIY
+        </h2>
       </div>
 
-      {/* Summary Cards */}
-      <Row>
-        <Col md={6} className="mb-4">
-          <Card className="summary-card h-100">
-            <Card.Body>
-              <Card.Title>Jumlah Aset</Card.Title>
-              <Card.Text className="display-4">{totalAset}</Card.Text>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col md={6} className="mb-4">
-          <Card className="summary-card h-100">
-            <Card.Body>
-              <Card.Title>Jumlah Luas Aset (m²)</Card.Title>
-              <Card.Text className="display-4">
-                {totalLuas.toLocaleString()}
-              </Card.Text>
-            </Card.Body>
-          </Card>
+      {/* Hero Slider - No arrows, only dots */}
+      <Row className="mb-4">
+        <Col>
+          <div className="hero-slider">
+            <div className="slider-container">
+              {slides.map((slide, index) => (
+                <div
+                  key={index}
+                  className={`slide ${index === currentSlide ? "active" : ""}`}
+                >
+                  <img src={slide.src} alt={slide.alt} />
+                  <div className="slide-overlay">
+                    <h3>Sistem Informasi Aset</h3>
+                    <p>Provinsi Jawa Tengah & DIY</p>
+                  </div>
+                </div>
+              ))}
+
+              {/* Only Dots Indicator - No Arrows */}
+              <div className="slider-dots">
+                {slides.map((_, index) => (
+                  <button
+                    key={index}
+                    className={`dot ${index === currentSlide ? "active" : ""}`}
+                    onClick={() => goToSlide(index)}
+                  ></button>
+                ))}
+              </div>
+            </div>
+          </div>
         </Col>
       </Row>
 
-      {/* Peta */}
-      <Row className="mb-4">
-        <Col>
-          <Card className="map-card">
-            <Card.Body>
-              <Card.Title>Peta Sebaran Aset</Card.Title>
-              <div
-                style={{ height: "500px", width: "100%", position: "relative" }}
+      {/* Summary Cards - Removed for simplicity */}
+
+      {/* Chart Section - Multiple bars like SIMANTAB */}
+      <Row>
+        <Col md={6} className="mb-4">
+          <Card className="chart-card h-100 border-0 shadow-sm">
+            <Card.Header className="bg-primary text-white border-0 d-flex justify-content-between align-items-center">
+              <h5 className="mb-0">Data Aset Tanah KODAM</h5>
+              <Button
+                variant="outline-light"
+                size="sm"
+                onClick={handleNavigateToTanah}
               >
-                <PetaAset
-                  assets={asetList}
-                  onAssetClick={handleAssetClick}
-                  asetPilihan={selectedAset}
-                  // --- PERBAIKAN: Tambahkan props di bawah ini ---
-                  onKoremClick={handleKoremClick}
-                  selectedKoremId={selectedKoremId}
-                  resetMapTrigger={resetMapTrigger}
-                />
-                <Button
-                  variant="secondary"
-                  onClick={handleResetMap}
-                  style={{
-                    position: "absolute",
-                    top: "10px",
-                    right: "10px",
-                    zIndex: 1000,
-                  }}
+                Lihat Detail
+              </Button>
+            </Card.Header>
+            <Card.Body>
+              {/* Legend */}
+              <div className="mb-3">
+                <div className="d-flex flex-wrap gap-3 justify-content-center">
+                  <div className="legend-item d-flex align-items-center">
+                    <div
+                      className="legend-color me-2"
+                      style={{
+                        backgroundColor: "#4285f4",
+                        width: "20px",
+                        height: "15px",
+                      }}
+                    ></div>
+                    <small>
+                      Sudah (
+                      {asetTanahData.reduce(
+                        (sum, item) => sum + (item.sudah || 0),
+                        0
+                      )}
+                      )
+                    </small>
+                  </div>
+                  <div className="legend-item d-flex align-items-center">
+                    <div
+                      className="legend-color me-2"
+                      style={{
+                        backgroundColor: "#ea4335",
+                        width: "20px",
+                        height: "15px",
+                      }}
+                    ></div>
+                    <small>
+                      Belum (
+                      {asetTanahData.reduce(
+                        (sum, item) => sum + (item.belum || 0),
+                        0
+                      )}
+                      )
+                    </small>
+                  </div>
+                  <div className="legend-item d-flex align-items-center">
+                    <div
+                      className="legend-color me-2"
+                      style={{
+                        backgroundColor: "#34a853",
+                        width: "20px",
+                        height: "15px",
+                      }}
+                    ></div>
+                    <small>
+                      Total (
+                      {asetTanahData.reduce(
+                        (sum, item) => sum + (item.total || 0),
+                        0
+                      )}
+                      )
+                    </small>
+                  </div>
+                </div>
+              </div>
+
+              <ResponsiveContainer width="100%" height={350}>
+                <BarChart
+                  data={asetTanahData}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                 >
-                  Kembali
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 10, fill: "#666" }}
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 10, fill: "#666" }}
+                    axisLine={{ stroke: "#ddd" }}
+                  />
+                  <Tooltip
+                    formatter={(value, name) => [
+                      `${value}`,
+                      name === "sudah"
+                        ? "Sudah Sertifikat"
+                        : name === "belum"
+                        ? "Belum Sertifikat"
+                        : "Total",
+                    ]}
+                    labelStyle={{ color: "#333", fontWeight: "bold" }}
+                    contentStyle={{
+                      backgroundColor: "#fff",
+                      border: "1px solid #ddd",
+                      borderRadius: "4px",
+                      fontSize: "12px",
+                    }}
+                  />
+                  <Bar dataKey="sudah" fill="#4285f4" name="sudah" />
+                  <Bar dataKey="belum" fill="#ea4335" name="belum" />
+                  <Bar dataKey="total" fill="#34a853" name="total" />
+                </BarChart>
+              </ResponsiveContainer>
+
+              <div className="text-center mt-3">
+                <Button
+                  variant="primary"
+                  onClick={handleNavigateToTanah}
+                  className="btn-chart-action"
+                >
+                  Lihat Semua Data Aset Tanah
+                </Button>
+              </div>
+            </Card.Body>
+          </Card>
+        </Col>
+
+        <Col md={6} className="mb-4">
+          <Card className="chart-card h-100 border-0 shadow-sm">
+            <Card.Header className="bg-success text-white border-0 d-flex justify-content-between align-items-center">
+              <h5 className="mb-0">Data Aset Yardip KODAM</h5>
+              <Button
+                variant="outline-light"
+                size="sm"
+                onClick={handleNavigateToYardip}
+              >
+                Lihat Detail
+              </Button>
+            </Card.Header>
+            <Card.Body>
+              {/* Legend */}
+              <div className="mb-3">
+                <div className="d-flex flex-wrap gap-3 justify-content-center">
+                  <div className="legend-item d-flex align-items-center">
+                    <div
+                      className="legend-color me-2"
+                      style={{
+                        backgroundColor: "#34a853",
+                        width: "20px",
+                        height: "15px",
+                      }}
+                    ></div>
+                    <small>
+                      Aktif (
+                      {asetYardipData.reduce(
+                        (sum, item) => sum + (item.aman || 0),
+                        0
+                      )}
+                      )
+                    </small>
+                  </div>
+                  <div className="legend-item d-flex align-items-center">
+                    <div
+                      className="legend-color me-2"
+                      style={{
+                        backgroundColor: "#fbbc04",
+                        width: "20px",
+                        height: "15px",
+                      }}
+                    ></div>
+                    <small>
+                      Cadangan (
+                      {asetYardipData.reduce(
+                        (sum, item) => sum + (item.proses || 0),
+                        0
+                      )}
+                      )
+                    </small>
+                  </div>
+                  <div className="legend-item d-flex align-items-center">
+                    <div
+                      className="legend-color me-2"
+                      style={{
+                        backgroundColor: "#ea4335",
+                        width: "20px",
+                        height: "15px",
+                      }}
+                    ></div>
+                    <small>
+                      Tidak Aktif (
+                      {asetYardipData.reduce(
+                        (sum, item) => sum + (item.masalah || 0),
+                        0
+                      )}
+                      )
+                    </small>
+                  </div>
+                </div>
+              </div>
+
+              <ResponsiveContainer width="100%" height={350}>
+                <BarChart
+                  data={asetYardipData}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 10, fill: "#666" }}
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 10, fill: "#666" }}
+                    axisLine={{ stroke: "#ddd" }}
+                  />
+                  <Tooltip
+                    formatter={(value, name) => [
+                      `${value}`,
+                      name === "aman"
+                        ? "Aman"
+                        : name === "proses"
+                        ? "Proses"
+                        : "Masalah",
+                    ]}
+                    labelStyle={{ color: "#333", fontWeight: "bold" }}
+                    contentStyle={{
+                      backgroundColor: "#fff",
+                      border: "1px solid #ddd",
+                      borderRadius: "4px",
+                      fontSize: "12px",
+                    }}
+                  />
+                  <Bar dataKey="aman" fill="#34a853" name="aman" />
+                  <Bar dataKey="proses" fill="#fbbc04" name="proses" />
+                  <Bar dataKey="masalah" fill="#ea4335" name="masalah" />
+                </BarChart>
+              </ResponsiveContainer>
+
+              <div className="text-center mt-3">
+                <Button
+                  variant="success"
+                  onClick={handleNavigateToYardip}
+                  className="btn-chart-action"
+                >
+                  Lihat Semua Data Aset Yardip
                 </Button>
               </div>
             </Card.Body>
           </Card>
         </Col>
       </Row>
-
-      {/* Chart */}
-      <Row>
-        <Col md={6} className="mb-4">
-          <AsetByKoremChart />
-        </Col>
-        <Col md={6} className="mb-4">
-          <Card className="chart-card h-100">
-            <Card.Body>
-              <Card.Title>Jumlah Aset Tiap Kodim</Card.Title>
-              <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={asetByKodim} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    type="number"
-                    allowDecimals={false}
-                    tickFormatter={(value) => Math.floor(value)}
-                  />
-                  <YAxis
-                    dataKey="name"
-                    type="category"
-                    width={180}
-                    tick={{ fontSize: 12 }}
-                  />
-                  <Tooltip formatter={(value) => Math.floor(value)} />
-                  <Bar dataKey="jumlah" fill="#8884d8" name="Jumlah Aset" />
-                </BarChart>
-              </ResponsiveContainer>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-
-      {/* Offcanvas Detail */}
-      <DetailOffcanvasAset
-        show={showDetail}
-        handleClose={handleCloseDetail}
-        aset={selectedAset}
-      />
     </Container>
   );
 };
