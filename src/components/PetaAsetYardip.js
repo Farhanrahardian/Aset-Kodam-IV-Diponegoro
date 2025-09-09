@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { MapContainer, TileLayer, FeatureGroup, GeoJSON } from "react-leaflet";
 import { EditControl } from "react-leaflet-draw";
 import L from "leaflet";
@@ -23,21 +23,23 @@ const PetaAsetYardip = ({
   selectedKorem,
   selectedKodim,
   fitBounds = false,
-  cityBounds = null, // New prop for city bounds
-  selectedCity = null, // New prop for selected city info
+  cityBounds = null,
+  selectedCity = null,
+  manualAreaAdjustment = null, // New prop for manual area adjustment
+  originalGeometry = null, // New prop for original geometry
 }) => {
   const mapRef = useRef(null);
   const featureGroupRef = useRef(null);
+  const adjustedPolygonRef = useRef(null);
+  const [adjustedGeometry, setAdjustedGeometry] = useState(null);
 
   const mapCenter = [-7.5, 110.0]; // Center of Central Java
   const initialZoom = 8;
 
   // Auto-zoom to selected area, city, or assets with improved timing
   useEffect(() => {
-    // Use setTimeout to ensure map is fully rendered before fitBounds
     const timer = setTimeout(() => {
       if (mapRef.current) {
-        // Priority 1: City bounds (highest priority)
         if (cityBounds && Array.isArray(cityBounds) && cityBounds.length === 2) {
           console.log("Auto-zooming to city bounds:", cityBounds, "City:", selectedCity);
           
@@ -46,24 +48,21 @@ const PetaAsetYardip = ({
             const northEast = L.latLng(cityBounds[1][0], cityBounds[1][1]);
             const bounds = L.latLngBounds(southWest, northEast);
             
-            // Add some padding and zoom to city with animation
             mapRef.current.fitBounds(bounds, { 
               padding: [30, 30],
-              maxZoom: 12, // Prevent too much zoom for city view
+              maxZoom: 12,
               animate: true,
-              duration: 1.5 // Smooth animation
+              duration: 1.5
             });
             
             console.log("✅ Successfully zoomed to city:", selectedCity);
           } catch (error) {
             console.error("Error zooming to city bounds:", error);
-            // Fallback to manual center and zoom
             const centerLat = (cityBounds[0][0] + cityBounds[1][0]) / 2;
             const centerLng = (cityBounds[0][1] + cityBounds[1][1]) / 2;
             mapRef.current.setView([centerLat, centerLng], 11, { animate: true });
           }
         }
-        // Priority 2: Kodim area
         else if (selectedKodim && selectedKodim.geometry) {
           const kodimLayer = L.geoJSON(selectedKodim.geometry);
           mapRef.current.fitBounds(kodimLayer.getBounds(), { 
@@ -71,7 +70,6 @@ const PetaAsetYardip = ({
             animate: true 
           });
         } 
-        // Priority 3: Korem area
         else if (selectedKorem && selectedKorem.geometry) {
           const koremLayer = L.geoJSON(selectedKorem.geometry);
           mapRef.current.fitBounds(koremLayer.getBounds(), { 
@@ -79,7 +77,6 @@ const PetaAsetYardip = ({
             animate: true 
           });
         } 
-        // Priority 4: Assets bounds
         else if (fitBounds && assets.length > 0) {
           const validAssets = assets.filter(asset => asset.lokasi && Array.isArray(asset.lokasi));
           if (validAssets.length > 0) {
@@ -105,11 +102,105 @@ const PetaAsetYardip = ({
           }
         }
       }
-    }, 500); // Wait 500ms for map to be fully rendered
+    }, 500);
 
-    // Cleanup timer on unmount or dependency change
     return () => clearTimeout(timer);
   }, [selectedKorem, selectedKodim, assets, fitBounds, cityBounds, selectedCity]);
+
+  // Handle manual area adjustment - adjust polygon to match new area
+  useEffect(() => {
+    if (manualAreaAdjustment && originalGeometry && featureGroupRef.current) {
+      try {
+        console.log("Adjusting polygon for manual area:", manualAreaAdjustment);
+        
+        // Create the adjusted polygon
+        const adjustedPolygon = adjustPolygonToArea(originalGeometry, manualAreaAdjustment);
+        
+        if (adjustedPolygon) {
+          setAdjustedGeometry(adjustedPolygon);
+          
+          // Clear existing layers and add the adjusted polygon
+          featureGroupRef.current.clearLayers();
+          
+          // Create Leaflet layer for the adjusted polygon
+          const adjustedLayer = L.geoJSON(adjustedPolygon, {
+            style: {
+              color: "#ff6b35", // Orange color for manually adjusted
+              fillColor: "#ff6b35",
+              fillOpacity: 0.5,
+              weight: 3,
+              dashArray: "5,5" // Dashed style to indicate manual adjustment
+            }
+          });
+          
+          featureGroupRef.current.addLayer(adjustedLayer);
+          adjustedPolygonRef.current = adjustedLayer;
+          
+          console.log("✅ Polygon adjusted to area:", manualAreaAdjustment);
+        }
+      } catch (error) {
+        console.error("Error adjusting polygon area:", error);
+      }
+    } else if (!manualAreaAdjustment && adjustedPolygonRef.current) {
+      // Remove adjusted polygon if no manual adjustment
+      if (featureGroupRef.current && adjustedPolygonRef.current) {
+        featureGroupRef.current.removeLayer(adjustedPolygonRef.current);
+        adjustedPolygonRef.current = null;
+        setAdjustedGeometry(null);
+      }
+    }
+  }, [manualAreaAdjustment, originalGeometry]);
+
+  // Function to adjust polygon area using scaling method
+  const adjustPolygonToArea = (geometry, targetArea) => {
+    try {
+      if (!geometry || !geometry.coordinates || !targetArea) return null;
+
+      // Create turf polygon
+      const polygon = turf.polygon(geometry.coordinates);
+      const currentArea = turf.area(polygon);
+      
+      if (currentArea <= 0) return null;
+
+      // Calculate scaling factor based on area ratio
+      const areaRatio = targetArea / currentArea;
+      const scaleFactor = Math.sqrt(areaRatio);
+      
+      console.log("Area adjustment:", {
+        currentArea: currentArea.toFixed(2),
+        targetArea: targetArea.toFixed(2),
+        scaleFactor: scaleFactor.toFixed(4)
+      });
+
+      // Get centroid for scaling origin
+      const centroid = turf.centroid(polygon);
+      const centerCoords = centroid.geometry.coordinates;
+
+      // Scale the polygon from its centroid
+      const scaledPolygon = turf.transformScale(polygon, scaleFactor, {
+        origin: centerCoords
+      });
+
+      // Verify the new area
+      const newArea = turf.area(scaledPolygon);
+      console.log("Scaled polygon area:", newArea.toFixed(2));
+
+      return {
+        type: "Feature",
+        properties: {
+          originalArea: currentArea,
+          targetArea: targetArea,
+          actualArea: newArea,
+          scaleFactor: scaleFactor,
+          isManuallyAdjusted: true
+        },
+        geometry: scaledPolygon.geometry
+      };
+    } catch (error) {
+      console.error("Error in adjustPolygonToArea:", error);
+      return null;
+    }
+  };
 
   const handleCreated = (e) => {
     const { layerType, layer } = e;
@@ -124,11 +215,15 @@ const PetaAsetYardip = ({
         selectedCity
       });
 
-      // Clear previous drawings
+      // Clear previous drawings and adjusted polygons
       if (featureGroupRef.current) {
         featureGroupRef.current.clearLayers();
         featureGroupRef.current.addLayer(layer);
       }
+      
+      // Reset adjusted geometry state
+      setAdjustedGeometry(null);
+      adjustedPolygonRef.current = null;
 
       // Call callback from parent
       if (typeof onDrawingCreated === "function") {
@@ -147,16 +242,12 @@ const PetaAsetYardip = ({
     try {
       let coordinates = asset.lokasi;
 
-      // Handle different coordinate formats
-      // Format 1: Already in polygon format [[[lng,lat], [lng,lat], ...]]
       if (Array.isArray(coordinates) && Array.isArray(coordinates[0]) && Array.isArray(coordinates[0][0])) {
-        coordinates = coordinates[0]; // Take first ring
+        coordinates = coordinates[0];
       }
-      // Format 2: Simple coordinate array [[lng,lat], [lng,lat], ...]
       else if (Array.isArray(coordinates) && Array.isArray(coordinates[0]) && coordinates[0].length === 2) {
         // Already in correct format
       }
-      // Format 3: Nested single array [[[lng,lat], [lng,lat], ...]]
       else if (Array.isArray(coordinates) && coordinates.length === 1 && Array.isArray(coordinates[0])) {
         coordinates = coordinates[0];
       }
@@ -165,7 +256,6 @@ const PetaAsetYardip = ({
         return null;
       }
 
-      // Ensure polygon is closed
       if (coordinates.length > 0) {
         const first = coordinates[0];
         const last = coordinates[coordinates.length - 1];
@@ -185,7 +275,7 @@ const PetaAsetYardip = ({
         },
         geometry: {
           type: "Polygon",
-          coordinates: [coordinates], // Wrap in array for polygon
+          coordinates: [coordinates],
         },
       };
     } catch (error) {
@@ -227,7 +317,6 @@ const PetaAsetYardip = ({
     fillOpacity: 0.7,
   };
 
-  // Enhanced style for city bounds highlight with pulsing effect
   const cityHighlightStyle = {
     fillColor: "#10b981",
     weight: 3,
@@ -235,6 +324,16 @@ const PetaAsetYardip = ({
     color: "#059669",
     fillOpacity: 0.15,
     dashArray: "8,4"
+  };
+
+  // Style for manually adjusted polygon
+  const adjustedPolygonStyle = {
+    fillColor: "#ff6b35",
+    weight: 3,
+    opacity: 1,
+    color: "#d63031",
+    fillOpacity: 0.4,
+    dashArray: "5,5"
   };
 
   // Popup content for assets
@@ -249,6 +348,26 @@ const PetaAsetYardip = ({
             <strong>Kodim:</strong> ${props.kodim || '-'}<br/>
             <strong>Status:</strong> <span class="badge bg-success">${props.status || '-'}</span><br/>
             <strong>Luas:</strong> ${props.luas ? Number(props.luas).toFixed(2) + ' m²' : '-'}
+          </small>
+        </div>
+      `;
+      layer.bindPopup(popupContent);
+    }
+  };
+
+  // Popup content for adjusted polygon
+  const onEachAdjustedFeature = (feature, layer) => {
+    if (feature.properties && feature.properties.isManuallyAdjusted) {
+      const props = feature.properties;
+      const popupContent = `
+        <div class="adjusted-polygon-popup">
+          <h6 class="mb-2 text-warning">📐 Area Disesuaikan Manual</h6>
+          <small>
+            <strong>Area Asli:</strong> ${props.originalArea.toFixed(2)} m²<br/>
+            <strong>Area Target:</strong> ${props.targetArea.toFixed(2)} m²<br/>
+            <strong>Area Aktual:</strong> ${props.actualArea.toFixed(2)} m²<br/>
+            <strong>Faktor Skala:</strong> ${props.scaleFactor.toFixed(4)}<br/>
+            <span class="text-muted">Polygon telah disesuaikan dengan luas manual</span>
           </small>
         </div>
       `;
@@ -289,7 +408,6 @@ const PetaAsetYardip = ({
       style={{ height: "100%", width: "100%" }}
       ref={mapRef}
       whenCreated={(map) => {
-        // Store map reference immediately when created
         mapRef.current = map;
       }}
     >
@@ -335,7 +453,7 @@ const PetaAsetYardip = ({
       {jatengBoundary && <GeoJSON data={jatengBoundary} style={boundaryStyle} />}
       {diyBoundary && <GeoJSON data={diyBoundary} style={boundaryStyle} />}
 
-      {/* City Bounds Highlight - Enhanced visibility */}
+      {/* City Bounds Highlight */}
       {cityBounds && selectedCity && (
         <GeoJSON 
           data={createCityBoundsGeoJSON()} 
@@ -354,11 +472,9 @@ const PetaAsetYardip = ({
               className: 'custom-popup'
             });
             
-            // Auto open popup briefly to show selected area
             setTimeout(() => {
               if (layer && layer.openPopup) {
                 layer.openPopup();
-                // Close popup after 3 seconds
                 setTimeout(() => {
                   if (layer && layer.closePopup) {
                     layer.closePopup();
@@ -367,6 +483,16 @@ const PetaAsetYardip = ({
               }
             }, 1000);
           }}
+        />
+      )}
+
+      {/* Manually Adjusted Polygon */}
+      {adjustedGeometry && (
+        <GeoJSON
+          key={`adjusted-${manualAreaAdjustment}`}
+          data={adjustedGeometry}
+          style={adjustedPolygonStyle}
+          onEachFeature={onEachAdjustedFeature}
         />
       )}
 
