@@ -443,6 +443,42 @@ const DetailModalAset = ({ asset, show, onHide, koremList, allKodimList }) => {
   const hasValidImage = imageUrl && isImageFile(filename);
   const hasPdf = imageUrl && isPdfFile(filename);
 
+  // Helper function to determine which area to display based on certificate status
+  const renderLuasInfo = (asset) => {
+    const hasSertifikat = asset.pemilikan_sertifikat === "Ya";
+    const sertifikatLuas = parseFloat(asset.sertifikat_luas) || 0;
+    const belumSertifikatLuas = parseFloat(asset.belum_sertifikat_luas) || 0;
+    const petaLuas = parseFloat(asset.luas) || 0;
+
+    if (hasSertifikat && sertifikatLuas > 0) {
+      return {
+        label: "Luas Bersertifikat",
+        value: `${sertifikatLuas.toLocaleString("id-ID")} m²`,
+        className: "text-success",
+      };
+    } else if (!hasSertifikat && belumSertifikatLuas > 0) {
+      return {
+        label: "Luas Tidak Bersertifikat",
+        value: `${belumSertifikatLuas.toLocaleString("id-ID")} m²`,
+        className: "text-warning",
+      };
+    } else if (petaLuas > 0) {
+      return {
+        label: "Luas",
+        value: `${petaLuas.toLocaleString("id-ID")} m²`,
+        className: "text-muted",
+      };
+    }
+
+    return {
+      label: "Luas",
+      value: "-",
+      className: "text-muted",
+    };
+  };
+
+  const luasInfo = renderLuasInfo(asset);
+
   return (
     <Modal show={show} onHide={onHide} size="xl" centered>
       <Modal.Header closeButton>
@@ -539,45 +575,13 @@ const DetailModalAset = ({ asset, show, onHide, koremList, allKodimList }) => {
                     </tr>
                     <tr>
                       <td>
-                        <strong>Luas Sertifikat:</strong>
+                        <strong>{luasInfo.label}:</strong>
                       </td>
                       <td>
-                        {asset.sertifikat_luas
-                          ? `${parseFloat(asset.sertifikat_luas).toLocaleString(
-                              "id-ID"
-                            )} m²`
-                          : "-"}
+                        <span className={luasInfo.className}>
+                          {luasInfo.value}
+                        </span>
                       </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Luas Belum Sertifikat:</strong>
-                      </td>
-                      <td>
-                        {asset.belum_sertifikat_luas
-                          ? `${parseFloat(
-                              asset.belum_sertifikat_luas
-                            ).toLocaleString("id-ID")} m²`
-                          : "-"}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Luas Peta:</strong>
-                      </td>
-                      <td>
-                        {asset.luas
-                          ? `${parseFloat(asset.luas).toLocaleString(
-                              "id-ID"
-                            )} m²`
-                          : "-"}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Keterangan:</strong>
-                      </td>
-                      <td>{asset.keterangan || "-"}</td>
                     </tr>
                     <tr>
                       <td>
@@ -647,6 +651,14 @@ const DetailModalAset = ({ asset, show, onHide, koremList, allKodimList }) => {
                           <strong>Keterangan Bukti Pemilikan:</strong>
                         </td>
                         <td>{asset.keterangan_bukti_pemilikan}</td>
+                      </tr>
+                    )}
+                    {asset.atas_nama_pemilik_sertifikat && (
+                      <tr>
+                        <td>
+                          <strong>Atas Nama Pemilik Sertifikat:</strong>
+                        </td>
+                        <td>{asset.atas_nama_pemilik_sertifikat}</td>
                       </tr>
                     )}
                     <tr>
@@ -785,12 +797,18 @@ const DetailModalAset = ({ asset, show, onHide, koremList, allKodimList }) => {
                       </span>
                     </Col>
                     <Col md={4}>
-                      <strong>Luas Kalkulasi:</strong>
+                      <strong>Status Sertifikat:</strong>
                       <br />
-                      <span className="text-muted">
-                        {asset.luas
-                          ? `${Number(asset.luas).toFixed(2)} m²`
-                          : "Tidak tersedia"}
+                      <span
+                        className={`text-muted ${
+                          asset.pemilikan_sertifikat === "Ya"
+                            ? "text-success"
+                            : "text-warning"
+                        }`}
+                      >
+                        {asset.pemilikan_sertifikat === "Ya"
+                          ? "Bersertifikat"
+                          : "Tidak Bersertifikat"}
                       </span>
                     </Col>
                   </Row>

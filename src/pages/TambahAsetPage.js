@@ -41,7 +41,7 @@ const TambahAsetPage = () => {
       try {
         const [koremRes, kodimGeoRes] = await Promise.all([
           axios.get(`${API_URL}/korem`),
-          axios.get('/data/Kodim.geojson'),
+          axios.get("/data/Kodim.geojson"),
         ]);
         setKoremList(koremRes.data);
         setKodimBoundaries(kodimGeoRes.data);
@@ -55,43 +55,46 @@ const TambahAsetPage = () => {
     fetchInitialData();
   }, []);
 
-  const handleLocationChange = useCallback((koremId, kodimName) => {
-    const wasLocationSelected = isLocationSelected;
+  const handleLocationChange = useCallback(
+    (koremId, kodimName) => {
+      const wasLocationSelected = isLocationSelected;
 
-    setSelectedKoremId(koremId);
-    setSelectedKodimId(kodimName);
+      setSelectedKoremId(koremId);
+      setSelectedKodimId(kodimName);
 
-    if (koremId && kodimName && kodimBoundaries) {
-      const kodimFeature = kodimBoundaries.features.find((f) => {
-        const featureName = f.properties.listkodim_Kodim;
-        if (kodimName === "Kodim 0733/Kota Semarang") {
-          return featureName.startsWith("Kodim 0733/Semarang");
+      if (koremId && kodimName && kodimBoundaries) {
+        const kodimFeature = kodimBoundaries.features.find((f) => {
+          const featureName = f.properties.listkodim_Kodim;
+          if (kodimName === "Kodim 0733/Kota Semarang") {
+            return featureName.startsWith("Kodim 0733/Semarang");
+          }
+          if (kodimName === "Kodim 0717/Grobogan") {
+            return featureName === "Kodim 0717/Purwodadi";
+          }
+          return featureName === kodimName;
+        });
+
+        const koremData = koremList.find((k) => k.id === koremId);
+        const firstKodimName = koremData?.kodim?.[0] || kodimName;
+        const koremFeature = kodimBoundaries.features.find(
+          (f) => f.properties.listkodim_Kodim === firstKodimName
+        );
+
+        setSelectedKorem(koremFeature);
+        setSelectedKodim(kodimFeature);
+        setIsLocationSelected(true);
+
+        if (!wasLocationSelected) {
+          toast.success("Lokasi dipilih! Silakan gambar area aset di peta.");
         }
-        if (kodimName === "Kodim 0717/Grobogan") {
-          return featureName === "Kodim 0717/Purwodadi";
-        }
-        return featureName === kodimName;
-      });
-
-      const koremData = koremList.find((k) => k.id === koremId);
-      const firstKodimName = koremData?.kodim?.[0] || kodimName;
-      const koremFeature = kodimBoundaries.features.find(
-        (f) => f.properties.listkodim_Kodim === firstKodimName
-      );
-
-      setSelectedKorem(koremFeature);
-      setSelectedKodim(kodimFeature);
-      setIsLocationSelected(true);
-
-      if (!wasLocationSelected) {
-        toast.success("Lokasi dipilih! Silakan gambar area aset di peta.");
+      } else {
+        setSelectedKorem(null);
+        setSelectedKodim(null);
+        setIsLocationSelected(false);
       }
-    } else {
-      setSelectedKorem(null);
-      setSelectedKodim(null);
-      setIsLocationSelected(false);
-    }
-  }, [kodimBoundaries, koremList, isLocationSelected]);
+    },
+    [kodimBoundaries, koremList, isLocationSelected]
+  );
 
   const handleDrawingCreated = (data) => {
     if (!data || !data.geometry) {
@@ -101,7 +104,9 @@ const TambahAsetPage = () => {
     setDrawnAsset(data);
     setIsFormEnabled(true);
     setIsLocationSelected(true);
-    toast.success(`Polygon berhasil digambar! Luas: ${data.area.toFixed(2)} m²`);
+    toast.success(
+      `Polygon berhasil digambar! Luas: ${data.area.toFixed(2)} m²`
+    );
   };
 
   const handleSaveAsset = async (assetData, file) => {
@@ -116,8 +121,11 @@ const TambahAsetPage = () => {
         const fileFormData = new FormData();
         fileFormData.append("bukti_pemilikan", file);
 
-        const uploadRes = await axios.post(`${API_URL}/upload/bukti-pemilikan`, fileFormData);
-        
+        const uploadRes = await axios.post(
+          `${API_URL}/upload/bukti-pemilikan`,
+          fileFormData
+        );
+
         fileUrl = uploadRes.data.url;
         fileName = uploadRes.data.filename;
 
@@ -155,7 +163,7 @@ const TambahAsetPage = () => {
 
       await axios.post(`${API_URL}/assets`, assetPayload, {
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
 
@@ -188,8 +196,14 @@ const TambahAsetPage = () => {
                   <Alert variant="info">
                     <b>Alur Pengisian:</b>
                     <ol className="mb-0 ps-3">
-                      <li>Pilih Wilayah Korem dan Kodim pada form di sebelah kanan.</li>
-                      <li>Gunakan kontrol di pojok kanan atas peta untuk menggambar batas area aset.</li>
+                      <li>
+                        Pilih Wilayah Korem dan Kodim pada form di sebelah
+                        kanan.
+                      </li>
+                      <li>
+                        Gunakan kontrol di pojok kanan atas peta untuk
+                        menggambar batas area aset.
+                      </li>
                       <li>Lengkapi sisa detail aset pada form.</li>
                     </ol>
                   </Alert>
