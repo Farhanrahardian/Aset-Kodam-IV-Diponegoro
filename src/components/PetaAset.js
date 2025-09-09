@@ -46,7 +46,8 @@ const getCentroid = (lokasiData) => {
 
   try {
     // Jika lokasiData adalah string, coba parse sebagai JSON
-    const parsedLokasi = typeof lokasiData === "string" ? JSON.parse(lokasiData) : lokasiData;
+    const parsedLokasi =
+      typeof lokasiData === "string" ? JSON.parse(lokasiData) : lokasiData;
 
     // Tentukan koordinat berdasarkan tipe GeoJSON
     if (parsedLokasi.type === "Polygon") {

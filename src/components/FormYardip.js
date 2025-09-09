@@ -57,15 +57,11 @@ const FormYardip = ({
     "Ruko",
   ];
 
-<<<<<<< HEAD
-  const statusOptions = ["Aktif", "Tidak Aktif", "Cadangan", "Dalam Proses"];
-=======
   const statusOptions = [
-    "Dimiliki/Dikuasai", 
-    "Tidak Dimiliki/Tidak Dikuasai",  
-    "Lain-lain"
+    "Dimiliki/Dikuasai",
+    "Tidak Dimiliki/Tidak Dikuasai",
+    "Lain-lain",
   ];
->>>>>>> origin/yardip
 
   // Handle input change
   const handleChange = (e) => {
@@ -113,10 +109,10 @@ const FormYardip = ({
     }
 
     if (validateForm()) {
-      // Prepare data untuk yarsip dengan struktur yang sesuai dengan db.json
-      const yarsipData = {
+      // Prepare data untuk yardip dengan struktur yang sesuai dengan db.json
+      const yardipData = {
         ...formData,
-        type: "yarsip", // Identifier untuk jenis aset
+        type: "yardip", // Identifier untuk jenis aset
         lokasi: initialGeometry || (assetToEdit ? assetToEdit.lokasi : null),
         area: initialArea || (assetToEdit ? assetToEdit.area : null),
         // Tambahkan timestamp untuk tracking
@@ -126,7 +122,7 @@ const FormYardip = ({
         updated_at: new Date().toISOString(),
       };
 
-      onSave(yarsipData);
+      onSave(yardipData);
     }
   };
 
@@ -147,10 +143,9 @@ const FormYardip = ({
   return (
     <Card>
       <Card.Header>
-        <h5>{assetToEdit ? "Edit Aset Yarsip" : "Form Aset Yardip"}</h5>
+        <h5>{assetToEdit ? "Edit Aset yardip" : "Form Aset yardip"}</h5>
       </Card.Header>
       <Card.Body>
-
         {/* Debug info untuk development */}
         {process.env.NODE_ENV === "development" && initialGeometry && (
           <Alert variant="info" className="mb-3">
@@ -159,7 +154,7 @@ const FormYardip = ({
               <br />- Geometry Type: {initialGeometry.type || "Unknown"}
               <br />- Area:{" "}
               {initialArea ? initialArea.toFixed(2) + " m²" : "No area"}
-              <br />- Storage: yarsip_assets collection
+              <br />- Storage: yardip_assets collection
               <br />- Asset to Edit:{" "}
               {assetToEdit ? assetToEdit.id : "New Asset"}
             </small>
@@ -407,7 +402,7 @@ const FormYardip = ({
                   disabled={!isEnabled && !assetToEdit}
                   style={{ backgroundColor: "#28a745", border: "none" }}
                 >
-                  {assetToEdit ? "Update Yarsip" : "Simpan Yarsip"}
+                  {assetToEdit ? "Update yardip" : "Simpan yardip"}
                 </Button>
               </div>
             </div>

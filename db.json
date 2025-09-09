@@ -717,11 +717,7 @@
       "nama": "Admin Real",
       "korem_id": "2",
       "kodim": "0729",
-<<<<<<< HEAD
-      "luas": 6271675924.474233,
-=======
       "luas": 4368003483.76639,
->>>>>>> origin/yardip
       "lokasi_nama": "Lokasi dari Peta",
       "kib_kode_barang": "q",
       "nomor_registrasi": "csdbhcbsd",
@@ -736,96 +732,12 @@
       "sertifikat_bidang": "12",
       "sertifikat_luas": "11.99",
       "belum_sertifikat_bidang": "12",
-<<<<<<< HEAD
-      "belum_sertifikat_luas": "9999999",
-=======
       "belum_sertifikat_luas": "120.98",
->>>>>>> origin/yardip
       "keterangan": "axas",
       "keterangan_bukti_pemilikan": "",
       "atas_nama_pemilik_sertifikat": "",
       "lokasi": [
         [
-<<<<<<< HEAD
-          108.727812,
-          -7.306162
-        ],
-        [
-          108.547975,
-          -7.517133
-        ],
-        [
-          108.27616,
-          -7.625982
-        ],
-        [
-          107.905879,
-          -7.426694
-        ],
-        [
-          107.708195,
-          -7.026364
-        ],
-        [
-          107.883914,
-          -6.860138
-        ],
-        [
-          108.353411,
-          -6.841059
-        ],
-        [
-          108.636208,
-          -6.873765
-        ],
-        [
-          108.658173,
-          -6.985494
-        ],
-        [
-          108.548349,
-          -7.170742
-        ],
-        [
-          108.367139,
-          -7.298736
-        ],
-        [
-          108.213386,
-          -7.315073
-        ],
-        [
-          108.098071,
-          -7.325965
-        ],
-        [
-          108.177693,
-          -7.432139
-        ],
-        [
-          108.342429,
-          -7.432139
-        ],
-        [
-          108.408323,
-          -7.374971
-        ],
-        [
-          108.449507,
-          -7.328687
-        ],
-        [
-          108.498928,
-          -7.27423
-        ],
-        [
-          108.713085,
-          -7.227935
-        ],
-        [
-          108.727812,
-          -7.306162
-=======
           109.430471,
           -6.226174
         ],
@@ -848,7 +760,6 @@
         [
           109.430471,
           -6.226174
->>>>>>> origin/yardip
         ]
       ],
       "kode_barang": "q",
@@ -858,13 +769,8 @@
       "noRegistrasi": "csdbhcbsd",
       "no_reg": "csdbhcbsd",
       "fungsi": "bcjhcs",
-<<<<<<< HEAD
-      "luas_total": 10000010.99,
-      "luas_gambar": null,
-=======
       "luas_total": 132.97,
       "luas_gambar": 4368003483.76639,
->>>>>>> origin/yardip
       "kodim_id": "0729"
     },
     {
@@ -1074,114 +980,9 @@
           ]
         ]
       }
-<<<<<<< HEAD
-    },
-    {
-      "id": "T1757332705861",
-      "nama": "kodam",
-      "korem_id": "1",
-      "kodim": "Kodim 0701/Banyumas",
-      "luas": 181404587.16132942,
-      "lokasi_nama": "Lokasi sekitar -7.39290, 109.01094",
-      "kib_kode_barang": "1.21.21.212.121",
-      "nomor_registrasi": "2",
-      "alamat": "efes",
-      "peruntukan": "gedung",
-      "status": "Dimiliki",
-      "asal_milik": "aea",
-      "pemilikan_sertifikat": "Tidak",
-      "keterangan_bukti_pemilikan": "",
-      "sertifikat_bidang": 0,
-      "sertifikat_luas": 0,
-      "belum_sertifikat_bidang": "2",
-      "belum_sertifikat_luas": "3452",
-      "keterangan": "",
-      "atas_nama_pemilik_sertifikat": "",
-      "lokasi": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              109.010941,
-              -7.392903
-            ],
-            [
-              109.093391,
-              -7.50192
-            ],
-            [
-              109.190958,
-              -7.463767
-            ],
-            [
-              109.171719,
-              -7.36837
-            ],
-            [
-              109.010941,
-              -7.392903
-            ]
-          ]
-        ]
-      },
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": ""
-    },
-    {
-      "id": "T1757332804680",
-      "nama": "fahan",
-      "korem_id": "3",
-      "kodim": "Kodim 0717/Grobogan",
-      "luas": 49924984.16122873,
-      "lokasi_nama": "Lokasi sekitar -7.06151, 110.87793",
-      "kib_kode_barang": "qq",
-      "nomor_registrasi": "q3d",
-      "alamat": "qdqw",
-      "peruntukan": "kantor",
-      "status": "Dikuasai",
-      "asal_milik": "qwq",
-      "pemilikan_sertifikat": "Ya",
-      "keterangan_bukti_pemilikan": "",
-      "sertifikat_bidang": "21",
-      "sertifikat_luas": 0,
-      "belum_sertifikat_bidang": 0,
-      "belum_sertifikat_luas": 0,
-      "keterangan": "",
-      "atas_nama_pemilik_sertifikat": "",
-      "lokasi": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              110.87793,
-              -7.061515
-            ],
-            [
-              110.879992,
-              -7.10993
-            ],
-            [
-              110.966221,
-              -7.112317
-            ],
-            [
-              110.95248,
-              -7.059469
-            ],
-            [
-              110.87793,
-              -7.061515
-            ]
-          ]
-        ]
-      },
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": ""
-=======
->>>>>>> origin/yardip
     }
   ],
-  "yarsip_assets": [
+  "yardip_assets": [
     {
       "pengelola": "yazna",
       "bidang": "Tanah Bangunan",
@@ -1191,7 +992,7 @@
       "peruntukan": "asas",
       "status": "Tidak Dimiliki/Tidak Dikuasai",
       "keterangan": "asasasas",
-      "type": "yarsip",
+      "type": "yardip",
       "lokasi": {
         "type": "Polygon",
         "coordinates": [
@@ -1226,182 +1027,31 @@
             ]
           ]
         ]
-<<<<<<< HEAD
-      ],
-      "area": 5075509079.112641,
-      "updated_at": "2025-09-02T01:08:51.267Z",
-      "id": "Y1756750648747"
+      },
+      "area": 113473190.88547498,
+      "created_at": "2025-09-09T02:20:18.712Z",
+      "updated_at": "2025-09-09T02:20:55.400Z",
+      "id": "Y1757384418712"
     },
     {
-      "id": "Y1756752447188",
-      "pengelola": "mjeed",
-      "bidang": "Fasilitas Umum",
-      "kabkota": "smf",
-      "kecamatan": "smg",
-      "kelurahan": "smg",
-      "peruntukan": "majeed",
-      "status": "Cadangan",
-      "keterangan": "ass",
-      "type": "yarsip",
-      "lokasi": [
-        [
-          [
-            108.786376,
-            -7.108794
-          ],
-          [
-            108.791866,
-            -7.621007
-          ],
-          [
-            109.368349,
-            -7.201472
-          ],
-          [
-            108.786376,
-            -7.108794
-          ]
-        ]
-      ],
-      "area": 1824538506.7253392,
-      "created_at": "2025-09-01T18:47:27.188Z",
-      "updated_at": "2025-09-01T18:47:27.188Z"
-    },
-    {
-      "pengelola": "Adytya",
-      "bidang": "Perkantoran",
-      "kabkota": "semarang",
-      "kecamatan": "semarang",
-      "kelurahan": "kaliwungu",
-      "peruntukan": "nanda",
-      "status": "Aktif",
-      "keterangan": "ini test terakhir",
-      "type": "yarsip",
-      "lokasi": [
-        [
-          [
-            108.787974,
-            -6.900157
-          ],
-          [
-            108.584745,
-            -7.538115
-          ],
-          [
-            109.67779,
-            -7.685206
-          ],
-          [
-            109.771165,
-            -6.883787
-          ],
-          [
-            108.787974,
-            -6.900157
-          ]
-        ]
-      ],
-      "area": 9282406394.259338,
-      "created_at": "2025-09-01T18:50:13.052Z",
-      "updated_at": "2025-09-01T18:50:49.445Z",
-      "id": "Y1756752613052"
-    },
-    {
-      "id": "Y1756777202287",
+      "id": "Y1757386588355",
       "pengelola": "Yayasan Rumpun Diponegoro",
       "bidang": "Tanah",
       "kabkota": "demak",
       "kecamatan": "bonang",
       "kelurahan": "moro",
       "peruntukan": "kantor puat",
-      "status": "Aktif",
+      "status": "Dimiliki/Dikuasai",
       "keterangan": "ada",
-      "type": "yarsip",
-      "lokasi": [
-        [
-          [
-            109.325629,
-            -7.298402
-          ],
-          [
-            110.155779,
-            -7.260294
-          ],
-          [
-            110.100802,
-            -7.847878
-          ],
-          [
-            109.325629,
-            -7.298402
-          ]
-        ]
-      ],
-      "area": 2976525819.193603,
-      "created_at": "2025-09-02T01:40:02.287Z",
-      "updated_at": "2025-09-02T01:40:02.287Z"
-    },
-    {
-      "id": "Y1756811131033",
-      "pengelola": "asasasasasa",
-      "bidang": "Tanah",
-      "kabkota": "asas",
-      "kecamatan": "sasa",
-      "kelurahan": "sa",
-      "peruntukan": "asasas",
-      "status": "Aktif",
-      "keterangan": "asa",
-      "type": "yarsip",
-      "lokasi": [
-        [
-          [
-            110.68525,
-            -6.826619
-          ],
-          [
-            111.061841,
-            -7.316803
-          ],
-          [
-            110.723734,
-            -7.714002
-          ],
-          [
-            109.981547,
-            -7.643295
-          ],
-          [
-            109.965054,
-            -7.333133
-          ],
-          [
-            110.495736,
-            -7.319512
-          ],
-          [
-            110.710146,
-            -7.167068
-          ],
-          [
-            110.655169,
-            -6.965545
-          ],
-          [
-            110.68525,
-            -6.826619
-          ]
-        ]
-      ],
-      "area": 5400138049.871251,
-      "created_at": "2025-09-02T11:05:31.033Z",
-      "updated_at": "2025-09-02T11:05:31.033Z"
-=======
-      },
-      "area": 113473190.88547498,
-      "created_at": "2025-09-09T02:20:18.712Z",
-      "updated_at": "2025-09-09T02:20:55.400Z",
-      "id": "Y1757384418712"
->>>>>>> origin/yardip
+      "type": "yardip",
+      "lokasi": "[[[110.657576,-6.584368],[110.68163,-6.589483],[110.678537,-6.609943],[110.656545,-6.606533],[110.65895,-6.587778],[110.657576,-6.584368]]]",
+      "area": 5926065.114208385,
+      "created_at": "2025-09-09T02:56:28.355Z",
+      "updated_at": "2025-09-09T02:56:28.355Z",
+      "kota": "Jepara",
+      "kota_id": "jepara",
+      "provinsi": "Jawa Tengah",
+      "provinsi_id": "jateng"
     }
   ],
   "korem": [

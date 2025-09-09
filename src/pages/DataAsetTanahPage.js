@@ -91,8 +91,10 @@ const TabelAset = ({
   const getKodimName = (asset) => {
     if (!asset.kodim) return "-";
     const assetKodimIdentifier = String(asset.kodim).trim();
-    const kodim = allKodimList.find(k => k.id === assetKodimIdentifier || k.nama === assetKodimIdentifier);
-    return kodim ? kodim.nama : (asset.kodim_nama || asset.kodim || "-");
+    const kodim = allKodimList.find(
+      (k) => k.id === assetKodimIdentifier || k.nama === assetKodimIdentifier
+    );
+    return kodim ? kodim.nama : asset.kodim_nama || asset.kodim || "-";
   };
 
   // Helper function: tampilkan luas lebih jelas
@@ -292,9 +294,7 @@ const FilterPanelTop = ({
                 value={selectedKodim || ""}
                 onChange={(e) => onSelectKodim(e.target.value)}
               >
-                <option value="">
-                  Semua Kodim
-                </option>
+                <option value="">Semua Kodim</option>
                 {filteredKodimForFilter.map((kodim) => (
                   <option key={kodim.id} value={kodim.nama}>
                     {kodim.nama}
@@ -431,7 +431,9 @@ const DetailModalAset = ({ asset, show, onHide, koremList, allKodimList }) => {
   const assetForMap = prepareAssetForMap(asset);
 
   const korem = koremList.find((k) => k.id == asset.korem_id);
-  const kodim = allKodimList.find((k) => k.id === asset.kodim || k.nama === asset.kodim);
+  const kodim = allKodimList.find(
+    (k) => k.id === asset.kodim || k.nama === asset.kodim
+  );
 
   const imageUrl = getImageUrl(asset);
   const filename =
@@ -830,29 +832,35 @@ const DataAsetTanahPage = () => {
   const [isEditingLocation, setIsEditingLocation] = useState(false);
   const [editedLocationData, setEditedLocationData] = useState(null);
 
-  const fetchKodim = useCallback((koremId) => {
-    if (!koremId) {
-      setKodimList([]);
-      return;
-    }
-    setKodimLoading(true);
-    try {
-      const selectedKoremData = koremList.find(k => k.id === koremId);
-      if (selectedKoremData && selectedKoremData.kodim) {
-        const kodimObjects = selectedKoremData.kodim.map(kName => ({ id: kName, nama: kName }));
-        setKodimList(kodimObjects);
-      } else {
+  const fetchKodim = useCallback(
+    (koremId) => {
+      if (!koremId) {
         setKodimList([]);
+        return;
       }
-      setSelectedKodim("");
-      setError(null);
-    } catch (err) {
-      console.error("Error fetching Kodim:", err);
-      setKodimList([]);
-    } finally {
-      setKodimLoading(false);
-    }
-  }, [koremList]);
+      setKodimLoading(true);
+      try {
+        const selectedKoremData = koremList.find((k) => k.id === koremId);
+        if (selectedKoremData && selectedKoremData.kodim) {
+          const kodimObjects = selectedKoremData.kodim.map((kName) => ({
+            id: kName,
+            nama: kName,
+          }));
+          setKodimList(kodimObjects);
+        } else {
+          setKodimList([]);
+        }
+        setSelectedKodim("");
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching Kodim:", err);
+        setKodimList([]);
+      } finally {
+        setKodimLoading(false);
+      }
+    },
+    [koremList]
+  );
 
   useEffect(() => {
     const fetchData = async () => {
@@ -862,11 +870,15 @@ const DataAsetTanahPage = () => {
         const koremRes = await axios.get(`${API_URL}/korem`);
         setAssets(assetsRes.data);
         setKoremList(koremRes.data);
-        const allKodims = koremRes.data.flatMap(korem => korem.kodim.map(k => ({ id: k, nama: k, korem_id: korem.id })));
+        const allKodims = koremRes.data.flatMap((korem) =>
+          korem.kodim.map((k) => ({ id: k, nama: k, korem_id: korem.id }))
+        );
         setAllKodimList(allKodims);
         setError(null);
       } catch (err) {
-        setError("Gagal memuat data dari server. Pastikan server API berjalan.");
+        setError(
+          "Gagal memuat data dari server. Pastikan server API berjalan."
+        );
         console.error(err);
       } finally {
         setLoading(false);
@@ -895,12 +907,7 @@ const DataAsetTanahPage = () => {
     }
 
     setFilteredAssets(filtered);
-  }, [
-    selectedKorem,
-    selectedKodim,
-    statusFilter,
-    assets,
-  ]);
+  }, [selectedKorem, selectedKodim, statusFilter, assets]);
 
   const handleKoremChange = (korem) => {
     setSelectedKorem(korem || null);
@@ -1455,9 +1462,8 @@ const DataAsetTanahPage = () => {
                         {editingAsset.peruntukan || editingAsset.fungsi || "-"}
                         <br />
                         <strong>Kodim:</strong>{" "}
-                        {allKodimList.find(
-                          (k) => k.id === editingAsset.kodim
-                        )?.nama ||
+                        {allKodimList.find((k) => k.id === editingAsset.kodim)
+                          ?.nama ||
                           editingAsset.kodim ||
                           "-"}
                         <br />
@@ -1599,7 +1605,6 @@ const DataAsetTanahPage = () => {
                       </div>
                     </Col>
                   </Row>
-
                 </div>
               </div>
             </div>

@@ -21,7 +21,7 @@ import diyBoundary from "../data/indonesia_yogyakarta.json";
 
 const API_URL = "http://localhost:3001";
 
-// Table component for Yarsip assets
+// Table component for yardip assets
 const TabelAsetYardip = ({ assets, onEdit, onDelete, onViewDetail }) => {
   if (!assets || assets.length === 0) {
     return (
@@ -61,19 +61,11 @@ const TabelAsetYardip = ({ assets, onEdit, onDelete, onViewDetail }) => {
             <td>
               <span
                 className={`badge ${
-<<<<<<< HEAD
-                  asset.status === "Aktif"
-                    ? "bg-success"
-                    : asset.status === "Tidak Aktif"
-                    ? "bg-danger"
-                    : asset.status === "Cadangan"
-=======
                   asset.status === "Dimiliki/Dikuasai"
                     ? "bg-success"
                     : asset.status === "Tidak Dimiliki/Tidak Dikuasai"
                     ? "bg-danger"
                     : asset.status === "Lain-lain"
->>>>>>> origin/yardip
                     ? "bg-warning"
                     : asset.status === "Dalam Proses"
                     ? "bg-info"
@@ -122,14 +114,14 @@ const TabelAsetYardip = ({ assets, onEdit, onDelete, onViewDetail }) => {
   );
 };
 
-// Enhanced Modal Detail Component with Map for Yarsip
+// Enhanced Modal Detail Component with Map for yardip
 const DetailModalYardip = ({ asset, show, onHide }) => {
   if (!asset) return null;
 
-  console.log("Yarsip Asset data in modal:", asset);
-  console.log("Yarsip Asset lokasi:", asset.lokasi);
+  console.log("yardip Asset data in modal:", asset);
+  console.log("yardip Asset lokasi:", asset.lokasi);
 
-  // Validasi dan sanitasi data lokasi untuk Yarsip
+  // Validasi dan sanitasi data lokasi untuk yardip
   const validateLocationData = (asset) => {
     if (!asset.lokasi) {
       console.log("No lokasi data found");
@@ -148,7 +140,7 @@ const DetailModalYardip = ({ asset, show, onHide }) => {
       }
     }
 
-    // Handle jika lokasi berupa array koordinat langsung (format yarsip)
+    // Handle jika lokasi berupa array koordinat langsung (format yardip)
     if (Array.isArray(lokasi) && lokasi.length > 0) {
       // Check if it's nested array [[coords]]
       if (Array.isArray(lokasi[0])) {
@@ -190,7 +182,7 @@ const DetailModalYardip = ({ asset, show, onHide }) => {
       kecamatan: asset.kecamatan || "",
       kelurahan: asset.kelurahan || "",
       keterangan: asset.keterangan || "",
-      type: "yarsip", // Mark as yarsip asset
+      type: "yardip", // Mark as yardip asset
     };
   };
 
@@ -200,7 +192,7 @@ const DetailModalYardip = ({ asset, show, onHide }) => {
     <Modal show={show} onHide={onHide} size="xl" centered>
       <Modal.Header closeButton>
         <Modal.Title>
-          Detail Aset Yarsip - {asset.pengelola || "Unknown"}
+          Detail Aset yardip - {asset.pengelola || "Unknown"}
         </Modal.Title>
       </Modal.Header>
       <Modal.Body>
@@ -267,19 +259,11 @@ const DetailModalYardip = ({ asset, show, onHide }) => {
                       <td>
                         <span
                           className={`badge ${
-<<<<<<< HEAD
-                            asset.status === "Aktif"
-                              ? "bg-success"
-                              : asset.status === "Tidak Aktif"
-                              ? "bg-danger"
-                              : asset.status === "Cadangan"
-=======
                             asset.status === "Dimiliki/Dikuasai"
                               ? "bg-success"
                               : asset.status === "Tidak Dimiliki/Tidak Dikuasai"
                               ? "bg-danger"
                               : asset.status === "Lain-lain"
->>>>>>> origin/yardip
                               ? "bg-warning"
                               : asset.status === "Dalam Proses"
                               ? "bg-info"
@@ -301,11 +285,7 @@ const DetailModalYardip = ({ asset, show, onHide }) => {
                         <td>
                           <strong>Luas Area:</strong>
                         </td>
-<<<<<<< HEAD
-                        <td>{Number(asset.area).toFixed(2)} mÂ²</td>
-=======
                         <td>{Number(asset.area).toFixed(2)} m²</td>
->>>>>>> origin/yardip
                       </tr>
                     )}
                     <tr>
@@ -469,11 +449,7 @@ const DetailModalYardip = ({ asset, show, onHide }) => {
                       <br />
                       <span className="text-muted">
                         {asset.area
-<<<<<<< HEAD
-                          ? `${Number(asset.area).toFixed(2)} mÂ²`
-=======
                           ? `${Number(asset.area).toFixed(2)} m²`
->>>>>>> origin/yardip
                           : "Tidak tersedia"}
                       </span>
                     </Col>
@@ -513,14 +489,14 @@ const DataAsetYardipPage = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      // Fetch specifically yarsip_assets endpoint
-      const res = await axios.get(`${API_URL}/yarsip_assets`);
+      // Fetch specifically yardip_assets endpoint
+      const res = await axios.get(`${API_URL}/yardip_assets`);
       setAssets(res.data || []);
       setFilteredAssets(res.data || []);
       setError(null);
     } catch (err) {
       console.error(err);
-      setError("Gagal memuat data aset yarsip.");
+      setError("Gagal memuat data aset yardip.");
     } finally {
       setLoading(false);
     }
@@ -558,7 +534,7 @@ const DataAsetYardipPage = () => {
       if (result.isConfirmed) {
         const toastId = toast.loading("Menghapus aset...");
         try {
-          await axios.delete(`${API_URL}/yarsip_assets/${id}`);
+          await axios.delete(`${API_URL}/yardip_assets/${id}`);
           setAssets(assets.filter((a) => a.id !== id));
           toast.success("Aset berhasil dihapus.", { id: toastId });
         } catch (err) {
@@ -586,7 +562,7 @@ const DataAsetYardipPage = () => {
   const handleEditLocation = () => {
     console.log("Starting location edit for asset:", editingAsset);
     setIsEditingLocation(true);
-    
+
     // Reset edited location data when starting new edit
     setEditedLocationData(null);
   };
@@ -599,11 +575,13 @@ const DataAsetYardipPage = () => {
   const handleLocationDrawingCreated = (data) => {
     console.log("New location data created:", data);
     setEditedLocationData(data);
-    
+
     // Auto-close location editing mode after drawing is complete
     setIsEditingLocation(false);
-    
-    toast.success("Lokasi baru berhasil digambar! Klik 'Simpan Perubahan' untuk menyimpan.");
+
+    toast.success(
+      "Lokasi baru berhasil digambar! Klik 'Simpan Perubahan' untuk menyimpan."
+    );
   };
 
   const handleSaveAsset = async (updatedData) => {
@@ -618,25 +596,22 @@ const DataAsetYardipPage = () => {
       }),
     };
 
-<<<<<<< HEAD
-=======
     console.log("Saving asset with data:", finalData);
 
->>>>>>> origin/yardip
     const toastId = toast.loading("Menyimpan perubahan...");
     try {
       const response = await axios.put(
-        `${API_URL}/yarsip_assets/${editingAsset.id}`,
+        `${API_URL}/yardip_assets/${editingAsset.id}`,
         finalData
       );
-      
+
       // Update assets list dengan data yang baru
       setAssets(
         assets.map((a) => (a.id === editingAsset.id ? response.data : a))
       );
-      
+
       toast.success("Aset berhasil diperbarui!", { id: toastId });
-      
+
       // Reset semua editing state
       setEditingAsset(null);
       setIsEditingLocation(false);
@@ -649,7 +624,7 @@ const DataAsetYardipPage = () => {
 
   // Handler untuk tombol detail
   const handleViewDetail = (asset) => {
-    console.log("Yarsip Asset data for detail:", asset);
+    console.log("yardip Asset data for detail:", asset);
     setSelectedAssetDetail(asset);
     setShowDetailModal(true);
   };
@@ -659,44 +634,10 @@ const DataAsetYardipPage = () => {
     setSelectedAssetDetail(null);
   };
 
-<<<<<<< HEAD
-  // Prepare current asset for map display during editing
-  const prepareEditAssetForMap = () => {
-    if (!editingAsset) return [];
-
-    const validateLocationData = (asset) => {
-      if (!asset.lokasi) return null;
-
-      let lokasi = asset.lokasi;
-
-      if (typeof lokasi === "string") {
-        try {
-          lokasi = JSON.parse(lokasi);
-        } catch (e) {
-          return null;
-        }
-      }
-
-      // Handle yarsip format - array of coordinates
-      if (Array.isArray(lokasi) && lokasi.length > 0) {
-        return lokasi;
-      }
-
-      if (lokasi.type === "Polygon" && lokasi.coordinates) {
-        return lokasi.coordinates;
-      }
-
-      if (lokasi.coordinates && Array.isArray(lokasi.coordinates)) {
-        return lokasi.coordinates;
-      }
-
-      return null;
-    };
-=======
   // FUNGSI VALIDASI LOKASI - DIPERBAIKI
   const validateAndParseLocation = (locationData) => {
     console.log("Validating location data:", locationData);
-    
+
     if (!locationData) {
       console.log("No location data provided");
       return null;
@@ -717,11 +658,19 @@ const DataAsetYardipPage = () => {
     // Handle different location formats
     if (Array.isArray(lokasi)) {
       // Direct coordinates array format [[lng, lat], [lng, lat], ...]
-      if (lokasi.length > 0 && Array.isArray(lokasi[0]) && typeof lokasi[0][0] === 'number') {
+      if (
+        lokasi.length > 0 &&
+        Array.isArray(lokasi[0]) &&
+        typeof lokasi[0][0] === "number"
+      ) {
         return [lokasi]; // Wrap in array for polygon format
       }
       // Already in polygon format [[[lng, lat], [lng, lat], ...]]
-      if (lokasi.length > 0 && Array.isArray(lokasi[0]) && Array.isArray(lokasi[0][0])) {
+      if (
+        lokasi.length > 0 &&
+        Array.isArray(lokasi[0]) &&
+        Array.isArray(lokasi[0][0])
+      ) {
         return lokasi;
       }
     }
@@ -737,25 +686,11 @@ const DataAsetYardipPage = () => {
         return lokasi.coordinates;
       }
     }
->>>>>>> origin/yardip
 
     console.warn("Unrecognized location format:", lokasi);
     return null;
   };
 
-<<<<<<< HEAD
-    return [
-      {
-        id: editingAsset.id,
-        nama: editingAsset.pengelola || "Unknown",
-        kodim: editingAsset.bidang || "",
-        lokasi: validatedLocation,
-        luas: Number(editingAsset.area) || 0,
-        status: editingAsset.status || "",
-        type: "yarsip",
-      },
-    ];
-=======
   // Prepare current asset for map display during editing - DIPERBAIKI
   const prepareEditAssetForMap = () => {
     if (!editingAsset) {
@@ -766,7 +701,7 @@ const DataAsetYardipPage = () => {
     console.log("Preparing edit asset for map:", editingAsset);
 
     const validatedLocation = validateAndParseLocation(editingAsset.lokasi);
-    
+
     if (!validatedLocation) {
       console.log("No valid location found for editing asset");
       return [];
@@ -782,12 +717,11 @@ const DataAsetYardipPage = () => {
       kabkota: editingAsset.kabkota || "",
       kecamatan: editingAsset.kecamatan || "",
       kelurahan: editingAsset.kelurahan || "",
-      type: "yarsip",
+      type: "yardip",
     };
 
     console.log("Asset prepared for map:", assetForMap);
     return [assetForMap];
->>>>>>> origin/yardip
   };
 
   if (loading) return <Spinner animation="border" variant="primary" />;
@@ -809,11 +743,9 @@ const DataAsetYardipPage = () => {
             <br />- Available Bidang Options:{" "}
             {bidangOptions.join(", ") || "None"}
             <br />- Editing Asset: {editingAsset?.id || "None"}
-<<<<<<< HEAD
-=======
             <br />- Is Editing Location: {isEditingLocation ? "Yes" : "No"}
-            <br />- Has Edited Location Data: {editedLocationData ? "Yes" : "No"}
->>>>>>> origin/yardip
+            <br />- Has Edited Location Data:{" "}
+            {editedLocationData ? "Yes" : "No"}
             <br />- API Endpoint: {API_URL}/yardip_assets
             <br />- Asset Type: Yardip Assets Only
           </small>
@@ -896,11 +828,7 @@ const DataAsetYardipPage = () => {
                     size="sm"
                     onClick={handleCancelEdit}
                   >
-<<<<<<< HEAD
-                    âœ•
-=======
                     Batal Edit
->>>>>>> origin/yardip
                   </Button>
                 </div>
               </div>
@@ -922,16 +850,6 @@ const DataAsetYardipPage = () => {
 
                     {/* Status edit lokasi */}
                     {editedLocationData && (
-<<<<<<< HEAD
-                      <div className="alert alert-info mt-2">
-                        <small>
-                          <i className="fas fa-map-marked-alt me-1"></i>
-                          Lokasi baru telah digambar (Luas:{" "}
-                          {editedLocationData.area?.toFixed(2)} mÂ²)
-                          <br />
-                          <button
-                            className="btn btn-link btn-sm p-0 text-decoration-none"
-=======
                       <div className="alert alert-success mt-3">
                         <div className="d-flex justify-content-between align-items-center">
                           <div>
@@ -944,7 +862,6 @@ const DataAsetYardipPage = () => {
                           </div>
                           <button
                             className="btn btn-outline-danger btn-sm"
->>>>>>> origin/yardip
                             onClick={handleCancelEditLocation}
                           >
                             Batalkan
@@ -963,19 +880,12 @@ const DataAsetYardipPage = () => {
                         <strong>Status Saat Ini:</strong>{" "}
                         <span
                           className={`badge ${
-<<<<<<< HEAD
-                            editingAsset.status === "Aktif"
-                              ? "bg-success"
-                              : editingAsset.status === "Tidak Aktif"
-                              ? "bg-danger"
-                              : editingAsset.status === "Cadangan"
-=======
                             editingAsset.status === "Dimiliki/Dikuasai"
                               ? "bg-success"
-                              : editingAsset.status === "Tidak Dimiliki/Tidak Dikuasai"
+                              : editingAsset.status ===
+                                "Tidak Dimiliki/Tidak Dikuasai"
                               ? "bg-danger"
                               : editingAsset.status === "Lain-lain"
->>>>>>> origin/yardip
                               ? "bg-warning"
                               : "bg-secondary"
                           }`}
@@ -988,13 +898,6 @@ const DataAsetYardipPage = () => {
                         <br />
                         {editingAsset.area && (
                           <>
-<<<<<<< HEAD
-                            <strong>Luas Area:</strong>{" "}
-                            {Number(editingAsset.area).toFixed(2)} mÂ²
-                            <br />
-                          </>
-                        )}
-=======
                             <strong>Luas Area Saat Ini:</strong>{" "}
                             {Number(editingAsset.area).toFixed(2)} m²
                             <br />
@@ -1009,7 +912,6 @@ const DataAsetYardipPage = () => {
                             <br />
                           </>
                         )}
->>>>>>> origin/yardip
                         <strong>Terakhir Diupdate:</strong>{" "}
                         {editingAsset.updated_at
                           ? new Date(editingAsset.updated_at).toLocaleString(
@@ -1032,20 +934,14 @@ const DataAsetYardipPage = () => {
               <div className="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
                 <div>
                   <h6 className="mb-0">
-<<<<<<< HEAD
-                    Edit Lokasi Aset Yardip - {editingAsset.pengelola}
-                  </h6>
-                  <small>Gambar ulang polygon untuk lokasi aset ini</small>
-=======
                     <i className="fas fa-edit me-2"></i>
                     Edit Lokasi Aset Yardip - {editingAsset.pengelola}
                   </h6>
                   <small>
-                    {prepareEditAssetForMap().length > 0 
+                    {prepareEditAssetForMap().length > 0
                       ? "Polygon hijau menunjukkan lokasi saat ini. Gambar polygon baru untuk mengubah lokasi."
                       : "Belum ada lokasi sebelumnya. Silakan gambar polygon baru."}
                   </small>
->>>>>>> origin/yardip
                 </div>
                 <Button
                   variant="outline-dark"
@@ -1069,14 +965,6 @@ const DataAsetYardipPage = () => {
                     editMode={true} // Pass edit mode flag
                   />
                 </div>
-<<<<<<< HEAD
-                <div className="mt-2">
-                  <small className="text-muted">
-                    <i className="fas fa-info-circle me-1"></i>
-                    Polygon hijau menunjukkan lokasi saat ini. Gambar polygon
-                    baru untuk mengubah lokasi.
-                  </small>
-=======
 
                 <div className="mt-3 p-2 bg-light rounded">
                   <div className="row">
@@ -1097,17 +985,20 @@ const DataAsetYardipPage = () => {
                         <strong>Status lokasi:</strong>
                       </small>
                       <div className="small text-muted mt-1">
-                        Current: {prepareEditAssetForMap().length > 0 ? "Ada lokasi" : "Tidak ada"}
+                        Current:{" "}
+                        {prepareEditAssetForMap().length > 0
+                          ? "Ada lokasi"
+                          : "Tidak ada"}
                         <br />
                         {editedLocationData && (
                           <span className="text-success">
-                            New: Polygon baru siap ({editedLocationData.area?.toFixed(2)} m²)
+                            New: Polygon baru siap (
+                            {editedLocationData.area?.toFixed(2)} m²)
                           </span>
                         )}
                       </div>
                     </div>
                   </div>
->>>>>>> origin/yardip
                 </div>
               </div>
             </div>
