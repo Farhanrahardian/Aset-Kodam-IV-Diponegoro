@@ -58,10 +58,9 @@ const FormYardip = ({
   ];
 
   const statusOptions = [
-    "Aktif", 
-    "Tidak Aktif", 
-    "Cadangan", 
-    "Dalam Proses"
+    "Dimiliki/Dikuasai", 
+    "Tidak Dimiliki/Tidak Dikuasai",  
+    "Lain-lain"
   ];
 
   // Handle input change

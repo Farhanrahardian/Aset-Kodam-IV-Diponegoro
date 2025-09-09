@@ -61,11 +61,11 @@ const TabelAsetYardip = ({ assets, onEdit, onDelete, onViewDetail }) => {
             <td>
               <span
                 className={`badge ${
-                  asset.status === "Aktif"
+                  asset.status === "Dimiliki/Dikuasai"
                     ? "bg-success"
-                    : asset.status === "Tidak Aktif"
+                    : asset.status === "Tidak Dimiliki/Tidak Dikuasai"
                     ? "bg-danger"
-                    : asset.status === "Cadangan"
+                    : asset.status === "Lain-lain"
                     ? "bg-warning"
                     : asset.status === "Dalam Proses"
                     ? "bg-info"
@@ -259,11 +259,11 @@ const DetailModalYardip = ({ asset, show, onHide }) => {
                       <td>
                         <span
                           className={`badge ${
-                            asset.status === "Aktif"
+                            asset.status === "Dimiliki/Dikuasai"
                               ? "bg-success"
-                              : asset.status === "Tidak Aktif"
+                              : asset.status === "Tidak Dimiliki/Tidak Dikuasai"
                               ? "bg-danger"
-                              : asset.status === "Cadangan"
+                              : asset.status === "Lain-lain"
                               ? "bg-warning"
                               : asset.status === "Dalam Proses"
                               ? "bg-info"
@@ -869,11 +869,11 @@ const DataAsetYardipPage = () => {
                         <strong>Status Saat Ini:</strong>{" "}
                         <span
                           className={`badge ${
-                            editingAsset.status === "Aktif"
+                            editingAsset.status === "Dimiliki/Dikuasai"
                               ? "bg-success"
-                              : editingAsset.status === "Tidak Aktif"
+                              : editingAsset.status === "Tidak Dimiliki/Tidak Dikuasai"
                               ? "bg-danger"
-                              : editingAsset.status === "Cadangan"
+                              : editingAsset.status === "Lain-lain"
                               ? "bg-warning"
                               : "bg-secondary"
                           }`}

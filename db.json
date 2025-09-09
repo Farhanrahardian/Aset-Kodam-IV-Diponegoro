@@ -984,118 +984,54 @@
   ],
   "yarsip_assets": [
     {
-      "pengelola": "yuuu",
-      "bidang": "Tanah",
-      "kabkota": "asas",
-      "kecamatan": "asas",
-      "kelurahan": "asas",
-      "peruntukan": "yaaaa",
-      "status": "Dalam Proses",
-      "keterangan": "asas",
+      "pengelola": "yazna",
+      "bidang": "Tanah Bangunan",
+      "kabkota": "ssss",
+      "kecamatan": "sss",
+      "kelurahan": "ssss",
+      "peruntukan": "asas",
+      "status": "Tidak Dimiliki/Tidak Dikuasai",
+      "keterangan": "asasasas",
       "type": "yarsip",
       "lokasi": {
         "type": "Polygon",
         "coordinates": [
           [
             [
-              109.531604,
-              -7.5074
+              110.27466,
+              -7.673299
             ],
             [
-              109.556321,
-              -7.695249
+              110.273973,
+              -7.726715
             ],
             [
-              109.965527,
-              -7.798666
+              110.248226,
+              -7.785906
             ],
             [
-              109.531604,
-              -7.5074
+              110.339199,
+              -7.79441
+            ],
+            [
+              110.35808,
+              -7.679083
+            ],
+            [
+              110.27466,
+              -7.677382
+            ],
+            [
+              110.27466,
+              -7.673299
             ]
           ]
         ]
       },
-      "area": 455382499.0376202,
-      "created_at": "2025-09-08T05:30:39.747Z",
-      "updated_at": "2025-09-08T06:41:23.989Z",
-      "id": "Y1757309439747"
-    },
-    {
-      "id": "Y1757312357485",
-      "pengelola": "aasasa",
-      "bidang": "Tanah",
-      "kabkota": "asdasdasda",
-      "kecamatan": "asdasdasd",
-      "kelurahan": "asdasdasd",
-      "peruntukan": "asasas",
-      "status": "Aktif",
-      "keterangan": "asdasdasda",
-      "type": "yardip",
-      "lokasi": "[[[110.357774,-6.974731],[110.356057,-7.009464],[110.418212,-7.021381],[110.420959,-6.97405],[110.357774,-6.974731]]]",
-      "area": 31711813.570268996,
-      "created_at": "2025-09-08T06:19:17.485Z",
-      "updated_at": "2025-09-08T06:19:17.485Z",
-      "kota": "Semarang",
-      "kota_id": "semarang",
-      "provinsi": "Jawa Tengah",
-      "provinsi_id": "jateng"
-    },
-    {
-      "id": "Y1757313126901",
-      "pengelola": "ytta",
-      "bidang": "Tanah",
-      "kabkota": "asdasd",
-      "kecamatan": "aasdasd",
-      "kelurahan": "asdasda",
-      "peruntukan": "ytttaa",
-      "status": "Cadangan",
-      "keterangan": "asdasdasd",
-      "type": "yardip",
-      "lokasi": "[[[110.066295,-7.742381],[110.068012,-7.764817],[110.108189,-7.768896],[110.110936,-7.736942],[110.066295,-7.742381]]]",
-      "area": 14125306.949814165,
-      "created_at": "2025-09-08T06:32:06.901Z",
-      "updated_at": "2025-09-08T06:32:06.901Z",
-      "kota": "Kulon Progo",
-      "kota_id": "kulonprogo",
-      "provinsi": "DI Yogyakarta",
-      "provinsi_id": "diy"
-    },
-    {
-      "id": "Y1757313236701",
-      "pengelola": "asad",
-      "bidang": "Tanah Gudang Kantor",
-      "kabkota": "asdasd",
-      "kecamatan": "asdasd",
-      "kelurahan": "asdasd",
-      "peruntukan": "asdasd",
-      "status": "Dalam Proses",
-      "keterangan": "asdasd",
-      "type": "yardip",
-      "lokasi": "[[[110.83259,-6.805548],[110.828813,-6.831096],[110.857315,-6.832459],[110.859719,-6.80146],[110.83259,-6.805548]]]",
-      "area": 9603380.464803994,
-      "created_at": "2025-09-08T06:33:56.701Z",
-      "updated_at": "2025-09-08T06:33:56.701Z",
-      "kota": "Kudus",
-      "kota_id": "kudus",
-      "provinsi": "Jawa Tengah",
-      "provinsi_id": "jateng"
-    },
-    {
-      "pengelola": "nanda ganteng",
-      "bidang": "Ruko",
-      "kabkota": "yogya",
-      "kecamatan": "ga rti",
-      "kelurahan": "karang semut",
-      "peruntukan": "jasmine",
-      "status": "Aktif",
-      "keterangan": "iya deh iya",
-      "type": "yarsip",
-      "lokasi": "[[[110.355377,-7.751257],[110.343701,-7.793747],[110.371173,-7.748538],[110.359154,-7.729841],[110.355377,-7.751257]]]",
-      "area": 5926092.779560701,
-      "created_at": "2025-09-08T06:42:50.493Z",
-      "updated_at": "2025-09-08T06:43:36.679Z",
-      "id": "Y1757313770493"
+      "area": 113473190.88547498,
+      "created_at": "2025-09-09T02:20:18.712Z",
+      "updated_at": "2025-09-09T02:20:55.400Z",
+      "id": "Y1757384418712"
     }
   ],
   "korem": [
