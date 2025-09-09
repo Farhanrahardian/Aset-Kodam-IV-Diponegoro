@@ -717,7 +717,11 @@
       "nama": "Admin Real",
       "korem_id": "2",
       "kodim": "0729",
+<<<<<<< HEAD
       "luas": 6271675924.474233,
+=======
+      "luas": 4368003483.76639,
+>>>>>>> origin/yardip
       "lokasi_nama": "Lokasi dari Peta",
       "kib_kode_barang": "q",
       "nomor_registrasi": "csdbhcbsd",
@@ -732,12 +736,17 @@
       "sertifikat_bidang": "12",
       "sertifikat_luas": "11.99",
       "belum_sertifikat_bidang": "12",
+<<<<<<< HEAD
       "belum_sertifikat_luas": "9999999",
+=======
+      "belum_sertifikat_luas": "120.98",
+>>>>>>> origin/yardip
       "keterangan": "axas",
       "keterangan_bukti_pemilikan": "",
       "atas_nama_pemilik_sertifikat": "",
       "lokasi": [
         [
+<<<<<<< HEAD
           108.727812,
           -7.306162
         ],
@@ -816,6 +825,30 @@
         [
           108.727812,
           -7.306162
+=======
+          109.430471,
+          -6.226174
+        ],
+        [
+          109.013139,
+          -6.471722
+        ],
+        [
+          109.271226,
+          -6.820739
+        ],
+        [
+          109.880749,
+          -6.531727
+        ],
+        [
+          110.078433,
+          -6.253463
+        ],
+        [
+          109.430471,
+          -6.226174
+>>>>>>> origin/yardip
         ]
       ],
       "kode_barang": "q",
@@ -825,8 +858,13 @@
       "noRegistrasi": "csdbhcbsd",
       "no_reg": "csdbhcbsd",
       "fungsi": "bcjhcs",
+<<<<<<< HEAD
       "luas_total": 10000010.99,
       "luas_gambar": null,
+=======
+      "luas_total": 132.97,
+      "luas_gambar": 4368003483.76639,
+>>>>>>> origin/yardip
       "kodim_id": "0729"
     },
     {
@@ -1036,6 +1074,7 @@
           ]
         ]
       }
+<<<<<<< HEAD
     },
     {
       "id": "T1757332705861",
@@ -1138,38 +1177,56 @@
       },
       "bukti_pemilikan_url": "",
       "bukti_pemilikan_filename": ""
+=======
+>>>>>>> origin/yardip
     }
   ],
   "yarsip_assets": [
     {
-      "pengelola": "nanda",
-      "bidang": "Tanah",
-      "kabkota": "jogja",
-      "kecamatan": "jogja",
-      "kelurahan": "karangsemut",
-      "peruntukan": "majeed",
-      "status": "Tidak Aktif",
-      "keterangan": "yaaa",
+      "pengelola": "yazna",
+      "bidang": "Tanah Bangunan",
+      "kabkota": "ssss",
+      "kecamatan": "sss",
+      "kelurahan": "ssss",
+      "peruntukan": "asas",
+      "status": "Tidak Dimiliki/Tidak Dikuasai",
+      "keterangan": "asasasas",
       "type": "yarsip",
-      "lokasi": [
-        [
+      "lokasi": {
+        "type": "Polygon",
+        "coordinates": [
           [
-            111.188279,
-            -7.162988
-          ],
-          [
-            110.463244,
-            -7.685572
-          ],
-          [
-            111.836416,
-            -7.837873
-          ],
-          [
-            111.188279,
-            -7.162988
+            [
+              110.27466,
+              -7.673299
+            ],
+            [
+              110.273973,
+              -7.726715
+            ],
+            [
+              110.248226,
+              -7.785906
+            ],
+            [
+              110.339199,
+              -7.79441
+            ],
+            [
+              110.35808,
+              -7.679083
+            ],
+            [
+              110.27466,
+              -7.677382
+            ],
+            [
+              110.27466,
+              -7.673299
+            ]
           ]
         ]
+<<<<<<< HEAD
       ],
       "area": 5075509079.112641,
       "updated_at": "2025-09-02T01:08:51.267Z",
@@ -1338,6 +1395,13 @@
       "area": 5400138049.871251,
       "created_at": "2025-09-02T11:05:31.033Z",
       "updated_at": "2025-09-02T11:05:31.033Z"
+=======
+      },
+      "area": 113473190.88547498,
+      "created_at": "2025-09-09T02:20:18.712Z",
+      "updated_at": "2025-09-09T02:20:55.400Z",
+      "id": "Y1757384418712"
+>>>>>>> origin/yardip
     }
   ],
   "korem": [

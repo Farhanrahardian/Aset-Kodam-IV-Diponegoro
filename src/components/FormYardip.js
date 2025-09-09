@@ -57,7 +57,15 @@ const FormYardip = ({
     "Ruko",
   ];
 
+<<<<<<< HEAD
   const statusOptions = ["Aktif", "Tidak Aktif", "Cadangan", "Dalam Proses"];
+=======
+  const statusOptions = [
+    "Dimiliki/Dikuasai", 
+    "Tidak Dimiliki/Tidak Dikuasai",  
+    "Lain-lain"
+  ];
+>>>>>>> origin/yardip
 
   // Handle input change
   const handleChange = (e) => {
@@ -142,14 +150,6 @@ const FormYardip = ({
         <h5>{assetToEdit ? "Edit Aset Yarsip" : "Form Aset Yardip"}</h5>
       </Card.Header>
       <Card.Body>
-        {!isEnabled && !assetToEdit && (
-          <div className="text-muted text-center p-4">
-            <p>
-              Silakan gambar lokasi di peta terlebih dahulu untuk mengaktifkan
-              formulir ini.
-            </p>
-          </div>
-        )}
 
         {/* Debug info untuk development */}
         {process.env.NODE_ENV === "development" && initialGeometry && (
