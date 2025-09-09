@@ -140,14 +140,6 @@ const FormYardip = ({
         <h5>{assetToEdit ? "Edit Aset Yarsip" : "Form Aset Yarsip"}</h5>
       </Card.Header>
       <Card.Body>
-        {!isEnabled && !assetToEdit && (
-          <div className="text-muted text-center p-4">
-            <p>
-              Silakan gambar lokasi di peta terlebih dahulu untuk mengaktifkan
-              formulir ini.
-            </p>
-          </div>
-        )}
 
         {/* Debug info untuk development */}
         {process.env.NODE_ENV === "development" && initialGeometry && (
