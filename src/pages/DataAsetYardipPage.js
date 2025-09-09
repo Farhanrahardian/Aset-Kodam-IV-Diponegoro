@@ -21,6 +21,150 @@ import diyBoundary from "../data/indonesia_yogyakarta.json";
 
 const API_URL = "http://localhost:3001";
 
+// Enhanced city data - TAMBAHKAN DATA KOTA YANG SAMA DENGAN TambahAsetYardipPage
+const kotaData = {
+  jateng: [
+    {
+      id: "semarang",
+      name: "Semarang",
+      bounds: [
+        [-6.95, 110.35],
+        [-7.05, 110.45],
+      ],
+    },
+    {
+      id: "solo",
+      name: "Surakarta (Solo)",
+      bounds: [
+        [-7.52, 110.75],
+        [-7.62, 110.85],
+      ],
+    },
+    {
+      id: "yogya",
+      name: "Yogyakarta",
+      bounds: [
+        [-7.72, 110.32],
+        [-7.82, 110.42],
+      ],
+    },
+    {
+      id: "magelang",
+      name: "Magelang",
+      bounds: [
+        [-7.42, 110.18],
+        [-7.52, 110.28],
+      ],
+    },
+    {
+      id: "salatiga",
+      name: "Salatiga",
+      bounds: [
+        [-7.32, 110.42],
+        [-7.42, 110.52],
+      ],
+    },
+    {
+      id: "tegal",
+      name: "Tegal",
+      bounds: [
+        [-6.83, 109.12],
+        [-6.93, 109.22],
+      ],
+    },
+    {
+      id: "pekalongan",
+      name: "Pekalongan",
+      bounds: [
+        [-6.83, 109.63],
+        [-6.93, 109.73],
+      ],
+    },
+    {
+      id: "purwokerto",
+      name: "Purwokerto",
+      bounds: [
+        [-7.42, 109.22],
+        [-7.52, 109.32],
+      ],
+    },
+    {
+      id: "cilacap",
+      name: "Cilacap",
+      bounds: [
+        [-7.68, 109.02],
+        [-7.78, 109.12],
+      ],
+    },
+    {
+      id: "kudus",
+      name: "Kudus",
+      bounds: [
+        [-6.78, 110.82],
+        [-6.88, 110.92],
+      ],
+    },
+    {
+      id: "jepara",
+      name: "Jepara",
+      bounds: [
+        [-6.55, 110.62],
+        [-6.65, 110.72],
+      ],
+    },
+    {
+      id: "rembang",
+      name: "Rembang",
+      bounds: [
+        [-6.68, 111.32],
+        [-6.78, 111.42],
+      ],
+    },
+  ],
+  diy: [
+    {
+      id: "jogja",
+      name: "Yogyakarta",
+      bounds: [
+        [-7.72, 110.32],
+        [-7.82, 110.42],
+      ],
+    },
+    {
+      id: "sleman",
+      name: "Sleman",
+      bounds: [
+        [-7.62, 110.28],
+        [-7.72, 110.38],
+      ],
+    },
+    {
+      id: "bantul",
+      name: "Bantul",
+      bounds: [
+        [-7.82, 110.28],
+        [-7.92, 110.38],
+      ],
+    },
+    {
+      id: "kulonprogo",
+      name: "Kulon Progo",
+      bounds: [
+        [-7.72, 110.05],
+        [-7.82, 110.15],
+      ],
+    },
+    {
+      id: "gunungkidul",
+      name: "Gunung Kidul",
+      bounds: [
+        [-7.92, 110.45],
+        [-8.02, 110.55],
+      ],
+    },
+  ],
+};
+
 // Table component for yardip assets
 const TabelAsetYardip = ({ assets, onEdit, onDelete, onViewDetail }) => {
   if (!assets || assets.length === 0) {
@@ -486,6 +630,11 @@ const DataAsetYardipPage = () => {
   const [isEditingLocation, setIsEditingLocation] = useState(false);
   const [editedLocationData, setEditedLocationData] = useState(null);
 
+  // TAMBAHKAN STATE UNTUK LOCATION HANDLING SAAT EDIT
+  const [editSelectedProvince, setEditSelectedProvince] = useState("");
+  const [editSelectedCity, setEditSelectedCity] = useState("");
+  const [editCityBounds, setEditCityBounds] = useState(null);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -550,12 +699,62 @@ const DataAsetYardipPage = () => {
     setEditingAsset(asset);
     setIsEditingLocation(false);
     setEditedLocationData(null);
+    
+    // TAMBAHKAN INISIALISASI LOKASI DARI ASSET - PERBAIKAN UTAMA
+    if (asset.provinsi_id) {
+      setEditSelectedProvince(asset.provinsi_id);
+      
+      if (asset.kota_id) {
+        setEditSelectedCity(asset.kota_id);
+        
+        // Set city bounds jika ada data kota
+        const cities = kotaData[asset.provinsi_id];
+        const selectedCityData = cities?.find(c => c.id === asset.kota_id);
+        
+        if (selectedCityData) {
+          setEditCityBounds(selectedCityData.bounds);
+          console.log("Edit city bounds set:", selectedCityData.bounds);
+        }
+      }
+    } else {
+      // Reset location states if no location data in asset
+      setEditSelectedProvince("");
+      setEditSelectedCity("");
+      setEditCityBounds(null);
+    }
   };
 
   const handleCancelEdit = () => {
     setEditingAsset(null);
     setIsEditingLocation(false);
     setEditedLocationData(null);
+    
+    // RESET EDIT LOCATION STATES
+    setEditSelectedProvince("");
+    setEditSelectedCity("");
+    setEditCityBounds(null);
+  };
+
+  // TAMBAHKAN HANDLER UNTUK LOCATION CHANGE SAAT EDIT
+  const handleEditLocationChange = (province, city) => {
+    setEditSelectedProvince(province);
+    setEditSelectedCity(city);
+
+    if (province && city) {
+      const cities = kotaData[province];
+      const selectedCityData = cities?.find((c) => c.id === city);
+
+      if (selectedCityData) {
+        setEditCityBounds(selectedCityData.bounds);
+        
+        toast.success(
+          `Lokasi ${selectedCityData.name} dipilih untuk edit! Peta akan auto-zoom.`,
+          { duration: 3000 }
+        );
+      }
+    } else {
+      setEditCityBounds(null);
+    }
   };
 
   // Handler untuk edit lokasi - DIPERBAIKI
@@ -587,12 +786,24 @@ const DataAsetYardipPage = () => {
   const handleSaveAsset = async (updatedData) => {
     if (!editingAsset) return;
 
+    // TAMBAHKAN DATA LOKASI KE PAYLOAD
+    const selectedCityData = kotaData[editSelectedProvince]?.find(
+      (c) => c.id === editSelectedCity
+    );
+
     // Gabungkan data form dengan data lokasi yang baru jika ada
     const finalData = {
       ...updatedData,
       ...(editedLocationData && {
         lokasi: editedLocationData.geometry || editedLocationData.coordinates,
         area: editedLocationData.area,
+      }),
+      // Update location data if changed
+      ...(editSelectedProvince && editSelectedCity && {
+        provinsi_id: editSelectedProvince,
+        kota_id: editSelectedCity,
+        provinsi: editSelectedProvince === "jateng" ? "Jawa Tengah" : "DI Yogyakarta",
+        kota: selectedCityData ? selectedCityData.name : "",
       }),
     };
 
@@ -616,6 +827,9 @@ const DataAsetYardipPage = () => {
       setEditingAsset(null);
       setIsEditingLocation(false);
       setEditedLocationData(null);
+      setEditSelectedProvince("");
+      setEditSelectedCity("");
+      setEditCityBounds(null);
     } catch (err) {
       toast.error("Gagal menyimpan perubahan.", { id: toastId });
       console.error("Save error:", err);
@@ -746,6 +960,8 @@ const DataAsetYardipPage = () => {
             <br />- Is Editing Location: {isEditingLocation ? "Yes" : "No"}
             <br />- Has Edited Location Data:{" "}
             {editedLocationData ? "Yes" : "No"}
+            <br />- Edit Selected Province: {editSelectedProvince || "None"}
+            <br />- Edit Selected City: {editSelectedCity || "None"}
             <br />- API Endpoint: {API_URL}/yardip_assets
             <br />- Asset Type: Yardip Assets Only
           </small>
@@ -846,6 +1062,9 @@ const DataAsetYardipPage = () => {
                       initialArea={
                         editedLocationData ? editedLocationData.area : null
                       }
+                      kotaData={kotaData} // TAMBAHKAN PROP INI - PERBAIKAN UTAMA
+                      onLocationChange={handleEditLocationChange} // TAMBAHKAN PROP INI
+                      hasDrawnArea={!!editingAsset.lokasi} // TAMBAHKAN PROP INI
                     />
 
                     {/* Status edit lokasi */}
@@ -895,6 +1114,11 @@ const DataAsetYardipPage = () => {
                         <br />
                         <strong>Lokasi:</strong> {editingAsset.kabkota},{" "}
                         {editingAsset.kecamatan}
+                        <br />
+                        <strong>Lokasi Edit:</strong> {editSelectedProvince && editSelectedCity ? 
+                          `${kotaData[editSelectedProvince]?.find(c => c.id === editSelectedCity)?.name || editSelectedCity} (${editSelectedProvince === "jateng" ? "Jawa Tengah" : "DI Yogyakarta"})` : 
+                          "Belum dipilih"
+                        }
                         <br />
                         {editingAsset.area && (
                           <>
@@ -961,6 +1185,10 @@ const DataAsetYardipPage = () => {
                     onDrawingCreated={handleLocationDrawingCreated}
                     jatengBoundary={jatengBoundary}
                     diyBoundary={diyBoundary}
+                    cityBounds={editCityBounds} // TAMBAHKAN PROP INI
+                    selectedCity={editSelectedCity && editSelectedProvince ? 
+                      kotaData[editSelectedProvince]?.find(c => c.id === editSelectedCity)?.name : null
+                    } // TAMBAHKAN PROP INI
                     fitBounds={true}
                     editMode={true} // Pass edit mode flag
                   />
@@ -977,6 +1205,7 @@ const DataAsetYardipPage = () => {
                         <li>Polygon hijau adalah lokasi saat ini (jika ada)</li>
                         <li>Gunakan tool drawing untuk membuat polygon baru</li>
                         <li>Polygon baru akan mengganti lokasi yang lama</li>
+                        <li>Pilih lokasi target di form untuk auto-zoom peta</li>
                       </ul>
                     </div>
                     <div className="col-md-6">
@@ -989,6 +1218,11 @@ const DataAsetYardipPage = () => {
                         {prepareEditAssetForMap().length > 0
                           ? "Ada lokasi"
                           : "Tidak ada"}
+                        <br />
+                        Target: {editSelectedProvince && editSelectedCity ? 
+                          kotaData[editSelectedProvince]?.find(c => c.id === editSelectedCity)?.name : 
+                          "Belum dipilih"
+                        }
                         <br />
                         {editedLocationData && (
                           <span className="text-success">

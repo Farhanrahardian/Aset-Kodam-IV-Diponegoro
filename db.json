@@ -984,57 +984,6 @@
   ],
   "yardip_assets": [
     {
-      "pengelola": "yazna",
-      "bidang": "Tanah Bangunan",
-      "kabkota": "ssss",
-      "kecamatan": "sss",
-      "kelurahan": "ssss",
-      "peruntukan": "asas",
-      "status": "Tidak Dimiliki/Tidak Dikuasai",
-      "keterangan": "asasasas",
-      "type": "yardip",
-      "lokasi": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              110.27466,
-              -7.673299
-            ],
-            [
-              110.273973,
-              -7.726715
-            ],
-            [
-              110.248226,
-              -7.785906
-            ],
-            [
-              110.339199,
-              -7.79441
-            ],
-            [
-              110.35808,
-              -7.679083
-            ],
-            [
-              110.27466,
-              -7.677382
-            ],
-            [
-              110.27466,
-              -7.673299
-            ]
-          ]
-        ]
-      },
-      "area": 113473190.88547498,
-      "created_at": "2025-09-09T02:20:18.712Z",
-      "updated_at": "2025-09-09T02:20:55.400Z",
-      "id": "Y1757384418712"
-    },
-    {
-      "id": "Y1757386588355",
       "pengelola": "Yayasan Rumpun Diponegoro",
       "bidang": "Tanah",
       "kabkota": "demak",
@@ -1044,14 +993,43 @@
       "status": "Dimiliki/Dikuasai",
       "keterangan": "ada",
       "type": "yardip",
-      "lokasi": "[[[110.657576,-6.584368],[110.68163,-6.589483],[110.678537,-6.609943],[110.656545,-6.606533],[110.65895,-6.587778],[110.657576,-6.584368]]]",
-      "area": 5926065.114208385,
+      "lokasi": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              110.642044,
+              -6.613869
+            ],
+            [
+              110.654406,
+              -6.642516
+            ],
+            [
+              110.706938,
+              -6.63399
+            ],
+            [
+              110.701445,
+              -6.593406
+            ],
+            [
+              110.642044,
+              -6.613869
+            ]
+          ]
+        ]
+      },
+      "area": 25383151.04264432,
+      "isManualArea": false,
+      "originalDrawnArea": 25383151.04264432,
       "created_at": "2025-09-09T02:56:28.355Z",
-      "updated_at": "2025-09-09T02:56:28.355Z",
-      "kota": "Jepara",
+      "updated_at": "2025-09-09T07:03:01.110Z",
+      "provinsi_id": "jateng",
       "kota_id": "jepara",
       "provinsi": "Jawa Tengah",
-      "provinsi_id": "jateng"
+      "kota": "Jepara",
+      "id": "Y1757386588355"
     }
   ],
   "korem": [

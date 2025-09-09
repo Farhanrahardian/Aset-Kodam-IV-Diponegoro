@@ -166,73 +166,67 @@ const TambahAsetYardipPage = () => {
   const navigate = useNavigate();
   const [isDrawing, setIsDrawing] = useState(false);
   const [newAssetData, setNewAssetData] = useState(null);
-  const [isFormEnabled, setIsFormEnabled] = useState(false);
   const [error, setError] = useState(null);
 
-  // Enhanced states for city selection with loading
+  // Location selection states
   const [selectedProvince, setSelectedProvince] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
   const [cityBounds, setCityBounds] = useState(null);
-  const [showMapAndForm, setShowMapAndForm] = useState(false);
-  const [isLoadingMap, setIsLoadingMap] = useState(false);
+  const [isLocationSelected, setIsLocationSelected] = useState(false);
+  
+  // Manual area adjustment state
+  const [manualAreaAdjustment, setManualAreaAdjustment] = useState(null);
 
-  const handleProvinceChange = (e) => {
-    const province = e.target.value;
+  // Handle location selection from form
+  const handleLocationChange = (province, city) => {
     setSelectedProvince(province);
-    setSelectedCity("");
-    setCityBounds(null);
-    setShowMapAndForm(false);
-    setIsLoadingMap(false);
+    setSelectedCity(city);
 
-    if (province) {
-      toast.success(
-        `Provinsi ${
-          province === "jateng" ? "Jawa Tengah" : "DI Yogyakarta"
-        } dipilih!`
-      );
-    }
-  };
-
-  const handleCityChange = (e) => {
-    const cityId = e.target.value;
-    setSelectedCity(cityId);
-
-    if (cityId && selectedProvince) {
-      const cities = kotaData[selectedProvince];
-      const selectedCityData = cities.find((city) => city.id === cityId);
+    if (province && city) {
+      const cities = kotaData[province];
+      const selectedCityData = cities.find((c) => c.id === city);
 
       if (selectedCityData) {
-        setIsLoadingMap(true);
+        setCityBounds(selectedCityData.bounds);
+        setIsLocationSelected(true);
 
-        // Show loading state briefly
-        toast.loading(`Memuat peta untuk ${selectedCityData.name}...`, {
-          id: "map-loading",
-        });
-
-        // Set city bounds and enable map after a brief delay
-        setTimeout(() => {
-          setCityBounds(selectedCityData.bounds);
-          setShowMapAndForm(true);
-          setIsLoadingMap(false);
-
-          toast.success(
-            ` Peta ${selectedCityData.name} siap! Area target telah dipilih dan peta akan auto-zoom ke lokasi.`,
-            { id: "map-loading", duration: 4000 }
-          );
-        }, 800);
+        toast.success(
+          `📍 Lokasi ${selectedCityData.name} dipilih! Peta akan auto-zoom dan siap untuk menggambar aset.`,
+          { duration: 4000 }
+        );
       }
     } else {
       setCityBounds(null);
-      setShowMapAndForm(false);
-      setIsLoadingMap(false);
+      setIsLocationSelected(false);
+      // Reset drawing state when location is cleared
+      setIsDrawing(false);
+      setNewAssetData(null);
+      setManualAreaAdjustment(null);
     }
+  };
+
+  // Handle manual area change from form
+  const handleAreaChange = (newArea) => {
+    console.log("Manual area change received:", newArea);
+    setManualAreaAdjustment(newArea);
+    
+    // Update the newAssetData with new area
+    if (newAssetData) {
+      setNewAssetData(prev => ({
+        ...prev,
+        area: newArea,
+        isManuallyAdjusted: true
+      }));
+    }
+    
+    toast.success(`📐 Luas area diubah menjadi ${newArea.toFixed(2)} m²`);
   };
 
   const handleDrawingCreated = (data) => {
     console.log("Drawing created data:", data);
     setNewAssetData(data);
     setIsDrawing(false);
-    setIsFormEnabled(true);
+    setManualAreaAdjustment(null); // Reset manual adjustment when new drawing is created
 
     toast.success(
       `✅ Lokasi berhasil digambar! Luas area: ${data.area?.toFixed(2)} m²`
@@ -261,11 +255,16 @@ const TambahAsetYardipPage = () => {
         (c) => c.id === selectedCity
       );
 
+      // Use manual area if available, otherwise use drawn area
+      const finalArea = manualAreaAdjustment || newAssetData.area;
+
       const payload = {
         ...assetData,
         id: `Y${Date.now()}`,
         lokasi: JSON.stringify(formattedLokasi),
-        area: newAssetData.area,
+        area: finalArea,
+        originalDrawnArea: newAssetData.area,
+        isManuallyAdjusted: !!manualAreaAdjustment,
         type: "yardip",
         kota: selectedCityData.name,
         kota_id: selectedCity,
@@ -282,7 +281,7 @@ const TambahAsetYardipPage = () => {
 
       console.log("Response from server:", response.data);
 
-      toast.success(" Aset Yardip berhasil ditambahkan!", { id: toastId });
+      toast.success("✅ Aset Yardip berhasil ditambahkan!", { id: toastId });
 
       setTimeout(() => {
         navigate("/data-aset-yardip");
@@ -300,45 +299,25 @@ const TambahAsetYardipPage = () => {
   };
 
   const handleCancel = () => {
-    if (isFormEnabled) {
-      setIsFormEnabled(false);
-      setNewAssetData(null);
-      setIsDrawing(false);
-      toast.success("Form direset. Silakan gambar ulang lokasi aset.");
-    } else {
-      navigate(-1);
-    }
+    navigate(-1);
   };
 
   const resetForm = () => {
-    setIsFormEnabled(false);
     setNewAssetData(null);
     setIsDrawing(false);
     setError(null);
-    toast.success("Form dan gambar telah direset!");
-  };
-
-  const resetSelection = () => {
-    setSelectedProvince("");
-    setSelectedCity("");
-    setCityBounds(null);
-    setShowMapAndForm(false);
-    setIsLoadingMap(false);
-    resetForm();
-
-    // Using basic toast with custom styling instead of toast.info
-    toast("Pemilihan lokasi direset. Silakan pilih ulang provinsi dan kota.", {
-      duration: 3000,
-      style: {
-        background: "#3b82f6",
-        color: "#fff",
-      },
-    });
+    setManualAreaAdjustment(null);
+    toast.success("Gambar peta telah direset!");
   };
 
   const getSelectedCityData = () => {
     if (!selectedProvince || !selectedCity) return null;
     return kotaData[selectedProvince].find((c) => c.id === selectedCity);
+  };
+
+  // Get current effective area (manual adjustment or original drawn area)
+  const getCurrentEffectiveArea = () => {
+    return manualAreaAdjustment || newAssetData?.area || 0;
   };
 
   return (
@@ -358,294 +337,219 @@ const TambahAsetYardipPage = () => {
         </Alert>
       )}
 
-      {/* City Selection Card - Enhanced UI */}
-      {!showMapAndForm && !isLoadingMap && (
-        <Card className="mb-4 border-0 shadow-sm">
-          <Card.Header
-            className="bg-gradient"
-            style={{
-              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-              color: "white",
-            }}
-          >
+      {/* Location Info Alert - Only show when location is selected */}
+      {isLocationSelected && (
+        <Alert variant="success" className="mb-3 border-0 shadow-sm">
+          <div className="d-flex justify-content-between align-items-center">
             <div className="d-flex align-items-center">
               <div>
-                <h5 className="mb-1">Pilih Lokasi Target</h5>
-                <small className="opacity-75">
-                  Tentukan provinsi dan kota untuk penempatan aset Yardip
+                <div className="fw-bold">
+                  📍 Lokasi Target: {getSelectedCityData()?.name}
+                </div>
+                <small className="text-success">
+                  {selectedProvince === "jateng"
+                    ? "Jawa Tengah"
+                    : "DI Yogyakarta"}{" "}
+                  • Peta telah auto-zoom ke area target • Siap untuk menggambar
+                  aset
                 </small>
               </div>
             </div>
-          </Card.Header>
-          <Card.Body className="p-4">
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-4">
-                  <Form.Label className="fw-bold text-secondary mb-2">
-                    <i className="bi bi-geo-alt-fill me-2 text-primary"></i>
-                    Pilih Provinsi:
-                  </Form.Label>
-                  <Form.Select
-                    value={selectedProvince}
-                    onChange={handleProvinceChange}
-                    size="lg"
-                    className="border-0 bg-light"
-                  >
-                    <option value="">-- Pilih Provinsi --</option>
-                    <option value="jateng"> Jawa Tengah</option>
-                    <option value="diy"> DI Yogyakarta</option>
-                  </Form.Select>
-                  {selectedProvince && (
-                    <Form.Text className="text-success">
-                      ✅{" "}
-                      {selectedProvince === "jateng"
-                        ? "Jawa Tengah"
-                        : "DI Yogyakarta"}{" "}
-                      dipilih
-                    </Form.Text>
-                  )}
-                </Form.Group>
-              </Col>
-
-              <Col md={6}>
-                <Form.Group className="mb-4">
-                  <Form.Label className="fw-bold text-secondary mb-2">
-                    <i className="bi bi-building me-2 text-warning"></i>
-                    Pilih Kota/Kabupaten:
-                  </Form.Label>
-                  <Form.Select
-                    value={selectedCity}
-                    onChange={handleCityChange}
-                    disabled={!selectedProvince}
-                    size="lg"
-                    className="border-0 bg-light"
-                  >
-                    <option value="">-- Pilih Kota --</option>
-                    {selectedProvince &&
-                      kotaData[selectedProvince].map((city) => (
-                        <option key={city.id} value={city.id}>
-                          {city.name}
-                        </option>
-                      ))}
-                  </Form.Select>
-                  {selectedCity && (
-                    <Form.Text className="text-success">
-                      ✅ {getSelectedCityData()?.name} dipilih
-                    </Form.Text>
-                  )}
-                </Form.Group>
-              </Col>
-            </Row>
-
-            <div className="border-top pt-3 mt-3">
-              {selectedProvince && selectedCity && (
-                <Alert
-                  variant="success"
-                  className="mb-0 border-0"
-                  style={{ background: "rgba(25,135,84,0.1)" }}
-                >
-                  <div className="d-flex align-items-center">
-                    <div className="me-3 fs-5">✅</div>
-                    <div>
-                      <strong>Siap!</strong> Lokasi telah dipilih. Peta akan
-                      segera dimuat dengan auto-zoom ke area{" "}
-                      {getSelectedCityData()?.name}.
-                    </div>
-                  </div>
-                </Alert>
-              )}
-            </div>
-          </Card.Body>
-        </Card>
+          </div>
+        </Alert>
       )}
 
-      {/* Loading State */}
-      {isLoadingMap && (
-        <Card className="mb-4 border-0 shadow-sm">
-          <Card.Body className="text-center py-5">
-            <div className="spinner-border text-primary mb-3" role="status">
-              <span className="visually-hidden">Loading...</span>
+      {/* Manual Area Adjustment Alert */}
+      {manualAreaAdjustment && newAssetData && (
+        <Alert variant="warning" className="mb-3 border-0 shadow-sm">
+          <div className="d-flex align-items-center">
+            <div>
+              <div className="fw-bold">
+                ⚠️ Luas Area Telah Diubah Manual
+              </div>
+              <small className="text-warning">
+                Dari {newAssetData.area.toFixed(2)} m² menjadi {manualAreaAdjustment.toFixed(2)} m² 
+                • Polygon di peta akan menyesuaikan dengan luas baru
+              </small>
             </div>
-            <h5 className="text-primary mb-2">Memuat Peta...</h5>
-            <p className="text-muted mb-0">
-              Sedang mempersiapkan peta untuk {getSelectedCityData()?.name}
-              <br />
-              <small>Peta akan otomatis zoom ke area yang dipilih</small>
-            </p>
-          </Card.Body>
-        </Card>
+          </div>
+        </Alert>
       )}
 
-      {/* Map and Form Section - Only show after city selection */}
-      {showMapAndForm && !isLoadingMap && (
-        <>
-          {/* Selected Location Info - Enhanced */}
-          <Alert variant="success" className="mb-3 border-0 shadow-sm">
-            <div className="d-flex justify-content-between align-items-center">
-              <div className="d-flex align-items-center">
-                <div>
-                  <div className="fw-bold">
-                    Lokasi Target: {getSelectedCityData()?.name}
-                  </div>
-                  <small className="text-success">
-                    {selectedProvince === "jateng"
-                      ? "Jawa Tengah"
-                      : "DI Yogyakarta"}{" "}
-                    • Peta telah auto-zoom ke area target • Siap untuk
-                    menggambar aset
-                  </small>
+      {/* Debug info untuk development */}
+      {process.env.NODE_ENV === "development" && (
+        <Alert
+          variant="info"
+          className="mb-3 border-0"
+          style={{ background: "rgba(13,202,240,0.05)" }}
+        >
+          <details>
+            <summary className="fw-bold text-primary mb-2 cursor-pointer">
+              Debug Information (Development Only)
+            </summary>
+            <div className="small">
+              <div className="row">
+                <div className="col-md-6">
+                  <strong>Database:</strong>
+                  <br />
+                  - Collection: yardip_assets
+                  <br />
+                  - Endpoint: POST /yardip_assets
+                  <br />
+                  - ID Prefix: Y (Yardip)
+                  <br />- Selected Province: {selectedProvince}
+                  <br />- Selected City: {selectedCity}
+                </div>
+                <div className="col-md-6">
+                  <strong>Map & Area State:</strong>
+                  <br />- Location Selected: {isLocationSelected ? "Yes" : "No"}
+                  <br />- City Bounds:{" "}
+                  {cityBounds
+                    ? `${cityBounds[0][0]},${cityBounds[0][1]} to ${cityBounds[1][0]},${cityBounds[1][1]}`
+                    : "None"}
+                  <br />- Drawing State: {isDrawing ? "Active" : "Inactive"}
+                  <br />- New Asset Data: {newAssetData ? "Ready" : "None"}
+                  {newAssetData && (
+                    <>
+                      <br />- Original Area: {newAssetData.area?.toFixed(2)} m²
+                      <br />- Manual Adjustment: {manualAreaAdjustment ? manualAreaAdjustment.toFixed(2) + " m²" : "None"}
+                      <br />- Effective Area: {getCurrentEffectiveArea().toFixed(2)} m²
+                      <br />- Geometry Type:{" "}
+                      {newAssetData.geometry?.type || "Array"}
+                    </>
+                  )}
                 </div>
               </div>
-              <Button
-                variant="outline-danger"
-                size="sm"
-                onClick={resetSelection}
-              >
-                <i className="bi bi-arrow-left-circle me-1"></i>
-                Ganti Lokasi
-              </Button>
             </div>
-          </Alert>
+          </details>
+        </Alert>
+      )}
 
-          {/* Debug info untuk development - Enhanced */}
-          {process.env.NODE_ENV === "development" && (
-            <Alert
-              variant="info"
-              className="mb-3 border-0"
-              style={{ background: "rgba(13,202,240,0.05)" }}
-            >
-              <details>
-                <summary className="fw-bold text-primary mb-2 cursor-pointer">
-                  Debug Information (Development Only)
-                </summary>
-                <div className="small">
-                  <div className="row">
-                    <div className="col-md-6">
-                      <strong>Database:</strong>
-                      <br />
-                      - Collection: yardip_assets
-                      <br />
-                      - Endpoint: POST /yardip_assets
-                      <br />
-                      - ID Prefix: Y (Yardip)
-                      <br />- Selected Province: {selectedProvince}
-                      <br />- Selected City: {selectedCity}
-                    </div>
-                    <div className="col-md-6">
-                      <strong>Map State:</strong>
-                      <br />- City Bounds:{" "}
-                      {cityBounds
-                        ? `${cityBounds[0][0]},${cityBounds[0][1]} to ${cityBounds[1][0]},${cityBounds[1][1]}`
-                        : "None"}
-                      <br />- Drawing State: {isDrawing ? "Active" : "Inactive"}
-                      <br />- Form Enabled: {isFormEnabled ? "Yes" : "No"}
-                      <br />- New Asset Data: {newAssetData ? "Ready" : "None"}
-                      {newAssetData && (
-                        <>
-                          <br />- Area: {newAssetData.area?.toFixed(2)} m²
-                          <br />- Geometry Type:{" "}
-                          {newAssetData.geometry?.type || "Array"}
-                        </>
-                      )}
-                    </div>
-                  </div>
+      <Row>
+        <Col md={7}>
+          <Card className="border-0 shadow-sm mb-3">
+            <Card.Header className="bg-white border-bottom-0">
+              <div className="d-flex justify-content-between align-items-center">
+                <div className="d-flex gap-2 align-items-center">
+                  <Button
+                    onClick={() => setIsDrawing(!isDrawing)}
+                    variant={isDrawing ? "danger" : "primary"}
+                    size="sm"
+                    disabled={!isLocationSelected}
+                  >
+                    {isDrawing ? (
+                      <>
+                        <i className="bi bi-x-circle me-1"></i>
+                        Batalkan Menggambar
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-pencil-square me-1"></i>
+                        Gambar Lokasi Aset
+                      </>
+                    )}
+                  </Button>
+
+                  {newAssetData && (
+                    <Button
+                      variant="outline-secondary"
+                      size="sm"
+                      onClick={resetForm}
+                    >
+                      <i className="bi bi-arrow-clockwise me-1"></i>
+                      Reset Gambar
+                    </Button>
+                  )}
                 </div>
-              </details>
-            </Alert>
-          )}
 
-          <Row>
-            <Col md={7}>
-              <Card className="border-0 shadow-sm mb-3">
-                <Card.Header className="bg-white border-bottom-0">
-                  <div className="d-flex justify-content-between align-items-center">
-                    <div className="d-flex gap-2 align-items-center">
-                      <Button
-                        onClick={() => setIsDrawing(!isDrawing)}
-                        variant={isDrawing ? "danger" : "primary"}
-                        size="sm"
-                      >
-                        {isDrawing ? (
-                          <>
-                            <i className="bi bi-x-circle me-1"></i>
-                            Batalkan Menggambar
-                          </>
-                        ) : (
-                          <>
-                            <i className="bi bi-pencil-square me-1"></i>
-                            Gambar Lokasi Aset
-                          </>
-                        )}
-                      </Button>
-
-                      {isFormEnabled && (
-                        <Button
-                          variant="outline-secondary"
-                          size="sm"
-                          onClick={resetForm}
-                        >
-                          <i className="bi bi-arrow-clockwise me-1"></i>
-                          Reset
-                        </Button>
-                      )}
-                    </div>
-
-                    {newAssetData && (
-                      <div className="text-success small">
-                        <i className="bi bi-check-circle-fill me-1"></i>
-                        Area: {newAssetData.area?.toFixed(2)} m²
-                      </div>
+                {newAssetData && (
+                  <div className="text-success small">
+                    <i className="bi bi-check-circle-fill me-1"></i>
+                    Area: {getCurrentEffectiveArea().toFixed(2)} m²
+                    {manualAreaAdjustment && (
+                      <small className="text-warning ms-1">(Manual)</small>
                     )}
                   </div>
+                )}
+              </div>
 
-                  {isDrawing && (
-                    <Alert variant="warning" className="mb-0 mt-2 py-2">
-                      <small>
-                        <i className="bi bi-info-circle me-1"></i>
-                        Klik pada peta untuk mulai menggambar polygon. Klik
-                        ganda untuk menyelesaikan.
-                      </small>
-                    </Alert>
-                  )}
-                </Card.Header>
-              </Card>
+              {!isLocationSelected && (
+                <Alert variant="warning" className="mb-0 mt-2 py-2">
+                  <small>
+                    <i className="bi bi-info-circle me-1"></i>
+                    Pilih lokasi di form terlebih dahulu untuk mengaktifkan
+                    fitur menggambar di peta.
+                  </small>
+                </Alert>
+              )}
 
-              <div
-                style={{ height: "70vh", width: "100%" }}
-                className="border rounded shadow-sm overflow-hidden"
+              {isDrawing && (
+                <Alert variant="info" className="mb-0 mt-2 py-2">
+                  <small>
+                    <i className="bi bi-pencil me-1"></i>
+                    Klik pada peta untuk mulai menggambar polygon. Klik ganda
+                    untuk menyelesaikan.
+                  </small>
+                </Alert>
+              )}
+            </Card.Header>
+          </Card>
+
+          <div
+            style={{ 
+              height: "70vh", 
+              width: "100%",
+              opacity: isLocationSelected ? 1 : 0.6,
+              pointerEvents: isLocationSelected ? 'auto' : 'none'
+            }}
+            className="border rounded shadow-sm overflow-hidden position-relative"
+          >
+            {!isLocationSelected && (
+              <div 
+                className="position-absolute d-flex align-items-center justify-content-center w-100 h-100 bg-white bg-opacity-75"
+                style={{ zIndex: 1000 }}
               >
-                <PetaAsetYardip
-                  assets={[]}
-                  isDrawing={isDrawing}
-                  onDrawingCreated={handleDrawingCreated}
-                  jatengBoundary={jatengBoundary}
-                  diyBoundary={diyBoundary}
-                  cityBounds={cityBounds} // Pass city bounds to map for auto zoom
-                  selectedCity={getSelectedCityData()?.name} // Pass selected city info
-                />
+                <div className="text-center">
+                  <i className="bi bi-geo-alt display-4 text-muted mb-3"></i>
+                  <h5 className="text-muted">Pilih Lokasi Terlebih Dahulu</h5>
+                  <p className="text-muted">Gunakan form di sebelah kanan untuk memilih provinsi dan kota</p>
+                </div>
               </div>
-            </Col>
+            )}
+            <PetaAsetYardip
+              assets={[]}
+              isDrawing={isDrawing}
+              onDrawingCreated={handleDrawingCreated}
+              jatengBoundary={jatengBoundary}
+              diyBoundary={diyBoundary}
+              cityBounds={cityBounds}
+              selectedCity={getSelectedCityData()?.name}
+              manualAreaAdjustment={manualAreaAdjustment}
+              originalGeometry={newAssetData?.geometry}
+            />
+          </div>
+        </Col>
 
-            <Col md={5}>
-              <div className="card border-0 shadow-sm">
-                <FormYardip
-                  onSave={handleSaveAsset}
-                  onCancel={handleCancel}
-                  initialGeometry={newAssetData ? newAssetData.geometry : null}
-                  initialArea={newAssetData ? newAssetData.area : null}
-                  isEnabled={isFormEnabled}
-                  selectedCity={getSelectedCityData()?.name}
-                  selectedProvince={
-                    selectedProvince === "jateng"
-                      ? "Jawa Tengah"
-                      : "DI Yogyakarta"
-                  }
-                />
-              </div>
-            </Col>
-          </Row>
-        </>
-      )}
+        <Col md={5}>
+          <div className="card border-0 shadow-sm">
+            <FormYardip
+              onSave={handleSaveAsset}
+              onCancel={handleCancel}
+              initialGeometry={newAssetData ? newAssetData.geometry : null}
+              initialArea={newAssetData ? newAssetData.area : null}
+              isEnabled={true} // Form always enabled, but location selection controls map
+              selectedCity={getSelectedCityData()?.name}
+              selectedProvince={
+                selectedProvince === "jateng" ? "Jawa Tengah" : "DI Yogyakarta"
+              }
+              kotaData={kotaData} // Pass kotaData to form
+              onLocationChange={handleLocationChange} // Pass location change handler
+              hasDrawnArea={!!newAssetData} // Pass info about drawn area
+              onAreaChange={handleAreaChange} // Pass area change handler
+            />
+          </div>
+        </Col>
+      </Row>
     </Container>
   );
 };
