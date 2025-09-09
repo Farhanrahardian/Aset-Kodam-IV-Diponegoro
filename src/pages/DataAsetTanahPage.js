@@ -175,14 +175,6 @@ const TabelAset = ({
                       ? "bg-success"
                       : asset.status === "Dikuasai"
                       ? "bg-info"
-                      : asset.status === "Aktif"
-                      ? "bg-success"
-                      : asset.status === "Tidak Aktif"
-                      ? "bg-secondary"
-                      : asset.status === "Dalam Proses"
-                      ? "bg-warning"
-                      : asset.status === "Sengketa"
-                      ? "bg-danger"
                       : "bg-light text-dark"
                   }`}
                 >
@@ -251,10 +243,6 @@ const FilterPanelTop = ({
     { value: "", label: "Semua Status" },
     { value: "Dimiliki", label: "Dimiliki" },
     { value: "Dikuasai", label: "Dikuasai" },
-    { value: "Aktif", label: "Aktif" },
-    { value: "Tidak Aktif", label: "Tidak Aktif" },
-    { value: "Dalam Proses", label: "Dalam Proses" },
-    { value: "Sengketa", label: "Sengketa" },
   ];
 
   const filteredKodimForFilter = selectedKorem ? kodimList : allKodimList;
@@ -536,14 +524,6 @@ const DetailModalAset = ({ asset, show, onHide, koremList, allKodimList }) => {
                               ? "bg-success"
                               : asset.status === "Dikuasai"
                               ? "bg-info"
-                              : asset.status === "Aktif"
-                              ? "bg-success"
-                              : asset.status === "Tidak Aktif"
-                              ? "bg-secondary"
-                              : asset.status === "Dalam Proses"
-                              ? "bg-warning"
-                              : asset.status === "Sengketa"
-                              ? "bg-danger"
                               : "bg-light text-dark"
                           }`}
                         >
@@ -645,6 +625,23 @@ const DetailModalAset = ({ asset, show, onHide, koremList, allKodimList }) => {
                         )}
                       </td>
                     </tr>
+                    {hasValidImage && (
+                      <tr>
+                        <td>
+                          <strong>Foto Aset:</strong>
+                        </td>
+                        <td>
+                          <Image
+                            src={imageUrl}
+                            alt="Foto Aset"
+                            fluid
+                            rounded
+                            style={{ maxHeight: "300px", cursor: "pointer" }}
+                            onClick={() => window.open(imageUrl, "_blank")}
+                          />
+                        </td>
+                      </tr>
+                    )}
                     {asset.keterangan_bukti_pemilikan && (
                       <tr>
                         <td>
@@ -1328,43 +1325,31 @@ const DataAsetTanahPage = () => {
             <Card className="mt-3">
               <Card.Body>
                 <Row className="text-center">
-                  <Col md={3}>
+                  <Col md={4}>
                     <div className="border-end">
                       <h5 className="text-primary">{filteredAssets.length}</h5>
                       <small className="text-muted">Total Aset</small>
                     </div>
                   </Col>
-                  <Col md={3}>
+                  <Col md={4}>
                     <div className="border-end">
                       <h5 className="text-success">
                         {
-                          filteredAssets.filter((a) => a.status === "Aktif")
+                          filteredAssets.filter((a) => a.status === "Dimiliki")
                             .length
                         }
                       </h5>
-                      <small className="text-muted">Aktif</small>
+                      <small className="text-muted">Dimiliki</small>
                     </div>
                   </Col>
-                  <Col md={3}>
-                    <div className="border-end">
-                      <h5 className="text-warning">
-                        {
-                          filteredAssets.filter(
-                            (a) => a.status === "Dalam Proses"
-                          ).length
-                        }
-                      </h5>
-                      <small className="text-muted">Dalam Proses</small>
-                    </div>
-                  </Col>
-                  <Col md={3}>
-                    <h5 className="text-danger">
+                  <Col md={4}>
+                    <h5 className="text-info">
                       {
-                        filteredAssets.filter((a) => a.status === "Sengketa")
+                        filteredAssets.filter((a) => a.status === "Dikuasai")
                           .length
                       }
                     </h5>
-                    <small className="text-muted">Sengketa</small>
+                    <small className="text-muted">Dikuasai</small>
                   </Col>
                 </Row>
               </Card.Body>
@@ -1460,14 +1445,10 @@ const DataAsetTanahPage = () => {
                         <strong>Status Saat Ini:</strong>{" "}
                         <span
                           className={`badge ${
-                            editingAsset.status === "Aktif"
+                            editingAsset.status === "Dimiliki"
                               ? "bg-success"
-                              : editingAsset.status === "Tidak Aktif"
-                              ? "bg-secondary"
-                              : editingAsset.status === "Dalam Proses"
-                              ? "bg-warning"
-                              : editingAsset.status === "Sengketa"
-                              ? "bg-danger"
+                              : editingAsset.status === "Dikuasai"
+                              ? "bg-info"
                               : "bg-light text-dark"
                           }`}
                         >
