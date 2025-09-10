@@ -184,12 +184,8 @@ const FormAset = ({
   };
 
   const statusOptions = [
-    { value: "Dimiliki/Dikuasai", label: "Dimiliki/Dikuasai" },
-    {
-      value: "Tidak Dimiliki/Tidak Dikuasai",
-      label: "Tidak Dimiliki/Tidak Dikuasai",
-    },
-    { value: "Lain-lain", label: "Lain-lain" },
+    { value: "Dimiliki", label: "Dimiliki" },
+    { value: "Dikuasai", label: "Dikuasai" },
   ];
 
   // Helper function untuk mendapatkan nilai luas yang sedang aktif
