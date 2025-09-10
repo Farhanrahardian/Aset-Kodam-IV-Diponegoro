@@ -71,6 +71,20 @@ const isPdfFile = (filename) => {
   return filename.toLowerCase().endsWith(".pdf");
 };
 
+// Helper function untuk mendapatkan badge class berdasarkan status
+const getStatusBadgeClass = (status) => {
+  switch (status) {
+    case "Dimiliki/Dikuasai":
+      return "bg-success";
+    case "Tidak Dimiliki/Tidak Dikuasai":
+      return "bg-danger";
+    case "Lain-lain":
+      return "bg-warning text-dark";
+    default:
+      return "bg-light text-dark";
+  }
+};
+
 // Enhanced table component with more columns and FIXED image preview
 const TabelAset = ({
   assets,
@@ -170,15 +184,7 @@ const TabelAset = ({
               </td>
               <td>{asset.peruntukan || asset.fungsi || "-"}</td>
               <td>
-                <span
-                  className={`badge ${
-                    asset.status === "Dimiliki"
-                      ? "bg-success"
-                      : asset.status === "Dikuasai"
-                      ? "bg-info"
-                      : "bg-light text-dark"
-                  }`}
-                >
+                <span className={`badge ${getStatusBadgeClass(asset.status)}`}>
                   {asset.status || "-"}
                 </span>
               </td>
@@ -242,8 +248,12 @@ const FilterPanelTop = ({
 }) => {
   const statusOptions = [
     { value: "", label: "Semua Status" },
-    { value: "Dimiliki", label: "Dimiliki" },
-    { value: "Dikuasai", label: "Dikuasai" },
+    { value: "Dimiliki/Dikuasai", label: "Dimiliki/Dikuasai" },
+    {
+      value: "Tidak Dimiliki/Tidak Dikuasai",
+      label: "Tidak Dimiliki/Tidak Dikuasai",
+    },
+    { value: "Lain-lain", label: "Lain-lain" },
   ];
 
   const filteredKodimForFilter = selectedKorem ? kodimList : allKodimList;
@@ -520,13 +530,9 @@ const DetailModalAset = ({ asset, show, onHide, koremList, allKodimList }) => {
                       </td>
                       <td>
                         <span
-                          className={`badge ${
-                            asset.status === "Dimiliki"
-                              ? "bg-success"
-                              : asset.status === "Dikuasai"
-                              ? "bg-info"
-                              : "bg-light text-dark"
-                          }`}
+                          className={`badge ${getStatusBadgeClass(
+                            asset.status
+                          )}`}
                         >
                           {asset.status || "-"}
                         </span>
@@ -1298,7 +1304,7 @@ const DataAsetTanahPage = () => {
           {/* PETA BARU */}
           <Card className="mb-4">
             <Card.Header as="h5">Peta Aset Tanah</Card.Header>
-            <Card.Body style={{ height: '50vh', padding: 0 }}>
+            <Card.Body style={{ height: "50vh", padding: 0 }}>
               <PetaAset
                 assets={filteredAssets}
                 onAssetClick={handleMarkerClick}
@@ -1358,31 +1364,46 @@ const DataAsetTanahPage = () => {
             <Card className="mt-3">
               <Card.Body>
                 <Row className="text-center">
-                  <Col md={4}>
+                  <Col md={3}>
                     <div className="border-end">
                       <h5 className="text-primary">{filteredAssets.length}</h5>
                       <small className="text-muted">Total Aset</small>
                     </div>
                   </Col>
-                  <Col md={4}>
+                  <Col md={3}>
                     <div className="border-end">
                       <h5 className="text-success">
                         {
-                          filteredAssets.filter((a) => a.status === "Dimiliki")
-                            .length
+                          filteredAssets.filter(
+                            (a) => a.status === "Dimiliki/Dikuasai"
+                          ).length
                         }
                       </h5>
-                      <small className="text-muted">Dimiliki</small>
+                      <small className="text-muted">Dimiliki/Dikuasai</small>
                     </div>
                   </Col>
-                  <Col md={4}>
-                    <h5 className="text-info">
+                  <Col md={3}>
+                    <div className="border-end">
+                      <h5 className="text-danger">
+                        {
+                          filteredAssets.filter(
+                            (a) => a.status === "Tidak Dimiliki/Tidak Dikuasai"
+                          ).length
+                        }
+                      </h5>
+                      <small className="text-muted">
+                        Tidak Dimiliki/Tidak Dikuasai
+                      </small>
+                    </div>
+                  </Col>
+                  <Col md={3}>
+                    <h5 className="text-warning">
                       {
-                        filteredAssets.filter((a) => a.status === "Dikuasai")
+                        filteredAssets.filter((a) => a.status === "Lain-lain")
                           .length
                       }
                     </h5>
-                    <small className="text-muted">Dikuasai</small>
+                    <small className="text-muted">Lain-lain</small>
                   </Col>
                 </Row>
               </Card.Body>
@@ -1477,13 +1498,9 @@ const DataAsetTanahPage = () => {
                         <br />
                         <strong>Status Saat Ini:</strong>{" "}
                         <span
-                          className={`badge ${
-                            editingAsset.status === "Dimiliki"
-                              ? "bg-success"
-                              : editingAsset.status === "Dikuasai"
-                              ? "bg-info"
-                              : "bg-light text-dark"
-                          }`}
+                          className={`badge ${getStatusBadgeClass(
+                            editingAsset.status
+                          )}`}
                         >
                           {editingAsset.status}
                         </span>
@@ -1653,12 +1670,11 @@ const DataAsetTanahPage = () => {
       />
 
       {/* CANVAS BARU */}
-      <DetailOffcanvasAset 
+      <DetailOffcanvasAset
         show={showOffcanvas}
         handleClose={handleCloseOffcanvas}
         aset={assetForOffcanvas}
       />
-
     </Container>
   );
 };
