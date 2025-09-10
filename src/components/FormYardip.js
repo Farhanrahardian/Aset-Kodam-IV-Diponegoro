@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { Form, Button, Row, Col, Card, Alert, InputGroup } from "react-bootstrap";
+import {
+  Form,
+  Button,
+  Row,
+  Col,
+  Card,
+  Alert,
+  InputGroup,
+} from "react-bootstrap";
 
 const FormYardip = ({
   onSave,
@@ -27,7 +35,7 @@ const FormYardip = ({
   // Location selection states
   const [selectedProvince, setSelectedProvince] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
-  
+
   // Manual area state
   const [manualArea, setManualArea] = useState("");
   const [isManualAreaMode, setIsManualAreaMode] = useState(false);
@@ -54,7 +62,7 @@ const FormYardip = ({
         setSelectedProvince(assetToEdit.provinsi_id);
         setSelectedCity(assetToEdit.kota_id);
       }
-      
+
       // Set area data if editing
       if (assetToEdit.area) {
         setManualArea(Number(assetToEdit.area).toFixed(2));
@@ -130,7 +138,7 @@ const FormYardip = ({
   const handleManualAreaChange = (e) => {
     const value = e.target.value;
     setManualArea(value);
-    
+
     // Clear area error if exists
     if (errors.manualArea) {
       setErrors((prev) => ({
@@ -143,9 +151,10 @@ const FormYardip = ({
     const numValue = parseFloat(value);
     if (!isNaN(numValue) && numValue > 0) {
       setIsManualAreaMode(numValue !== originalDrawnArea);
-      
+
       // Notify parent component about area change for map update
-      if (Math.abs(numValue - originalDrawnArea) > 0.01) { // Only if significantly different
+      if (Math.abs(numValue - originalDrawnArea) > 0.01) {
+        // Only if significantly different
         onAreaChange(numValue);
       }
     }
@@ -163,7 +172,7 @@ const FormYardip = ({
   // Get current effective area
   const getCurrentArea = () => {
     const numValue = parseFloat(manualArea);
-    return !isNaN(numValue) && numValue > 0 ? numValue : (originalDrawnArea || 0);
+    return !isNaN(numValue) && numValue > 0 ? numValue : originalDrawnArea || 0;
   };
 
   // Form validation - DIPERBAIKI: HILANGKAN MAX AREA LIMIT
@@ -171,7 +180,8 @@ const FormYardip = ({
     const newErrors = {};
 
     // Location validation
-    if (!selectedProvince) newErrors.selectedProvince = "Provinsi harus dipilih";
+    if (!selectedProvince)
+      newErrors.selectedProvince = "Provinsi harus dipilih";
     if (!selectedCity) newErrors.selectedCity = "Kota harus dipilih";
 
     // Required fields validation
@@ -192,7 +202,8 @@ const FormYardip = ({
     if (manualArea) {
       const numValue = parseFloat(manualArea);
       if (isNaN(numValue) || numValue <= 0) {
-        newErrors.manualArea = "Luas harus berupa angka yang valid dan lebih dari 0";
+        newErrors.manualArea =
+          "Luas harus berupa angka yang valid dan lebih dari 0";
       }
       // REMOVED: Maximum area limit validation
       // } else if (numValue > 10000000) { // 10 million m² limit
@@ -259,7 +270,9 @@ const FormYardip = ({
     if (!selectedProvince || !selectedCity || !kotaData[selectedProvince]) {
       return null;
     }
-    const cityData = kotaData[selectedProvince].find(c => c.id === selectedCity);
+    const cityData = kotaData[selectedProvince].find(
+      (c) => c.id === selectedCity
+    );
     return cityData ? cityData.name : null;
   };
 
@@ -268,11 +281,15 @@ const FormYardip = ({
     if (areaInM2 < 1000) {
       return `${areaInM2.toFixed(2)} m²`;
     } else if (areaInM2 < 10000) {
-      return `${areaInM2.toFixed(2)} m² (${(areaInM2/1000).toFixed(2)} ribu m²)`;
+      return `${areaInM2.toFixed(2)} m² (${(areaInM2 / 1000).toFixed(
+        2
+      )} ribu m²)`;
     } else if (areaInM2 < 1000000) {
-      return `${areaInM2.toFixed(2)} m² (${(areaInM2/10000).toFixed(2)} ha)`;
+      return `${areaInM2.toFixed(2)} m² (${(areaInM2 / 10000).toFixed(2)} ha)`;
     } else {
-      return `${areaInM2.toFixed(2)} m² (${(areaInM2/1000000).toFixed(2)} km²)`;
+      return `${areaInM2.toFixed(2)} m² (${(areaInM2 / 1000000).toFixed(
+        2
+      )} km²)`;
     }
   };
 
@@ -298,14 +315,18 @@ const FormYardip = ({
               {initialGeometry && (
                 <>
                   <br />- Geometry Type: {initialGeometry.type || "Unknown"}
-                  <br />- Original Drawn Area: {originalDrawnArea ? formatArea(originalDrawnArea) : "No area"}
+                  <br />- Original Drawn Area:{" "}
+                  {originalDrawnArea
+                    ? formatArea(originalDrawnArea)
+                    : "No area"}
                   <br />- Manual Area: {manualArea || "No manual area"}
                   <br />- Is Manual Mode: {isManualAreaMode ? "Yes" : "No"}
                   <br />- Current Effective Area: {formatArea(getCurrentArea())}
                 </>
               )}
               <br />- Storage: yardip_assets collection
-              <br />- Asset to Edit: {assetToEdit ? assetToEdit.id : "New Asset"}
+              <br />- Asset to Edit:{" "}
+              {assetToEdit ? assetToEdit.id : "New Asset"}
               <br />- Area Validation: No maximum limit (unlimited)
             </small>
           </Alert>
@@ -315,7 +336,7 @@ const FormYardip = ({
           {/* Location Selection - Moved to form */}
           <Card className="mb-3">
             <Card.Header>
-              <strong>📍 Pilih Lokasi Target</strong>
+              <strong> Pilih Lokasi Target</strong>
             </Card.Header>
             <Card.Body>
               <Row>
@@ -329,15 +350,19 @@ const FormYardip = ({
                       required
                     >
                       <option value="">-- Pilih Provinsi --</option>
-                      <option value="jateng">🏛️ Jawa Tengah</option>
-                      <option value="diy">🏛️ DI Yogyakarta</option>
+                      <option value="jateng"> Jawa Tengah</option>
+                      <option value="diy"> DI Yogyakarta</option>
                     </Form.Select>
                     <Form.Control.Feedback type="invalid">
                       {errors.selectedProvince}
                     </Form.Control.Feedback>
                     {selectedProvince && (
                       <Form.Text className="text-success">
-                        ✅ {selectedProvince === "jateng" ? "Jawa Tengah" : "DI Yogyakarta"} dipilih
+                        ✅{" "}
+                        {selectedProvince === "jateng"
+                          ? "Jawa Tengah"
+                          : "DI Yogyakarta"}{" "}
+                        dipilih
                       </Form.Text>
                     )}
                   </Form.Group>
@@ -358,7 +383,7 @@ const FormYardip = ({
                         kotaData[selectedProvince] &&
                         kotaData[selectedProvince].map((city) => (
                           <option key={city.id} value={city.id}>
-                            🏙️ {city.name}
+                            {city.name}
                           </option>
                         ))}
                     </Form.Select>
@@ -375,12 +400,17 @@ const FormYardip = ({
               </Row>
 
               {selectedProvince && selectedCity && (
-                <Alert variant="success" className="mb-0 border-0" style={{ background: "rgba(25,135,84,0.1)" }}>
+                <Alert
+                  variant="success"
+                  className="mb-0 border-0"
+                  style={{ background: "rgba(25,135,84,0.1)" }}
+                >
                   <div className="d-flex align-items-center">
                     <div className="me-3">🎯</div>
                     <div>
-                      <strong>Lokasi Terpilih!</strong> Peta telah auto-zoom ke area {getSelectedCityName()}. 
-                      Sekarang Anda dapat menggambar lokasi aset di peta.
+                      <strong>Lokasi Terpilih!</strong> Peta telah auto-zoom ke
+                      area {getSelectedCityName()}. Sekarang Anda dapat
+                      menggambar lokasi aset di peta.
                     </div>
                   </div>
                 </Alert>
@@ -392,7 +422,7 @@ const FormYardip = ({
           {selectedProvince && selectedCity && (
             <Card className="mb-3">
               <Card.Header>
-                <strong>🗺️ Status Gambar Peta</strong>
+                <strong>Status Gambar Peta</strong>
               </Card.Header>
               <Card.Body>
                 {!hasDrawnArea ? (
@@ -400,7 +430,8 @@ const FormYardip = ({
                     <div className="d-flex align-items-center">
                       <div className="me-3">⚠️</div>
                       <div>
-                        <strong>Belum Ada Gambar!</strong> Gunakan tombol "Gambar Lokasi Aset" di peta untuk menggambar area aset.
+                        <strong>Belum Ada Gambar!</strong> Gunakan tombol
+                        "Gambar Lokasi Aset" di peta untuk menggambar area aset.
                       </div>
                     </div>
                   </Alert>
@@ -410,13 +441,17 @@ const FormYardip = ({
                       <div className="d-flex align-items-center">
                         <div className="me-3">✅</div>
                         <div>
-                          <strong>Area Sudah Digambar!</strong> 
+                          <strong>Area Sudah Digambar!</strong>
                           <br />
                           <small>
-                            Luas dari gambar: {originalDrawnArea ? formatArea(originalDrawnArea) : "N/A"}
+                            Luas dari gambar:{" "}
+                            {originalDrawnArea
+                              ? formatArea(originalDrawnArea)
+                              : "N/A"}
                             {isManualAreaMode && (
                               <span className="text-warning">
-                                → Diubah manual menjadi: {formatArea(getCurrentArea())}
+                                → Diubah manual menjadi:{" "}
+                                {formatArea(getCurrentArea())}
                               </span>
                             )}
                           </small>
@@ -433,7 +468,7 @@ const FormYardip = ({
             {/* Basic Information */}
             <Card className="mb-3">
               <Card.Header>
-                <strong>📋 Informasi Dasar</strong>
+                <strong> Informasi Dasar</strong>
               </Card.Header>
               <Card.Body>
                 <Form.Group className="mb-3">
@@ -494,7 +529,7 @@ const FormYardip = ({
             {/* Location Information */}
             <Card className="mb-3">
               <Card.Header>
-                <strong>📍 Informasi Lokasi Detail</strong>
+                <strong> Informasi Lokasi Detail</strong>
               </Card.Header>
               <Card.Body>
                 <Form.Label>Alamat Lengkap *</Form.Label>
@@ -548,7 +583,7 @@ const FormYardip = ({
                   <Card className="border-info">
                     <Card.Header className="bg-light">
                       <div className="d-flex justify-content-between align-items-center">
-                        <strong>📐 Luas Area (Tanpa Batas Maksimum)</strong>
+                        <strong> Luas Area (Tanpa Batas Maksimum)</strong>
                         {isManualAreaMode && (
                           <Button
                             variant="outline-secondary"
@@ -563,7 +598,7 @@ const FormYardip = ({
                     <Card.Body>
                       <Form.Group className="mb-3">
                         <Form.Label>
-                          Luas (m²) 
+                          Luas (m²)
                           {originalDrawnArea && (
                             <small className="text-muted">
                               - Dari gambar: {formatArea(originalDrawnArea)}
@@ -585,19 +620,25 @@ const FormYardip = ({
                         <Form.Control.Feedback type="invalid">
                           {errors.manualArea}
                         </Form.Control.Feedback>
-                        
+
                         {isManualAreaMode ? (
                           <Form.Text className="text-warning">
-                            ⚠️ Luas telah diubah manual dari {originalDrawnArea ? formatArea(originalDrawnArea) : "N/A"} menjadi {formatArea(getCurrentArea())}. 
-                            Polygon di peta akan disesuaikan.
+                            ⚠️ Luas telah diubah manual dari{" "}
+                            {originalDrawnArea
+                              ? formatArea(originalDrawnArea)
+                              : "N/A"}{" "}
+                            menjadi {formatArea(getCurrentArea())}. Polygon di
+                            peta akan disesuaikan.
                           </Form.Text>
                         ) : originalDrawnArea ? (
                           <Form.Text className="text-success">
-                            ✅ Menggunakan luas dari gambar peta: {formatArea(originalDrawnArea)}
+                            ✅ Menggunakan luas dari gambar peta:{" "}
+                            {formatArea(originalDrawnArea)}
                           </Form.Text>
                         ) : (
                           <Form.Text className="text-muted">
-                            📝 Masukkan luas area secara manual (tanpa batas maksimum)
+                            📝 Masukkan luas area secara manual (tanpa batas
+                            maksimum)
                           </Form.Text>
                         )}
 
@@ -605,9 +646,14 @@ const FormYardip = ({
                         {getCurrentArea() > 0 && (
                           <div className="mt-2">
                             <small className="text-info">
-                              💡 <strong>Area Info:</strong> {formatArea(getCurrentArea())}
+                              <strong>Area Info:</strong>{" "}
+                              {formatArea(getCurrentArea())}
                               {getCurrentArea() >= 1000000 && (
-                                <span className="text-warning"> - Area sangat besar! Pastikan data sudah benar.</span>
+                                <span className="text-warning">
+                                  {" "}
+                                  - Area sangat besar! Pastikan data sudah
+                                  benar.
+                                </span>
                               )}
                             </small>
                           </div>
@@ -622,7 +668,7 @@ const FormYardip = ({
             {/* Status and Additional Information */}
             <Card className="mb-3">
               <Card.Header>
-                <strong>📊 Status dan Keterangan</strong>
+                <strong> Status dan Keterangan</strong>
               </Card.Header>
               <Card.Body>
                 <Form.Group className="mb-3">
@@ -664,7 +710,7 @@ const FormYardip = ({
             {(getCurrentArea() || assetToEdit || getSelectedCityName()) && (
               <Card className="mb-3">
                 <Card.Header>
-                  <strong>📋 Ringkasan</strong>
+                  <strong> Ringkasan</strong>
                 </Card.Header>
                 <Card.Body>
                   <Row>
@@ -672,33 +718,45 @@ const FormYardip = ({
                       <small className="text-muted">
                         <strong>🗺️ Lokasi Target:</strong>
                         <br />
-                        {getSelectedCityName() ? `${getSelectedCityName()}` : "Belum dipilih"}
+                        {getSelectedCityName()
+                          ? `${getSelectedCityName()}`
+                          : "Belum dipilih"}
                         {selectedProvince && (
                           <span className="text-success">
-                            {" "}({selectedProvince === "jateng" ? "Jawa Tengah" : "DI Yogyakarta"})
+                            {" "}
+                            (
+                            {selectedProvince === "jateng"
+                              ? "Jawa Tengah"
+                              : "DI Yogyakarta"}
+                            )
                           </span>
                         )}
                       </small>
                     </Col>
                     <Col md={6}>
                       <small className="text-muted">
-                        <strong>📐 Luas Area:</strong>
+                        <strong> Luas Area:</strong>
                         <br />
                         {getCurrentArea() > 0 ? (
                           <>
                             {formatArea(getCurrentArea())}
                             {isManualAreaMode && (
-                              <span className="text-warning"> (Manual Edit)</span>
+                              <span className="text-warning">
+                                {" "}
+                                (Manual Edit)
+                              </span>
                             )}
                           </>
-                        ) : "Belum digambar"}
+                        ) : (
+                          "Belum digambar"
+                        )}
                       </small>
                     </Col>
                   </Row>
                   <Row className="mt-2">
                     <Col md={12}>
                       <small className="text-muted">
-                        <strong>📍 Alamat Lengkap:</strong>
+                        <strong> Alamat Lengkap:</strong>
                         <br />
                         {`${formData.kabkota || "-"}, ${
                           formData.kecamatan || "-"
@@ -726,16 +784,17 @@ const FormYardip = ({
             )}
 
             {/* Validation Summary */}
-            {(!selectedProvince || !selectedCity || !hasDrawnArea) && !assetToEdit && (
-              <Alert variant="warning" className="mb-3">
-                <div className="fw-bold mb-2">⚠️ Sebelum Menyimpan:</div>
-                <ul className="mb-0 small">
-                  {!selectedProvince && <li>Pilih provinsi</li>}
-                  {!selectedCity && <li>Pilih kota/kabupaten</li>}
-                  {!hasDrawnArea && <li>Gambar area di peta</li>}
-                </ul>
-              </Alert>
-            )}
+            {(!selectedProvince || !selectedCity || !hasDrawnArea) &&
+              !assetToEdit && (
+                <Alert variant="warning" className="mb-3">
+                  <div className="fw-bold mb-2">⚠️ Sebelum Menyimpan:</div>
+                  <ul className="mb-0 small">
+                    {!selectedProvince && <li>Pilih provinsi</li>}
+                    {!selectedCity && <li>Pilih kota/kabupaten</li>}
+                    {!hasDrawnArea && <li>Gambar area di peta</li>}
+                  </ul>
+                </Alert>
+              )}
 
             {/* Action Buttons */}
             <div className="d-flex justify-content-between">
@@ -756,7 +815,12 @@ const FormYardip = ({
                 <Button
                   type="submit"
                   variant="success"
-                  disabled={(!selectedProvince || !selectedCity || (!hasDrawnArea && !assetToEdit)) && !assetToEdit}
+                  disabled={
+                    (!selectedProvince ||
+                      !selectedCity ||
+                      (!hasDrawnArea && !assetToEdit)) &&
+                    !assetToEdit
+                  }
                   style={{ backgroundColor: "#28a745", border: "none" }}
                 >
                   <i className="bi bi-check-circle me-1"></i>
