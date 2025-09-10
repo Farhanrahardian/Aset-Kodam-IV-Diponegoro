@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
-import { MapContainer, TileLayer, FeatureGroup, GeoJSON } from "react-leaflet";
+import { MapContainer, TileLayer, FeatureGroup, GeoJSON, useMap } from "react-leaflet";
+import { GeoSearchControl, OpenStreetMapProvider } from "leaflet-geosearch";
+import "leaflet-geosearch/dist/geosearch.css";
 import { EditControl } from "react-leaflet-draw";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -13,6 +15,33 @@ L.Icon.Default.mergeOptions({
   iconUrl: require("leaflet/dist/images/marker-icon.png"),
   shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
 });
+
+const MapSearch = () => {
+  const map = useMap();
+
+  useEffect(() => {
+    const provider = new OpenStreetMapProvider();
+
+    const searchControl = new GeoSearchControl({
+      provider: provider,
+      style: "bar",
+      showMarker: true,
+      showPopup: false,
+      autoClose: true,
+      retainZoomLevel: false,
+      animateZoom: true,
+      keepResult: true,
+    });
+
+    map.addControl(searchControl);
+
+    return () => {
+      map.removeControl(searchControl);
+    };
+  }, [map]);
+
+  return null;
+};
 
 const PetaAsetYardip = ({
   onDrawingCreated,
@@ -415,6 +444,7 @@ const PetaAsetYardip = ({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
+      <MapSearch />
       
       {/* Drawing Tools */}
       <FeatureGroup ref={featureGroupRef}>

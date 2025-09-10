@@ -25,6 +25,7 @@ import Swal from "sweetalert2";
 
 import FormAset from "../components/FormAset";
 import PetaAset from "../components/PetaAset";
+import DetailOffcanvasAset from "../components/DetailOffcanvasAset"; // IMPORT
 import jatengBoundary from "../data/indonesia_jawatengah.json";
 import diyBoundary from "../data/indonesia_yogyakarta.json";
 
@@ -844,8 +845,26 @@ const DataAsetTanahPage = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedAssetDetail, setSelectedAssetDetail] = useState(null);
 
+  // State untuk Peta dan Offcanvas baru
+  const [showOffcanvas, setShowOffcanvas] = useState(false);
+  const [assetForOffcanvas, setAssetForOffcanvas] = useState(null);
+  const [zoomToAsset, setZoomToAsset] = useState(null);
+
   const [isEditingLocation, setIsEditingLocation] = useState(false);
   const [editedLocationData, setEditedLocationData] = useState(null);
+
+  // Handler untuk Peta baru
+  const handleMarkerClick = (asset) => {
+    setAssetForOffcanvas(asset);
+    setShowOffcanvas(true);
+    setZoomToAsset(asset);
+  };
+
+  const handleCloseOffcanvas = () => {
+    setShowOffcanvas(false);
+    setAssetForOffcanvas(null);
+    setZoomToAsset(null); // Reset zoom state
+  };
 
   const fetchKodim = useCallback(
     (koremId) => {
@@ -947,6 +966,7 @@ const DataAsetTanahPage = () => {
     setSelectedKodim("");
     setStatusFilter("");
     setKodimList([]);
+    setZoomToAsset(null); // Reset zoom on main map
   };
 
   const handleViewDetail = (asset) => {
@@ -1275,6 +1295,19 @@ const DataAsetTanahPage = () => {
 
       <Row>
         <Col md={12}>
+          {/* PETA BARU */}
+          <Card className="mb-4">
+            <Card.Header as="h5">Peta Aset Tanah</Card.Header>
+            <Card.Body style={{ height: '50vh', padding: 0 }}>
+              <PetaAset
+                assets={filteredAssets}
+                onAssetClick={handleMarkerClick}
+                zoomToAsset={zoomToAsset}
+                markerColorMode="certificate"
+              />
+            </Card.Body>
+          </Card>
+
           <FilterPanelTop
             koremList={koremList}
             kodimList={kodimList}
@@ -1618,6 +1651,14 @@ const DataAsetTanahPage = () => {
         koremList={koremList}
         allKodimList={allKodimList}
       />
+
+      {/* CANVAS BARU */}
+      <DetailOffcanvasAset 
+        show={showOffcanvas}
+        handleClose={handleCloseOffcanvas}
+        aset={assetForOffcanvas}
+      />
+
     </Container>
   );
 };

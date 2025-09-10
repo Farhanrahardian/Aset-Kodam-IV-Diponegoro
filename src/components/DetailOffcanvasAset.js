@@ -51,7 +51,7 @@ const DetailOffcanvasAset = ({ show, handleClose, aset }) => {
             <PetaAset
               key={`detail-${aset.id}-${aset.updated_at || Date.now()}`} // Key berdasarkan update time
               assets={assetForMap}
-              tampilan="poligon" // Selalu poligon di detail
+              fitBounds={true} // Selalu poligon dan zoom di detail
               asetPilihan={aset} // Highlight aset ini
             />
           </div>
