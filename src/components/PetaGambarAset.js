@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -14,6 +14,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
 import * as turf from "@turf/turf";
+import axios from "axios";
 
 // Fix for broken icons in Leaflet with Webpack
 delete L.Icon.Default.prototype._getIconUrl;
@@ -22,6 +23,29 @@ L.Icon.Default.mergeOptions({
   iconUrl: require("leaflet/dist/images/marker-icon.png"),
   shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
 });
+
+// Define styles outside the component to prevent re-creation on re-renders
+const koremStyle = {
+  fillColor: "#2E7D32",
+  weight: 2,
+  opacity: 1,
+  color: "white",
+  fillOpacity: 0.3,
+};
+const kodimStyle = {
+  fillColor: "#f59e0b",
+  weight: 2,
+  opacity: 1,
+  color: "white",
+  fillOpacity: 0.5,
+};
+const selectedStyle = {
+  fillColor: "#1976d2", // Blue fill
+  fillOpacity: 0.2, // Highly transparent
+  weight: 4, // Thicker border
+  opacity: 1,
+  color: "#1976d2", // Blue border
+};
 
 const MapSearch = () => {
   const map = useMap();
@@ -50,30 +74,133 @@ const MapSearch = () => {
   return null;
 };
 
+// Define MapController inside the same file or import it
+const MapController = ({ selectedKorem, selectedKodim, koremBoundaries, kodimBoundaries, resetSelectedLayer }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!koremBoundaries) return;
+
+    if (selectedKodim && kodimBoundaries) {
+      const kodimFeature = kodimBoundaries.features.find((f) => {
+        const featureName = f.properties.listkodim_Kodim;
+        const searchName = selectedKodim.nama;
+
+        if (searchName === "Kodim 0733/Kota Semarang") {
+          return featureName.startsWith("Kodim 0733/Semarang");
+        }
+        if (searchName === "Kodim 0717/Grobogan") {
+          return featureName === "Kodim 0717/Purwodadi";
+        }
+        return featureName === searchName;
+      });
+      if (kodimFeature) {
+        const layer = L.geoJSON(kodimFeature);
+        map.fitBounds(layer.getBounds());
+      }
+    } else if (selectedKorem && koremBoundaries) {
+      const koremFeatures = koremBoundaries.features.filter(
+        (f) => f.properties.listkodim_Korem === selectedKorem.nama
+      );
+      if (koremFeatures.length > 0) {
+        const featureGroup = L.featureGroup(
+          koremFeatures.map((f) => L.geoJSON(f))
+        );
+        map.fitBounds(featureGroup.getBounds());
+      }
+    } else {
+      // If no korem/kodim is selected, fit to all korems
+      const allKoremLayer = L.geoJSON(koremBoundaries);
+      map.fitBounds(allKoremLayer.getBounds());
+    }
+  }, [selectedKorem, selectedKodim, koremBoundaries, kodimBoundaries, map]);
+
+  return null;
+};
+
+
 const PetaGambarAset = ({
   onPolygonCreated,
   selectedKorem,
   selectedKodim,
   isLocationSelected,
+  onLocationSelect,
 }) => {
-  const mapRef = useRef(null);
   const featureGroupRef = useRef(null);
+  const [koremBoundaries, setKoremBoundaries] = useState(null);
+  const [kodimBoundaries, setKodimBoundaries] = useState(null);
+  const selectedLayerRef = useRef(null);
 
   const mapCenter = [-7.5, 110.0]; // Center of Central Java
   const initialZoom = 8;
 
-  // Auto-zoom to selected area
+  // Load KOREM/KODIM boundaries
   useEffect(() => {
-    if (mapRef.current) {
-      if (selectedKodim && selectedKodim.geometry) {
-        const kodimLayer = L.geoJSON(selectedKodim.geometry);
-        mapRef.current.fitBounds(kodimLayer.getBounds());
-      } else if (selectedKorem && selectedKorem.geometry) {
-        const koremLayer = L.geoJSON(selectedKorem.geometry);
-        mapRef.current.fitBounds(koremLayer.getBounds());
+    const loadBoundaries = async () => {
+      try {
+        const [koremRes, kodimRes] = await Promise.all([
+          axios.get("/data/korem.geojson"),
+          axios.get("/data/Kodim.geojson"),
+        ]);
+        
+        setKoremBoundaries(koremRes.data);
+        setKodimBoundaries(kodimRes.data);
+      } catch (error) {
+        console.error("Error loading boundaries:", error);
       }
+    };
+    
+    loadBoundaries();
+  }, []);
+
+  // Reset selected layer style
+  const resetSelectedLayer = useCallback(() => {
+    if (selectedLayerRef.current) {
+      if (selectedLayerRef.current.feature && selectedLayerRef.current.feature.properties) {
+        const properties = selectedLayerRef.current.feature.properties;
+        if (properties.listkodim_Kodim) {
+          selectedLayerRef.current.setStyle(kodimStyle);
+        } else if (properties.listkodim_Korem) {
+          selectedLayerRef.current.setStyle(koremStyle);
+        }
+      }
+      selectedLayerRef.current = null;
     }
-  }, [selectedKorem, selectedKodim]);
+  }, []);
+
+  // Handle KOREM click
+  const onKoremEachFeature = (feature, layer) => {
+    const koremName = feature.properties.listkodim_Korem;
+    
+    if (koremName) {
+      layer.bindPopup(`<b>KOREM:</b><br/>${koremName}`);
+    }
+    
+    layer.on({
+      click: () => {
+        onLocationSelect && onLocationSelect("KOREM", koremName, null);
+      }
+    });
+  };
+
+  // Handle KODIM click
+  const onKodimEachFeature = (feature, layer) => {
+    const kodimName = feature.properties.listkodim_Kodim;
+    const koremName = feature.properties.listkodim_Korem;
+    
+    if (kodimName && koremName) {
+      layer.bindPopup(`<b>KODIM:</b> ${kodimName}<br/><b>KOREM:</b> ${koremName}`);
+    }
+    
+    layer.on({
+      click: () => {
+        resetSelectedLayer();
+        layer.setStyle(selectedStyle);
+        selectedLayerRef.current = layer;
+        onLocationSelect && onLocationSelect("KODIM", koremName, kodimName);
+      }
+    });
+  };
 
   const handleCreated = (e) => {
     const { layerType, layer } = e;
@@ -81,7 +208,6 @@ const PetaGambarAset = ({
       const geojson = layer.toGeoJSON();
       const area = turf.area(geojson);
 
-      // Clear previous drawings
       featureGroupRef.current.clearLayers();
       featureGroupRef.current.addLayer(layer);
 
@@ -92,83 +218,167 @@ const PetaGambarAset = ({
     }
   };
 
-  const koremStyle = {
-    fillColor: "#2E7D32",
-    weight: 2,
-    opacity: 1,
-    color: "white",
-    fillOpacity: 0.3,
+  const handleBackToKorem = () => {
+    onLocationSelect && onLocationSelect("KOREM", null, null);
   };
 
-  const kodimStyle = {
-    fillColor: "#f59e0b",
-    weight: 2,
-    opacity: 1,
-    color: "white",
-    fillOpacity: 0.5,
+  const handleBackToKoremView = () => {
+    if (selectedKorem) {
+      onLocationSelect && onLocationSelect("KOREM", selectedKorem.nama, null);
+    }
   };
+
+  const buttonStyle = {
+    position: 'absolute',
+    top: '10px',
+    left: '50px',
+    zIndex: 1000,
+    padding: '8px 12px',
+    backgroundColor: 'white',
+    border: '2px solid rgba(0,0,0,0.2)',
+    borderRadius: '4px',
+    cursor: 'pointer'
+  };
+
+  const filteredKodimData =
+    selectedKorem && kodimBoundaries
+      ? {
+          ...kodimBoundaries,
+          features: kodimBoundaries.features.filter((feature) => {
+            const featureKoremName = feature.properties.listkodim_Korem;
+            const featureKodimName = feature.properties.listkodim_Kodim;
+
+            const isKoremMatch =
+              selectedKorem.nama === "Kodim 0733/Kota Semarang"
+                ? featureKoremName === "Berdiri Sendiri"
+                : featureKoremName === selectedKorem.nama;
+
+            if (!isKoremMatch) {
+              return false;
+            }
+
+            if (selectedKodim && selectedKodim.nama) {
+              const searchName = selectedKodim.nama;
+              if (searchName === "Kodim 0733/Kota Semarang") {
+                return featureKodimName.startsWith("Kodim 0733/Semarang");
+              }
+              if (searchName === "Kodim 0717/Grobogan") {
+                return featureKodimName === "Kodim 0717/Purwodadi";
+              }
+              return featureKodimName === searchName;
+            }
+
+            return true;
+          }),
+        }
+      : null;
 
   return (
-    <MapContainer
-      center={mapCenter}
-      zoom={initialZoom}
-      style={{ height: "100%", width: "100%" }}
-      ref={mapRef}
-    >
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      />
-      <MapSearch />
-      <LayersControl position="topright">
-        <LayersControl.BaseLayer checked name="Street Map">
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          />
-        </LayersControl.BaseLayer>
-        <LayersControl.BaseLayer name="Satelit">
-          <TileLayer
-            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-            attribution="Tiles &copy; Esri"
-          />
-        </LayersControl.BaseLayer>
-        <LayersControl.BaseLayer name="Topografi">
-          <TileLayer
-            url="https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png"
-            attribution='Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
-          />
-        </LayersControl.BaseLayer>
-      </LayersControl>
-      <FeatureGroup ref={featureGroupRef}>
-        {isLocationSelected && (
-          <EditControl
-            position="topright"
-            onCreated={handleCreated}
-            onEdited={() => {}}
-            onDeleted={() => {}}
-            draw={{
-              rectangle: false,
-              circle: false,
-              circlemarker: false,
-              marker: false,
-              polyline: false,
-              polygon: {
-                allowIntersection: false,
-                showArea: true,
-                shapeOptions: {
-                  color: "#ff0000",
-                },
-              },
-            }}
-          />
-        )}
-      </FeatureGroup>
+    <div style={{ position: 'relative', height: '100%', width: '100%' }}>
+      <MapContainer
+        center={mapCenter}
+        zoom={initialZoom}
+        style={{ height: "100%", width: "100%" }}
+        maxZoom={22}
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        />
+        <MapSearch />
+        
+        {/* This component now controls map view changes */}
+        <MapController 
+          selectedKorem={selectedKorem}
+          selectedKodim={selectedKodim}
+          koremBoundaries={koremBoundaries}
+          kodimBoundaries={kodimBoundaries}
+          resetSelectedLayer={resetSelectedLayer}
+        />
 
-      {selectedKodim && selectedKodim.geometry && (
-        <GeoJSON data={selectedKodim.geometry} style={kodimStyle} />
+        <LayersControl position="topright">
+          <LayersControl.BaseLayer checked name="Street Map">
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            />
+          </LayersControl.BaseLayer>
+          <LayersControl.BaseLayer name="Satelit">
+            <TileLayer
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+              attribution="Tiles &copy; Esri"
+            />
+          </LayersControl.BaseLayer>
+          <LayersControl.BaseLayer name="Topografi">
+            <TileLayer
+              url="https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png"
+              attribution='Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+            />
+          </LayersControl.BaseLayer>
+          
+          {!selectedKorem && koremBoundaries && (
+            <LayersControl.Overlay checked name="Area KOREM">
+              <GeoJSON
+                data={koremBoundaries}
+                style={koremStyle}
+                onEachFeature={onKoremEachFeature}
+              />
+            </LayersControl.Overlay>
+          )}
+          
+          {filteredKodimData && (
+            <LayersControl.Overlay checked name="Area KODIM">
+              <GeoJSON
+                key={selectedKodim ? selectedKodim.nama : selectedKorem.id}
+                data={filteredKodimData}
+                style={selectedKodim ? selectedStyle : kodimStyle}
+                onEachFeature={onKodimEachFeature}
+              />
+            </LayersControl.Overlay>
+          )}
+        </LayersControl>
+        <FeatureGroup ref={featureGroupRef}>
+          {isLocationSelected && (
+            <EditControl
+              position="topleft"
+              onCreated={handleCreated}
+              onEdited={() => {}}
+              onDeleted={() => {}}
+              draw={{
+                rectangle: false,
+                circle: false,
+                circlemarker: false,
+                marker: false,
+                polyline: false,
+                polygon: {
+                  allowIntersection: false,
+                  showArea: true,
+                  shapeOptions: {
+                    color: "#ff0000",
+                  },
+                },
+              }}
+            />
+          )}
+        </FeatureGroup>
+      </MapContainer>
+      {selectedKorem && !selectedKodim && (
+        <button 
+          onClick={handleBackToKorem}
+          style={buttonStyle}
+        >
+          Kembali ke Semua Korem
+        </button>
       )}
-    </MapContainer>
+      {selectedKodim && selectedKorem && (
+        <button 
+          onClick={handleBackToKoremView}
+          style={buttonStyle}
+        >
+          Kembali ke Semua Kodim
+        </button>
+      )}
+    </div>
   );
 };
 

@@ -1117,6 +1117,56 @@
       "bukti_pemilikan_url": "",
       "bukti_pemilikan_filename": "",
       "kodim_id": "Kodim 0729/Bantul"
+    },
+    {
+      "id": "T1757587248686",
+      "nama": "",
+      "korem_id": "1",
+      "kodim": "Kodim 0702/Purbalingga",
+      "luas": 70832632.90309983,
+      "kib_kode_barang": "werewe",
+      "nomor_registrasi": "ewefdsd",
+      "alamat": "twud",
+      "peruntukan": "gudang",
+      "status": "Dimiliki/Dikuasai",
+      "asal_milik": "sdfdssdd",
+      "pemilikan_sertifikat": "Ya",
+      "keterangan_bukti_pemilikan": "",
+      "sertifikat_bidang": 0,
+      "sertifikat_luas": 70832632.9,
+      "belum_sertifikat_bidang": 0,
+      "belum_sertifikat_luas": 0,
+      "keterangan": "",
+      "atas_nama_pemilik_sertifikat": "",
+      "lokasi": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              111.396233,
+              -6.99291
+            ],
+            [
+              111.398292,
+              -7.053563
+            ],
+            [
+              111.508819,
+              -7.026986
+            ],
+            [
+              111.475867,
+              -6.974508
+            ],
+            [
+              111.396233,
+              -6.99291
+            ]
+          ]
+        ]
+      },
+      "bukti_pemilikan_url": "",
+      "bukti_pemilikan_filename": ""
     }
   ],
   "yardip_assets": [
