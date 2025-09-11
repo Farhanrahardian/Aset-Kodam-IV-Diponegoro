@@ -1670,10 +1670,13 @@ const DataAsetTanahPage = () => {
       />
 
       {/* CANVAS BARU */}
+      {/* CANVAS BARU */}
       <DetailOffcanvasAset
         show={showOffcanvas}
         handleClose={handleCloseOffcanvas}
         aset={assetForOffcanvas}
+        koremList={koremList}
+        allKodimList={allKodimList}
       />
     </Container>
   );
