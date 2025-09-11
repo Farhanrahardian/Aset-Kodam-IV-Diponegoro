@@ -35,7 +35,7 @@ const Dashboard = () => {
     try {
       const [tanahRes, yardipRes] = await Promise.all([
         axios.get(`${API_URL}/assets`),
-        axios.get(`${API_URL}/yarsip_assets`),
+        axios.get(`${API_URL}/yardip_assets`),
       ]);
 
       // Process tanah data by kodim - simple horizontal bar chart
