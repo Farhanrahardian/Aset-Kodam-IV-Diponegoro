@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Container,
   Row,
@@ -31,6 +31,7 @@ const TambahAsetPage = () => {
   const [drawnAsset, setDrawnAsset] = useState(null);
   const [isFormEnabled, setIsFormEnabled] = useState(false);
   const [isLocationSelected, setIsLocationSelected] = useState(false);
+  const [selectionSource, setSelectionSource] = useState("form"); // 'form' or 'map'
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -55,14 +56,27 @@ const TambahAsetPage = () => {
     fetchInitialData();
   }, []);
 
+  const prevIsLocationSelected = useRef(false);
+  useEffect(() => {
+    if (isLocationSelected && !prevIsLocationSelected.current) {
+      if (selectedKodim || (selectedKorem && selectedKorem.kodim && selectedKorem.kodim.length === 0)) {
+         toast.success("Lokasi dipilih! Silakan gambar area aset di peta.");
+      }
+    }
+    prevIsLocationSelected.current = isLocationSelected;
+  }, [isLocationSelected, selectedKorem, selectedKodim]);
+
+
   const handleLocationChange = useCallback(
     (koremId, kodimName) => {
-      const wasLocationSelected = isLocationSelected;
-
+      setSelectionSource("form");
       setSelectedKoremId(koremId);
       setSelectedKodimId(kodimName);
 
-      if (koremId && kodimName && kodimBoundaries) {
+      const koremData = koremList.find((k) => k.id === koremId);
+      setSelectedKorem(koremData ? { id: koremData.id, nama: koremData.nama } : null);
+
+      if (kodimName && kodimBoundaries) {
         const kodimFeature = kodimBoundaries.features.find((f) => {
           const featureName = f.properties.listkodim_Kodim;
           if (kodimName === "Kodim 0733/Kota Semarang") {
@@ -73,28 +87,67 @@ const TambahAsetPage = () => {
           }
           return featureName === kodimName;
         });
-
-        const koremData = koremList.find((k) => k.id === koremId);
-        const firstKodimName = koremData?.kodim?.[0] || kodimName;
-        const koremFeature = kodimBoundaries.features.find(
-          (f) => f.properties.listkodim_Kodim === firstKodimName
-        );
-
-        setSelectedKorem(koremFeature);
-        setSelectedKodim(kodimFeature);
+        setSelectedKodim(kodimFeature ? { nama: kodimName, geometry: kodimFeature.geometry } : null);
         setIsLocationSelected(true);
-
-        if (!wasLocationSelected) {
-          toast.success("Lokasi dipilih! Silakan gambar area aset di peta.");
-        }
       } else {
-        setSelectedKorem(null);
         setSelectedKodim(null);
-        setIsLocationSelected(false);
+        setIsLocationSelected(!!koremId);
       }
     },
-    [kodimBoundaries, koremList, isLocationSelected]
+    [kodimBoundaries, koremList]
   );
+
+  const handleAreaSelect = (type, koremName, kodimName) => {
+    setSelectionSource("map");
+    if (type === "KOREM") {
+      if (koremName === null) {
+        setSelectedKoremId("");
+        setSelectedKorem(null);
+        setSelectedKodimId("");
+        setSelectedKodim(null);
+        setIsLocationSelected(false);
+        return;
+      }
+
+      let matchingKorem;
+      // DATA MISMATCH FIX: Map says "Berdiri Sendiri", DB says "Kodim 0733/Kota Semarang"
+      if (koremName.trim() === "Berdiri Sendiri") {
+        matchingKorem = koremList.find(
+          (korem) => korem.nama === "Kodim 0733/Kota Semarang"
+        );
+      } else {
+        matchingKorem = koremList.find(
+          (korem) => korem.nama.trim() === koremName.trim()
+        );
+      }
+      
+      if (matchingKorem) {
+        setSelectedKoremId(matchingKorem.id);
+        setSelectedKorem({ id: matchingKorem.id, nama: matchingKorem.nama });
+        setSelectedKodimId("");
+        setSelectedKodim(null);
+        setIsLocationSelected(true);
+        // Use the matched name from DB for the toast
+        toast.success(`KOREM ${matchingKorem.nama} dipilih. Silakan pilih KODIM.`);
+      } else {
+        toast.error(`Data KOREM "${koremName}" yang sesuai tidak ditemukan.`);
+        console.error("Could not find Korem with name:", koremName);
+      }
+    } else if (type === "KODIM") {
+      const matchingKorem = koremList.find(
+        (korem) => korem.nama.trim() === koremName.trim()
+      );
+      
+      if (matchingKorem) {
+        setSelectedKoremId(matchingKorem.id);
+        setSelectedKodimId(kodimName);
+        handleLocationChange(matchingKorem.id, kodimName);
+      } else {
+        setSelectedKodimId(kodimName);
+        toast.success(`KODIM ${kodimName} dipilih. Silakan gambar area aset.`);
+      }
+    }
+  };
 
   const handleDrawingCreated = (data) => {
     if (!data || !data.geometry) {
@@ -115,7 +168,6 @@ const TambahAsetPage = () => {
     let fileUrl = "";
     let fileName = "";
 
-    // Step 1: Upload the file if it exists
     if (file) {
       try {
         const fileFormData = new FormData();
@@ -137,7 +189,6 @@ const TambahAsetPage = () => {
       }
     }
 
-    // Step 2: Save the asset data
     const assetPayload = {
       ...assetData,
       id: `T${Date.now()}`,
@@ -198,7 +249,7 @@ const TambahAsetPage = () => {
                     <ol className="mb-0 ps-3">
                       <li>
                         Pilih Wilayah Korem dan Kodim pada form di sebelah
-                        kanan.
+                        kanan atau klik area KOREM/KODIM di peta.
                       </li>
                       <li>
                         Gunakan kontrol di pojok kanan atas peta untuk
@@ -213,6 +264,9 @@ const TambahAsetPage = () => {
                       selectedKorem={selectedKorem}
                       selectedKodim={selectedKodim}
                       isLocationSelected={isLocationSelected}
+                      onLocationSelect={handleAreaSelect}
+                      selectionSource={selectionSource}
+                      koremList={koremList}
                     />
                   </div>
                 </Col>

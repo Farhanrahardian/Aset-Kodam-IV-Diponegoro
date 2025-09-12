@@ -12,6 +12,8 @@ const FormAset = ({
   initialArea,
   isEnabled = false,
   viewMode = false,
+  selectedKoremId,
+  selectedKodimId,
 }) => {
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
@@ -49,6 +51,23 @@ const FormAset = ({
   }, [assetToEdit, initialGeometry, initialArea]);
 
   useEffect(() => {
+    // Sync form state when selection comes from the map
+    if (selectedKoremId && selectedKoremId !== formData.korem_id) {
+      setFormData((prev) => ({
+        ...prev,
+        korem_id: selectedKoremId,
+        kodim: selectedKodimId || "", // Reset kodim when korem changes from map
+      }));
+    }
+    if (selectedKodimId && selectedKodimId !== formData.kodim) {
+      setFormData((prev) => ({
+        ...prev,
+        kodim: selectedKodimId,
+      }));
+    }
+  }, [selectedKoremId, selectedKodimId, formData.korem_id, formData.kodim]);
+
+  useEffect(() => {
     if (formData.korem_id) {
       const selectedKoremData = koremList.find(
         (k) => k.id === formData.korem_id
@@ -61,7 +80,16 @@ const FormAset = ({
           })) || [];
         setKodimList(kodimObjects);
 
-        if (kodimObjects.length === 0) {
+        // Jika KODIM sudah dipilih sebelumnya dan tidak ada dalam daftar KODIM baru,
+        // maka reset pemilihan KODIM
+        if (formData.kodim && kodimObjects.length > 0) {
+          const kodimExists = kodimObjects.some(k => k.id === formData.kodim);
+          if (!kodimExists) {
+            setFormData((prev) => ({ ...prev, kodim: "" }));
+            onLocationChange && onLocationChange(formData.korem_id, "");
+          }
+        } else if (kodimObjects.length === 0) {
+          // Jika tidak ada daftar KODIM (KOrem berdiri sendiri)
           const newKodim = selectedKoremData.nama;
           setFormData((prev) => ({ ...prev, kodim: newKodim }));
           onLocationChange && onLocationChange(formData.korem_id, newKodim);
@@ -69,8 +97,10 @@ const FormAset = ({
       }
     } else {
       setKodimList([]);
+      // Reset KODIM selection when KOREM is cleared
+      setFormData((prev) => ({ ...prev, kodim: "" }));
     }
-  }, [formData.korem_id, koremList, onLocationChange]);
+  }, [formData.korem_id, koremList, onLocationChange, formData.kodim]);
 
   // Update luas otomatis dari peta ketika initialArea berubah
   useEffect(() => {
@@ -184,8 +214,12 @@ const FormAset = ({
   };
 
   const statusOptions = [
-    { value: "Dimiliki", label: "Dimiliki" },
-    { value: "Dikuasai", label: "Dikuasai" },
+    { value: "Dimiliki/Dikuasai", label: "Dimiliki/Dikuasai" },
+    {
+      value: "Tidak Dimiliki/Tidak Dikuasai",
+      label: "Tidak Dimiliki/Tidak Dikuasai",
+    },
+    { value: "Lain-lain", label: "Lain-lain" },
   ];
 
   // Helper function untuk mendapatkan nilai luas yang sedang aktif
@@ -276,6 +310,11 @@ const FormAset = ({
                 <p className="mb-0">
                   Pilih Korem/Kodim lalu gambar lokasi di peta untuk
                   mengaktifkan sisa formulir.
+                </p>
+                <p className="mb-0 mt-2">
+                  <small>
+                    Anda juga dapat memilih lokasi dengan mengklik area KOREM/KODIM di peta.
+                  </small>
                 </p>
               </Alert>
             )}
