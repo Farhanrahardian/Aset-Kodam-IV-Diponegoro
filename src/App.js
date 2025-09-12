@@ -10,6 +10,7 @@ import DataAsetTanahPage from "./pages/DataAsetTanahPage";
 import TambahAsetPage from "./pages/TambahAsetPage";
 import TambahAsetYardipPage from "./pages/TambahAsetYardipPage";
 import DataAsetYardipPage from "./pages/DataAsetYardipPage";
+import EditAsetPage from "./pages/EditAsetPage";
 import { Toaster } from "react-hot-toast";
 
 // CSS global
@@ -56,6 +57,7 @@ function App() {
                       element={<DataAsetYardipPage />}
                     />
                     <Route path="/tambah-aset" element={<TambahAsetPage />} />
+                    <Route path="/edit-aset/:id" element={<EditAsetPage />} />
                     <Route
                       path="/tambah-aset-yardip"
                       element={<TambahAsetYardipPage />}

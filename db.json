@@ -1117,6 +1117,56 @@
       "bukti_pemilikan_url": "",
       "bukti_pemilikan_filename": "",
       "kodim_id": "Kodim 0729/Bantul"
+    },
+    {
+      "id": "T1757564714770",
+      "nama": "332",
+      "korem_id": "2",
+      "kodim": "Kodim 0707/Wonosobo",
+      "luas": 643.0169594459894,
+      "kib_kode_barang": "2555",
+      "nomor_registrasi": "44555",
+      "alamat": "jl kita",
+      "peruntukan": "ahh",
+      "status": "Dimiliki",
+      "asal_milik": "56",
+      "pemilikan_sertifikat": "Ya",
+      "keterangan_bukti_pemilikan": "fgb",
+      "sertifikat_bidang": "54",
+      "sertifikat_luas": 643.02,
+      "belum_sertifikat_bidang": 0,
+      "belum_sertifikat_luas": "",
+      "keterangan": "",
+      "atas_nama_pemilik_sertifikat": "eav",
+      "lokasi": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              109.987519,
+              -7.361664
+            ],
+            [
+              109.987422,
+              -7.361791
+            ],
+            [
+              109.987706,
+              -7.361999
+            ],
+            [
+              109.987792,
+              -7.361893
+            ],
+            [
+              109.987519,
+              -7.361664
+            ]
+          ]
+        ]
+      },
+      "bukti_pemilikan_url": "",
+      "bukti_pemilikan_filename": ""
     }
   ],
   "yardip_assets": [

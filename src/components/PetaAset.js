@@ -10,6 +10,8 @@ import {
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import koremData from "../data/korem.geojson";
+import kodimData from "../data/Kodim.geojson";
 
 // --- Helper functions ---
 
@@ -230,6 +232,7 @@ const PetaAset = React.memo(
   }) => {
     const mapRef = useRef(null);
     const [certFilter, setCertFilter] = useState('all'); // 'all', 'certified', 'uncertified'
+    const [selectedKorem, setSelectedKorem] = useState(null);
 
     const mapCenter = [-7.5, 110.0];
     const initialZoom = 8;
@@ -263,8 +266,82 @@ const PetaAset = React.memo(
       fontSize: '12px',
     });
 
+    const handleKoremClick = (e, feature) => {
+      setSelectedKorem(feature.properties);
+      const map = mapRef.current;
+      if (map) {
+        map.fitBounds(e.target.getBounds());
+      }
+    };
+
+    const onEachKorem = (feature, layer) => {
+      layer.on({
+        click: (e) => handleKoremClick(e, feature),
+      });
+      layer.bindPopup(feature.properties.nama);
+    };
+
+    const onEachKodim = (feature, layer) => {
+      layer.bindPopup(feature.properties.listkodim_Kodim);
+    };
+
+    const resetView = () => {
+      setSelectedKorem(null);
+      const map = mapRef.current;
+      if (map) {
+        map.setView(mapCenter, initialZoom);
+      }
+    };
+
+    const sanitizedKoremData = koremData
+    ? {
+        ...koremData,
+        features: Array.isArray(koremData.features)
+          ? koremData.features.filter(
+              (feature) =>
+                feature.geometry &&
+                feature.geometry.type &&
+                feature.geometry.coordinates
+            )
+          : [],
+      }
+    : null;
+
+    const filteredKodimData = selectedKorem && kodimData
+      ? {
+          ...kodimData,
+          features: Array.isArray(kodimData.features)
+            ? kodimData.features.filter(
+                (feature) =>
+                  feature.properties.listkodim_Korem === selectedKorem.nama &&
+                  feature.geometry &&
+                  feature.geometry.type &&
+                  feature.geometry.coordinates
+              )
+            : [],
+        }
+      : null;
+
     return (
       <div style={{ position: "relative", height: "100%", width: "100%" }}>
+        {selectedKorem && (
+          <button
+            onClick={resetView}
+            style={{
+              position: 'absolute',
+              top: '10px',
+              left: '50px',
+              zIndex: 1000,
+              padding: '5px 10px',
+              backgroundColor: 'white',
+              border: '2px solid rgba(0,0,0,0.2)',
+              borderRadius: '5px',
+              cursor: 'pointer'
+            }}
+          >
+            Kembali ke Tampilan Korem
+          </button>
+        )}
         <MapContainer
           center={mapCenter}
           zoom={initialZoom}
@@ -285,6 +362,23 @@ const PetaAset = React.memo(
               />
             </LayersControl.BaseLayer>
           </LayersControl>
+
+          {!selectedKorem && sanitizedKoremData && (
+            <GeoJSON 
+              key="korem-layer"
+              data={sanitizedKoremData} 
+              style={{ color: "blue", weight: 2, fillOpacity: 0.1 }} 
+              onEachFeature={onEachKorem} 
+            />
+          )}
+          {selectedKorem && filteredKodimData && (
+            <GeoJSON 
+              key="kodim-layer"
+              data={filteredKodimData} 
+              style={{ color: "green", weight: 2, fillOpacity: 0.2 }}
+              onEachFeature={onEachKodim}
+            />
+          )}
 
           {fitBounds ? (
             <AssetLayer assets={assets} onAssetClick={onAssetClick} isSelected={isSelected} />
