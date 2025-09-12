@@ -681,41 +681,29 @@
         "coordinates": [
           [
             [
-              110.27466,
-              -7.673299
+              110.661959,
+              -6.601809
             ],
             [
-              110.273973,
-              -7.726715
+              110.656465,
+              -6.640004
             ],
             [
-              110.248226,
-              -7.785906
+              110.68153,
+              -6.589531
             ],
             [
-              110.339199,
-              -7.79441
-            ],
-            [
-              110.35808,
-              -7.679083
-            ],
-            [
-              110.27466,
-              -7.677382
-            ],
-            [
-              110.27466,
-              -7.673299
+              110.661959,
+              -6.601809
             ]
           ]
         ]
       },
-      "area": 113490.87,
-      "isManualArea": true,
-      "originalDrawnArea": 113473190.88547498,
+      "area": 4176182.101193309,
+      "isManualArea": false,
+      "originalDrawnArea": 4176182.101193309,
       "created_at": "2025-09-09T02:20:18.712Z",
-      "updated_at": "2025-09-09T07:10:07.129Z",
+      "updated_at": "2025-09-12T07:28:17.149Z",
       "provinsi_id": "jateng",
       "kota_id": "jepara",
       "provinsi": "Jawa Tengah",
@@ -744,6 +732,29 @@
       "kota_id": "semarang",
       "provinsi": "Jawa Tengah",
       "provinsi_id": "jateng"
+    },
+    {
+      "id": "Y1757661234131",
+      "pengelola": "aaaa",
+      "bidang": "Ruko",
+      "kabkota": "aaaa",
+      "kecamatan": "aaaa",
+      "kelurahan": "aa",
+      "peruntukan": "aaaqa",
+      "status": "Lain-lain",
+      "keterangan": "aaaaa",
+      "type": "yardip",
+      "lokasi": "[[[110.299364,-7.649995],[110.302453,-7.684675],[110.338487,-7.682295],[110.33231,-7.645235],[110.299364,-7.649995]]]",
+      "area": 15362612.407762894,
+      "isManualArea": false,
+      "originalDrawnArea": 15362612.407762894,
+      "created_at": "2025-09-12T07:13:54.131Z",
+      "updated_at": "2025-09-12T07:13:54.131Z",
+      "isManuallyAdjusted": false,
+      "kota": "Sleman",
+      "kota_id": "sleman",
+      "provinsi": "DI Yogyakarta",
+      "provinsi_id": "diy"
     }
   ],
   "korem": [
