@@ -358,7 +358,7 @@ const FormYardip = ({
                     </Form.Control.Feedback>
                     {selectedProvince && (
                       <Form.Text className="text-success">
-                        ✅{" "}
+                        {" "}
                         {selectedProvince === "jateng"
                           ? "Jawa Tengah"
                           : "DI Yogyakarta"}{" "}
@@ -392,7 +392,7 @@ const FormYardip = ({
                     </Form.Control.Feedback>
                     {selectedCity && (
                       <Form.Text className="text-success">
-                        ✅ {getSelectedCityName()} dipilih
+                        {getSelectedCityName()} dipilih
                       </Form.Text>
                     )}
                   </Form.Group>
@@ -406,7 +406,7 @@ const FormYardip = ({
                   style={{ background: "rgba(25,135,84,0.1)" }}
                 >
                   <div className="d-flex align-items-center">
-                    <div className="me-3">🎯</div>
+                    <div className="me-3"></div>
                     <div>
                       <strong>Lokasi Terpilih!</strong> Peta telah auto-zoom ke
                       area {getSelectedCityName()}. Sekarang Anda dapat
@@ -428,7 +428,7 @@ const FormYardip = ({
                 {!hasDrawnArea ? (
                   <Alert variant="warning" className="mb-0">
                     <div className="d-flex align-items-center">
-                      <div className="me-3">⚠️</div>
+                      <div className="me-3"></div>
                       <div>
                         <strong>Belum Ada Gambar!</strong> Gunakan tombol
                         "Gambar Lokasi Aset" di peta untuk menggambar area aset.
@@ -439,7 +439,7 @@ const FormYardip = ({
                   <Alert variant="success" className="mb-0">
                     <div className="d-flex align-items-center justify-content-between">
                       <div className="d-flex align-items-center">
-                        <div className="me-3">✅</div>
+                        <div className="me-3"></div>
                         <div>
                           <strong>Area Sudah Digambar!</strong>
                           <br />
@@ -623,7 +623,7 @@ const FormYardip = ({
 
                         {isManualAreaMode ? (
                           <Form.Text className="text-warning">
-                            ⚠️ Luas telah diubah manual dari{" "}
+                            Luas telah diubah manual dari{" "}
                             {originalDrawnArea
                               ? formatArea(originalDrawnArea)
                               : "N/A"}{" "}
@@ -632,7 +632,7 @@ const FormYardip = ({
                           </Form.Text>
                         ) : originalDrawnArea ? (
                           <Form.Text className="text-success">
-                            ✅ Menggunakan luas dari gambar peta:{" "}
+                            Menggunakan luas dari gambar peta:{" "}
                             {formatArea(originalDrawnArea)}
                           </Form.Text>
                         ) : (
@@ -716,7 +716,7 @@ const FormYardip = ({
                   <Row>
                     <Col md={6}>
                       <small className="text-muted">
-                        <strong>🗺️ Lokasi Target:</strong>
+                        <strong>Lokasi Target:</strong>
                         <br />
                         {getSelectedCityName()
                           ? `${getSelectedCityName()}`
@@ -787,7 +787,7 @@ const FormYardip = ({
             {(!selectedProvince || !selectedCity || !hasDrawnArea) &&
               !assetToEdit && (
                 <Alert variant="warning" className="mb-3">
-                  <div className="fw-bold mb-2">⚠️ Sebelum Menyimpan:</div>
+                  <div className="fw-bold mb-2"> Sebelum Menyimpan:</div>
                   <ul className="mb-0 small">
                     {!selectedProvince && <li>Pilih provinsi</li>}
                     {!selectedCity && <li>Pilih kota/kabupaten</li>}

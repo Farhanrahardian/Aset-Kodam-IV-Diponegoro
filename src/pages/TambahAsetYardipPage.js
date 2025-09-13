@@ -173,7 +173,7 @@ const TambahAsetYardipPage = () => {
   const [selectedCity, setSelectedCity] = useState("");
   const [cityBounds, setCityBounds] = useState(null);
   const [isLocationSelected, setIsLocationSelected] = useState(false);
-  
+
   // Manual area adjustment state
   const [manualAreaAdjustment, setManualAreaAdjustment] = useState(null);
 
@@ -209,16 +209,16 @@ const TambahAsetYardipPage = () => {
   const handleAreaChange = (newArea) => {
     console.log("Manual area change received:", newArea);
     setManualAreaAdjustment(newArea);
-    
+
     // Update the newAssetData with new area
     if (newAssetData) {
-      setNewAssetData(prev => ({
+      setNewAssetData((prev) => ({
         ...prev,
         area: newArea,
-        isManuallyAdjusted: true
+        isManuallyAdjusted: true,
       }));
     }
-    
+
     toast.success(`📐 Luas area diubah menjadi ${newArea.toFixed(2)} m²`);
   };
 
@@ -229,7 +229,7 @@ const TambahAsetYardipPage = () => {
     setManualAreaAdjustment(null); // Reset manual adjustment when new drawing is created
 
     toast.success(
-      `✅ Lokasi berhasil digambar! Luas area: ${data.area?.toFixed(2)} m²`
+      ` Lokasi berhasil digambar! Luas area: ${data.area?.toFixed(2)} m²`
     );
   };
 
@@ -281,7 +281,7 @@ const TambahAsetYardipPage = () => {
 
       console.log("Response from server:", response.data);
 
-      toast.success("✅ Aset Yardip berhasil ditambahkan!", { id: toastId });
+      toast.success(" Aset Yardip berhasil ditambahkan!", { id: toastId });
 
       setTimeout(() => {
         navigate("/data-aset-yardip");
@@ -364,12 +364,11 @@ const TambahAsetYardipPage = () => {
         <Alert variant="warning" className="mb-3 border-0 shadow-sm">
           <div className="d-flex align-items-center">
             <div>
-              <div className="fw-bold">
-                ⚠️ Luas Area Telah Diubah Manual
-              </div>
+              <div className="fw-bold">⚠️ Luas Area Telah Diubah Manual</div>
               <small className="text-warning">
-                Dari {newAssetData.area.toFixed(2)} m² menjadi {manualAreaAdjustment.toFixed(2)} m² 
-                • Polygon di peta akan menyesuaikan dengan luas baru
+                Dari {newAssetData.area.toFixed(2)} m² menjadi{" "}
+                {manualAreaAdjustment.toFixed(2)} m² • Polygon di peta akan
+                menyesuaikan dengan luas baru
               </small>
             </div>
           </div>
@@ -412,8 +411,12 @@ const TambahAsetYardipPage = () => {
                   {newAssetData && (
                     <>
                       <br />- Original Area: {newAssetData.area?.toFixed(2)} m²
-                      <br />- Manual Adjustment: {manualAreaAdjustment ? manualAreaAdjustment.toFixed(2) + " m²" : "None"}
-                      <br />- Effective Area: {getCurrentEffectiveArea().toFixed(2)} m²
+                      <br />- Manual Adjustment:{" "}
+                      {manualAreaAdjustment
+                        ? manualAreaAdjustment.toFixed(2) + " m²"
+                        : "None"}
+                      <br />- Effective Area:{" "}
+                      {getCurrentEffectiveArea().toFixed(2)} m²
                       <br />- Geometry Type:{" "}
                       {newAssetData.geometry?.type || "Array"}
                     </>
@@ -496,23 +499,26 @@ const TambahAsetYardipPage = () => {
           </Card>
 
           <div
-            style={{ 
-              height: "70vh", 
+            style={{
+              height: "70vh",
               width: "100%",
               opacity: isLocationSelected ? 1 : 0.6,
-              pointerEvents: isLocationSelected ? 'auto' : 'none'
+              pointerEvents: isLocationSelected ? "auto" : "none",
             }}
             className="border rounded shadow-sm overflow-hidden position-relative"
           >
             {!isLocationSelected && (
-              <div 
+              <div
                 className="position-absolute d-flex align-items-center justify-content-center w-100 h-100 bg-white bg-opacity-75"
                 style={{ zIndex: 1000 }}
               >
                 <div className="text-center">
                   <i className="bi bi-geo-alt display-4 text-muted mb-3"></i>
                   <h5 className="text-muted">Pilih Lokasi Terlebih Dahulu</h5>
-                  <p className="text-muted">Gunakan form di sebelah kanan untuk memilih provinsi dan kota</p>
+                  <p className="text-muted">
+                    Gunakan form di sebelah kanan untuk memilih provinsi dan
+                    kota
+                  </p>
                 </div>
               </div>
             )}
