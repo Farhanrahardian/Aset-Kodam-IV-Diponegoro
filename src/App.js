@@ -11,6 +11,7 @@ import TambahAsetPage from "./pages/TambahAsetPage";
 import TambahAsetYardipPage from "./pages/TambahAsetYardipPage";
 import DataAsetYardipPage from "./pages/DataAsetYardipPage";
 import EditAsetPage from "./pages/EditAsetPage";
+import LaporanPage from "./pages/LaporanPage"; // ✅ import halaman laporan
 import { Toaster } from "react-hot-toast";
 
 // CSS global
@@ -62,8 +63,9 @@ function App() {
                       path="/tambah-aset-yardip"
                       element={<TambahAsetYardipPage />}
                     />
+                    <Route path="/laporan" element={<LaporanPage />} />{" "}
+                    {/* ✅ route baru */}
                     <Route path="/settings" element={<SettingsPage />} />
-                    {/* Rute lain di dalam layout utama bisa ditambahkan di sini */}
                   </Routes>
                 </MainLayout>
               </ProtectedRoute>
