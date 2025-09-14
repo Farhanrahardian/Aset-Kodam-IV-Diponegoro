@@ -18,6 +18,35 @@ const EditYardipLocation = ({
 }) => {
   if (!editingAsset || !isEditingLocation) return null;
 
+  // Fallback function jika prepareEditAssetForMap tidak dikirim sebagai prop
+  const safelyPrepareEditAssetForMap = () => {
+    if (typeof prepareEditAssetForMap === 'function') {
+      return prepareEditAssetForMap();
+    }
+    
+    // Fallback: buat array berisi editing asset dengan lokasi jika ada
+    if (editingAsset && editingAsset.lokasi_polygon) {
+      try {
+        const polygon = typeof editingAsset.lokasi_polygon === 'string' 
+          ? JSON.parse(editingAsset.lokasi_polygon) 
+          : editingAsset.lokasi_polygon;
+        
+        return [{
+          ...editingAsset,
+          lokasi_polygon: polygon,
+          isCurrentLocation: true // Flag untuk styling di peta
+        }];
+      } catch (error) {
+        console.error('Error parsing polygon:', error);
+        return [];
+      }
+    }
+    
+    return [];
+  };
+
+  const editAssetData = safelyPrepareEditAssetForMap();
+
   return (
     <Col md={12} className="mt-3">
       <div className="card shadow-sm">
@@ -28,7 +57,7 @@ const EditYardipLocation = ({
               Edit Lokasi Aset Yardip - {editingAsset.pengelola}
             </h6>
             <small>
-              {prepareEditAssetForMap().length > 0
+              {editAssetData.length > 0
                 ? "Polygon hijau menunjukkan lokasi saat ini. Gambar polygon baru untuk mengubah lokasi."
                 : "Belum ada lokasi sebelumnya. Silakan gambar polygon baru."}
             </small>
@@ -46,7 +75,7 @@ const EditYardipLocation = ({
           <div style={{ height: "600px", width: "100%" }}>
             <PetaAsetYardip
               key={`edit-map-${editingAsset.id}-${isEditingLocation}`}
-              assets={prepareEditAssetForMap()}
+              assets={editAssetData}
               isDrawing={true}
               onDrawingCreated={onDrawingCreated}
               jatengBoundary={jatengBoundary}
@@ -81,7 +110,7 @@ const EditYardipLocation = ({
                 </small>
                 <div className="small text-muted mt-1">
                   Current:{" "}
-                  {prepareEditAssetForMap().length > 0
+                  {editAssetData.length > 0
                     ? "Ada lokasi"
                     : "Tidak ada"}
                   <br />

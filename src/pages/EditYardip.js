@@ -1,5 +1,5 @@
-import React from "react";
-import { Row, Col, Button } from "react-bootstrap";
+import React, { useState, useEffect } from "react";
+import { Card, Row, Col, Button, Alert } from "react-bootstrap";
 import FormYardip from "../components/FormYardip";
 
 const EditYardip = ({
@@ -15,131 +15,150 @@ const EditYardip = ({
   onCancelEditLocation,
   isEditingLocation
 }) => {
-  if (!editingAsset) return null;
+  // State untuk area yang dihitung dari lokasi yang sudah ada
+  const [currentArea, setCurrentArea] = useState(0);
+  const [hasDrawnArea, setHasDrawnArea] = useState(false);
+
+  // Initialize area dari asset yang sedang diedit
+  useEffect(() => {
+    if (editingAsset?.area) {
+      setCurrentArea(Number(editingAsset.area));
+      setHasDrawnArea(true);
+    }
+    
+    // Update area jika ada lokasi baru yang digambar
+    if (editedLocationData?.area) {
+      setCurrentArea(Number(editedLocationData.area));
+      setHasDrawnArea(true);
+    }
+  }, [editingAsset, editedLocationData]);
+
+  // Get selected city name for display
+  const getSelectedCityName = () => {
+    if (!editSelectedProvince || !editSelectedCity || !kotaData[editSelectedProvince]) {
+      return null;
+    }
+    const cityData = kotaData[editSelectedProvince].find(c => c.id === editSelectedCity);
+    return cityData ? cityData.name : null;
+  };
+
+  const selectedCityName = getSelectedCityName();
+
+  // Prepare geometry data for form
+  const getGeometryData = () => {
+    if (editedLocationData) {
+      return editedLocationData.geometry || editedLocationData.coordinates;
+    }
+    return editingAsset?.lokasi;
+  };
+
+  // Handle area change from form
+  const handleAreaChange = (newArea) => {
+    setCurrentArea(newArea);
+  };
+
+  if (!editingAsset) {
+    return null;
+  }
 
   return (
-    <div className="card shadow-sm">
-      <div className="card-header bg-success text-white d-flex justify-content-between align-items-center">
-        <span>Edit Aset Yardip - {editingAsset.pengelola}</span>
-        <div className="d-flex gap-2">
-          <Button
-            variant={isEditingLocation ? "outline-light" : "light"}
-            size="sm"
-            onClick={onEditLocation}
-            disabled={isEditingLocation}
-          >
-            {isEditingLocation
-              ? "Sedang Edit Lokasi..."
-              : "Edit Lokasi"}
-          </Button>
-          <Button
-            variant="outline-light"
-            size="sm"
-            onClick={onCancel}
-          >
-            Batal Edit
-          </Button>
-        </div>
-      </div>
-      <div className="card-body">
-        <Row>
-          <Col md={6}>
-            <FormYardip
-              onSave={onSave}
-              onCancel={onCancel}
-              assetToEdit={editingAsset}
-              isEnabled={true}
-              initialGeometry={
-                editedLocationData ? editedLocationData.geometry : null
-              }
-              initialArea={
-                editedLocationData ? editedLocationData.area : null
-              }
-              kotaData={kotaData}
-              onLocationChange={onLocationChange}
-              hasDrawnArea={!!editingAsset.lokasi}
-            />
+    <div>
+      {/* Header */}
+      <Card className="mb-3">
+        <Card.Header className="bg-warning text-dark">
+          <div className="d-flex justify-content-between align-items-center">
+            <span>
+              <i className="fas fa-edit me-2"></i>
+              Edit Aset Yardip: {editingAsset.pengelola}
+            </span>
+            <Button variant="outline-dark" size="sm" onClick={onCancel}>
+              <i className="fas fa-times me-1"></i>
+              Batal Edit
+            </Button>
+          </div>
+        </Card.Header>
+      </Card>
 
-            {/* Status edit lokasi */}
-            {editedLocationData && (
-              <div className="alert alert-success mt-3">
-                <div className="d-flex justify-content-between align-items-center">
-                  <div>
-                    <i className="fas fa-check-circle me-2"></i>
-                    <strong>Lokasi Baru Siap!</strong>
-                    <br />
-                    <small className="text-muted">
-                      Luas: {editedLocationData.area?.toFixed(2)} m²
-                    </small>
-                  </div>
-                  <button
-                    className="btn btn-outline-danger btn-sm"
-                    onClick={onCancelEditLocation}
-                  >
-                    Batalkan
-                  </button>
+      <Row>
+        {/* Form Edit */}
+        <Col md={12}>
+          {/* Location Edit Status */}
+          {editedLocationData && (
+            <Alert variant="success" className="mb-3">
+              <div className="d-flex justify-content-between align-items-center">
+                <div>
+                  <i className="fas fa-check-circle me-2"></i>
+                  <strong>Lokasi Baru Sudah Digambar!</strong>
+                  <br />
+                  <small>
+                    Luas baru: {editedLocationData.area?.toFixed(2)} m² 
+                    (sebelumnya: {editingAsset.area ? Number(editingAsset.area).toFixed(2) : 0} m²)
+                  </small>
                 </div>
               </div>
-            )}
-          </Col>
-          <Col md={6}>
-            {/* Preview area atau informasi tambahan */}
-            <div className="bg-light p-3 rounded">
-              <h6 className="text-muted mb-3">Preview Data</h6>
-              <small>
-                <strong>ID:</strong> {editingAsset.id}
-                <br />
-                <strong>Status Saat Ini:</strong>{" "}
-                <span
-                  className={`badge ${
-                    editingAsset.status === "Dimiliki/Dikuasai"
-                      ? "bg-success"
-                      : editingAsset.status ===
-                        "Tidak Dimiliki/Tidak Dikuasai"
-                      ? "bg-danger"
-                      : editingAsset.status === "Lain-lain"
-                      ? "bg-warning"
-                      : "bg-secondary"
-                  }`}
-                >
-                  {editingAsset.status}
-                </span>
-                <br />
-                <strong>Lokasi:</strong> {editingAsset.kabkota},{" "}
-                {editingAsset.kecamatan}
-                <br />
-                <strong>Lokasi Edit:</strong> {editSelectedProvince && editSelectedCity ? 
-                  `${kotaData[editSelectedProvince]?.find(c => c.id === editSelectedCity)?.name || editSelectedCity} (${editSelectedProvince === "jateng" ? "Jawa Tengah" : "DI Yogyakarta"})` : 
-                  "Belum dipilih"
-                }
-                <br />
-                {editingAsset.area && (
-                  <>
-                    <strong>Luas Area Saat Ini:</strong>{" "}
-                    {Number(editingAsset.area).toFixed(2)} m²
-                    <br />
-                  </>
-                )}
-                {editedLocationData && editedLocationData.area && (
-                  <>
-                    <strong>Luas Area Baru:</strong>{" "}
-                    <span className="text-success fw-bold">
-                      {editedLocationData.area.toFixed(2)} m²
-                    </span>
-                    <br />
-                  </>
-                )}
-                <strong>Terakhir Diupdate:</strong>{" "}
-                {editingAsset.updated_at
-                  ? new Date(editingAsset.updated_at).toLocaleString(
-                      "id-ID"
-                    )
-                  : "-"}
-              </small>
-            </div>
-          </Col>
-        </Row>
-      </div>
+            </Alert>
+          )}
+
+          {/* Current Location Info */}
+          <Card className="mb-3">
+            <Card.Header className="bg-info text-white">
+              <h6 className="mb-0">Informasi Lokasi Saat Ini</h6>
+            </Card.Header>
+            <Card.Body>
+              <Row>
+                <Col md={6}>
+                  <strong>Lokasi Target:</strong>
+                  <br />
+                  <span className="text-muted">
+                    {selectedCityName || editingAsset.kota || "Belum dipilih"}
+                    {editSelectedProvince && (
+                      <span>
+                        {" "}({editSelectedProvince === "jateng" ? "Jawa Tengah" : "DI Yogyakarta"})
+                      </span>
+                    )}
+                  </span>
+                </Col>
+                <Col md={6}>
+                  <div className="d-flex justify-content-between align-items-center">
+                    <div>
+                      <strong>Status Lokasi:</strong>
+                      <br />
+                      <span className={`badge ${hasDrawnArea ? 'bg-success' : 'bg-warning'}`}>
+                        {hasDrawnArea ? 'Ada Gambar' : 'Belum Ada Gambar'}
+                      </span>
+                    </div>
+                    {hasDrawnArea && (
+                      <Button 
+                        variant="outline-primary" 
+                        size="sm" 
+                        onClick={onEditLocation}
+                        disabled={isEditingLocation}
+                      >
+                        <i className="fas fa-map-marker-alt me-1"></i>
+                        {isEditingLocation ? 'Sedang Edit...' : 'Edit Lokasi'}
+                      </Button>
+                    )}
+                  </div>
+                </Col>
+              </Row>
+            </Card.Body>
+          </Card>
+
+          {/* Form */}
+          <FormYardip
+            onSave={onSave}
+            onCancel={onCancel}
+            initialGeometry={getGeometryData()}
+            initialArea={currentArea}
+            isEnabled={!isEditingLocation}
+            assetToEdit={editingAsset}
+            kotaData={kotaData}
+            onLocationChange={onLocationChange}
+            hasDrawnArea={hasDrawnArea}
+            onAreaChange={handleAreaChange}
+          />
+        </Col>
+      </Row>
     </div>
   );
 };

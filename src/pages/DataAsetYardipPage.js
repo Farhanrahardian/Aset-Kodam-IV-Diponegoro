@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Container,
   Row,
@@ -15,10 +15,11 @@ import { useAuth } from "../auth/AuthContext";
 import toast from "react-hot-toast";
 import Swal from "sweetalert2";
 
-import EditYardip from "./EditYardip"; // Import komponen edit terpisah
-import EditYardipLocation from "./EditYardipLocation"; // Import komponen edit lokasi terpisah
+import EditYardip from "./EditYardip";
+import EditYardipLocation from "./EditYardipLocation";
 import PetaAsetYardip from "../components/PetaAsetYardip";
-import DetailOffcanvasYardip from "../components/DetailOffcanvasYardip"; // NEW IMPORT
+import DetailOffcanvasYardip from "../components/DetailOffcanvasYardip";
+import MapErrorBoundary from "../components/MapErrorBoundary";
 import jatengBoundary from "../data/indonesia_jawatengah.json";
 import diyBoundary from "../data/indonesia_yogyakarta.json";
 
@@ -168,7 +169,7 @@ const kotaData = {
   ],
 };
 
-// Enhanced filter panel - MIRIP DENGAN DataAsetTanahPage
+// Enhanced filter panel
 const FilterPanelTop = ({
   assets,
   bidangOptions,
@@ -271,7 +272,7 @@ const FilterPanelTop = ({
   );
 };
 
-// Enhanced table component untuk yardip - MIRIP DENGAN TabelAset
+// Enhanced table component untuk yardip
 const TabelAsetYardip = ({ assets, onEdit, onDelete, onViewDetail }) => {
   if (!assets || assets.length === 0) {
     return (
@@ -382,7 +383,7 @@ const TabelAsetYardip = ({ assets, onEdit, onDelete, onViewDetail }) => {
   );
 };
 
-// Enhanced Modal Detail Component - MIRIP DENGAN DetailModalAset
+// Enhanced Modal Detail Component
 const DetailModalYardip = ({ asset, show, onHide }) => {
   if (!asset) return null;
 
@@ -537,7 +538,7 @@ const DetailModalYardip = ({ asset, show, onHide }) => {
             </div>
           </Col>
 
-          {/* Peta dengan polygon/shape yang sudah digambar - UNTUK MODAL DETAIL TETAP POLYGON */}
+          {/* Peta dengan polygon/shape yang sudah digambar */}
           <Col md={6}>
             <div className="card h-100">
               <div className="card-header bg-info text-white">
@@ -546,15 +547,18 @@ const DetailModalYardip = ({ asset, show, onHide }) => {
               <div className="card-body p-0">
                 <div style={{ height: "500px", width: "100%" }}>
                   {hasValidLocation && assetForMap ? (
-                    <PetaAsetYardip
-                      assets={[assetForMap]}
-                      isDrawing={false}
-                      onDrawingCreated={() => {}}
-                      jatengBoundary={jatengBoundary}
-                      diyBoundary={diyBoundary}
-                      fitBounds={true}
-                      displayMode="polygon" // Modal detail tetap tampilkan polygon
-                    />
+                    <MapErrorBoundary height="500px">
+                      <PetaAsetYardip
+                        key={`detail-${asset.id}-${asset.updated_at || Date.now()}`}
+                        assets={[assetForMap]}
+                        isDrawing={false}
+                        onDrawingCreated={() => {}}
+                        jatengBoundary={jatengBoundary}
+                        diyBoundary={diyBoundary}
+                        fitBounds={true}
+                        displayMode="polygon"
+                      />
+                    </MapErrorBoundary>
                   ) : (
                     <div className="d-flex align-items-center justify-content-center h-100 text-muted">
                       <div className="text-center">
@@ -649,7 +653,7 @@ const DataAsetYardipPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // State untuk edit asset - MIRIP DENGAN DataAsetTanahPage
+  // State untuk edit asset
   const [editingAsset, setEditingAsset] = useState(null);
   
   // State untuk modal detail
@@ -665,24 +669,25 @@ const DataAsetYardipPage = () => {
   const [editSelectedCity, setEditSelectedCity] = useState("");
   const [editCityBounds, setEditCityBounds] = useState(null);
 
-  // NEW: State untuk peta utama dan offcanvas (seperti DataAsetTanahPage)
+  // State untuk peta utama dan offcanvas
   const [zoomToAsset, setZoomToAsset] = useState(null);
   const [showOffcanvas, setShowOffcanvas] = useState(false);
   const [assetForOffcanvas, setAssetForOffcanvas] = useState(null);
+  const [mapKey, setMapKey] = useState(Date.now()); // Key untuk force re-render map
 
-  // NEW: Handler untuk Peta utama
-  const handleMarkerClick = (asset) => {
+  // Handler untuk Peta utama
+  const handleMarkerClick = useCallback((asset) => {
     console.log('Yardip marker clicked:', asset);
     setAssetForOffcanvas(asset);
     setShowOffcanvas(true);
     setZoomToAsset(asset);
-  };
+  }, []);
 
-  const handleCloseOffcanvas = () => {
+  const handleCloseOffcanvas = useCallback(() => {
     setShowOffcanvas(false);
     setAssetForOffcanvas(null);
-    setZoomToAsset(null); // Reset zoom state
-  };
+    setZoomToAsset(null);
+  }, []);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -701,10 +706,18 @@ const DataAsetYardipPage = () => {
 
   useEffect(() => {
     fetchData();
+    
+    return () => {
+      // Cleanup function
+      setAssets([]);
+      setFilteredAssets([]);
+      setEditingAsset(null);
+      setZoomToAsset(null);
+    };
   }, [fetchData]);
 
-  // Filter berdasarkan bidang dan status - ENHANCED SEPERTI DataAsetTanahPage
-  useEffect(() => {
+  // Filter berdasarkan bidang dan status - menggunakan useMemo untuk optimasi
+  const processedAssets = useMemo(() => {
     let filtered = assets;
 
     if (selectedBidang) {
@@ -715,31 +728,35 @@ const DataAsetYardipPage = () => {
       filtered = filtered.filter((asset) => asset.status === statusFilter);
     }
 
-    setFilteredAssets(filtered);
-  }, [selectedBidang, statusFilter, assets]);
+    return filtered;
+  }, [assets, selectedBidang, statusFilter]);
 
-  // Get unique bidang options from assets
-  const bidangOptions = [
-    ...new Set(assets.map((asset) => asset.bidang).filter(Boolean)),
-  ];
+  useEffect(() => {
+    setFilteredAssets(processedAssets);
+  }, [processedAssets]);
 
-  // Handler functions - MIRIP DENGAN DataAsetTanahPage
-  const handleBidangChange = (bidang) => {
+  // Get unique bidang options from assets - menggunakan useMemo
+  const bidangOptions = useMemo(() => {
+    return [...new Set(assets.map((asset) => asset.bidang).filter(Boolean))];
+  }, [assets]);
+
+  // Handler functions - menggunakan useCallback untuk optimasi
+  const handleBidangChange = useCallback((bidang) => {
     setSelectedBidang(bidang || "");
-  };
+  }, []);
 
-  const handleStatusChange = (status) => {
+  const handleStatusChange = useCallback((status) => {
     setStatusFilter(status || "");
-  };
+  }, []);
 
-  const handleShowAll = () => {
+  const handleShowAll = useCallback(() => {
     setSelectedBidang("");
     setStatusFilter("");
     setZoomToAsset(null);
-  };
+  }, []);
 
-  const handleDeleteAsset = async (id) => {
-    Swal.fire({
+  const handleDeleteAsset = useCallback(async (id) => {
+    const result = await Swal.fire({
       title: "Apakah Anda yakin?",
       text: "Data yang dihapus tidak dapat dikembalikan!",
       icon: "warning",
@@ -748,22 +765,22 @@ const DataAsetYardipPage = () => {
       cancelButtonColor: "#d33",
       confirmButtonText: "Ya, hapus!",
       cancelButtonText: "Batal",
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        const toastId = toast.loading("Menghapus aset...");
-        try {
-          await axios.delete(`${API_URL}/yardip_assets/${id}`);
-          setAssets(assets.filter((a) => a.id !== id));
-          toast.success("Aset berhasil dihapus.", { id: toastId });
-        } catch (err) {
-          toast.error("Gagal menghapus aset.", { id: toastId });
-          console.error(err);
-        }
-      }
     });
-  };
 
-  const handleEditAsset = (asset) => {
+    if (result.isConfirmed) {
+      const toastId = toast.loading("Menghapus aset...");
+      try {
+        await axios.delete(`${API_URL}/yardip_assets/${id}`);
+        setAssets(prevAssets => prevAssets.filter((a) => a.id !== id));
+        toast.success("Aset berhasil dihapus.", { id: toastId });
+      } catch (err) {
+        toast.error("Gagal menghapus aset.", { id: toastId });
+        console.error(err);
+      }
+    }
+  }, []);
+
+  const handleEditAsset = useCallback((asset) => {
     console.log("Starting edit for asset:", asset);
     setEditingAsset(asset);
     setIsEditingLocation(false);
@@ -789,18 +806,18 @@ const DataAsetYardipPage = () => {
       setEditSelectedCity("");
       setEditCityBounds(null);
     }
-  };
+  }, []);
 
-  const handleCancelEdit = () => {
+  const handleCancelEdit = useCallback(() => {
     setEditingAsset(null);
     setIsEditingLocation(false);
     setEditedLocationData(null);
     setEditSelectedProvince("");
     setEditSelectedCity("");
     setEditCityBounds(null);
-  };
+  }, []);
 
-  const handleEditLocationChange = (province, city) => {
+  const handleEditLocationChange = useCallback((province, city) => {
     setEditSelectedProvince(province);
     setEditSelectedCity(city);
 
@@ -819,20 +836,20 @@ const DataAsetYardipPage = () => {
     } else {
       setEditCityBounds(null);
     }
-  };
+  }, []);
 
-  const handleEditLocation = () => {
+  const handleEditLocation = useCallback(() => {
     console.log("Starting location edit for asset:", editingAsset);
     setIsEditingLocation(true);
     setEditedLocationData(null);
-  };
+  }, [editingAsset]);
 
-  const handleCancelEditLocation = () => {
+  const handleCancelEditLocation = useCallback(() => {
     setIsEditingLocation(false);
     setEditedLocationData(null);
-  };
+  }, []);
 
-  const handleLocationDrawingCreated = (data) => {
+  const handleLocationDrawingCreated = useCallback((data) => {
     console.log("New location data created:", data);
     setEditedLocationData(data);
     setIsEditingLocation(false);
@@ -840,9 +857,9 @@ const DataAsetYardipPage = () => {
     toast.success(
       "Lokasi baru berhasil digambar! Klik 'Simpan Perubahan' untuk menyimpan."
     );
-  };
+  }, []);
 
-  const handleSaveAsset = async (updatedData) => {
+  const handleSaveAsset = useCallback(async (updatedData) => {
     if (!editingAsset) return;
 
     const selectedCityData = kotaData[editSelectedProvince]?.find(
@@ -872,8 +889,8 @@ const DataAsetYardipPage = () => {
         finalData
       );
 
-      setAssets(
-        assets.map((a) => (a.id === editingAsset.id ? response.data : a))
+      setAssets(prevAssets =>
+        prevAssets.map((a) => (a.id === editingAsset.id ? response.data : a))
       );
 
       toast.success("Aset berhasil diperbarui!", { id: toastId });
@@ -889,21 +906,21 @@ const DataAsetYardipPage = () => {
       toast.error("Gagal menyimpan perubahan.", { id: toastId });
       console.error("Save error:", err);
     }
-  };
+  }, [editingAsset, editSelectedProvince, editSelectedCity, editedLocationData]);
 
-  const handleViewDetail = (asset) => {
+  const handleViewDetail = useCallback((asset) => {
     console.log("Yardip Asset data for detail:", asset);
     setSelectedAssetDetail(asset);
     setShowDetailModal(true);
-  };
+  }, []);
 
-  const handleCloseDetailModal = () => {
+  const handleCloseDetailModal = useCallback(() => {
     setShowDetailModal(false);
     setSelectedAssetDetail(null);
-  };
+  }, []);
 
-  // Validasi lokasi
-  const validateAndParseLocation = (locationData) => {
+  // Validasi lokasi - menggunakan useCallback
+  const validateAndParseLocation = useCallback((locationData) => {
     console.log("Validating location data:", locationData);
 
     if (!locationData) {
@@ -951,10 +968,10 @@ const DataAsetYardipPage = () => {
 
     console.warn("Unrecognized location format:", lokasi);
     return null;
-  };
+  }, []);
 
-  // Prepare asset untuk peta utama dengan PIN MARKERS
-  const prepareAssetsForMainMap = () => {
+  // Prepare asset untuk peta utama dengan PIN MARKERS - menggunakan useMemo
+  const preparedAssetsForMainMap = useMemo(() => {
     return filteredAssets
       .map((asset) => {
         const validatedLocation = validateAndParseLocation(asset.lokasi);
@@ -976,10 +993,10 @@ const DataAsetYardipPage = () => {
         };
       })
       .filter(Boolean);
-  };
+  }, [filteredAssets, validateAndParseLocation]);
 
-  // Prepare current asset for map display during editing
-  const prepareEditAssetForMap = () => {
+  // Prepare current asset for map display during editing - menggunakan useMemo
+  const preparedEditAssetForMap = useMemo(() => {
     if (!editingAsset) {
       console.log("No editing asset available");
       return [];
@@ -1009,7 +1026,17 @@ const DataAsetYardipPage = () => {
 
     console.log("Asset prepared for map:", assetForMap);
     return [assetForMap];
-  };
+  }, [editingAsset, validateAndParseLocation]);
+
+  // Error boundary handlers
+  const handleMapError = useCallback(() => {
+    console.warn('Map error occurred, resetting map state');
+    setMapKey(Date.now());
+  }, []);
+
+  const handleFallbackMode = useCallback(() => {
+    toast.info("Beralih ke mode tanpa peta. Tabel data tetap dapat digunakan.");
+  }, []);
 
   if (loading) return <Spinner animation="border" variant="primary" />;
 
@@ -1034,15 +1061,22 @@ const DataAsetYardipPage = () => {
                 </div>
               </Card.Header>
               <Card.Body style={{ height: "50vh", padding: 0 }}>
-                <PetaAsetYardip
-                  assets={prepareAssetsForMainMap()}
-                  onAssetClick={handleMarkerClick}
-                  zoomToAsset={zoomToAsset}
-                  markerColorMode="status"
-                  displayMode="marker" // PIN MARKERS UNTUK PETA UTAMA
-                  jatengBoundary={jatengBoundary}
-                  diyBoundary={diyBoundary}
-                />
+                <MapErrorBoundary 
+                  height="50vh" 
+                  onRetry={handleMapError}
+                  onFallback={handleFallbackMode}
+                >
+                  <PetaAsetYardip
+                    key={`main-map-${mapKey}`}
+                    assets={preparedAssetsForMainMap}
+                    onAssetClick={handleMarkerClick}
+                    zoomToAsset={zoomToAsset}
+                    markerColorMode="status"
+                    displayMode="marker" // PIN MARKERS UNTUK PETA UTAMA
+                    jatengBoundary={jatengBoundary}
+                    diyBoundary={diyBoundary}
+                  />
+                </MapErrorBoundary>
               </Card.Body>
               <Card.Footer className="bg-light">
                 <Row className="text-center">
@@ -1140,7 +1174,7 @@ const DataAsetYardipPage = () => {
               </Card.Body>
             </Card>
 
-            {/* SUMMARY STATISTICS - MIRIP DENGAN DataAsetTanahPage */}
+            {/* SUMMARY STATISTICS */}
             {filteredAssets.length > 0 && (
               <Card className="mt-3">
                 <Card.Body>
@@ -1213,7 +1247,7 @@ const DataAsetYardipPage = () => {
         </Row>
       )}
 
-      {/* FORM EDIT menggunakan komponen EditYardip - TAMPIL KETIKA editingAsset TRUE */}
+      {/* FORM EDIT menggunakan komponen EditYardip */}
       {editingAsset && !isEditingLocation && (
         <Row>
           <Col md={12}>
@@ -1234,7 +1268,7 @@ const DataAsetYardipPage = () => {
         </Row>
       )}
 
-      {/* PETA EDIT menggunakan komponen EditYardipLocation - TAMPIL KETIKA isEditingLocation TRUE */}
+      {/* PETA EDIT menggunakan komponen EditYardipLocation */}
       {editingAsset && isEditingLocation && (
         <Row>
           <Col md={12}>
@@ -1249,7 +1283,7 @@ const DataAsetYardipPage = () => {
               kotaData={kotaData}
               jatengBoundary={jatengBoundary}
               diyBoundary={diyBoundary}
-              prepareEditAssetForMap={prepareEditAssetForMap}
+              prepareEditAssetForMap={preparedEditAssetForMap}
               editedLocationData={editedLocationData}
             />
           </Col>
@@ -1263,7 +1297,7 @@ const DataAsetYardipPage = () => {
         onHide={handleCloseDetailModal}
       />
 
-      {/* NEW: OFFCANVAS DETAIL ASET YARDIP */}
+      {/* OFFCANVAS DETAIL ASET YARDIP */}
       <DetailOffcanvasYardip
         show={showOffcanvas}
         handleClose={handleCloseOffcanvas}
