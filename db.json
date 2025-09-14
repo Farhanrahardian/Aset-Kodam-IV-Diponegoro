@@ -25,7 +25,7 @@
       "sertifikat_bidang": "12",
       "sertifikat_luas": 52576190.44,
       "belum_sertifikat_bidang": 0,
-      "belum_sertifikat_luas": 0,
+      "belum_sertifikat_luas": "",
       "keterangan": "",
       "atas_nama_pemilik_sertifikat": "pemerinta RI",
       "lokasi": {
@@ -146,57 +146,6 @@
       "kodim_id": "Kodim 0729/Bantul"
     },
     {
-      "id": "T1757587248686",
-      "nama": "Admin 14",
-      "korem_id": "1",
-      "kodim": "Kodim 0702/Purbalingga",
-      "luas": 70832632.90309983,
-      "kib_kode_barang": "werewe",
-      "nomor_registrasi": "ewefdsd",
-      "alamat": "twud",
-      "peruntukan": "gudang",
-      "status": "Dimiliki/Dikuasai",
-      "asal_milik": "sdfdssdd",
-      "pemilikan_sertifikat": "Ya",
-      "keterangan_bukti_pemilikan": "",
-      "sertifikat_bidang": 0,
-      "sertifikat_luas": 70832632.9,
-      "belum_sertifikat_bidang": 0,
-      "belum_sertifikat_luas": "",
-      "keterangan": "",
-      "atas_nama_pemilik_sertifikat": "",
-      "lokasi": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              111.396233,
-              -6.99291
-            ],
-            [
-              111.398292,
-              -7.053563
-            ],
-            [
-              111.508819,
-              -7.026986
-            ],
-            [
-              111.475867,
-              -6.974508
-            ],
-            [
-              111.396233,
-              -6.99291
-            ]
-          ]
-        ]
-      },
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": "",
-      "kodim_id": "Kodim 0702/Purbalingga"
-    },
-    {
       "id": "T1757612105600",
       "nama": "Aset Coba 3",
       "korem_id": "1",
@@ -239,64 +188,6 @@
             [
               109.192546,
               -7.394603
-            ]
-          ]
-        ]
-      },
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": ""
-    },
-    {
-      "id": "T1757612218833",
-      "nama": "Aset Coba 4",
-      "korem_id": "1",
-      "kodim": "Kodim 0702/Purbalingga",
-      "luas": 357.13320957196623,
-      "kib_kode_barang": "4",
-      "nomor_registrasi": "4",
-      "alamat": "4",
-      "peruntukan": "4",
-      "status": "Tidak Dimiliki/Tidak Dikuasai",
-      "asal_milik": "4",
-      "pemilikan_sertifikat": "Tidak",
-      "keterangan_bukti_pemilikan": "",
-      "sertifikat_bidang": 0,
-      "sertifikat_luas": 0,
-      "belum_sertifikat_bidang": "4",
-      "belum_sertifikat_luas": 357.13,
-      "keterangan": "",
-      "atas_nama_pemilik_sertifikat": "",
-      "lokasi": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              109.448732,
-              -7.381578
-            ],
-            [
-              109.448877,
-              -7.381546
-            ],
-            [
-              109.448877,
-              -7.381636
-            ],
-            [
-              109.448925,
-              -7.381769
-            ],
-            [
-              109.448812,
-              -7.381812
-            ],
-            [
-              109.448775,
-              -7.381689
-            ],
-            [
-              109.448732,
-              -7.381578
             ]
           ]
         ]
@@ -551,53 +442,6 @@
       "bukti_pemilikan_filename": ""
     },
     {
-      "id": "T1757614127539",
-      "nama": "Aset Coba 10",
-      "korem_id": "5",
-      "kodim": "Kodim 0733/Kota Semarang",
-      "luas": 152.47462274328677,
-      "kib_kode_barang": "10",
-      "nomor_registrasi": "10",
-      "alamat": "10",
-      "peruntukan": "10",
-      "status": "Dimiliki/Dikuasai",
-      "asal_milik": "10",
-      "pemilikan_sertifikat": "Ya",
-      "keterangan_bukti_pemilikan": "10",
-      "sertifikat_bidang": "10",
-      "sertifikat_luas": "152.47",
-      "belum_sertifikat_bidang": 0,
-      "belum_sertifikat_luas": "",
-      "keterangan": "",
-      "atas_nama_pemilik_sertifikat": "10",
-      "lokasi": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              110.385725,
-              -7.003375
-            ],
-            [
-              110.385746,
-              -7.003513
-            ],
-            [
-              110.385918,
-              -7.00346
-            ],
-            [
-              110.385725,
-              -7.003375
-            ]
-          ]
-        ]
-      },
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": "",
-      "kodim_id": "Kodim 0733/Kota Semarang"
-    },
-    {
       "id": "T1757614173723",
       "nama": "Aset Coba 11",
       "korem_id": "5",
@@ -663,6 +507,138 @@
       "bukti_pemilikan_url": "",
       "bukti_pemilikan_filename": "",
       "kodim_id": "Kodim 0733/Kota Semarang"
+    },
+    {
+      "id": "T1757706170927",
+      "nama": "123",
+      "korem_id": "2",
+      "kodim": "Kodim 0734/Yogyakarta",
+      "luas": 49701.58301951302,
+      "kib_kode_barang": "123",
+      "nomor_registrasi": "123",
+      "alamat": "1231",
+      "peruntukan": "gudang",
+      "status": "Dimiliki/Dikuasai",
+      "asal_milik": "1231",
+      "pemilikan_sertifikat": "Ya",
+      "keterangan_bukti_pemilikan": "1312",
+      "sertifikat_bidang": "12",
+      "sertifikat_luas": 49701.58,
+      "belum_sertifikat_bidang": 0,
+      "belum_sertifikat_luas": 0,
+      "keterangan": "",
+      "atas_nama_pemilik_sertifikat": "rudi",
+      "lokasi": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              110.363409,
+              -7.804985
+            ],
+            [
+              110.363666,
+              -7.802859
+            ],
+            [
+              110.365425,
+              -7.803114
+            ],
+            [
+              110.365575,
+              -7.803454
+            ],
+            [
+              110.365382,
+              -7.805134
+            ],
+            [
+              110.363409,
+              -7.804985
+            ]
+          ]
+        ]
+      },
+      "bukti_pemilikan_url": "",
+      "bukti_pemilikan_filename": ""
+    },
+    {
+      "id": "T1757755539559",
+      "nama": "121",
+      "korem_id": "4",
+      "kodim": "Kodim 0723/Klaten",
+      "luas": 5997421.828558132,
+      "kib_kode_barang": "1111",
+      "nomor_registrasi": "111",
+      "alamat": "123",
+      "peruntukan": "123",
+      "status": "Dimiliki/Dikuasai",
+      "asal_milik": "123",
+      "pemilikan_sertifikat": "Ya",
+      "keterangan_bukti_pemilikan": "123",
+      "sertifikat_bidang": "2",
+      "sertifikat_luas": 5997421.83,
+      "belum_sertifikat_bidang": 0,
+      "belum_sertifikat_luas": 0,
+      "keterangan": "",
+      "atas_nama_pemilik_sertifikat": "12",
+      "lokasi": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              110.696006,
+              -7.684071
+            ],
+            [
+              110.729988,
+              -7.691896
+            ],
+            [
+              110.727585,
+              -7.684071
+            ],
+            [
+              110.731704,
+              -7.677947
+            ],
+            [
+              110.705274,
+              -7.667399
+            ],
+            [
+              110.696006,
+              -7.684071
+            ]
+          ]
+        ]
+      },
+      "bukti_pemilikan_url": "",
+      "bukti_pemilikan_filename": ""
+    },
+    {
+      "id": "T1757756601236",
+      "nama": "212",
+      "korem_id": "1",
+      "kodim": "Kodim 0701/Banyumas",
+      "luas": 23234728.29097411,
+      "kib_kode_barang": "121",
+      "nomor_registrasi": "121",
+      "alamat": "121",
+      "peruntukan": "121",
+      "status": "Dimiliki/Dikuasai",
+      "asal_milik": "121",
+      "pemilikan_sertifikat": "Ya",
+      "keterangan_bukti_pemilikan": "212",
+      "sertifikat_bidang": "1",
+      "sertifikat_luas": 23234728.29,
+      "belum_sertifikat_bidang": 0,
+      "belum_sertifikat_luas": 0,
+      "keterangan": "",
+      "atas_nama_pemilik_sertifikat": "121",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[109.122765,-7.416176],[109.147479,-7.467241],[109.198967,-7.420262],[109.122765,-7.416176]]]}",
+      "bukti_pemilikan_url": "",
+      "bukti_pemilikan_filename": ""
     }
   ],
   "yardip_assets": [

@@ -52,14 +52,13 @@ const FormAset = ({
 
   useEffect(() => {
     // Sync form state when selection comes from the map
-    if (selectedKoremId && selectedKoremId !== formData.korem_id) {
+    if (selectedKoremId !== formData.korem_id) {
       setFormData((prev) => ({
         ...prev,
         korem_id: selectedKoremId,
         kodim: selectedKodimId || "", // Reset kodim when korem changes from map
       }));
-    }
-    if (selectedKodimId && selectedKodimId !== formData.kodim) {
+    } else if (selectedKodimId !== formData.kodim) {
       setFormData((prev) => ({
         ...prev,
         kodim: selectedKodimId,
@@ -90,7 +89,10 @@ const FormAset = ({
           }
         } else if (kodimObjects.length === 0) {
           // Jika tidak ada daftar KODIM (KOrem berdiri sendiri)
-          const newKodim = selectedKoremData.nama;
+          // Special case for Kota Semarang which is "Kodim 0733/Kota Semarang"
+          const newKodim = selectedKoremData.nama === "Berdiri Sendiri" || selectedKoremData.nama === "Kodim 0733/Kota Semarang"
+            ? "Kodim 0733/Kota Semarang" 
+            : selectedKoremData.nama;
           setFormData((prev) => ({ ...prev, kodim: newKodim }));
           onLocationChange && onLocationChange(formData.korem_id, newKodim);
         }
@@ -131,12 +133,21 @@ const FormAset = ({
     const { name, value } = e.target;
 
     if (name === "korem_id") {
+      // Special handling for "Kodim 0733/Kota Semarang" (formerly "Berdiri Sendiri")
+      const selectedKoremData = koremList.find(k => k.id === value);
+      let kodimValue = "";
+      
+      // If it's "Kodim 0733/Kota Semarang", automatically set kodim to "Kodim 0733/Kota Semarang"
+      if (selectedKoremData && (selectedKoremData.nama === "Berdiri Sendiri" || selectedKoremData.nama === "Kodim 0733/Kota Semarang")) {
+        kodimValue = "Kodim 0733/Kota Semarang";
+      }
+      
       setFormData({
         ...formData,
         korem_id: value,
-        kodim: "",
+        kodim: kodimValue,
       });
-      onLocationChange && onLocationChange(value, "");
+      onLocationChange && onLocationChange(value, kodimValue);
     } else if (name === "pemilikan_sertifikat") {
       // Ketika status sertifikat berubah, pindahkan data luas ke field yang sesuai
       const currentArea =
@@ -258,7 +269,7 @@ const FormAset = ({
                         <option value="">-- Pilih Korem --</option>
                         {koremList.map((korem) => (
                           <option key={korem.id} value={korem.id}>
-                            {korem.nama}
+                            {korem.nama === "Berdiri Sendiri" ? "Kodim 0733/Kota Semarang" : korem.nama}
                           </option>
                         ))}
                       </Form.Select>

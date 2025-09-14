@@ -206,8 +206,7 @@ const DetailOffcanvasAset = ({
             <PetaAset
               key={`detail-${aset.id}-${aset.updated_at || Date.now()}`}
               assets={assetForMap}
-              fitBounds={true}
-              asetPilihan={aset}
+              mode="detail"
             />
           </div>
         )}

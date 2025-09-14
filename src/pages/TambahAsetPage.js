@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import PetaGambarAset from "../components/PetaGambarAset";
 import FormAset from "../components/FormAset";
+import { normalizeKodimName } from "../utils/kodimUtils";
 
 const API_URL = "http://localhost:3001";
 
@@ -74,14 +75,25 @@ const TambahAsetPage = () => {
       setSelectedKodimId(kodimName);
 
       const koremData = koremList.find((k) => k.id === koremId);
-      setSelectedKorem(koremData ? { id: koremData.id, nama: koremData.nama } : null);
+      // Special case: display "Kodim 0733/Kota Semarang" instead of "Berdiri Sendiri"
+      const displayNama = koremData?.nama === "Berdiri Sendiri" ? "Kodim 0733/Kota Semarang" : koremData?.nama;
+      setSelectedKorem(koremData ? { id: koremData.id, nama: displayNama } : null);
+
+      // Special handling for Kota Semarang
+      if (kodimName === "Kodim 0733/Kota Semarang" || (koremData?.nama === "Berdiri Sendiri" && !kodimName)) {
+        // Find the feature where listkodim_Korem is "Berdiri Sendiri"
+        const kodimFeature = kodimBoundaries?.features.find(
+          (f) => f.properties.listkodim_Korem === "Berdiri Sendiri"
+        );
+        setSelectedKodim(kodimFeature ? { nama: "Kodim 0733/Kota Semarang", geometry: kodimFeature.geometry } : null);
+        setIsLocationSelected(true);
+        return;
+      }
 
       if (kodimName && kodimBoundaries) {
         const kodimFeature = kodimBoundaries.features.find((f) => {
-          const featureName = f.properties.listkodim_Kodim;
-          if (kodimName === "Kodim 0733/Kota Semarang") {
-            return featureName.startsWith("Kodim 0733/Semarang");
-          }
+          const featureName = normalizeKodimName(f.properties.listkodim_Kodim);
+          // Special case handling for Grobogan
           if (kodimName === "Kodim 0717/Grobogan") {
             return featureName === "Kodim 0717/Purwodadi";
           }
@@ -97,7 +109,7 @@ const TambahAsetPage = () => {
     [kodimBoundaries, koremList]
   );
 
-  const handleAreaSelect = (type, koremName, kodimName) => {
+    const handleAreaSelect = (type, koremName, kodimName) => {
     setSelectionSource("map");
     if (type === "KOREM") {
       if (koremName === null) {
@@ -109,11 +121,28 @@ const TambahAsetPage = () => {
         return;
       }
 
+      // Special handling for Kota Semarang - directly process it without intermediate step
+      if (koremName === "Berdiri Sendiri" || koremName === "Kodim 0733/Kota Semarang") {
+        const matchingKorem = koremList.find(
+          (korem) => korem.nama === "Kodim 0733/Kota Semarang" || korem.id === "5"
+        );
+        
+        if (matchingKorem) {
+          setSelectedKoremId(matchingKorem.id);
+          setSelectedKorem({ id: matchingKorem.id, nama: matchingKorem.nama });
+          // For Kota Semarang, directly set the Kodim as well
+          setSelectedKodimId("Kodim 0733/Kota Semarang");
+          handleLocationChange(matchingKorem.id, "Kodim 0733/Kota Semarang");
+          return;
+        }
+      }
+
       let matchingKorem;
-      // DATA MISMATCH FIX: Map says "Berdiri Sendiri", DB says "Kodim 0733/Kota Semarang"
+      // DATA MISMATCH FIX: Map says "Berdiri Sendiri", DB says "Berdiri Sendiri" but with empty kodim array
+      // Special case for Kota Semarang which is "Berdiri Sendiri"
       if (koremName.trim() === "Berdiri Sendiri") {
         matchingKorem = koremList.find(
-          (korem) => korem.nama === "Kodim 0733/Kota Semarang"
+          (korem) => korem.nama === "Berdiri Sendiri"
         );
       } else {
         matchingKorem = koremList.find(
@@ -134,20 +163,44 @@ const TambahAsetPage = () => {
         console.error("Could not find Korem with name:", koremName);
       }
     } else if (type === "KODIM") {
-      const matchingKorem = koremList.find(
-        (korem) => korem.nama.trim() === koremName.trim()
-      );
-      
-      if (matchingKorem) {
-        setSelectedKoremId(matchingKorem.id);
-        setSelectedKodimId(kodimName);
-        handleLocationChange(matchingKorem.id, kodimName);
+      // Special handling for Kota Semarang which is "Berdiri Sendiri"
+      if (koremName === "Berdiri Sendiri" || koremName === "Kodim 0733/Kota Semarang") {
+        const matchingKorem = koremList.find(
+          (korem) => korem.nama === "Kodim 0733/Kota Semarang" || korem.id === "5"
+        );
+        
+        if (matchingKorem) {
+          setSelectedKoremId(matchingKorem.id);
+          setSelectedKorem({ id: matchingKorem.id, nama: matchingKorem.nama });
+          // Special case: Kota Semarang
+          if (kodimName.includes("Semarang") || kodimName === "Kodim 0733/Semarang (BS)") {
+            setSelectedKodimId("Kodim 0733/Kota Semarang");
+            handleLocationChange(matchingKorem.id, "Kodim 0733/Kota Semarang");
+          } else {
+            setSelectedKodimId(kodimName);
+            handleLocationChange(matchingKorem.id, kodimName);
+          }
+        } else {
+          setSelectedKodimId(kodimName);
+          toast.success(`KODIM ${kodimName} dipilih. Silakan gambar area aset.`);
+        }
       } else {
-        setSelectedKodimId(kodimName);
-        toast.success(`KODIM ${kodimName} dipilih. Silakan gambar area aset.`);
+        const matchingKorem = koremList.find(
+          (korem) => korem.nama.trim() === koremName.trim()
+        );
+        
+        if (matchingKorem) {
+          setSelectedKoremId(matchingKorem.id);
+          setSelectedKorem({ id: matchingKorem.id, nama: matchingKorem.nama });
+          setSelectedKodimId(kodimName);
+          handleLocationChange(matchingKorem.id, kodimName);
+        } else {
+          setSelectedKodimId(kodimName);
+          toast.success(`KODIM ${kodimName} dipilih. Silakan gambar area aset.`);
+        }
       }
     }
-  };
+  };;
 
   const handleDrawingCreated = (data) => {
     if (!data || !data.geometry) {
@@ -189,12 +242,16 @@ const TambahAsetPage = () => {
       }
     }
 
+    // Ensure we save "Kodim 0733/Kota Semarang" instead of "Berdiri Sendiri"
+    const koremIdToSave = selectedKoremId;
+    const kodimToSave = selectedKodimId === "Berdiri Sendiri" ? "Kodim 0733/Kota Semarang" : selectedKodimId;
+
     const assetPayload = {
       ...assetData,
       id: `T${Date.now()}`,
-      korem_id: selectedKoremId,
-      kodim: selectedKodimId,
-      lokasi: drawnAsset ? drawnAsset.geometry : null,
+      korem_id: koremIdToSave,
+      kodim: kodimToSave === "Berdiri Sendiri" ? "Kodim 0733/Kota Semarang" : kodimToSave,
+      lokasi: drawnAsset ? JSON.stringify(drawnAsset.geometry) : null,
       luas: drawnAsset ? drawnAsset.area : 0,
       sertifikat_bidang: assetData.sertifikat_bidang || 0,
       sertifikat_luas: assetData.sertifikat_luas || 0,
@@ -219,7 +276,7 @@ const TambahAsetPage = () => {
       });
 
       toast.success("Aset berhasil ditambahkan!", { id: toastId });
-      navigate("/data-aset-tanah");
+      navigate("/data-aset-tanah", { state: { refresh: true } });
     } catch (err) {
       toast.error("Gagal menyimpan aset.", { id: toastId });
       console.error("Save error:", err.response?.data || err.message);
@@ -227,7 +284,7 @@ const TambahAsetPage = () => {
   };
 
   const handleCancel = () => {
-    navigate("/data-aset-tanah");
+    navigate("/data-aset-tanah", { replace: true });
   };
 
   if (loading) return <Spinner animation="border" variant="primary" />;
