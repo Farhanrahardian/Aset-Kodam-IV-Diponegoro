@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { MapContainer, TileLayer, FeatureGroup, GeoJSON, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, FeatureGroup, GeoJSON, Marker, Popup, useMap } from "react-leaflet";
 import { GeoSearchControl, OpenStreetMapProvider } from "leaflet-geosearch";
 import "leaflet-geosearch/dist/geosearch.css";
 import { EditControl } from "react-leaflet-draw";
@@ -15,6 +15,42 @@ L.Icon.Default.mergeOptions({
   iconUrl: require("leaflet/dist/images/marker-icon.png"),
   shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
 });
+
+// Custom colored markers for different statuses
+const createCustomIcon = (color = '#3388ff', status = '') => {
+  const svgIcon = `
+    <svg width="25" height="41" viewBox="0 0 25 41" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12.5 0C5.6 0 0 5.6 0 12.5c0 10.6 12.5 28.5 12.5 28.5S25 23.1 25 12.5C25 5.6 19.4 0 12.5 0z" 
+            fill="${color}" stroke="#fff" stroke-width="1.5"/>
+      <circle cx="12.5" cy="12.5" r="6" fill="#fff"/>
+      <circle cx="12.5" cy="12.5" r="3" fill="${color}"/>
+    </svg>
+  `;
+  
+  return L.divIcon({
+    html: svgIcon,
+    className: `custom-marker-${status.replace(/[^a-zA-Z0-9]/g, '')}`,
+    iconSize: [25, 41],
+    iconAnchor: [12.5, 41],
+    popupAnchor: [0, -41]
+  });
+};
+
+// Get marker color based on status
+const getMarkerColor = (status) => {
+  switch (status) {
+    case "Dimiliki/Dikuasai":
+      return "#10b981"; // Green
+    case "Tidak Dimiliki/Tidak Dikuasai":
+      return "#ef4444"; // Red
+    case "Lain-lain":
+      return "#f59e0b"; // Yellow/Orange
+    case "Dalam Proses":
+      return "#06b6d4"; // Cyan
+    default:
+      return "#6b7280"; // Gray
+  }
+};
 
 const MapSearch = () => {
   const map = useMap();
@@ -54,8 +90,12 @@ const PetaAsetYardip = ({
   fitBounds = false,
   cityBounds = null,
   selectedCity = null,
-  manualAreaAdjustment = null, // New prop for manual area adjustment
-  originalGeometry = null, // New prop for original geometry
+  manualAreaAdjustment = null,
+  originalGeometry = null,
+  onAssetClick,
+  zoomToAsset = null,
+  markerColorMode = "status",
+  displayMode = "polygon", // NEW: "polygon" or "marker" - default polygon for backward compatibility
 }) => {
   const mapRef = useRef(null);
   const featureGroupRef = useRef(null);
@@ -65,11 +105,49 @@ const PetaAsetYardip = ({
   const mapCenter = [-7.5, 110.0]; // Center of Central Java
   const initialZoom = 8;
 
-  // Auto-zoom to selected area, city, or assets with improved timing
+  // Auto-zoom to selected area, city, assets, or specific asset
   useEffect(() => {
     const timer = setTimeout(() => {
       if (mapRef.current) {
-        if (cityBounds && Array.isArray(cityBounds) && cityBounds.length === 2) {
+        if (zoomToAsset && zoomToAsset.lokasi) {
+          console.log("Auto-zooming to specific yardip asset:", zoomToAsset);
+          try {
+            if (displayMode === "marker") {
+              // For marker mode, zoom to asset center
+              const center = getAssetCenter(zoomToAsset);
+              if (center) {
+                mapRef.current.setView(center, 15, { 
+                  animate: true,
+                  duration: 1.5
+                });
+                console.log("✅ Successfully zoomed to yardip asset marker:", zoomToAsset.id);
+              }
+            } else {
+              // For polygon mode, fit bounds to polygon
+              const validatedLocation = validateAndParseLocation(zoomToAsset.lokasi);
+              if (validatedLocation) {
+                const geoJsonAsset = {
+                  type: "Feature",
+                  geometry: {
+                    type: "Polygon", 
+                    coordinates: validatedLocation
+                  }
+                };
+                const layer = L.geoJSON(geoJsonAsset);
+                mapRef.current.fitBounds(layer.getBounds(), { 
+                  padding: [50, 50],
+                  maxZoom: 16,
+                  animate: true,
+                  duration: 1.5
+                });
+                console.log("✅ Successfully zoomed to yardip asset polygon:", zoomToAsset.id);
+              }
+            }
+          } catch (error) {
+            console.error("Error zooming to yardip asset:", error);
+          }
+        }
+        else if (cityBounds && Array.isArray(cityBounds) && cityBounds.length === 2) {
           console.log("Auto-zooming to city bounds:", cityBounds, "City:", selectedCity);
           
           try {
@@ -107,26 +185,47 @@ const PetaAsetYardip = ({
           });
         } 
         else if (fitBounds && assets.length > 0) {
-          const validAssets = assets.filter(asset => asset.lokasi && Array.isArray(asset.lokasi));
-          if (validAssets.length > 0) {
-            try {
-              const group = new L.FeatureGroup();
+          if (displayMode === "marker") {
+            // For marker mode, fit bounds to all marker positions
+            const validAssets = assets.filter(asset => asset.lokasi);
+            if (validAssets.length > 0) {
+              const bounds = L.latLngBounds();
               validAssets.forEach(asset => {
-                const geoJsonAsset = createGeoJSONFromAsset(asset);
-                if (geoJsonAsset) {
-                  const layer = L.geoJSON(geoJsonAsset);
-                  group.addLayer(layer);
+                const center = getAssetCenter(asset);
+                if (center) {
+                  bounds.extend(center);
                 }
               });
-              
-              if (group.getLayers().length > 0) {
-                mapRef.current.fitBounds(group.getBounds(), { 
-                  padding: [10, 10],
+              if (bounds.isValid()) {
+                mapRef.current.fitBounds(bounds, { 
+                  padding: [20, 20],
                   animate: true 
                 });
               }
-            } catch (error) {
-              console.error("Error fitting bounds to assets:", error);
+            }
+          } else {
+            // For polygon mode, fit bounds to all polygons
+            const validAssets = assets.filter(asset => asset.lokasi && Array.isArray(asset.lokasi));
+            if (validAssets.length > 0) {
+              try {
+                const group = new L.FeatureGroup();
+                validAssets.forEach(asset => {
+                  const geoJsonAsset = createGeoJSONFromAsset(asset);
+                  if (geoJsonAsset) {
+                    const layer = L.geoJSON(geoJsonAsset);
+                    group.addLayer(layer);
+                  }
+                });
+                
+                if (group.getLayers().length > 0) {
+                  mapRef.current.fitBounds(group.getBounds(), { 
+                    padding: [10, 10],
+                    animate: true 
+                  });
+                }
+              } catch (error) {
+                console.error("Error fitting bounds to yardip assets:", error);
+              }
             }
           }
         }
@@ -134,7 +233,63 @@ const PetaAsetYardip = ({
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [selectedKorem, selectedKodim, assets, fitBounds, cityBounds, selectedCity]);
+  }, [selectedKorem, selectedKodim, assets, fitBounds, cityBounds, selectedCity, zoomToAsset, displayMode]);
+
+  // Function to get asset center point for markers
+  const getAssetCenter = (asset) => {
+    try {
+      const validatedLocation = validateAndParseLocation(asset.lokasi);
+      if (!validatedLocation) return null;
+
+      // Create turf polygon and get centroid
+      const polygon = turf.polygon(validatedLocation);
+      const centroid = turf.centroid(polygon);
+      const [lng, lat] = centroid.geometry.coordinates;
+      
+      return [lat, lng]; // Leaflet expects [lat, lng]
+    } catch (error) {
+      console.error("Error getting asset center:", error);
+      return null;
+    }
+  };
+
+  // Function to validate and parse location data
+  const validateAndParseLocation = (locationData) => {
+    if (!locationData) return null;
+
+    let lokasi = locationData;
+
+    if (typeof lokasi === "string") {
+      try {
+        lokasi = JSON.parse(lokasi);
+      } catch (e) {
+        console.error("Failed to parse location JSON:", e);
+        return null;
+      }
+    }
+
+    if (Array.isArray(lokasi)) {
+      if (lokasi.length > 0 && Array.isArray(lokasi[0]) && typeof lokasi[0][0] === "number") {
+        return [lokasi];
+      }
+      if (lokasi.length > 0 && Array.isArray(lokasi[0]) && Array.isArray(lokasi[0][0])) {
+        return lokasi;
+      }
+    }
+
+    if (lokasi.type === "Polygon" && lokasi.coordinates) {
+      return lokasi.coordinates;
+    }
+
+    if (lokasi.coordinates) {
+      if (Array.isArray(lokasi.coordinates)) {
+        return lokasi.coordinates;
+      }
+    }
+
+    console.warn("Unrecognized yardip location format:", lokasi);
+    return null;
+  };
 
   // Handle manual area adjustment - adjust polygon to match new area
   useEffect(() => {
@@ -269,47 +424,109 @@ const PetaAsetYardip = ({
     if (!asset.lokasi) return null;
 
     try {
-      let coordinates = asset.lokasi;
-
-      if (Array.isArray(coordinates) && Array.isArray(coordinates[0]) && Array.isArray(coordinates[0][0])) {
-        coordinates = coordinates[0];
-      }
-      else if (Array.isArray(coordinates) && Array.isArray(coordinates[0]) && coordinates[0].length === 2) {
-        // Already in correct format
-      }
-      else if (Array.isArray(coordinates) && coordinates.length === 1 && Array.isArray(coordinates[0])) {
-        coordinates = coordinates[0];
-      }
-      else {
-        console.warn("Unrecognized coordinate format for asset:", asset.id);
-        return null;
-      }
-
-      if (coordinates.length > 0) {
-        const first = coordinates[0];
-        const last = coordinates[coordinates.length - 1];
-        if (first[0] !== last[0] || first[1] !== last[1]) {
-          coordinates.push([first[0], first[1]]);
-        }
-      }
+      const validatedLocation = validateAndParseLocation(asset.lokasi);
+      if (!validatedLocation) return null;
 
       return {
         type: "Feature",
         properties: {
           id: asset.id,
           nama: asset.nama,
-          kodim: asset.kodim,
+          pengelola: asset.pengelola,
+          bidang: asset.bidang,
           status: asset.status,
           luas: asset.luas,
+          area: asset.area,
+          kabkota: asset.kabkota,
+          kecamatan: asset.kecamatan,
+          kelurahan: asset.kelurahan,
+          keterangan: asset.keterangan,
+          type: asset.type,
+          originalAsset: asset.originalAsset || asset, // Reference to original asset
         },
         geometry: {
           type: "Polygon",
-          coordinates: [coordinates],
+          coordinates: validatedLocation,
         },
       };
     } catch (error) {
-      console.error("Error creating GeoJSON for asset:", asset.id, error);
+      console.error("Error creating GeoJSON for yardip asset:", asset.id, error);
       return null;
+    }
+  };
+
+  // Function to get asset style based on color mode
+  const getAssetStyle = (feature, markerColorMode) => {
+    const properties = feature.properties;
+    
+    switch (markerColorMode) {
+      case "status":
+        switch (properties.status) {
+          case "Dimiliki/Dikuasai":
+            return {
+              fillColor: "#10b981", // Green
+              color: "#059669",
+              weight: 2,
+              opacity: 1,
+              fillOpacity: 0.7,
+            };
+          case "Tidak Dimiliki/Tidak Dikuasai":
+            return {
+              fillColor: "#ef4444", // Red
+              color: "#dc2626",
+              weight: 2,
+              opacity: 1,
+              fillOpacity: 0.7,
+            };
+          case "Lain-lain":
+            return {
+              fillColor: "#f59e0b", // Yellow
+              color: "#d97706",
+              weight: 2,
+              opacity: 1,
+              fillOpacity: 0.7,
+            };
+          case "Dalam Proses":
+            return {
+              fillColor: "#06b6d4", // Cyan
+              color: "#0891b2",
+              weight: 2,
+              opacity: 1,
+              fillOpacity: 0.7,
+            };
+          default:
+            return {
+              fillColor: "#6b7280", // Gray
+              color: "#4b5563",
+              weight: 2,
+              opacity: 1,
+              fillOpacity: 0.7,
+            };
+        }
+      case "bidang":
+        // Color by bidang/field
+        const bidangColors = {
+          "Bidang A": { fillColor: "#8b5cf6", color: "#7c3aed" },
+          "Bidang B": { fillColor: "#06b6d4", color: "#0891b2" },
+          "Bidang C": { fillColor: "#10b981", color: "#059669" },
+          "Bidang D": { fillColor: "#f59e0b", color: "#d97706" },
+          "Bidang E": { fillColor: "#ef4444", color: "#dc2626" },
+        };
+        const bidangStyle = bidangColors[properties.bidang] || { fillColor: "#6b7280", color: "#4b5563" };
+        return {
+          ...bidangStyle,
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.7,
+        };
+      default:
+        return {
+          fillColor: "#e11d48", // Default pink
+          color: "#be123c",
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.7,
+        };
     }
   };
 
@@ -338,14 +555,6 @@ const PetaAsetYardip = ({
     fillOpacity: 0.1,
   };
 
-  const assetStyle = {
-    fillColor: "#e11d48",
-    weight: 2,
-    opacity: 1,
-    color: "#be123c",
-    fillOpacity: 0.7,
-  };
-
   const cityHighlightStyle = {
     fillColor: "#10b981",
     weight: 3,
@@ -365,22 +574,38 @@ const PetaAsetYardip = ({
     dashArray: "5,5"
   };
 
-  // Popup content for assets
+  // Popup content for assets with click handler (for polygons)
   const onEachAssetFeature = (feature, layer) => {
     if (feature.properties) {
       const props = feature.properties;
+      const originalAsset = props.originalAsset || feature.properties;
+      
       const popupContent = `
-        <div class="asset-popup">
-          <h6 class="mb-2 text-primary">${props.nama || 'Unknown Asset'}</h6>
+        <div class="yardip-asset-popup">
+          <h6 class="mb-2 text-success">${props.pengelola || props.nama || 'Unknown Asset'}</h6>
           <small>
             <strong>ID:</strong> ${props.id}<br/>
-            <strong>Kodim:</strong> ${props.kodim || '-'}<br/>
+            <strong>Bidang:</strong> <span class="badge bg-info">${props.bidang || '-'}</span><br/>
             <strong>Status:</strong> <span class="badge bg-success">${props.status || '-'}</span><br/>
-            <strong>Luas:</strong> ${props.luas ? Number(props.luas).toFixed(2) + ' m²' : '-'}
+            <strong>Lokasi:</strong> ${props.kabkota || '-'}<br/>
+            <strong>Luas:</strong> ${props.area ? Number(props.area).toLocaleString('id-ID') + ' m²' : '-'}<br/>
+            <div class="mt-2">
+              <button class="btn btn-sm btn-primary" onclick="window.handleYardipAssetClick && window.handleYardipAssetClick('${props.id}')">
+                Lihat Detail
+              </button>
+            </div>
           </small>
         </div>
       `;
       layer.bindPopup(popupContent);
+
+      // Add click handler for the layer itself
+      layer.on('click', function(e) {
+        console.log('Yardip Asset clicked:', originalAsset);
+        if (onAssetClick && typeof onAssetClick === 'function') {
+          onAssetClick(originalAsset);
+        }
+      });
     }
   };
 
@@ -429,6 +654,25 @@ const PetaAsetYardip = ({
       }
     };
   };
+
+  // Set up global click handler for popup buttons
+  useEffect(() => {
+    window.handleYardipAssetClick = (assetId) => {
+      console.log('Popup button clicked for yardip asset:', assetId);
+      const asset = assets.find(a => a.originalAsset?.id == assetId || a.id == assetId);
+      if (asset && onAssetClick && typeof onAssetClick === 'function') {
+        const originalAsset = asset.originalAsset || asset;
+        onAssetClick(originalAsset);
+      }
+    };
+
+    return () => {
+      // Cleanup global handler
+      if (window.handleYardipAssetClick) {
+        delete window.handleYardipAssetClick;
+      }
+    };
+  }, [assets, onAssetClick]);
 
   return (
     <MapContainer
@@ -526,19 +770,69 @@ const PetaAsetYardip = ({
         />
       )}
 
-      {/* Existing Assets */}
-      {assets.length > 0 &&
+      {/* Conditional rendering based on displayMode */}
+      {displayMode === "marker" ? (
+        // MARKER MODE: Show pin markers for assets
+        assets.length > 0 &&
+        assets.map((asset, idx) => {
+          const center = getAssetCenter(asset);
+          if (!center) return null;
+
+          const originalAsset = asset.originalAsset || asset;
+          const markerColor = getMarkerColor(originalAsset.status);
+          const customIcon = createCustomIcon(markerColor, originalAsset.status);
+
+          return (
+            <Marker
+              key={`yardip-marker-${originalAsset.id || idx}`}
+              position={center}
+              icon={customIcon}
+              eventHandlers={{
+                click: () => {
+                  console.log('Yardip Marker clicked:', originalAsset);
+                  if (onAssetClick && typeof onAssetClick === 'function') {
+                    onAssetClick(originalAsset);
+                  }
+                }
+              }}
+            >
+              <Popup>
+                <div className="yardip-marker-popup">
+                  <h6 className="mb-2 text-success">
+                    {originalAsset.pengelola || originalAsset.nama || 'Unknown Asset'}
+                  </h6>
+                  <small>
+                    <strong>ID:</strong> {originalAsset.id}<br/>
+                    <strong>Bidang:</strong> <span className="badge bg-info">{originalAsset.bidang || '-'}</span><br/>
+                    <strong>Status:</strong> <span className={`badge bg-${
+                      originalAsset.status === "Dimiliki/Dikuasai" ? 'success' :
+                      originalAsset.status === "Tidak Dimiliki/Tidak Dikuasai" ? 'danger' :
+                      originalAsset.status === "Lain-lain" ? 'warning' :
+                      originalAsset.status === "Dalam Proses" ? 'info' : 'secondary'
+                    }`}>{originalAsset.status || '-'}</span><br/>
+                    <strong>Lokasi:</strong> {originalAsset.kabkota || '-'}<br/>
+                    <strong>Luas:</strong> {originalAsset.area ? Number(originalAsset.area).toLocaleString('id-ID') + ' m²' : '-'}<br/>
+                  </small>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })
+      ) : (
+        // POLYGON MODE: Show polygon shapes for assets (original behavior)
+        assets.length > 0 &&
         assets.map((asset, idx) => {
           const geoJsonAsset = createGeoJSONFromAsset(asset);
           return geoJsonAsset ? (
             <GeoJSON
-              key={`asset-${asset.id || idx}`}
+              key={`yardip-asset-${asset.id || idx}`}
               data={geoJsonAsset}
-              style={assetStyle}
+              style={(feature) => getAssetStyle(feature, markerColorMode)}
               onEachFeature={onEachAssetFeature}
             />
           ) : null;
-        })}
+        })
+      )}
 
       {/* Highlight Korem/Kodim */}
       {selectedKodim && selectedKodim.geometry && (

@@ -657,41 +657,29 @@
         "coordinates": [
           [
             [
-              110.27466,
-              -7.673299
+              110.661959,
+              -6.601809
             ],
             [
-              110.273973,
-              -7.726715
+              110.656465,
+              -6.640004
             ],
             [
-              110.248226,
-              -7.785906
+              110.68153,
+              -6.589531
             ],
             [
-              110.339199,
-              -7.79441
-            ],
-            [
-              110.35808,
-              -7.679083
-            ],
-            [
-              110.27466,
-              -7.677382
-            ],
-            [
-              110.27466,
-              -7.673299
+              110.661959,
+              -6.601809
             ]
           ]
         ]
       },
-      "area": 113490.87,
-      "isManualArea": true,
-      "originalDrawnArea": 113473190.88547498,
+      "area": 4176182.1,
+      "isManualArea": false,
+      "originalDrawnArea": 4176182.101193309,
       "created_at": "2025-09-09T02:20:18.712Z",
-      "updated_at": "2025-09-09T07:10:07.129Z",
+      "updated_at": "2025-09-12T23:17:15.496Z",
       "provinsi_id": "jateng",
       "kota_id": "jepara",
       "provinsi": "Jawa Tengah",
@@ -720,6 +708,255 @@
       "kota_id": "semarang",
       "provinsi": "Jawa Tengah",
       "provinsi_id": "jateng"
+    },
+    {
+      "id": "Y1757661234131",
+      "pengelola": "aaaa",
+      "bidang": "Ruko",
+      "kabkota": "aaaa",
+      "kecamatan": "aaaa",
+      "kelurahan": "aa",
+      "peruntukan": "aaaqa",
+      "status": "Lain-lain",
+      "keterangan": "aaaaa",
+      "type": "yardip",
+      "lokasi": "[[[110.299364,-7.649995],[110.302453,-7.684675],[110.338487,-7.682295],[110.33231,-7.645235],[110.299364,-7.649995]]]",
+      "area": 15362612.407762894,
+      "isManualArea": false,
+      "originalDrawnArea": 15362612.407762894,
+      "created_at": "2025-09-12T07:13:54.131Z",
+      "updated_at": "2025-09-12T07:13:54.131Z",
+      "isManuallyAdjusted": false,
+      "kota": "Sleman",
+      "kota_id": "sleman",
+      "provinsi": "DI Yogyakarta",
+      "provinsi_id": "diy"
+    },
+    {
+      "id": "Y1757718985768",
+      "pengelola": "Admin",
+      "bidang": "Tanah Gudang Kantor",
+      "kabkota": "Semarang",
+      "kecamatan": "bonang",
+      "kelurahan": "moro",
+      "peruntukan": "Kantor Badan Pemerintahan",
+      "status": "Dimiliki/Dikuasai",
+      "keterangan": "ada",
+      "type": "yardip",
+      "lokasi": "[[[109.682209,-6.878952],[109.706264,-6.888494],[109.695611,-6.922572],[109.654718,-6.915416],[109.658842,-6.888153],[109.682209,-6.883723],[109.682209,-6.878952]]]",
+      "area": 19006645.847844113,
+      "isManualArea": false,
+      "originalDrawnArea": 19006645.847844113,
+      "created_at": "2025-09-12T23:16:25.768Z",
+      "updated_at": "2025-09-12T23:16:25.768Z",
+      "isManuallyAdjusted": false,
+      "kota": "Pekalongan",
+      "kota_id": "pekalongan",
+      "provinsi": "Jawa Tengah",
+      "provinsi_id": "jateng"
+    },
+    {
+      "id": "Y1757719120328",
+      "pengelola": "Yayasan Rumpun Diponegoro",
+      "bidang": "Tanah Bangunan",
+      "kabkota": "Semarang",
+      "kecamatan": "bonang",
+      "kelurahan": "moro",
+      "peruntukan": "Kantor Badan Pemerintahan",
+      "status": "Dimiliki/Dikuasai",
+      "keterangan": "ada",
+      "type": "yardip",
+      "lokasi": "[[[110.369195,-7.783237],[110.380879,-7.784598],[110.379504,-7.795481],[110.365759,-7.798202],[110.366446,-7.786979],[110.369195,-7.783237]]]",
+      "area": 2166172.144796883,
+      "isManualArea": false,
+      "originalDrawnArea": 2166172.144796883,
+      "created_at": "2025-09-12T23:18:40.328Z",
+      "updated_at": "2025-09-12T23:18:40.328Z",
+      "isManuallyAdjusted": false,
+      "kota": "Yogyakarta",
+      "kota_id": "jogja",
+      "provinsi": "DI Yogyakarta",
+      "provinsi_id": "diy"
+    },
+    {
+      "id": "Y1757721323006",
+      "pengelola": "Yayasan Rumpun Diponegoro",
+      "bidang": "Ruko",
+      "kabkota": "Semarang",
+      "kecamatan": "bonang",
+      "kelurahan": "moro",
+      "peruntukan": "kantor puat",
+      "status": "Dimiliki/Dikuasai",
+      "keterangan": "ada",
+      "type": "yardip",
+      "lokasi": "[[[110.654827,-6.578116],[110.697437,-6.583913],[110.68919,-6.6204],[110.651047,-6.625856],[110.651734,-6.601305],[110.654827,-6.578116]]]",
+      "area": 21265961.98368483,
+      "isManualArea": false,
+      "originalDrawnArea": 21265961.98368483,
+      "created_at": "2025-09-12T23:55:23.006Z",
+      "updated_at": "2025-09-12T23:55:23.006Z",
+      "isManuallyAdjusted": false,
+      "kota": "Jepara",
+      "kota_id": "jepara",
+      "provinsi": "Jawa Tengah",
+      "provinsi_id": "jateng"
+    },
+    {
+      "id": "Y1757721475015",
+      "pengelola": "Yayasan Rumpun Diponegoro",
+      "bidang": "Tanah Gudang Kantor",
+      "kabkota": "Semarang",
+      "kecamatan": "bonang",
+      "kelurahan": "smganta",
+      "peruntukan": "Kantor Badan Pemerintahan",
+      "status": "Dimiliki/Dikuasai",
+      "keterangan": "adra",
+      "type": "yardip",
+      "lokasi": "[[[110.312188,-7.853762],[110.337274,-7.862944],[110.32181,-7.890146],[110.29535,-7.879946],[110.297756,-7.855462],[110.312188,-7.853762]]]",
+      "area": 12481903.795300044,
+      "isManualArea": false,
+      "originalDrawnArea": 12481903.795300044,
+      "created_at": "2025-09-12T23:57:55.015Z",
+      "updated_at": "2025-09-12T23:57:55.015Z",
+      "isManuallyAdjusted": false,
+      "kota": "Bantul",
+      "kota_id": "bantul",
+      "provinsi": "DI Yogyakarta",
+      "provinsi_id": "diy"
+    },
+    {
+      "id": "Y1757721673023",
+      "pengelola": "Yayasan Rumpun Diponegoro",
+      "bidang": "Tanah",
+      "kabkota": "Semarang",
+      "kecamatan": "bonang",
+      "kelurahan": "moro",
+      "peruntukan": "kantor puat",
+      "status": "Dimiliki/Dikuasai",
+      "keterangan": "ada",
+      "type": "yardip",
+      "lokasi": "[[[110.301879,-7.83982],[110.332119,-7.856483],[110.295006,-7.876205],[110.289165,-7.858523],[110.301879,-7.83982]]]",
+      "area": 9485409.34027703,
+      "isManualArea": false,
+      "originalDrawnArea": 9485409.34027703,
+      "created_at": "2025-09-13T00:01:13.023Z",
+      "updated_at": "2025-09-13T00:01:13.023Z",
+      "isManuallyAdjusted": false,
+      "kota": "Bantul",
+      "kota_id": "bantul",
+      "provinsi": "DI Yogyakarta",
+      "provinsi_id": "diy"
+    },
+    {
+      "id": "Y1757721769927",
+      "pengelola": "Admin",
+      "bidang": "Tanah",
+      "kabkota": "Semarang",
+      "kecamatan": "bonang",
+      "kelurahan": "smganta",
+      "peruntukan": "Kantor Badan Pemerintahan",
+      "status": "Dimiliki/Dikuasai",
+      "keterangan": "ada",
+      "type": "yardip",
+      "lokasi": "[[[110.32181,-7.875185],[110.344146,-7.884366],[110.326965,-7.898307],[110.297412,-7.895587],[110.303254,-7.878245],[110.32181,-7.875185]]]",
+      "area": 1111,
+      "isManualArea": false,
+      "originalDrawnArea": 1111,
+      "created_at": "2025-09-13T00:02:49.927Z",
+      "updated_at": "2025-09-13T00:02:49.927Z",
+      "isManuallyAdjusted": true,
+      "kota": "Bantul",
+      "kota_id": "bantul",
+      "provinsi": "DI Yogyakarta",
+      "provinsi_id": "diy"
+    },
+    {
+      "pengelola": "bbbbbbbbbbbbbbb",
+      "bidang": "Ruko",
+      "kabkota": "aaaaaaaaa",
+      "kecamatan": "aaaaaaaaa",
+      "kelurahan": "aaaaaaaaaa",
+      "peruntukan": "aaaaaaaaaaaa",
+      "status": "Dimiliki/Dikuasai",
+      "keterangan": "aaaaaaaaa",
+      "type": "yardip",
+      "lokasi": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              110.315545,
+              -7.647316
+            ],
+            [
+              110.291854,
+              -7.694611
+            ],
+            [
+              110.350567,
+              -7.692909
+            ],
+            [
+              110.315545,
+              -7.647316
+            ]
+          ]
+        ]
+      },
+      "area": 16766190.414135462,
+      "isManualArea": false,
+      "originalDrawnArea": 16766190.414135462,
+      "created_at": "2025-09-14T03:20:38.277Z",
+      "updated_at": "2025-09-14T03:32:03.772Z",
+      "provinsi_id": "diy",
+      "kota_id": "sleman",
+      "provinsi": "DI Yogyakarta",
+      "kota": "Sleman",
+      "id": "Y1757820038277"
+    },
+    {
+      "pengelola": "yyyyyyyyyyyy",
+      "bidang": "Tanah Gudang Kantor",
+      "kabkota": "yyyyyy",
+      "kecamatan": "yyyyyyyyyyyyyyyy",
+      "kelurahan": "yyyyyyyyyyyyy",
+      "peruntukan": "yyyyyyyyyyy",
+      "status": "Dimiliki/Dikuasai",
+      "keterangan": "yyyyyyyy",
+      "type": "yardip",
+      "lokasi": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              111.365084,
+              -6.713349
+            ],
+            [
+              111.341392,
+              -6.75665
+            ],
+            [
+              111.394955,
+              -6.753923
+            ],
+            [
+              111.365084,
+              -6.713349
+            ]
+          ]
+        ]
+      },
+      "area": 13842915.180722065,
+      "isManualArea": false,
+      "originalDrawnArea": 13842915.180722065,
+      "created_at": "2025-09-14T03:33:49.677Z",
+      "updated_at": "2025-09-14T03:34:38.773Z",
+      "provinsi_id": "jateng",
+      "kota_id": "rembang",
+      "provinsi": "Jawa Tengah",
+      "kota": "Rembang",
+      "id": "Y1757820829677"
     }
   ],
   "korem": [

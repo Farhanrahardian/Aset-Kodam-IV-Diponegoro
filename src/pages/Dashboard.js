@@ -15,13 +15,40 @@ import "./Dashboard.css";
 
 const API_URL = "http://localhost:3001";
 
+// Data kota untuk filter
+const kotaData = {
+  jateng: [
+    { id: "semarang", name: "Semarang" },
+    { id: "solo", name: "Surakarta (Solo)" },
+    { id: "magelang", name: "Magelang" },
+    { id: "salatiga", name: "Salatiga" },
+    { id: "tegal", name: "Tegal" },
+    { id: "pekalongan", name: "Pekalongan" },
+    { id: "purwokerto", name: "Purwokerto" },
+    { id: "cilacap", name: "Cilacap" },
+    { id: "kudus", name: "Kudus" },
+    { id: "jepara", name: "Jepara" },
+    { id: "rembang", name: "Rembang" },
+  ],
+  diy: [
+    { id: "jogja", name: "Yogyakarta" },
+    { id: "sleman", name: "Sleman" },
+    { id: "bantul", name: "Bantul" },
+    { id: "kulonprogo", name: "Kulon Progo" },
+    { id: "gunungkidul", name: "Gunung Kidul" },
+  ],
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const [asetTanahData, setAsetTanahData] = useState([]);
   const [asetYardipData, setAsetYardipData] = useState([]);
   const [koremList, setKoremList] = useState([]);
-  const [selectedKorem, setSelectedKorem] = useState(""); // Filter state
+  const [selectedKorem, setSelectedKorem] = useState(""); // Filter state for tanah
+  const [selectedProvince, setSelectedProvince] = useState(""); // Filter state for yardip
+  const [selectedCity, setSelectedCity] = useState(""); // NEW: Filter state for city
   const [rawAssetsData, setRawAssetsData] = useState([]); // Store raw data for filtering
+  const [rawYardipData, setRawYardipData] = useState([]); // Store raw yardip data
   const [loading, setLoading] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
 
@@ -118,6 +145,275 @@ const Dashboard = () => {
     []
   );
 
+  // FIXED: Helper function to categorize yardip asset based on bidang field
+  const categorizeYardipAsset = (asset) => {
+    // Use bidang field instead of peruntukan for more accurate categorization
+    const bidang = (asset.bidang || "").toLowerCase().trim();
+
+    console.log("Categorizing asset:", {
+      id: asset.id,
+      pengelola: asset.pengelola,
+      bidang: asset.bidang,
+      bidang_lower: bidang,
+    });
+
+    // Match exactly with bidang options from FormYardip.js
+    switch (bidang) {
+      case "tanah":
+        return "tanah";
+      case "tanah bangunan":
+        return "tanahBangunan";
+      case "tanah gudang kantor":
+        return "tanahGudangKantor";
+      case "ruko":
+        return "ruko";
+      default:
+        // Fallback to peruntukan if bidang is not standard
+        const peruntukan = (asset.peruntukan || "").toLowerCase().trim();
+        if (peruntukan.includes("ruko") || peruntukan.includes("toko")) {
+          return "ruko";
+        } else if (
+          peruntukan.includes("gudang") ||
+          peruntukan.includes("kantor")
+        ) {
+          return "tanahGudangKantor";
+        } else if (peruntukan.includes("bangunan")) {
+          return "tanahBangunan";
+        } else {
+          return "tanah"; // Default fallback
+        }
+    }
+  };
+
+  // Helper function to determine province from asset data
+  const determineProvince = (asset) => {
+    if (asset.provinsi_id) {
+      return asset.provinsi_id;
+    } else if (asset.provinsi) {
+      if (
+        asset.provinsi.toLowerCase().includes("jawa tengah") ||
+        asset.provinsi.toLowerCase().includes("jateng")
+      ) {
+        return "jateng";
+      } else if (
+        asset.provinsi.toLowerCase().includes("yogya") ||
+        asset.provinsi.toLowerCase().includes("diy")
+      ) {
+        return "diy";
+      }
+    } else {
+      // Fallback: determine by kabkota
+      const kabkota = (asset.kabkota || "").toLowerCase();
+      const jatengCities = [
+        "semarang",
+        "solo",
+        "surakarta",
+        "magelang",
+        "salatiga",
+        "tegal",
+        "pekalongan",
+        "purwokerto",
+        "cilacap",
+        "kudus",
+        "jepara",
+        "rembang",
+      ];
+      const diyCities = [
+        "yogyakarta",
+        "jogja",
+        "sleman",
+        "bantul",
+        "kulon progo",
+        "gunung kidul",
+      ];
+
+      if (jatengCities.some((city) => kabkota.includes(city))) {
+        return "jateng";
+      } else if (diyCities.some((city) => kabkota.includes(city))) {
+        return "diy";
+      }
+    }
+    return null;
+  };
+
+  // Helper function to determine city from asset data
+  const determineCity = (asset) => {
+    if (asset.kota_id) {
+      return asset.kota_id;
+    } else if (asset.kota) {
+      // Try to match city name with kotaData
+      const province = determineProvince(asset);
+      if (province && kotaData[province]) {
+        const cityData = kotaData[province].find(
+          (city) =>
+            city.name.toLowerCase().includes(asset.kota.toLowerCase()) ||
+            asset.kota.toLowerCase().includes(city.name.toLowerCase())
+        );
+        return cityData ? cityData.id : null;
+      }
+    } else if (asset.kabkota) {
+      // Try to match kabkota with kotaData
+      const province = determineProvince(asset);
+      if (province && kotaData[province]) {
+        const cityData = kotaData[province].find(
+          (city) =>
+            city.name.toLowerCase().includes(asset.kabkota.toLowerCase()) ||
+            asset.kabkota.toLowerCase().includes(city.name.toLowerCase())
+        );
+        return cityData ? cityData.id : null;
+      }
+    }
+    return null;
+  };
+
+  // Process Yardip data by Province (default view)
+  const processYardipByProvince = useCallback((yardipData) => {
+    console.log(
+      "Processing yardip by province, total data:",
+      yardipData.length
+    );
+
+    const provinceStats = {
+      jateng: {
+        name: "Jawa Tengah",
+        tanah: 0,
+        tanahBangunan: 0,
+        tanahGudangKantor: 0,
+        ruko: 0,
+        total: 0,
+      },
+      diy: {
+        name: "DI Yogyakarta",
+        tanah: 0,
+        tanahBangunan: 0,
+        tanahGudangKantor: 0,
+        ruko: 0,
+        total: 0,
+      },
+    };
+
+    // Count yardip assets by province and category
+    yardipData.forEach((asset) => {
+      const provinceKey = determineProvince(asset);
+      const category = categorizeYardipAsset(asset);
+
+      console.log("Asset processing:", {
+        pengelola: asset.pengelola,
+        provinceKey,
+        category,
+        bidang: asset.bidang,
+      });
+
+      if (provinceKey && provinceStats[provinceKey]) {
+        provinceStats[provinceKey][category] += 1;
+        provinceStats[provinceKey].total += 1;
+      }
+    });
+
+    console.log("Province stats result:", provinceStats);
+
+    return Object.values(provinceStats)
+      .filter((province) => province.total > 0)
+      .sort((a, b) => b.total - a.total);
+  }, []);
+
+  // FIXED: Process Yardip data by City within selected province
+  const processYardipByCity = useCallback(
+    (yardipData, selectedProvinceKey, selectedCityKey = null) => {
+      console.log(
+        "Processing yardip by city for province:",
+        selectedProvinceKey,
+        "city:",
+        selectedCityKey
+      );
+
+      let filteredData = yardipData.filter((asset) => {
+        const assetProvince = determineProvince(asset);
+        if (assetProvince !== selectedProvinceKey) return false;
+
+        // If specific city is selected, filter by city too
+        if (selectedCityKey) {
+          const assetCity = determineCity(asset);
+          return assetCity === selectedCityKey;
+        }
+
+        return true;
+      });
+
+      console.log(
+        "Filtered data for province/city:",
+        filteredData.length,
+        "assets"
+      );
+
+      if (selectedCityKey) {
+        // If specific city selected, show single city data
+        const cityName =
+          kotaData[selectedProvinceKey]?.find((c) => c.id === selectedCityKey)
+            ?.name || "Unknown City";
+        const cityStats = {
+          name: cityName,
+          tanah: 0,
+          tanahBangunan: 0,
+          tanahGudangKantor: 0,
+          ruko: 0,
+          total: 0,
+        };
+
+        filteredData.forEach((asset) => {
+          const category = categorizeYardipAsset(asset);
+          cityStats[category] += 1;
+          cityStats.total += 1;
+        });
+
+        return cityStats.total > 0 ? [cityStats] : [];
+      } else {
+        // Show all cities in the province
+        const cityStats = {};
+
+        filteredData.forEach((asset) => {
+          const cityId = determineCity(asset);
+          const cityName = cityId
+            ? kotaData[selectedProvinceKey]?.find((c) => c.id === cityId)
+                ?.name ||
+              asset.kabkota ||
+              "Unknown"
+            : asset.kabkota || asset.kota || "Tidak Diketahui";
+
+          const category = categorizeYardipAsset(asset);
+
+          if (!cityStats[cityName]) {
+            cityStats[cityName] = {
+              name: cityName,
+              tanah: 0,
+              tanahBangunan: 0,
+              tanahGudangKantor: 0,
+              ruko: 0,
+              total: 0,
+            };
+          }
+
+          cityStats[cityName][category] += 1;
+          cityStats[cityName].total += 1;
+
+          console.log("City processing:", {
+            city: cityName,
+            category,
+            bidang: asset.bidang,
+          });
+        });
+
+        console.log("City stats result:", cityStats);
+
+        return Object.values(cityStats)
+          .filter((city) => city.total > 0)
+          .sort((a, b) => b.total - a.total)
+          .slice(0, 15); // Limit to top 15 cities for better visualization
+      }
+    },
+    []
+  );
+
   // Fetch data for charts
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -129,54 +425,31 @@ const Dashboard = () => {
       ]);
 
       const assetsData = tanahRes.data;
+      const yardipData = yardipRes.data;
       const koremData = koremRes.data;
 
+      console.log("Raw yardip data received:", yardipData.length, "items");
+      console.log("Sample yardip data:", yardipData.slice(0, 3));
+
       setRawAssetsData(assetsData);
+      setRawYardipData(yardipData);
       setKoremList(koremData);
 
-      // Default view: by Korem
+      // Default view: by Korem for tanah
       const tanahByKorem = processDataByKorem(assetsData, koremData);
       setAsetTanahData(tanahByKorem);
 
-      // Process yardip data by bidang - keep existing logic
-      const yardipByBidang = yardipRes.data.reduce((acc, asset) => {
-        const bidang = asset.bidang || "Lainnya";
-        if (!acc[bidang]) {
-          acc[bidang] = {
-            name: bidang,
-            aktif: 0,
-            cadangan: 0,
-            tidakAktif: 0,
-            total: 0,
-          };
-        }
-
-        const status = asset.status || "";
-        if (status === "Aktif") {
-          acc[bidang].aktif += 1;
-        } else if (status === "Cadangan" || status === "Dalam Proses") {
-          acc[bidang].cadangan += 1;
-        } else if (status === "Tidak Aktif" || status === "Sengketa") {
-          acc[bidang].tidakAktif += 1;
-        }
-
-        acc[bidang].total += 1;
-        return acc;
-      }, {});
-
-      const sortedYardipData = Object.values(yardipByBidang)
-        .sort((a, b) => b.total - a.total)
-        .slice(0, 10);
-
-      setAsetYardipData(sortedYardipData);
+      // Default view: by Province for yardip
+      const yardipByProvince = processYardipByProvince(yardipData);
+      setAsetYardipData(yardipByProvince);
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
     }
-  }, [processDataByKorem]);
+  }, [processDataByKorem, processYardipByProvince]);
 
-  // Handle filter change
+  // Handle filter change for tanah (korem)
   const handleKoremFilterChange = useCallback(
     (koremId) => {
       setSelectedKorem(koremId);
@@ -192,6 +465,58 @@ const Dashboard = () => {
       }
     },
     [rawAssetsData, koremList, processDataByKorem, processDataByKodim]
+  );
+
+  // FIXED: Handle filter change for yardip (province and city)
+  const handleProvinceFilterChange = useCallback(
+    (provinceKey) => {
+      console.log("Province filter changed to:", provinceKey);
+      setSelectedProvince(provinceKey);
+      setSelectedCity(""); // Reset city when province changes
+
+      if (provinceKey) {
+        // Show city data for selected province
+        const cityData = processYardipByCity(rawYardipData, provinceKey);
+        setAsetYardipData(cityData);
+      } else {
+        // Show province data (default)
+        const provinceData = processYardipByProvince(rawYardipData);
+        setAsetYardipData(provinceData);
+      }
+    },
+    [rawYardipData, processYardipByProvince, processYardipByCity]
+  );
+
+  // NEW: Handle city filter change
+  const handleCityFilterChange = useCallback(
+    (cityKey) => {
+      console.log("City filter changed to:", cityKey);
+      setSelectedCity(cityKey);
+
+      if (selectedProvince && cityKey) {
+        // Show specific city data
+        const cityData = processYardipByCity(
+          rawYardipData,
+          selectedProvince,
+          cityKey
+        );
+        setAsetYardipData(cityData);
+      } else if (selectedProvince) {
+        // Show all cities in selected province
+        const cityData = processYardipByCity(rawYardipData, selectedProvince);
+        setAsetYardipData(cityData);
+      } else {
+        // Show province data (default)
+        const provinceData = processYardipByProvince(rawYardipData);
+        setAsetYardipData(provinceData);
+      }
+    },
+    [
+      selectedProvince,
+      rawYardipData,
+      processYardipByProvince,
+      processYardipByCity,
+    ]
   );
 
   useEffect(() => {
@@ -242,25 +567,58 @@ const Dashboard = () => {
   ).length;
   const grandTotalAsetTanah = rawAssetsData.length;
 
-  // Calculate totals for yardip
-  const totalAktif = asetYardipData.reduce((sum, item) => sum + item.aktif, 0);
-  const totalCadangan = asetYardipData.reduce(
-    (sum, item) => sum + item.cadangan,
+  // Calculate totals for yardip (from current filtered/displayed data)
+  const totalTanah = asetYardipData.reduce(
+    (sum, item) => sum + (item.tanah || 0),
     0
   );
-  const totalTidakAktif = asetYardipData.reduce(
-    (sum, item) => sum + item.tidakAktif,
+  const totalTanahBangunan = asetYardipData.reduce(
+    (sum, item) => sum + (item.tanahBangunan || 0),
     0
   );
-  const totalAsetYardip = asetYardipData.reduce(
-    (sum, item) => sum + item.total,
+  const totalTanahGudangKantor = asetYardipData.reduce(
+    (sum, item) => sum + (item.tanahGudangKantor || 0),
     0
   );
+  const totalRuko = asetYardipData.reduce(
+    (sum, item) => sum + (item.ruko || 0),
+    0
+  );
+  const totalAsetYardip = rawYardipData.length; // Grand total from raw data
+
+  // Calculate grand totals by category for yardip (for verification)
+  const grandTotalByCategory = rawYardipData.reduce((acc, asset) => {
+    const category = categorizeYardipAsset(asset);
+    acc[category] = (acc[category] || 0) + 1;
+    return acc;
+  }, {});
+
+  console.log("Grand totals by category:", grandTotalByCategory);
+  console.log("Current filtered totals:", {
+    totalTanah,
+    totalTanahBangunan,
+    totalTanahGudangKantor,
+    totalRuko,
+  });
 
   const selectedKoremName = selectedKorem
     ? koremList.find((k) => k.id.toString() === selectedKorem.toString())
         ?.nama || "Unknown"
     : null;
+
+  const selectedProvinceName = selectedProvince
+    ? selectedProvince === "jateng"
+      ? "Jawa Tengah"
+      : selectedProvince === "diy"
+      ? "DI Yogyakarta"
+      : "Unknown"
+    : null;
+
+  const selectedCityName =
+    selectedCity && selectedProvince
+      ? kotaData[selectedProvince]?.find((c) => c.id === selectedCity)?.name ||
+        "Unknown"
+      : null;
 
   return (
     <Container fluid className="dashboard-container p-4">
@@ -376,9 +734,6 @@ const Dashboard = () => {
                       </span>
                     )}
                   </h5>
-                  {/* <small className="opacity-75">
-                    {selectedKorem ? "Per Kodim" : "Per Korem"}
-                  </small> */}
                 </div>
                 <Button
                   variant="outline-light"
@@ -546,52 +901,172 @@ const Dashboard = () => {
 
         <Col md={6} className="mb-4">
           <Card className="chart-card h-100 border-0 shadow-sm">
-            <Card.Header className="bg-success text-white border-0 d-flex justify-content-between align-items-center">
-              <h5 className="mb-0">Data Aset Yardip KODAM </h5>
-              <Button
-                variant="outline-light"
-                size="sm"
-                onClick={handleNavigateToYardip}
-              >
-                Lihat Detail
-              </Button>
+            <Card.Header className="bg-success text-white border-0">
+              <div className="d-flex justify-content-between align-items-center">
+                <div>
+                  <h5 className="mb-1">
+                    Data Aset Yardip KODAM
+                    {selectedProvinceName && (
+                      <span className="badge bg-light text-success ms-2">
+                        {selectedProvinceName}
+                      </span>
+                    )}
+                    {selectedCityName && (
+                      <span className="badge bg-warning text-dark ms-2">
+                        {selectedCityName}
+                      </span>
+                    )}
+                  </h5>
+                </div>
+                <Button
+                  variant="outline-light"
+                  size="sm"
+                  onClick={handleNavigateToYardip}
+                >
+                  Lihat Detail
+                </Button>
+              </div>
             </Card.Header>
             <Card.Body>
-              {/* Legend */}
+              {/* FIXED: Enhanced Filter Section for Yardip with City Selection */}
+              <div className="mb-3 p-3 bg-light rounded">
+                <Row className="align-items-center">
+                  <Col md={4}>
+                    <Form.Label className="mb-1 fw-bold">
+                      Filter by Provinsi:
+                    </Form.Label>
+                    <Form.Select
+                      size="sm"
+                      value={selectedProvince}
+                      onChange={(e) =>
+                        handleProvinceFilterChange(e.target.value)
+                      }
+                    >
+                      <option value="">
+                        Semua Provinsi (Tampilkan per Provinsi)
+                      </option>
+                      <option value="jateng">
+                        Jawa Tengah (Tampilkan per Kota)
+                      </option>
+                      <option value="diy">
+                        DI Yogyakarta (Tampilkan per Kota)
+                      </option>
+                    </Form.Select>
+                  </Col>
+
+                  {/* NEW: City Filter */}
+                  <Col md={4}>
+                    <Form.Label className="mb-1 fw-bold">
+                      Filter by Kota:
+                    </Form.Label>
+                    <Form.Select
+                      size="sm"
+                      value={selectedCity}
+                      onChange={(e) => handleCityFilterChange(e.target.value)}
+                      disabled={!selectedProvince}
+                    >
+                      <option value="">
+                        {selectedProvince
+                          ? "Semua Kota"
+                          : "Pilih Provinsi dulu"}
+                      </option>
+                      {selectedProvince &&
+                        kotaData[selectedProvince] &&
+                        kotaData[selectedProvince].map((city) => (
+                          <option key={city.id} value={city.id}>
+                            {city.name}
+                          </option>
+                        ))}
+                    </Form.Select>
+                  </Col>
+
+                  <Col md={4}>
+                    <div className="text-end">
+                      <small className="text-muted">
+                        Menampilkan: <strong>{asetYardipData.length}</strong>{" "}
+                        {selectedCity
+                          ? "Kota (Spesifik)"
+                          : selectedProvince
+                          ? "Kota"
+                          : "Provinsi"}
+                      </small>
+                      {(selectedProvince || selectedCity) && (
+                        <div>
+                          <Button
+                            variant="outline-secondary"
+                            size="sm"
+                            className="mt-1 me-1"
+                            onClick={() => handleCityFilterChange("")}
+                            disabled={!selectedCity}
+                          >
+                            Reset Kota
+                          </Button>
+                          <Button
+                            variant="outline-secondary"
+                            size="sm"
+                            className="mt-1"
+                            onClick={() => {
+                              handleProvinceFilterChange("");
+                              setSelectedCity("");
+                            }}
+                          >
+                            Reset Semua
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </Col>
+                </Row>
+              </div>
+
+              {/* Updated Legend with Corrected Categories */}
               <div className="mb-3">
-                <div className="d-flex flex-wrap gap-3 justify-content-center">
+                <div className="d-flex flex-wrap gap-2 justify-content-center">
                   <div className="legend-item d-flex align-items-center">
                     <div
                       className="legend-color me-2"
                       style={{
                         backgroundColor: "#34a853",
-                        width: "20px",
-                        height: "15px",
+                        width: "18px",
+                        height: "13px",
                       }}
                     ></div>
-                    <small>Aktif ({totalAktif})</small>
+                    <small>Tanah ({totalTanah})</small>
+                  </div>
+                  <div className="legend-item d-flex align-items-center">
+                    <div
+                      className="legend-color me-2"
+                      style={{
+                        backgroundColor: "#4285f4",
+                        width: "18px",
+                        height: "13px",
+                      }}
+                    ></div>
+                    <small>Tanah Bangunan ({totalTanahBangunan})</small>
                   </div>
                   <div className="legend-item d-flex align-items-center">
                     <div
                       className="legend-color me-2"
                       style={{
                         backgroundColor: "#fbbc04",
-                        width: "20px",
-                        height: "15px",
+                        width: "18px",
+                        height: "13px",
                       }}
                     ></div>
-                    <small>Cadangan ({totalCadangan})</small>
+                    <small>
+                      Tanah Gudang Kantor ({totalTanahGudangKantor})
+                    </small>
                   </div>
                   <div className="legend-item d-flex align-items-center">
                     <div
                       className="legend-color me-2"
                       style={{
                         backgroundColor: "#ea4335",
-                        width: "20px",
-                        height: "15px",
+                        width: "18px",
+                        height: "13px",
                       }}
                     ></div>
-                    <small>Tidak Aktif ({totalTidakAktif})</small>
+                    <small>Ruko ({totalRuko})</small>
                   </div>
                 </div>
               </div>
@@ -604,7 +1079,7 @@ const Dashboard = () => {
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis
                     dataKey="name"
-                    tick={{ fontSize: 10, fill: "#666" }}
+                    tick={{ fontSize: 9, fill: "#666" }}
                     angle={-45}
                     textAnchor="end"
                     height={80}
@@ -616,12 +1091,23 @@ const Dashboard = () => {
                   <Tooltip
                     formatter={(value, name) => [
                       `${value} aset`,
-                      name === "aktif"
-                        ? "Aktif"
-                        : name === "cadangan"
-                        ? "Cadangan"
-                        : "Tidak Aktif",
+                      name === "tanah"
+                        ? "Tanah"
+                        : name === "tanahBangunan"
+                        ? "Tanah Bangunan"
+                        : name === "tanahGudangKantor"
+                        ? "Tanah Gudang Kantor"
+                        : "Ruko",
                     ]}
+                    labelFormatter={(label) => {
+                      if (selectedCity) {
+                        return `Kota ${label}`;
+                      } else if (selectedProvince) {
+                        return `Kota ${label}`;
+                      } else {
+                        return `Provinsi ${label}`;
+                      }
+                    }}
                     labelStyle={{ color: "#333", fontWeight: "bold" }}
                     contentStyle={{
                       backgroundColor: "#fff",
@@ -630,9 +1116,18 @@ const Dashboard = () => {
                       fontSize: "12px",
                     }}
                   />
-                  <Bar dataKey="aktif" fill="#34a853" name="aktif" />
-                  <Bar dataKey="cadangan" fill="#fbbc04" name="cadangan" />
-                  <Bar dataKey="tidakAktif" fill="#ea4335" name="tidakAktif" />
+                  <Bar dataKey="tanah" fill="#34a853" name="tanah" />
+                  <Bar
+                    dataKey="tanahBangunan"
+                    fill="#4285f4"
+                    name="tanahBangunan"
+                  />
+                  <Bar
+                    dataKey="tanahGudangKantor"
+                    fill="#fbbc04"
+                    name="tanahGudangKantor"
+                  />
+                  <Bar dataKey="ruko" fill="#ea4335" name="ruko" />
                 </BarChart>
               </ResponsiveContainer>
 

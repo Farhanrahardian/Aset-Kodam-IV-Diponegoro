@@ -3,8 +3,6 @@ import { Nav } from "react-bootstrap";
 import { NavLink } from "react-router-dom";
 
 const Sidebar = ({ show }) => {
-  // Prop name is kept as 'show' for clarity
-
   const navLinkStyle = ({ isActive }) => ({
     color: isActive ? "#ffffff" : "#adb5bd",
     backgroundColor: isActive ? "#4CAF50" : "transparent",
@@ -14,7 +12,6 @@ const Sidebar = ({ show }) => {
     fontWeight: isActive ? "bold" : "normal",
   });
 
-  // Add 'open' for mobile and toggle 'closed' for desktop
   return (
     <div className={`sidebar ${show ? "open" : "closed"}`}>
       <Nav className="flex-column">
@@ -48,16 +45,18 @@ const Sidebar = ({ show }) => {
           Data Aset Tanah
         </NavLink>
         <NavLink
-          to="/Data-aset-Yardip"
+          to="/data-aset-yardip"
           className="nav-link"
           style={navLinkStyle}
         >
           Data Aset Yardip
         </NavLink>
+        <NavLink to="/laporan" className="nav-link" style={navLinkStyle}>
+          Cetak Laporan
+        </NavLink>
         <NavLink to="/settings" className="nav-link" style={navLinkStyle}>
           Pengaturan
         </NavLink>
-        {/* Tambahkan link lainnya di sini */}
       </Nav>
     </div>
   );
