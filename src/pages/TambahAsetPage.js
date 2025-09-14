@@ -215,34 +215,60 @@ const TambahAsetPage = () => {
     );
   };
 
-  const handleSaveAsset = async (assetData, file) => {
+  const handleSaveAsset = async (assetData, buktiPemilikanFile, assetPhotos) => {
     const toastId = toast.loading("Menyimpan data aset...");
 
-    let fileUrl = "";
-    let fileName = "";
+    let buktiPemilikanUrl = "";
+    let buktiPemilikanFilename = "";
+    let assetPhotoUrls = [];
 
-    if (file) {
+    // 1. Upload Bukti Pemilikan (single file)
+    if (buktiPemilikanFile) {
       try {
+        toast.loading("Mengupload bukti pemilikan...", { id: toastId });
         const fileFormData = new FormData();
-        fileFormData.append("bukti_pemilikan", file);
+        fileFormData.append("bukti_pemilikan", buktiPemilikanFile);
 
         const uploadRes = await axios.post(
           `${API_URL}/upload/bukti-pemilikan`,
           fileFormData
         );
 
-        fileUrl = uploadRes.data.url;
-        fileName = uploadRes.data.filename;
-
-        toast.loading(`File berhasil diupload: ${fileName}`, { id: toastId });
+        buktiPemilikanUrl = uploadRes.data.url;
+        buktiPemilikanFilename = uploadRes.data.filename;
+        toast.loading(`Bukti pemilikan berhasil diupload.`, { id: toastId });
       } catch (err) {
-        toast.error("Gagal mengupload file.", { id: toastId });
+        toast.error("Gagal mengupload bukti pemilikan.", { id: toastId });
         console.error("File upload error:", err.response?.data || err.message);
         return;
       }
     }
 
-    // Ensure we save "Kodim 0733/Kota Semarang" instead of "Berdiri Sendiri"
+    // 2. Upload Foto Aset (multiple files)
+    if (assetPhotos && assetPhotos.length > 0) {
+      try {
+        toast.loading(`Mengupload ${assetPhotos.length} foto aset...`, { id: toastId });
+        const photosFormData = new FormData();
+        assetPhotos.forEach(photo => {
+          photosFormData.append("asset_photos", photo);
+        });
+
+        const photosUploadRes = await axios.post(
+          `${API_URL}/upload/asset-photos`,
+          photosFormData
+        );
+
+        assetPhotoUrls = photosUploadRes.data.files.map(file => file.url);
+        toast.loading("Foto aset berhasil diupload.", { id: toastId });
+      } catch (err) {
+        toast.error("Gagal mengupload foto aset.", { id: toastId });
+        console.error("Asset photos upload error:", err.response?.data || err.message);
+        return;
+      }
+    }
+
+
+    // 3. Prepare final payload
     const koremIdToSave = selectedKoremId;
     const kodimToSave = selectedKodimId === "Berdiri Sendiri" ? "Kodim 0733/Kota Semarang" : selectedKodimId;
 
@@ -250,35 +276,32 @@ const TambahAsetPage = () => {
       ...assetData,
       id: `T${Date.now()}`,
       korem_id: koremIdToSave,
-      kodim: kodimToSave === "Berdiri Sendiri" ? "Kodim 0733/Kota Semarang" : kodimToSave,
+      kodim: kodimToSave,
       lokasi: drawnAsset ? JSON.stringify(drawnAsset.geometry) : null,
       luas: drawnAsset ? drawnAsset.area : 0,
       sertifikat_bidang: assetData.sertifikat_bidang || 0,
       sertifikat_luas: assetData.sertifikat_luas || 0,
       belum_sertifikat_bidang: assetData.belum_sertifikat_bidang || 0,
       belum_sertifikat_luas: assetData.belum_sertifikat_luas || 0,
-      bukti_pemilikan_url: fileUrl,
-      bukti_pemilikan_filename: fileName,
+      bukti_pemilikan_url: buktiPemilikanUrl,
+      bukti_pemilikan_filename: buktiPemilikanFilename,
+      foto_aset: assetPhotoUrls, // Add asset photos to payload
     };
 
-    console.log("Asset Payload to be sent:", assetPayload);
-
+    // 4. Save asset data to db.json
     try {
+      toast.loading("Menyimpan data aset ke database...", { id: toastId });
       if (!drawnAsset || !drawnAsset.geometry) {
         toast.error("Data lokasi dari gambar tidak tersedia.", { id: toastId });
         return;
       }
 
-      await axios.post(`${API_URL}/assets`, assetPayload, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      await axios.post(`${API_URL}/assets`, assetPayload);
 
       toast.success("Aset berhasil ditambahkan!", { id: toastId });
       navigate("/data-aset-tanah", { state: { refresh: true } });
     } catch (err) {
-      toast.error("Gagal menyimpan aset.", { id: toastId });
+      toast.error("Gagal menyimpan aset ke database.", { id: toastId });
       console.error("Save error:", err.response?.data || err.message);
     }
   };
