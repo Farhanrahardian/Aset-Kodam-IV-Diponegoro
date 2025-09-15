@@ -736,7 +736,7 @@ const Dashboard = () => {
                   </h5>
                 </div>
                 <Button
-                  variant="outline-light"
+                  variant="light"
                   size="sm"
                   onClick={handleNavigateToTanah}
                 >
@@ -776,7 +776,7 @@ const Dashboard = () => {
                       {selectedKorem && (
                         <div>
                           <Button
-                            variant="outline-secondary"
+                            variant="secondary"
                             size="sm"
                             className="mt-1"
                             onClick={() => handleKoremFilterChange("")}
@@ -919,7 +919,7 @@ const Dashboard = () => {
                   </h5>
                 </div>
                 <Button
-                  variant="outline-light"
+                  variant="light"
                   size="sm"
                   onClick={handleNavigateToYardip}
                 >
@@ -993,7 +993,7 @@ const Dashboard = () => {
                       {(selectedProvince || selectedCity) && (
                         <div>
                           <Button
-                            variant="outline-secondary"
+                            variant="secondary"
                             size="sm"
                             className="mt-1 me-1"
                             onClick={() => handleCityFilterChange("")}
@@ -1002,7 +1002,7 @@ const Dashboard = () => {
                             Reset Kota
                           </Button>
                           <Button
-                            variant="outline-secondary"
+                            variant="secondary"
                             size="sm"
                             className="mt-1"
                             onClick={() => {
