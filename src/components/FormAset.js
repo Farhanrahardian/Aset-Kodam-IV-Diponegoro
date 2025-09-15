@@ -627,6 +627,7 @@ const FormAset = ({
               </Button>
               <Button
                 variant="primary"
+                type="button"
                 onClick={handleSave}
                 disabled={!isEnabled}
               >

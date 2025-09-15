@@ -36,29 +36,49 @@ const EditAsetPage = () => {
     fetchData();
   }, [id]);
 
-  const handleSaveAsset = async (assetData, buktiPemilikanFile) => {
+  const handleSaveAsset = async (assetData, buktiPemilikanFile, assetPhotos) => {
     const toastId = toast.loading("Menyimpan perubahan...");
 
-    try {
-      let fileUploadData = {};
-      if (buktiPemilikanFile) {
+    let updatedData = { ...assetData };
+
+    // 1. Upload new Bukti Pemilikan if it exists
+    if (buktiPemilikanFile) {
+      try {
+        toast.loading("Mengupload bukti pemilikan baru...", { id: toastId });
         const formData = new FormData();
         formData.append("bukti_pemilikan", buktiPemilikanFile);
-        const uploadRes = await axios.post(`${API_URL}/upload/bukti-pemilikan`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-        fileUploadData = {
-          bukti_pemilikan_url: uploadRes.data.url,
-          bukti_pemilikan_filename: uploadRes.data.filename,
-        };
+        const uploadRes = await axios.post(`${API_URL}/upload/bukti-pemilikan`, formData);
+        updatedData.bukti_pemilikan_url = uploadRes.data.url;
+        updatedData.bukti_pemilikan_filename = uploadRes.data.filename;
+      } catch (err) {
+        toast.error("Gagal mengupload bukti pemilikan baru.", { id: toastId });
+        console.error("File upload error:", err);
+        return;
       }
+    }
 
-      const finalData = {
-        ...assetData,
-        ...fileUploadData,
-      };
+    // 2. Upload new Asset Photos if they exist
+    if (assetPhotos && assetPhotos.length > 0) {
+      try {
+        toast.loading(`Mengupload ${assetPhotos.length} foto aset baru...`, { id: toastId });
+        const photosFormData = new FormData();
+        assetPhotos.forEach(photo => {
+          photosFormData.append("asset_photos", photo);
+        });
+        const photosUploadRes = await axios.post(`${API_URL}/upload/asset-photos`, photosFormData);
+        // Replace old photos with new ones
+        updatedData.foto_aset = photosUploadRes.data.files.map(file => file.url);
+      } catch (err) {
+        toast.error("Gagal mengupload foto aset baru.", { id: toastId });
+        console.error("Asset photos upload error:", err);
+        return;
+      }
+    }
 
-      await axios.put(`${API_URL}/assets/${id}`, finalData);
+    // 3. Save the final updated asset data
+    try {
+      toast.loading("Menyimpan data ke database...", { id: toastId });
+      await axios.put(`${API_URL}/assets/${id}`, updatedData);
       toast.success("Aset berhasil diperbarui!", { id: toastId });
       navigate("/data-aset-tanah");
     } catch (err) {

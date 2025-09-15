@@ -12,7 +12,7 @@
       "id": "T1757504681281",
       "nama": "Admin 12",
       "korem_id": "1",
-      "kodim": "Kodim 0713/Brebes",
+      "kodim": "",
       "luas": 52576190.438637294,
       "kib_kode_barang": "1.21.21.212.121.2",
       "nomor_registrasi": "adada1211dasd",
@@ -67,14 +67,17 @@
           ]
         ]
       },
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": ""
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1757842262440.jpeg",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1757842262440.jpeg",
+      "foto_aset": [
+        "/uploads/asset_photos-1757842262456.jpeg"
+      ]
     },
     {
       "id": "T1757504763897",
       "nama": "Admin 13",
       "korem_id": "2",
-      "kodim": "Kodim 0729/Bantul",
+      "kodim": "",
       "luas": 120747763.64095888,
       "kib_kode_barang": "Q1",
       "nomor_registrasi": "csdbhcbsd",
@@ -86,7 +89,7 @@
       "keterangan_bukti_pemilikan": "Sertifikar A3a",
       "sertifikat_bidang": 0,
       "sertifikat_luas": "",
-      "belum_sertifikat_bidang": "34",
+      "belum_sertifikat_bidang": "3",
       "belum_sertifikat_luas": 120747763.64,
       "keterangan": "",
       "atas_nama_pemilik_sertifikat": "",
@@ -199,7 +202,7 @@
       "id": "T1757612302527",
       "nama": "Aset Coba 5",
       "korem_id": "1",
-      "kodim": "Kodim 0703/Cilacap",
+      "kodim": "",
       "luas": 147.84665927084097,
       "kib_kode_barang": "5",
       "nomor_registrasi": "5",
@@ -210,7 +213,7 @@
       "pemilikan_sertifikat": "Tidak",
       "keterangan_bukti_pemilikan": "",
       "sertifikat_bidang": 0,
-      "sertifikat_luas": 0,
+      "sertifikat_luas": "",
       "belum_sertifikat_bidang": "5",
       "belum_sertifikat_luas": 147.85,
       "keterangan": "",
@@ -242,8 +245,11 @@
           ]
         ]
       },
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": ""
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1757842124546.jpg",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1757842124546.jpg",
+      "foto_aset": [
+        "/uploads/asset_photos-1757842124559.jpeg"
+      ]
     },
     {
       "id": "T1757613784807",
@@ -639,6 +645,58 @@
       "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[109.122765,-7.416176],[109.147479,-7.467241],[109.198967,-7.420262],[109.122765,-7.416176]]]}",
       "bukti_pemilikan_url": "",
       "bukti_pemilikan_filename": ""
+    },
+    {
+      "nama": "9999",
+      "korem_id": "3",
+      "kodim": "Kodim 0716/Demak",
+      "luas": 47217.59716870145,
+      "kib_kode_barang": "9999",
+      "nomor_registrasi": "9999",
+      "alamat": "dmeak",
+      "peruntukan": "sepakbola",
+      "status": "Dimiliki/Dikuasai",
+      "asal_milik": "mana saja",
+      "pemilikan_sertifikat": "Ya",
+      "keterangan_bukti_pemilikan": "rudi",
+      "sertifikat_bidang": "1",
+      "sertifikat_luas": 47217.6,
+      "belum_sertifikat_bidang": 0,
+      "belum_sertifikat_luas": 0,
+      "keterangan": "",
+      "atas_nama_pemilik_sertifikat": "rudi",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.657946,-6.910909],[110.659405,-6.910909],[110.659405,-6.913295],[110.657431,-6.912954],[110.657946,-6.910909]]]}",
+      "id": "T1757841657988",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1757841657952.jpg",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1757841657952.jpg",
+      "foto_aset": [
+        "/uploads/asset_photos-1757841657966.jpg"
+      ]
+    },
+    {
+      "nama": "123",
+      "korem_id": "3",
+      "kodim": "Kodim 0716/Demak",
+      "luas": 1206096.0561121756,
+      "kib_kode_barang": "123",
+      "nomor_registrasi": "123",
+      "alamat": "demak",
+      "peruntukan": "crit",
+      "status": "Dimiliki/Dikuasai",
+      "asal_milik": "mana saja",
+      "pemilikan_sertifikat": "Ya",
+      "keterangan_bukti_pemilikan": "22",
+      "sertifikat_bidang": "2",
+      "sertifikat_luas": 1206096.06,
+      "belum_sertifikat_bidang": 0,
+      "belum_sertifikat_luas": 0,
+      "keterangan": "",
+      "atas_nama_pemilik_sertifikat": "222",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.604546,-6.937929],[110.605233,-6.948835],[110.623082,-6.946109],[110.604546,-6.937929]]]}",
+      "id": "T1757841916633",
+      "bukti_pemilikan_url": "",
+      "bukti_pemilikan_filename": "",
+      "foto_aset": []
     }
   ],
   "yardip_assets": [
