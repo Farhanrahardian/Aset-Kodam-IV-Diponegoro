@@ -169,26 +169,19 @@ const kotaData = {
   ],
 };
 
-// Enhanced filter panel
+// Enhanced filter panel untuk filter berdasarkan lokasi
 const FilterPanelTop = ({
   assets,
-  bidangOptions,
-  selectedBidang,
-  statusFilter,
-  onSelectBidang,
-  onSelectStatus,
+  provinsiOptions,
+  kotaOptions,
+  selectedProvinsi,
+  selectedKota,
+  onSelectProvinsi,
+  onSelectKota,
   onShowAll,
   totalAssets,
   filteredAssets,
 }) => {
-  const statusOptions = [
-    { value: "", label: "Semua Status" },
-    { value: "Dimiliki/Dikuasai", label: "Dimiliki/Dikuasai" },
-    { value: "Tidak Dimiliki/Tidak Dikuasai", label: "Tidak Dimiliki/Tidak Dikuasai" },
-    { value: "Lain-lain", label: "Lain-lain" },
-    { value: "Dalam Proses", label: "Dalam Proses" },
-  ];
-
   return (
     <Card className="mb-4">
       <Card.Header className="bg-primary text-white">
@@ -198,16 +191,16 @@ const FilterPanelTop = ({
         <Row>
           <Col md={4}>
             <div className="mb-3">
-              <label className="form-label fw-bold">Bidang</label>
+              <label className="form-label fw-bold">Provinsi</label>
               <select
                 className="form-select"
-                value={selectedBidang}
-                onChange={(e) => onSelectBidang(e.target.value)}
+                value={selectedProvinsi}
+                onChange={(e) => onSelectProvinsi(e.target.value)}
               >
-                <option value="">Semua Bidang</option>
-                {bidangOptions.map((bidang) => (
-                  <option key={bidang} value={bidang}>
-                    {bidang}
+                <option value="">Semua Provinsi</option>
+                {provinsiOptions.map((provinsi) => (
+                  <option key={provinsi.value} value={provinsi.value}>
+                    {provinsi.label}
                   </option>
                 ))}
               </select>
@@ -215,15 +208,19 @@ const FilterPanelTop = ({
           </Col>
           <Col md={4}>
             <div className="mb-3">
-              <label className="form-label fw-bold">Status</label>
+              <label className="form-label fw-bold">Kota/Kabupaten</label>
               <select
                 className="form-select"
-                value={statusFilter || ""}
-                onChange={(e) => onSelectStatus(e.target.value)}
+                value={selectedKota || ""}
+                onChange={(e) => onSelectKota(e.target.value)}
+                disabled={!selectedProvinsi}
               >
-                {statusOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
+                <option value="">
+                  {selectedProvinsi ? "Semua Kota" : "Pilih Provinsi Dulu"}
+                </option>
+                {kotaOptions.map((kota) => (
+                  <option key={kota.id} value={kota.id}>
+                    {kota.name}
                   </option>
                 ))}
               </select>
@@ -250,17 +247,22 @@ const FilterPanelTop = ({
           <Col>
             <div className="bg-light p-2 rounded">
               <small className="text-muted">
-                <strong>Hasil:</strong> {filteredAssets} dari {totalAssets} aset yardip
-                {selectedBidang && (
+                <strong>Hasil:</strong> {filteredAssets} dari {totalAssets} aset
+                yardip
+                {selectedProvinsi && (
                   <span>
                     {" "}
-                    • <strong>Bidang:</strong> {selectedBidang}
+                    • <strong>Provinsi:</strong>{" "}
+                    {provinsiOptions.find((p) => p.value === selectedProvinsi)
+                      ?.label || selectedProvinsi}
                   </span>
                 )}
-                {statusFilter && (
+                {selectedKota && (
                   <span>
                     {" "}
-                    • <strong>Status:</strong> {statusFilter}
+                    • <strong>Kota:</strong>{" "}
+                    {kotaOptions.find((k) => k.id === selectedKota)?.name ||
+                      selectedKota}
                   </span>
                 )}
               </small>
@@ -272,7 +274,7 @@ const FilterPanelTop = ({
   );
 };
 
-// Enhanced table component untuk yardip
+// Enhanced table component untuk yardip - UPDATED VERSION dengan perbaikan kolom kelurahan
 const TabelAsetYardip = ({ assets, onEdit, onDelete, onViewDetail }) => {
   if (!assets || assets.length === 0) {
     return (
@@ -290,42 +292,67 @@ const TabelAsetYardip = ({ assets, onEdit, onDelete, onViewDetail }) => {
       case "Tidak Dimiliki/Tidak Dikuasai":
         return "bg-danger";
       case "Lain-lain":
-        return "bg-warning text-dark";
-      case "Dalam Proses":
         return "bg-info";
       default:
         return "bg-secondary";
     }
   };
 
+  // Helper function untuk mendapatkan nama provinsi
+  const getProvinsiName = (asset) => {
+    if (asset.provinsi) return asset.provinsi;
+    if (asset.provinsi_id) {
+      return asset.provinsi_id === "jateng" ? "Jawa Tengah" : "DI Yogyakarta";
+    }
+    return "-";
+  };
+
+  // Helper function untuk mendapatkan nama kota
+  const getKotaName = (asset) => {
+    if (asset.kota) return asset.kota;
+    if (asset.kabkota) return asset.kabkota;
+    return "-";
+  };
+
   return (
     <Table striped bordered hover responsive>
       <thead className="table-dark">
         <tr>
-          <th style={{ width: "12%" }}>ID</th>
-          <th style={{ width: "18%" }}>Pengelola</th>
-          <th style={{ width: "12%" }}>Bidang</th>
-          <th style={{ width: "20%" }}>Lokasi</th>
-          <th style={{ width: "10%" }}>Status</th>
-          <th style={{ width: "10%" }}>Luas</th>
-          <th style={{ width: "18%" }}>Aksi</th>
+          <th style={{ width: "15%" }}>Pengelola</th>
+          <th style={{ width: "10%" }}>Bidang</th>
+          <th style={{ width: "12%" }}>Peruntukan</th>
+          <th style={{ width: "12%" }}>Provinsi</th>
+          <th style={{ width: "12%" }}>Kota</th>
+          <th style={{ width: "15%" }}>Kelurahan</th>
+          <th style={{ width: "8%" }}>Status</th>
+          <th style={{ width: "8%" }}>Luas</th>
+          <th style={{ width: "8%" }}>Aksi</th>
         </tr>
       </thead>
       <tbody>
         {assets.map((asset) => (
           <tr key={asset.id}>
-            <td>{asset.id || "-"}</td>
-            <td>{asset.pengelola || "-"}</td>
+            <td>
+              <strong>{asset.pengelola || "-"}</strong>
+            </td>
             <td>
               <span className="badge bg-info">{asset.bidang || "-"}</span>
             </td>
             <td>
+              <div style={{ maxWidth: "120px", fontSize: "0.9em" }}>
+                {asset.peruntukan || "-"}
+              </div>
+            </td>
+            <td>
+              <span className="badge bg-primary">{getProvinsiName(asset)}</span>
+            </td>
+            <td>
+              <strong>{getKotaName(asset)}</strong>
+            </td>
+            <td>
               <div style={{ maxWidth: "150px", fontSize: "0.9em" }}>
-                <strong>{asset.kabkota || "-"}</strong>
-                <br />
-                <small className="text-muted">
-                  {asset.kecamatan || "-"}, {asset.kelurahan || "-"}
-                </small>
+                {/* PERBAIKAN: Hanya tampilkan kelurahan saja tanpa kecamatan */}
+                <strong>{asset.kelurahan || "-"}</strong>
               </div>
             </td>
             <td>
@@ -465,15 +492,15 @@ const DetailModalYardip = ({ asset, show, onHide }) => {
                 <table className="table table-borderless">
                   <tbody>
                     <tr>
-                      <td><strong>ID:</strong></td>
-                      <td>{asset.id || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td><strong>Pengelola:</strong></td>
+                      <td>
+                        <strong>Pengelola:</strong>
+                      </td>
                       <td>{asset.pengelola || "-"}</td>
                     </tr>
                     <tr>
-                      <td><strong>Bidang:</strong></td>
+                      <td>
+                        <strong>Bidang:</strong>
+                      </td>
                       <td>
                         <span className="badge bg-info">
                           {asset.bidang || "-"}
@@ -481,51 +508,82 @@ const DetailModalYardip = ({ asset, show, onHide }) => {
                       </td>
                     </tr>
                     <tr>
-                      <td><strong>Kabupaten/Kota:</strong></td>
-                      <td>{asset.kabkota || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td><strong>Kecamatan:</strong></td>
-                      <td>{asset.kecamatan || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td><strong>Kelurahan/Desa:</strong></td>
-                      <td>{asset.kelurahan || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td><strong>Peruntukan:</strong></td>
+                      <td>
+                        <strong>Peruntukan:</strong>
+                      </td>
                       <td>{asset.peruntukan || "-"}</td>
                     </tr>
                     <tr>
-                      <td><strong>Status:</strong></td>
                       <td>
-                        <span className={`badge ${
-                          asset.status === "Dimiliki/Dikuasai"
-                            ? "bg-success"
-                            : asset.status === "Tidak Dimiliki/Tidak Dikuasai"
-                            ? "bg-danger"
-                            : asset.status === "Lain-lain"
-                            ? "bg-warning"
-                            : asset.status === "Dalam Proses"
-                            ? "bg-info"
-                            : "bg-secondary"
-                        }`}>
+                        <strong>Provinsi:</strong>
+                      </td>
+                      <td>
+                        <span className="badge bg-primary">
+                          {asset.provinsi ||
+                            (asset.provinsi_id === "jateng"
+                              ? "Jawa Tengah"
+                              : asset.provinsi_id === "diy"
+                              ? "DI Yogyakarta"
+                              : "-")}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Kota:</strong>
+                      </td>
+                      <td>{asset.kota || asset.kabkota || "-"}</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Kecamatan:</strong>
+                      </td>
+                      <td>{asset.kecamatan || "-"}</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Kelurahan/Desa:</strong>
+                      </td>
+                      <td>{asset.kelurahan || "-"}</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Status:</strong>
+                      </td>
+                      <td>
+                        <span
+                          className={`badge ${
+                            asset.status === "Dimiliki/Dikuasai"
+                              ? "bg-success"
+                              : asset.status === "Tidak Dimiliki/Tidak Dikuasai"
+                              ? "bg-danger"
+                              : asset.status === "Lain-lain"
+                              ? "bg-info"
+                              : "bg-secondary"
+                          }`}
+                        >
                           {asset.status || "-"}
                         </span>
                       </td>
                     </tr>
                     <tr>
-                      <td><strong>Keterangan:</strong></td>
+                      <td>
+                        <strong>Keterangan:</strong>
+                      </td>
                       <td>{asset.keterangan || "-"}</td>
                     </tr>
                     {asset.area && (
                       <tr>
-                        <td><strong>Luas Area:</strong></td>
+                        <td>
+                          <strong>Luas Area:</strong>
+                        </td>
                         <td>{Number(asset.area).toLocaleString("id-ID")} m²</td>
                       </tr>
                     )}
                     <tr>
-                      <td><strong>Tanggal Dibuat:</strong></td>
+                      <td>
+                        <strong>Tanggal Dibuat:</strong>
+                      </td>
                       <td>
                         {asset.created_at
                           ? new Date(asset.created_at).toLocaleString("id-ID")
@@ -549,7 +607,9 @@ const DetailModalYardip = ({ asset, show, onHide }) => {
                   {hasValidLocation && assetForMap ? (
                     <MapErrorBoundary height="500px">
                       <PetaAsetYardip
-                        key={`detail-${asset.id}-${asset.updated_at || Date.now()}`}
+                        key={`detail-${asset.id}-${
+                          asset.updated_at || Date.now()
+                        }`}
                         assets={[assetForMap]}
                         isDrawing={false}
                         onDrawingCreated={() => {}}
@@ -613,7 +673,8 @@ const DetailModalYardip = ({ asset, show, onHide }) => {
                       <strong>Jumlah Koordinat:</strong>
                       <br />
                       <span className="text-muted">
-                        {Array.isArray(validatedLocation) && validatedLocation[0]
+                        {Array.isArray(validatedLocation) &&
+                        validatedLocation[0]
                           ? validatedLocation[0].length
                           : 0}{" "}
                         titik
@@ -648,14 +709,17 @@ const DataAsetYardipPage = () => {
   const { user } = useAuth();
   const [assets, setAssets] = useState([]);
   const [filteredAssets, setFilteredAssets] = useState([]);
-  const [selectedBidang, setSelectedBidang] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+
+  // State untuk filter lokasi (mengganti selectedBidang dan statusFilter)
+  const [selectedProvinsi, setSelectedProvinsi] = useState("");
+  const [selectedKota, setSelectedKota] = useState("");
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   // State untuk edit asset
   const [editingAsset, setEditingAsset] = useState(null);
-  
+
   // State untuk modal detail
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedAssetDetail, setSelectedAssetDetail] = useState(null);
@@ -677,7 +741,7 @@ const DataAsetYardipPage = () => {
 
   // Handler untuk Peta utama
   const handleMarkerClick = useCallback((asset) => {
-    console.log('Yardip marker clicked:', asset);
+    console.log("Yardip marker clicked:", asset);
     setAssetForOffcanvas(asset);
     setShowOffcanvas(true);
     setZoomToAsset(asset);
@@ -706,7 +770,7 @@ const DataAsetYardipPage = () => {
 
   useEffect(() => {
     fetchData();
-    
+
     return () => {
       // Cleanup function
       setAssets([]);
@@ -716,42 +780,111 @@ const DataAsetYardipPage = () => {
     };
   }, [fetchData]);
 
-  // Filter berdasarkan bidang dan status - menggunakan useMemo untuk optimasi
+  // Get options untuk filter provinsi
+  const provinsiOptions = useMemo(() => {
+    const uniqueProvinsi = new Set();
+
+    assets.forEach((asset) => {
+      // Cek provinsi dari field provinsi
+      if (asset.provinsi) {
+        uniqueProvinsi.add(asset.provinsi);
+      }
+      // Cek provinsi dari field provinsi_id
+      else if (asset.provinsi_id) {
+        const provinsiName =
+          asset.provinsi_id === "jateng"
+            ? "Jawa Tengah"
+            : asset.provinsi_id === "diy"
+            ? "DI Yogyakarta"
+            : asset.provinsi_id;
+        uniqueProvinsi.add(provinsiName);
+      }
+    });
+
+    return Array.from(uniqueProvinsi)
+      .map((provinsi) => ({
+        value: provinsi,
+        label: provinsi,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [assets]);
+
+  // Get options untuk filter kota berdasarkan provinsi yang dipilih
+  const kotaOptions = useMemo(() => {
+    if (!selectedProvinsi) return [];
+
+    const uniqueKota = new Set();
+
+    assets.forEach((asset) => {
+      const assetProvinsi =
+        asset.provinsi ||
+        (asset.provinsi_id === "jateng"
+          ? "Jawa Tengah"
+          : asset.provinsi_id === "diy"
+          ? "DI Yogyakarta"
+          : asset.provinsi_id);
+
+      if (assetProvinsi === selectedProvinsi) {
+        // Ambil nama kota dari berbagai field yang mungkin
+        const kotaName = asset.kota || asset.kabkota;
+        if (kotaName) {
+          uniqueKota.add(kotaName);
+        }
+      }
+    });
+
+    return Array.from(uniqueKota)
+      .map((kota) => ({
+        id: kota,
+        name: kota,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [assets, selectedProvinsi]);
+
+  // Filter berdasarkan provinsi dan kota
   const processedAssets = useMemo(() => {
     let filtered = assets;
 
-    if (selectedBidang) {
-      filtered = filtered.filter((asset) => asset.bidang === selectedBidang);
+    if (selectedProvinsi) {
+      filtered = filtered.filter((asset) => {
+        const assetProvinsi =
+          asset.provinsi ||
+          (asset.provinsi_id === "jateng"
+            ? "Jawa Tengah"
+            : asset.provinsi_id === "diy"
+            ? "DI Yogyakarta"
+            : asset.provinsi_id);
+        return assetProvinsi === selectedProvinsi;
+      });
     }
 
-    if (statusFilter) {
-      filtered = filtered.filter((asset) => asset.status === statusFilter);
+    if (selectedKota) {
+      filtered = filtered.filter((asset) => {
+        const assetKota = asset.kota || asset.kabkota;
+        return assetKota === selectedKota;
+      });
     }
 
     return filtered;
-  }, [assets, selectedBidang, statusFilter]);
+  }, [assets, selectedProvinsi, selectedKota]);
 
   useEffect(() => {
     setFilteredAssets(processedAssets);
   }, [processedAssets]);
 
-  // Get unique bidang options from assets - menggunakan useMemo
-  const bidangOptions = useMemo(() => {
-    return [...new Set(assets.map((asset) => asset.bidang).filter(Boolean))];
-  }, [assets]);
-
-  // Handler functions - menggunakan useCallback untuk optimasi
-  const handleBidangChange = useCallback((bidang) => {
-    setSelectedBidang(bidang || "");
+  // Handler functions untuk filter lokasi
+  const handleProvinsiChange = useCallback((provinsi) => {
+    setSelectedProvinsi(provinsi || "");
+    setSelectedKota(""); // Reset kota saat provinsi berubah
   }, []);
 
-  const handleStatusChange = useCallback((status) => {
-    setStatusFilter(status || "");
+  const handleKotaChange = useCallback((kota) => {
+    setSelectedKota(kota || "");
   }, []);
 
   const handleShowAll = useCallback(() => {
-    setSelectedBidang("");
-    setStatusFilter("");
+    setSelectedProvinsi("");
+    setSelectedKota("");
     setZoomToAsset(null);
   }, []);
 
@@ -771,7 +904,7 @@ const DataAsetYardipPage = () => {
       const toastId = toast.loading("Menghapus aset...");
       try {
         await axios.delete(`${API_URL}/yardip_assets/${id}`);
-        setAssets(prevAssets => prevAssets.filter((a) => a.id !== id));
+        setAssets((prevAssets) => prevAssets.filter((a) => a.id !== id));
         toast.success("Aset berhasil dihapus.", { id: toastId });
       } catch (err) {
         toast.error("Gagal menghapus aset.", { id: toastId });
@@ -785,17 +918,17 @@ const DataAsetYardipPage = () => {
     setEditingAsset(asset);
     setIsEditingLocation(false);
     setEditedLocationData(null);
-    
+
     // Inisialisasi lokasi dari asset
     if (asset.provinsi_id) {
       setEditSelectedProvince(asset.provinsi_id);
-      
+
       if (asset.kota_id) {
         setEditSelectedCity(asset.kota_id);
-        
+
         const cities = kotaData[asset.provinsi_id];
-        const selectedCityData = cities?.find(c => c.id === asset.kota_id);
-        
+        const selectedCityData = cities?.find((c) => c.id === asset.kota_id);
+
         if (selectedCityData) {
           setEditCityBounds(selectedCityData.bounds);
           console.log("Edit city bounds set:", selectedCityData.bounds);
@@ -827,7 +960,7 @@ const DataAsetYardipPage = () => {
 
       if (selectedCityData) {
         setEditCityBounds(selectedCityData.bounds);
-        
+
         toast.success(
           `Lokasi ${selectedCityData.name} dipilih untuk edit! Peta akan auto-zoom.`,
           { duration: 3000 }
@@ -859,54 +992,61 @@ const DataAsetYardipPage = () => {
     );
   }, []);
 
-  const handleSaveAsset = useCallback(async (updatedData) => {
-    if (!editingAsset) return;
+  const handleSaveAsset = useCallback(
+    async (updatedData) => {
+      if (!editingAsset) return;
 
-    const selectedCityData = kotaData[editSelectedProvince]?.find(
-      (c) => c.id === editSelectedCity
-    );
-
-    const finalData = {
-      ...updatedData,
-      ...(editedLocationData && {
-        lokasi: editedLocationData.geometry || editedLocationData.coordinates,
-        area: editedLocationData.area,
-      }),
-      ...(editSelectedProvince && editSelectedCity && {
-        provinsi_id: editSelectedProvince,
-        kota_id: editSelectedCity,
-        provinsi: editSelectedProvince === "jateng" ? "Jawa Tengah" : "DI Yogyakarta",
-        kota: selectedCityData ? selectedCityData.name : "",
-      }),
-    };
-
-    console.log("Saving asset with data:", finalData);
-
-    const toastId = toast.loading("Menyimpan perubahan...");
-    try {
-      const response = await axios.put(
-        `${API_URL}/yardip_assets/${editingAsset.id}`,
-        finalData
+      const selectedCityData = kotaData[editSelectedProvince]?.find(
+        (c) => c.id === editSelectedCity
       );
 
-      setAssets(prevAssets =>
-        prevAssets.map((a) => (a.id === editingAsset.id ? response.data : a))
-      );
+      const finalData = {
+        ...updatedData,
+        ...(editedLocationData && {
+          lokasi: editedLocationData.geometry || editedLocationData.coordinates,
+          area: editedLocationData.area,
+        }),
+        ...(editSelectedProvince &&
+          editSelectedCity && {
+            provinsi_id: editSelectedProvince,
+            kota_id: editSelectedCity,
+            provinsi:
+              editSelectedProvince === "jateng"
+                ? "Jawa Tengah"
+                : "DI Yogyakarta",
+            kota: selectedCityData ? selectedCityData.name : "",
+          }),
+      };
 
-      toast.success("Aset berhasil diperbarui!", { id: toastId });
+      console.log("Saving asset with data:", finalData);
 
-      // Reset semua editing state
-      setEditingAsset(null);
-      setIsEditingLocation(false);
-      setEditedLocationData(null);
-      setEditSelectedProvince("");
-      setEditSelectedCity("");
-      setEditCityBounds(null);
-    } catch (err) {
-      toast.error("Gagal menyimpan perubahan.", { id: toastId });
-      console.error("Save error:", err);
-    }
-  }, [editingAsset, editSelectedProvince, editSelectedCity, editedLocationData]);
+      const toastId = toast.loading("Menyimpan perubahan...");
+      try {
+        const response = await axios.put(
+          `${API_URL}/yardip_assets/${editingAsset.id}`,
+          finalData
+        );
+
+        setAssets((prevAssets) =>
+          prevAssets.map((a) => (a.id === editingAsset.id ? response.data : a))
+        );
+
+        toast.success("Aset berhasil diperbarui!", { id: toastId });
+
+        // Reset semua editing state
+        setEditingAsset(null);
+        setIsEditingLocation(false);
+        setEditedLocationData(null);
+        setEditSelectedProvince("");
+        setEditSelectedCity("");
+        setEditCityBounds(null);
+      } catch (err) {
+        toast.error("Gagal menyimpan perubahan.", { id: toastId });
+        console.error("Save error:", err);
+      }
+    },
+    [editingAsset, editSelectedProvince, editSelectedCity, editedLocationData]
+  );
 
   const handleViewDetail = useCallback((asset) => {
     console.log("Yardip Asset data for detail:", asset);
@@ -975,7 +1115,7 @@ const DataAsetYardipPage = () => {
     return filteredAssets
       .map((asset) => {
         const validatedLocation = validateAndParseLocation(asset.lokasi);
-        
+
         if (!validatedLocation) return null;
 
         return {
@@ -1030,7 +1170,7 @@ const DataAsetYardipPage = () => {
 
   // Error boundary handlers
   const handleMapError = useCallback(() => {
-    console.warn('Map error occurred, resetting map state');
+    console.warn("Map error occurred, resetting map state");
     setMapKey(Date.now());
   }, []);
 
@@ -1061,8 +1201,8 @@ const DataAsetYardipPage = () => {
                 </div>
               </Card.Header>
               <Card.Body style={{ height: "50vh", padding: 0 }}>
-                <MapErrorBoundary 
-                  height="50vh" 
+                <MapErrorBoundary
+                  height="50vh"
                   onRetry={handleMapError}
                   onFallback={handleFallbackMode}
                 >
@@ -1082,50 +1222,44 @@ const DataAsetYardipPage = () => {
                 <Row className="text-center">
                   <Col xs={6} sm={3}>
                     <div className="d-flex align-items-center justify-content-center">
-                      <div style={{
-                        width: '12px', 
-                        height: '12px', 
-                        backgroundColor: '#10b981', 
-                        borderRadius: '50%',
-                        marginRight: '8px'
-                      }}></div>
+                      <div
+                        style={{
+                          width: "12px",
+                          height: "12px",
+                          backgroundColor: "#10b981",
+                          borderRadius: "50%",
+                          marginRight: "8px",
+                        }}
+                      ></div>
                       <small>Dimiliki/Dikuasai</small>
                     </div>
                   </Col>
                   <Col xs={6} sm={3}>
                     <div className="d-flex align-items-center justify-content-center">
-                      <div style={{
-                        width: '12px', 
-                        height: '12px', 
-                        backgroundColor: '#ef4444', 
-                        borderRadius: '50%',
-                        marginRight: '8px'
-                      }}></div>
+                      <div
+                        style={{
+                          width: "12px",
+                          height: "12px",
+                          backgroundColor: "#ef4444",
+                          borderRadius: "50%",
+                          marginRight: "8px",
+                        }}
+                      ></div>
                       <small>Tidak Dimiliki</small>
                     </div>
                   </Col>
                   <Col xs={6} sm={3}>
                     <div className="d-flex align-items-center justify-content-center">
-                      <div style={{
-                        width: '12px', 
-                        height: '12px', 
-                        backgroundColor: '#f59e0b', 
-                        borderRadius: '50%',
-                        marginRight: '8px'
-                      }}></div>
+                      <div
+                        style={{
+                          width: "12px",
+                          height: "12px",
+                          backgroundColor: "#f59e0b",
+                          borderRadius: "50%",
+                          marginRight: "8px",
+                        }}
+                      ></div>
                       <small>Lain-lain</small>
-                    </div>
-                  </Col>
-                  <Col xs={6} sm={3}>
-                    <div className="d-flex align-items-center justify-content-center">
-                      <div style={{
-                        width: '12px', 
-                        height: '12px', 
-                        backgroundColor: '#06b6d4', 
-                        borderRadius: '50%',
-                        marginRight: '8px'
-                      }}></div>
-                      <small>Dalam Proses</small>
                     </div>
                   </Col>
                 </Row>
@@ -1135,11 +1269,12 @@ const DataAsetYardipPage = () => {
             {/* FILTER PANEL */}
             <FilterPanelTop
               assets={assets}
-              bidangOptions={bidangOptions}
-              selectedBidang={selectedBidang}
-              statusFilter={statusFilter}
-              onSelectBidang={handleBidangChange}
-              onSelectStatus={handleStatusChange}
+              provinsiOptions={provinsiOptions}
+              kotaOptions={kotaOptions}
+              selectedProvinsi={selectedProvinsi}
+              selectedKota={selectedKota}
+              onSelectProvinsi={handleProvinsiChange}
+              onSelectKota={handleKotaChange}
               onShowAll={handleShowAll}
               totalAssets={assets.length}
               filteredAssets={filteredAssets.length}
@@ -1158,7 +1293,8 @@ const DataAsetYardipPage = () => {
                         <i className="fas fa-folder-open fa-3x mb-3"></i>
                         <h5>Belum Ada Data Aset Yardip</h5>
                         <p>
-                          Silakan tambah aset yardip baru di halaman Tambah Aset Yardip.
+                          Silakan tambah aset yardip baru di halaman Tambah Aset
+                          Yardip.
                         </p>
                       </div>
                     </div>
@@ -1181,7 +1317,9 @@ const DataAsetYardipPage = () => {
                   <Row className="text-center">
                     <Col md={2}>
                       <div className="border-end">
-                        <h5 className="text-primary">{filteredAssets.length}</h5>
+                        <h5 className="text-primary">
+                          {filteredAssets.length}
+                        </h5>
                         <small className="text-muted">Total Aset</small>
                       </div>
                     </Col>
@@ -1202,7 +1340,8 @@ const DataAsetYardipPage = () => {
                         <h5 className="text-danger">
                           {
                             filteredAssets.filter(
-                              (a) => a.status === "Tidak Dimiliki/Tidak Dikuasai"
+                              (a) =>
+                                a.status === "Tidak Dimiliki/Tidak Dikuasai"
                             ).length
                           }
                         </h5>
@@ -1215,8 +1354,9 @@ const DataAsetYardipPage = () => {
                       <div className="border-end">
                         <h5 className="text-warning">
                           {
-                            filteredAssets.filter((a) => a.status === "Lain-lain")
-                              .length
+                            filteredAssets.filter(
+                              (a) => a.status === "Lain-lain"
+                            ).length
                           }
                         </h5>
                         <small className="text-muted">Lain-lain</small>
@@ -1224,22 +1364,72 @@ const DataAsetYardipPage = () => {
                     </Col>
                     <Col md={2}>
                       <div className="border-end">
-                        <h5 className="text-info">
-                          {
-                            filteredAssets.filter((a) => a.status === "Dalam Proses")
-                              .length
-                          }
+                        <h5 className="text-muted">
+                          {filteredAssets
+                            .reduce(
+                              (total, a) => total + (Number(a.area) || 0),
+                              0
+                            )
+                            .toLocaleString("id-ID")}
                         </h5>
-                        <small className="text-muted">Dalam Proses</small>
+                        <small className="text-muted">Total Luas (m²)</small>
                       </div>
                     </Col>
                     <Col md={2}>
-                      <h5 className="text-muted">
-                        {filteredAssets.reduce((total, a) => total + (Number(a.area) || 0), 0).toLocaleString("id-ID")}
-                      </h5>
-                      <small className="text-muted">Total Luas (m²)</small>
+                      <div>
+                        <h5 className="text-info">
+                          {selectedProvinsi
+                            ? [
+                                ...new Set(
+                                  filteredAssets.map((a) => a.kota || a.kabkota)
+                                ),
+                              ].filter(Boolean).length
+                            : [
+                                ...new Set(
+                                  assets.map((a) => {
+                                    const provinsi =
+                                      a.provinsi ||
+                                      (a.provinsi_id === "jateng"
+                                        ? "Jawa Tengah"
+                                        : a.provinsi_id === "diy"
+                                        ? "DI Yogyakarta"
+                                        : a.provinsi_id);
+                                    return provinsi;
+                                  })
+                                ),
+                              ].filter(Boolean).length}
+                        </h5>
+                        <small className="text-muted">
+                          {selectedProvinsi
+                            ? "Kota Terwakili"
+                            : "Provinsi Terwakili"}
+                        </small>
+                      </div>
                     </Col>
                   </Row>
+
+                  {/* Additional location breakdown */}
+                  {(selectedProvinsi || selectedKota) && (
+                    <Row className="mt-3">
+                      <Col md={12}>
+                        <div className="bg-light p-2 rounded">
+                          <small className="text-muted">
+                            <strong>Filter Aktif:</strong>
+                            {selectedProvinsi && (
+                              <span className="badge bg-primary ms-1 me-1">
+                                Provinsi: {selectedProvinsi}
+                              </span>
+                            )}
+                            {selectedKota && (
+                              <span className="badge bg-secondary ms-1">
+                                Kota: {selectedKota}
+                              </span>
+                            )}
+                          </small>
+                        </div>
+                      </Col>
+                    </Row>
+                  )}
                 </Card.Body>
               </Card>
             )}
