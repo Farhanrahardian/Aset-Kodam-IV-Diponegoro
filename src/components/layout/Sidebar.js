@@ -1,6 +1,7 @@
 import React from "react";
 import { Nav } from "react-bootstrap";
 import { NavLink } from "react-router-dom";
+import "./Sidebar.css"; // tambahkan CSS eksternal biar hover bisa jalan
 
 const Sidebar = ({ show }) => {
   const navLinkStyle = ({ isActive }) => ({
@@ -10,6 +11,7 @@ const Sidebar = ({ show }) => {
     padding: "10px 15px",
     marginBottom: "5px",
     fontWeight: isActive ? "bold" : "normal",
+    transition: "all 0.3s ease", // animasi halus
   });
 
   return (
@@ -52,7 +54,11 @@ const Sidebar = ({ show }) => {
           Data Aset Yardip
         </NavLink>
         <NavLink to="/laporan" className="nav-link" style={navLinkStyle}>
-          Cetak Laporan
+          Cetak Laporan Aset Tanah
+        </NavLink>
+        {/* Tambahan menu baru */}
+        <NavLink to="/laporan-yardip" className="nav-link" style={navLinkStyle}>
+          Cetak Laporan Aset Yardip
         </NavLink>
         <NavLink to="/settings" className="nav-link" style={navLinkStyle}>
           Pengaturan

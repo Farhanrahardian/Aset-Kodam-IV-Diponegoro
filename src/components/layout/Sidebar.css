@@ -1,0 +1,12 @@
+.sidebar .nav-link {
+  transition: all 0.3s ease;
+  border-radius: 5px; /* biar kotaknya membulat */
+  padding: 10px 15px; /* samain sama inline style */
+}
+
+.sidebar .nav-link:hover {
+  background-color: #4caf50; /* hijau sama dengan aktif */
+  color: #ffffff;
+  transform: translateX(5px); /* efek geser */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2); /* kasih bayangan halus */
+}

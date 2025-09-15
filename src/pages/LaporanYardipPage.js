@@ -14,17 +14,42 @@ import ExcelJS from "exceljs";
 
 const API_URL = "http://localhost:3001";
 
-const LaporanPage = () => {
+// Data provinsi dan kota yang sama dengan DataAsetYardipPage
+const kotaData = {
+  jateng: [
+    { id: "semarang", name: "Semarang" },
+    { id: "solo", name: "Surakarta (Solo)" },
+    { id: "yogya", name: "Yogyakarta" },
+    { id: "magelang", name: "Magelang" },
+    { id: "salatiga", name: "Salatiga" },
+    { id: "tegal", name: "Tegal" },
+    { id: "pekalongan", name: "Pekalongan" },
+    { id: "purwokerto", name: "Purwokerto" },
+    { id: "cilacap", name: "Cilacap" },
+    { id: "kudus", name: "Kudus" },
+    { id: "jepara", name: "Jepara" },
+    { id: "rembang", name: "Rembang" },
+  ],
+  diy: [
+    { id: "jogja", name: "Yogyakarta" },
+    { id: "sleman", name: "Sleman" },
+    { id: "bantul", name: "Bantul" },
+    { id: "kulonprogo", name: "Kulon Progo" },
+    { id: "gunungkidul", name: "Gunung Kidul" },
+  ],
+};
+
+const LaporanYardipPage = () => {
   const [assets, setAssets] = useState([]);
-  const [koremList, setKoremList] = useState([]);
-  const [allKodimList, setAllKodimList] = useState([]);
+  const [bidangList, setBidangList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState(null);
 
   // Filter states
-  const [selectedKorem, setSelectedKorem] = useState("");
-  const [selectedKodim, setSelectedKodim] = useState("");
+  const [selectedProvinsi, setSelectedProvinsi] = useState("");
+  const [selectedKota, setSelectedKota] = useState("");
+  const [selectedBidang, setSelectedBidang] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [filteredAssets, setFilteredAssets] = useState([]);
 
@@ -32,18 +57,18 @@ const LaporanPage = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [assetsRes, koremRes] = await Promise.all([
-          axios.get(`${API_URL}/assets`),
-          axios.get(`${API_URL}/korem`),
-        ]);
+        const assetsRes = await axios.get(`${API_URL}/yardip_assets`);
 
         setAssets(assetsRes.data);
-        setKoremList(koremRes.data);
 
-        const allKodims = koremRes.data.flatMap((korem) =>
-          korem.kodim.map((k) => ({ id: k, nama: k, korem_id: korem.id }))
-        );
-        setAllKodimList(allKodims);
+        // Extract unique bidang for filter
+        const uniqueBidang = [
+          ...new Set(
+            assetsRes.data.map((asset) => asset.bidang).filter(Boolean)
+          ),
+        ];
+        setBidangList(uniqueBidang);
+
         setFilteredAssets(assetsRes.data);
         setError(null);
       } catch (err) {
@@ -62,19 +87,18 @@ const LaporanPage = () => {
   useEffect(() => {
     let filtered = assets;
 
-    if (selectedKorem) {
-      const koremData = koremList.find((k) => k.id == selectedKorem);
-      if (koremData) {
-        filtered = filtered.filter((asset) => asset.korem_id == selectedKorem);
-      }
+    if (selectedProvinsi) {
+      filtered = filtered.filter(
+        (asset) => asset.provinsi_id === selectedProvinsi
+      );
     }
 
-    if (selectedKodim) {
-      filtered = filtered.filter((asset) => {
-        const assetKodim = String(asset.kodim || "").trim();
-        const filterKodim = String(selectedKodim || "").trim();
-        return assetKodim === filterKodim;
-      });
+    if (selectedKota) {
+      filtered = filtered.filter((asset) => asset.kota_id === selectedKota);
+    }
+
+    if (selectedBidang) {
+      filtered = filtered.filter((asset) => asset.bidang === selectedBidang);
     }
 
     if (statusFilter) {
@@ -82,71 +106,65 @@ const LaporanPage = () => {
     }
 
     setFilteredAssets(filtered);
-  }, [selectedKorem, selectedKodim, statusFilter, assets, koremList]);
+  }, [selectedProvinsi, selectedKota, selectedBidang, statusFilter, assets]);
 
-  // Get kodim list based on selected korem
-  const getKodimForSelectedKorem = () => {
-    if (!selectedKorem) return allKodimList;
-    const koremData = koremList.find((k) => k.id == selectedKorem);
-    if (!koremData) return [];
-    return koremData.kodim.map((k) => ({ id: k, nama: k }));
+  // Get kota list based on selected provinsi
+  const getKotaForSelectedProvinsi = () => {
+    if (!selectedProvinsi) return [];
+    return kotaData[selectedProvinsi] || [];
   };
 
-  const handleKoremChange = (e) => {
-    setSelectedKorem(e.target.value);
-    setSelectedKodim(""); // Reset kodim when korem changes
+  const handleProvinsiChange = (e) => {
+    setSelectedProvinsi(e.target.value);
+    setSelectedKota(""); // Reset kota when provinsi changes
   };
 
   const handleResetFilter = () => {
-    setSelectedKorem("");
-    setSelectedKodim("");
+    setSelectedProvinsi("");
+    setSelectedKota("");
+    setSelectedBidang("");
     setStatusFilter("");
   };
 
-  // Helper function untuk mendapatkan nama korem
-  const getKoremName = (koremId) => {
-    const korem = koremList.find((k) => k.id == koremId);
-    return korem ? korem.nama : "-";
+  // Helper function untuk mendapatkan nama provinsi
+  const getProvinsiName = (provinsiId) => {
+    switch (provinsiId) {
+      case "jateng":
+        return "JAWA TENGAH";
+      case "diy":
+        return "DI YOGYAKARTA";
+      default:
+        return "-";
+    }
   };
 
-  // Helper function untuk mendapatkan nama kodim
-  const getKodimName = (asset) => {
-    if (!asset.kodim) return "-";
-    const kodim = allKodimList.find((k) => k.nama === asset.kodim);
-    return kodim ? kodim.nama : asset.kodim;
+  // Helper function untuk mendapatkan nama kota
+  const getKotaName = (provinsiId, kotaId) => {
+    if (!provinsiId || !kotaId) return "-";
+    const kota = kotaData[provinsiId]?.find((k) => k.id === kotaId);
+    return kota ? kota.name.toUpperCase() : kotaId.toUpperCase();
   };
 
-  // Helper function untuk format luas
-  const formatLuas = (asset) => {
-    const sertifikatLuas = parseFloat(asset.sertifikat_luas) || 0;
-    const belumSertifikatLuas = parseFloat(asset.belum_sertifikat_luas) || 0;
-    const petaLuas = parseFloat(asset.luas) || 0;
-
-    if (sertifikatLuas > 0) return sertifikatLuas;
-    if (belumSertifikatLuas > 0) return belumSertifikatLuas;
-    return petaLuas;
-  };
-
-  // Helper function untuk group assets berdasarkan Korem dan Kodim
-  const groupAssetsByKoremKodim = (assets) => {
+  // Helper function untuk group assets berdasarkan Provinsi dan Kota
+  const groupAssetsByProvinsiKota = (assets) => {
     const grouped = {};
 
     assets.forEach((asset) => {
-      const koremId = asset.korem_id;
-      const kodimName = asset.kodim || "Tidak Ada Kodim";
+      const provinsiId = asset.provinsi_id || "unknown";
+      const kotaId = asset.kota_id || "Tidak Ada Kota";
 
-      if (!grouped[koremId]) {
-        grouped[koremId] = {
-          koremName: getKoremName(koremId),
-          kodims: {},
+      if (!grouped[provinsiId]) {
+        grouped[provinsiId] = {
+          provinsiName: getProvinsiName(provinsiId),
+          kotas: {},
         };
       }
 
-      if (!grouped[koremId].kodims[kodimName]) {
-        grouped[koremId].kodims[kodimName] = [];
+      if (!grouped[provinsiId].kotas[kotaId]) {
+        grouped[provinsiId].kotas[kotaId] = [];
       }
 
-      grouped[koremId].kodims[kodimName].push(asset);
+      grouped[provinsiId].kotas[kotaId].push(asset);
     });
 
     return grouped;
@@ -163,41 +181,32 @@ const LaporanPage = () => {
 
     try {
       // Siapkan judul berdasarkan filter
-      let title = "TANAH BMN TNI AD BERSERTIFIKAT DAN BELUM SERTIFIKAT";
+      let title = "DAFTAR ASET TANAH YAYASAN RUMPUN DIPONEGORO SELAIN KEBUN";
       let subtitle = "";
 
-      if (selectedKorem && selectedKodim) {
-        subtitle = `DI WILAYAH ${selectedKodim.toUpperCase()}`;
-      } else if (selectedKorem) {
-        subtitle = `DI WILAYAH ${getKoremName(selectedKorem).toUpperCase()}`;
+      if (selectedProvinsi && selectedKota) {
+        subtitle = `DI WILAYAH ${getKotaName(selectedProvinsi, selectedKota)}`;
+      } else if (selectedProvinsi) {
+        subtitle = `DI WILAYAH ${getProvinsiName(selectedProvinsi)}`;
       } else {
-        subtitle = "DI WILAYAH SELURUH KOREM";
+        subtitle = "DI SELURUH WILAYAH";
       }
 
       // Buat workbook baru
       const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet("Laporan Aset Tanah");
+      const worksheet = workbook.addWorksheet("Laporan Aset Yardip");
 
-      // Set column widths
+      // Set column widths - sekarang ada 9 kolom (tambah 2 kolom untuk lokasi yang dipisah)
       worksheet.columns = [
-        { width: 8 }, // A - Nomor Urut
-        { width: 6 }, // B - BAG
-        { width: 20 }, // C - NUP
-        { width: 20 }, // D - KIB/Kode Barang
-        { width: 15 }, // E - No Reg
-        { width: 35 }, // F - Alamat
-        { width: 25 }, // G - Peruntukan
-        { width: 25 }, // H - Status
-        { width: 20 }, // I - Asal Milik
-        { width: 25 }, // J - Bukti Pemilikan
-        { width: 25 }, // K - A.N. Pemilik Sertifikat
-        { width: 8 }, // L - BID Total
-        { width: 15 }, // M - Luas Total
-        { width: 8 }, // N - BID Sertifikat
-        { width: 15 }, // O - Luas Sertifikat
-        { width: 8 }, // P - BID Belum
-        { width: 15 }, // Q - Luas Belum
-        { width: 40 }, // R - Keterangan
+        { width: 8 }, // A - NO
+        { width: 15 }, // B - BIDANG
+        { width: 20 }, // C - KABUPATEN/KOTA
+        { width: 20 }, // D - KECAMATAN
+        { width: 20 }, // E - KELURAHAN/DESA
+        { width: 15 }, // F - LUAS (M2)
+        { width: 25 }, // G - PERUNTUKAN
+        { width: 25 }, // H - STATUS
+        { width: 30 }, // I - KETERANGAN
       ];
 
       // Tambahkan title (Row 1)
@@ -205,7 +214,7 @@ const LaporanPage = () => {
       titleCell.value = title;
       titleCell.font = {
         bold: true,
-        size: 12,
+        size: 14,
         name: "Arial",
       };
       titleCell.alignment = {
@@ -218,15 +227,15 @@ const LaporanPage = () => {
         fgColor: { argb: "FFE6E6FA" },
       };
 
-      // Merge title across all columns
-      worksheet.mergeCells("A1:R1");
+      // Merge title across all columns (A1:I1)
+      worksheet.mergeCells("A1:I1");
 
       // Tambahkan subtitle (Row 2)
       const subtitleCell = worksheet.getCell("A2");
       subtitleCell.value = subtitle;
       subtitleCell.font = {
         bold: true,
-        size: 11,
+        size: 12,
         name: "Arial",
       };
       subtitleCell.alignment = {
@@ -239,41 +248,32 @@ const LaporanPage = () => {
         fgColor: { argb: "FFF0F0F0" },
       };
 
-      // Merge subtitle across all columns
-      worksheet.mergeCells("A2:R2");
+      // Merge subtitle across all columns (A2:I2)
+      worksheet.mergeCells("A2:I2");
 
       // Row kosong (Row 3)
       worksheet.getRow(3).height = 10;
 
-      // Header Row 1 (Row 4)
-      const headers1 = [
-        "NOMOR\nURUT",
-        "BAG",
-        "NUP",
-        "KIB / KODE\nBARANG",
-        "NO. REG",
-        "ALAMAT",
+      // Header Row (Row 4)
+      const headers = [
+        "NO",
+        "BIDANG",
+        "KABUPATEN/KOTA",
+        "KECAMATAN",
+        "KELURAHAN/DESA",
+        "LUAS (M2)",
         "PERUNTUKAN",
         "STATUS",
-        "ASAL MILIK",
-        "BUKTI PEMILIKAN",
-        "A.N. PEMILIK\nSERTIFIKAT",
-        "JUMLAH TANAH\nKESELURUHAN",
-        "",
-        "SUDAH SERTIFIKAT",
-        "",
-        "BELUM SERTIFIKAT",
-        "",
-        "KET",
+        "KETERANGAN",
       ];
 
-      const headerRow1 = worksheet.getRow(4);
-      headers1.forEach((header, index) => {
-        const cell = headerRow1.getCell(index + 1);
+      const headerRow = worksheet.getRow(4);
+      headers.forEach((header, index) => {
+        const cell = headerRow.getCell(index + 1);
         cell.value = header;
         cell.font = {
           bold: true,
-          size: 9,
+          size: 11,
           name: "Arial",
         };
         cell.alignment = {
@@ -287,37 +287,17 @@ const LaporanPage = () => {
           fgColor: { argb: "FFD3D3D3" },
         };
       });
-      headerRow1.height = 35;
+      headerRow.height = 30;
 
-      // Header Row 2 (Row 5)
-      const headers2 = [
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "BID",
-        "LUAS (M2)",
-        "BID",
-        "LUAS (M2)",
-        "BID",
-        "LUAS (M2)",
-        "",
-      ];
-
-      const headerRow2 = worksheet.getRow(5);
-      headers2.forEach((header, index) => {
-        const cell = headerRow2.getCell(index + 1);
-        cell.value = header;
+      // Header angka (Row 5)
+      const numberHeaders = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
+      const numberRow = worksheet.getRow(5);
+      numberHeaders.forEach((num, index) => {
+        const cell = numberRow.getCell(index + 1);
+        cell.value = num;
         cell.font = {
           bold: true,
-          size: 9,
+          size: 10,
           name: "Arial",
         };
         cell.alignment = {
@@ -330,175 +310,182 @@ const LaporanPage = () => {
           fgColor: { argb: "FFD3D3D3" },
         };
       });
-      headerRow2.height = 25;
+      numberRow.height = 20;
 
-      // Merge header cells
-      const mergeRanges = [
-        "A4:A5",
-        "B4:B5",
-        "C4:C5",
-        "D4:D5",
-        "E4:E5",
-        "F4:F5",
-        "G4:G5",
-        "H4:H5",
-        "I4:I5",
-        "J4:J5",
-        "K4:K5",
-        "L4:M4",
-        "N4:O4",
-        "P4:Q4",
-        "R4:R5",
-      ];
-
-      mergeRanges.forEach((range) => {
-        worksheet.mergeCells(range);
-      });
-
-      // Group assets berdasarkan Korem dan Kodim
-      const groupedAssets = groupAssetsByKoremKodim(filteredAssets);
+      // Group assets berdasarkan Provinsi dan Kota
+      const groupedAssets = groupAssetsByProvinsiKota(filteredAssets);
 
       let currentRow = 6;
       let globalIndex = 1;
 
-      // Loop through each Korem
-      Object.keys(groupedAssets).forEach((koremId) => {
-        const koremData = groupedAssets[koremId];
+      // Loop through each Provinsi
+      Object.keys(groupedAssets).forEach((provinsiId) => {
+        const provinsiData = groupedAssets[provinsiId];
 
-        // Tambahkan header KOREM dengan background biru
-        const koremHeaderRow = worksheet.getRow(currentRow);
-        const koremHeaderCell = koremHeaderRow.getCell(1);
-        koremHeaderCell.value = koremData.koremName.toUpperCase();
-        koremHeaderCell.font = {
+        // Tambahkan header PROVINSI dengan background biru
+        const provinsiHeaderRow = worksheet.getRow(currentRow);
+        const provinsiHeaderCell = provinsiHeaderRow.getCell(1);
+        provinsiHeaderCell.value = provinsiData.provinsiName;
+        provinsiHeaderCell.font = {
           bold: true,
-          size: 11,
+          size: 12,
           name: "Arial",
           color: { argb: "FFFFFFFF" }, // White text
         };
-        koremHeaderCell.alignment = {
+        provinsiHeaderCell.alignment = {
           horizontal: "left",
           vertical: "middle",
         };
-        koremHeaderCell.fill = {
+        provinsiHeaderCell.fill = {
           type: "pattern",
           pattern: "solid",
           fgColor: { argb: "FF4472C4" }, // Blue background
         };
 
-        // Merge korem header across all columns
-        worksheet.mergeCells(`A${currentRow}:R${currentRow}`);
-        koremHeaderRow.height = 25;
+        // Merge provinsi header across all columns (A:I)
+        worksheet.mergeCells(`A${currentRow}:I${currentRow}`);
+        provinsiHeaderRow.height = 25;
         currentRow++;
 
-        // Loop through each Kodim in this Korem
-        Object.keys(koremData.kodims).forEach((kodimName) => {
-          const kodimAssets = koremData.kodims[kodimName];
+        // Loop through each Kota in this Provinsi
+        Object.keys(provinsiData.kotas).forEach((kotaId) => {
+          const kotaAssets = provinsiData.kotas[kotaId];
+          const kotaName = getKotaName(provinsiId, kotaId);
 
-          // Tambahkan header Kodim dengan background kuning
-          const kodimHeaderRow = worksheet.getRow(currentRow);
-          const kodimHeaderCell = kodimHeaderRow.getCell(1);
-          kodimHeaderCell.value = `${kodimName.toUpperCase()} (${
-            kodimAssets.length
-          } aset)`;
-          kodimHeaderCell.font = {
+          // Tambahkan header Kota dengan background kuning
+          const kotaHeaderRow = worksheet.getRow(currentRow);
+          const kotaHeaderCell = kotaHeaderRow.getCell(1);
+
+          // Group berdasarkan bidang untuk header kota
+          const bidangGroups = {};
+          kotaAssets.forEach((asset) => {
+            const bidang = asset.bidang || "Tidak Ada Bidang";
+            if (!bidangGroups[bidang]) {
+              bidangGroups[bidang] = [];
+            }
+            bidangGroups[bidang].push(asset);
+          });
+
+          kotaHeaderCell.value = `${kotaName} (${kotaAssets.length} aset)`;
+          kotaHeaderCell.font = {
             bold: true,
-            size: 10,
+            size: 11,
             name: "Arial",
           };
-          kodimHeaderCell.alignment = {
+          kotaHeaderCell.alignment = {
             horizontal: "left",
             vertical: "middle",
           };
-          kodimHeaderCell.fill = {
+          kotaHeaderCell.fill = {
             type: "pattern",
             pattern: "solid",
             fgColor: { argb: "FFFFD700" }, // Gold/Yellow color
           };
 
-          // Merge kodim header across all columns
-          worksheet.mergeCells(`A${currentRow}:R${currentRow}`);
-          kodimHeaderRow.height = 20;
+          // Merge kota header across all columns (A:I)
+          worksheet.mergeCells(`A${currentRow}:I${currentRow}`);
+          kotaHeaderRow.height = 22;
           currentRow++;
 
-          // Tambahkan data aset untuk kodim ini
-          kodimAssets.forEach((asset) => {
-            const sertifikatLuas = parseFloat(asset.sertifikat_luas) || 0;
-            const belumSertifikatLuas =
-              parseFloat(asset.belum_sertifikat_luas) || 0;
-            const hasSertifikat = asset.pemilikan_sertifikat === "Ya";
+          // Loop through each bidang in this kota
+          Object.keys(bidangGroups).forEach((bidangName) => {
+            const bidangAssets = bidangGroups[bidangName];
 
-            const rowData = [
-              globalIndex, // A - Nomor urut global
-              1, // B - BAG
-              asset.nama || "-", // C - NUP
-              asset.kib_kode_barang || asset.kode_barang || "-", // D - KIB/Kode Barang
-              asset.nomor_registrasi || asset.no_registrasi || "-", // E - No Reg
-              asset.alamat || "-", // F - Alamat
-              asset.peruntukan || asset.fungsi || "-", // G - Peruntukan
-              asset.status || "-", // H - Status
-              asset.asal_milik || "-", // I - Asal Milik
-              asset.bukti_pemilikan_filename ||
-                asset.bukti_kepemilikan_filename ||
-                "-", // J - Bukti Pemilikan
-              asset.atas_nama_pemilik_sertifikat || "-", // K - A.N. Pemilik Sertifikat
-              1, // L - BID Keseluruhan
-              formatLuas(asset), // M - Luas Keseluruhan
-              hasSertifikat ? 1 : 0, // N - BID Sertifikat
-              sertifikatLuas, // O - Luas Sertifikat
-              !hasSertifikat ? 1 : 0, // P - BID Belum Sertifikat
-              belumSertifikatLuas, // Q - Luas Belum Sertifikat
-              asset.keterangan || asset.keterangan_bukti_pemilikan || "-", // R - Keterangan
-            ];
+            // Tambahkan sub-header Bidang
+            const bidangHeaderRow = worksheet.getRow(currentRow);
+            const bidangHeaderCell = bidangHeaderRow.getCell(2); // Kolom B
+            bidangHeaderCell.value = `${bidangName}`;
+            bidangHeaderCell.font = {
+              bold: true,
+              size: 10,
+              name: "Arial",
+              italic: true,
+            };
+            bidangHeaderCell.alignment = {
+              horizontal: "left",
+              vertical: "middle",
+            };
+            bidangHeaderCell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: "FFE6F3FF" }, // Light blue background
+            };
 
-            const dataRow = worksheet.getRow(currentRow);
-            rowData.forEach((data, colIndex) => {
-              const cell = dataRow.getCell(colIndex + 1);
-              cell.value = data;
-              cell.font = {
-                size: 9,
-                name: "Arial",
-              };
+            // Merge bidang header dari B ke I
+            worksheet.mergeCells(`B${currentRow}:I${currentRow}`);
+            bidangHeaderRow.height = 18;
+            currentRow++;
 
-              // Set alignment based on column type
-              if ([1, 2, 12, 14, 16].includes(colIndex + 1)) {
-                // Number columns (A, B, L, N, P) - center
-                cell.alignment = { horizontal: "center", vertical: "middle" };
-              } else if ([13, 15, 17].includes(colIndex + 1)) {
-                // Area columns (M, O, Q) - right
-                cell.alignment = { horizontal: "right", vertical: "middle" };
-                if (typeof data === "number" && data > 0) {
-                  cell.numFmt = "#,##0";
-                }
-              } else {
-                // Text columns - left
-                cell.alignment = {
-                  horizontal: "left",
-                  vertical: "middle",
-                  wrapText: true,
+            // Tambahkan data aset untuk bidang ini
+            bidangAssets.forEach((asset) => {
+              const rowData = [
+                globalIndex, // A - Nomor urut global
+                asset.bidang || "-", // B - Bidang
+                getKotaName(asset.provinsi_id, asset.kota_id), // C - Kabupaten/Kota
+                asset.kecamatan || "-", // D - Kecamatan
+                asset.kelurahan || "-", // E - Kelurahan/Desa
+                asset.area ? Number(asset.area) : "-", // F - Luas
+                asset.peruntukan || "-", // G - Peruntukan
+                asset.status || "-", // H - Status
+                asset.keterangan || "-", // I - Keterangan
+              ];
+
+              const dataRow = worksheet.getRow(currentRow);
+              rowData.forEach((data, colIndex) => {
+                const cell = dataRow.getCell(colIndex + 1);
+                cell.value = data;
+                cell.font = {
+                  size: 10,
+                  name: "Arial",
                 };
-              }
+
+                // Set alignment based on column type
+                if ([1, 6].includes(colIndex + 1)) {
+                  // Number columns (A, F) - center/right
+                  cell.alignment = {
+                    horizontal: colIndex === 0 ? "center" : "right",
+                    vertical: "middle",
+                  };
+                  if (colIndex === 5 && typeof data === "number" && data > 0) {
+                    cell.numFmt = "#,##0";
+                  }
+                } else {
+                  // Text columns - left
+                  cell.alignment = {
+                    horizontal: "left",
+                    vertical: "middle",
+                    wrapText: true,
+                  };
+                }
+              });
+
+              dataRow.height = 25;
+              currentRow++;
+              globalIndex++;
             });
 
-            dataRow.height = 20;
+            // Tambahkan row kosong kecil setelah setiap bidang
+            const bidangSeparatorRow = worksheet.getRow(currentRow);
+            bidangSeparatorRow.height = 8;
             currentRow++;
-            globalIndex++;
           });
 
-          // Tambahkan row kosong setelah setiap kodim untuk pemisah
-          const separatorRow = worksheet.getRow(currentRow);
-          separatorRow.height = 10;
+          // Tambahkan row kosong setelah setiap kota untuk pemisah
+          const kotaSeparatorRow = worksheet.getRow(currentRow);
+          kotaSeparatorRow.height = 12;
           currentRow++;
         });
 
-        // Tambahkan row kosong yang lebih besar setelah setiap korem untuk pemisah
-        const koremSeparatorRow = worksheet.getRow(currentRow);
-        koremSeparatorRow.height = 15;
+        // Tambahkan row kosong yang lebih besar setelah setiap provinsi untuk pemisah
+        const provinsiSeparatorRow = worksheet.getRow(currentRow);
+        provinsiSeparatorRow.height = 18;
         currentRow++;
       });
 
       // Apply border ke semua cells yang berisi data
       for (let row = 1; row < currentRow; row++) {
-        for (let col = 1; col <= 18; col++) {
+        for (let col = 1; col <= 9; col++) {
+          // Update dari 7 ke 9 kolom
           const cell = worksheet.getCell(row, col);
           cell.border = {
             top: { style: "thin", color: { argb: "FF000000" } },
@@ -510,12 +497,12 @@ const LaporanPage = () => {
       }
 
       // Generate nama file
-      const koremName = selectedKorem
-        ? getKoremName(selectedKorem)
+      const provinsiName = selectedProvinsi
+        ? getProvinsiName(selectedProvinsi)
             .replace(/[^a-zA-Z0-9\s]/g, "")
             .replace(/\s+/g, "_")
         : "Semua";
-      const fileName = `Laporan_Aset_Tanah_${koremName}_${
+      const fileName = `Laporan_Aset_Yardip_${provinsiName}_${
         new Date().toISOString().split("T")[0]
       }.xlsx`;
 
@@ -547,7 +534,7 @@ const LaporanPage = () => {
 
   // Helper function untuk group assets for preview
   const getGroupedAssetsForPreview = () => {
-    return groupAssetsByKoremKodim(filteredAssets);
+    return groupAssetsByProvinsiKota(filteredAssets);
   };
 
   if (loading)
@@ -572,7 +559,7 @@ const LaporanPage = () => {
       <div className="mb-4">
         <h2 className="text-dark">
           <i className="fas fa-file-excel me-2"></i>
-          Cetak Laporan Data Aset Tanah
+          Cetak Laporan Data Aset Yardip
         </h2>
       </div>
 
@@ -592,54 +579,72 @@ const LaporanPage = () => {
         </Card.Header>
         <Card.Body>
           <Row className="g-3">
-            <Col md={4}>
+            <Col md={3}>
               <Form.Group>
                 <Form.Label className="fw-bold">
                   <i className="fas fa-map-marked-alt me-2"></i>
-                  Wilayah Korem
+                  Provinsi
                 </Form.Label>
                 <Form.Select
-                  value={selectedKorem}
-                  onChange={handleKoremChange}
+                  value={selectedProvinsi}
+                  onChange={handleProvinsiChange}
                   className="form-select-lg"
                 >
-                  <option value="">Semua Korem</option>
-                  {koremList.map((korem) => (
-                    <option key={korem.id} value={korem.id}>
-                      {korem.nama}
-                    </option>
-                  ))}
+                  <option value="">Semua Provinsi</option>
+                  <option value="jateng">Jawa Tengah</option>
+                  <option value="diy">DI Yogyakarta</option>
                 </Form.Select>
               </Form.Group>
             </Col>
 
-            <Col md={4}>
+            <Col md={3}>
               <Form.Group>
                 <Form.Label className="fw-bold">
                   <i className="fas fa-building me-2"></i>
-                  Wilayah Kodim
+                  Kota/Kabupaten
                 </Form.Label>
                 <Form.Select
-                  value={selectedKodim}
-                  onChange={(e) => setSelectedKodim(e.target.value)}
+                  value={selectedKota}
+                  onChange={(e) => setSelectedKota(e.target.value)}
                   className="form-select-lg"
-                  disabled={!selectedKorem && koremList.length > 0}
+                  disabled={!selectedProvinsi}
                 >
-                  <option value="">Semua Kodim</option>
-                  {getKodimForSelectedKorem().map((kodim) => (
-                    <option key={kodim.id} value={kodim.nama}>
-                      {kodim.nama}
+                  <option value="">Semua Kota</option>
+                  {getKotaForSelectedProvinsi().map((kota) => (
+                    <option key={kota.id} value={kota.id}>
+                      {kota.name}
                     </option>
                   ))}
                 </Form.Select>
               </Form.Group>
             </Col>
 
-            <Col md={4}>
+            <Col md={3}>
+              <Form.Group>
+                <Form.Label className="fw-bold">
+                  <i className="fas fa-layer-group me-2"></i>
+                  Bidang
+                </Form.Label>
+                <Form.Select
+                  value={selectedBidang}
+                  onChange={(e) => setSelectedBidang(e.target.value)}
+                  className="form-select-lg"
+                >
+                  <option value="">Semua Bidang</option>
+                  {bidangList.map((bidang) => (
+                    <option key={bidang} value={bidang}>
+                      {bidang}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            </Col>
+
+            <Col md={3}>
               <Form.Group>
                 <Form.Label className="fw-bold">
                   <i className="fas fa-flag me-2"></i>
-                  Status Kepemilikan
+                  Status
                 </Form.Label>
                 <Form.Select
                   value={statusFilter}
@@ -652,6 +657,7 @@ const LaporanPage = () => {
                     Tidak Dimiliki/Tidak Dikuasai
                   </option>
                   <option value="Lain-lain">Lain-lain</option>
+                  <option value="Dalam Proses">Dalam Proses</option>
                 </Form.Select>
               </Form.Group>
             </Col>
@@ -735,7 +741,7 @@ const LaporanPage = () => {
                     <Card.Body className="text-center">
                       <i className="fas fa-database fa-2x mb-2"></i>
                       <h3 className="mb-1">{filteredAssets.length}</h3>
-                      <small>Total Aset Tanah</small>
+                      <small>Total Aset Yardip</small>
                     </Card.Body>
                   </Card>
                 </Col>
@@ -774,12 +780,14 @@ const LaporanPage = () => {
                     <Card.Body className="text-center">
                       <i className="fas fa-exclamation-triangle fa-2x mb-2"></i>
                       <h3 className="mb-1">
-                        {
-                          filteredAssets.filter((a) => a.status === "Lain-lain")
-                            .length
-                        }
+                        {filteredAssets
+                          .reduce(
+                            (total, a) => total + (Number(a.area) || 0),
+                            0
+                          )
+                          .toLocaleString("id-ID")}
                       </h3>
-                      <small>Status Lain-lain</small>
+                      <small>Total Luas (m²)</small>
                     </Card.Body>
                   </Card>
                 </Col>
@@ -790,29 +798,31 @@ const LaporanPage = () => {
                 className="border rounded"
                 style={{ maxHeight: "600px", overflowY: "auto" }}
               >
-                {Object.keys(getGroupedAssetsForPreview()).map((koremId) => {
-                  const koremData = getGroupedAssetsForPreview()[koremId];
+                {Object.keys(getGroupedAssetsForPreview()).map((provinsiId) => {
+                  const provinsiData = getGroupedAssetsForPreview()[provinsiId];
                   return (
-                    <div key={koremId} className="mb-4">
-                      {/* Header Korem dengan background biru */}
+                    <div key={provinsiId} className="mb-4">
+                      {/* Header Provinsi dengan background biru */}
                       <div
                         className="p-3"
                         style={{ backgroundColor: "#4472C4", color: "white" }}
                       >
                         <h5 className="mb-0 fw-bold">
                           <i className="fas fa-map-marked-alt me-2"></i>
-                          {koremData.koremName}
+                          {provinsiData.provinsiName}
                         </h5>
                       </div>
 
-                      {Object.keys(koremData.kodims).map((kodimName) => {
-                        const kodimAssets = koremData.kodims[kodimName];
+                      {Object.keys(provinsiData.kotas).map((kotaId) => {
+                        const kotaAssets = provinsiData.kotas[kotaId];
+                        const kotaName = getKotaName(provinsiId, kotaId);
+
                         return (
-                          <div key={kodimName} className="ms-3 mb-3">
+                          <div key={kotaId} className="ms-3 mb-3">
                             <div className="bg-warning bg-opacity-25 p-2 border-start border-warning border-3">
                               <strong className="text-dark">
                                 <i className="fas fa-building me-2"></i>
-                                {kodimName} ({kodimAssets.length} aset)
+                                {kotaName} ({kotaAssets.length} aset)
                               </strong>
                             </div>
 
@@ -821,33 +831,50 @@ const LaporanPage = () => {
                                 <thead className="table-dark">
                                   <tr>
                                     <th style={{ width: "60px" }}>No</th>
-                                    <th>NUP</th>
-                                    <th>Alamat</th>
+                                    <th>Bidang</th>
+                                    <th>Pengelola</th>
+                                    <th>Kabupaten/Kota</th>
+                                    <th>Kecamatan</th>
+                                    <th>Kelurahan/Desa</th>
                                     <th>Status</th>
                                     <th style={{ width: "120px" }}>
                                       Luas (m²)
                                     </th>
-                                    <th style={{ width: "100px" }}>
-                                      Sertifikat
-                                    </th>
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {kodimAssets.map((asset, index) => (
+                                  {kotaAssets.map((asset, index) => (
                                     <tr key={asset.id}>
                                       <td className="text-center">
                                         {index + 1}
                                       </td>
                                       <td>
-                                        <strong>{asset.nama || "-"}</strong>
+                                        <span className="badge bg-info">
+                                          {asset.bidang || "-"}
+                                        </span>
                                       </td>
                                       <td>
-                                        <span
-                                          className="text-truncate d-inline-block"
-                                          style={{ maxWidth: "200px" }}
-                                        >
-                                          {asset.alamat || "-"}
-                                        </span>
+                                        <strong>
+                                          {asset.pengelola || "-"}
+                                        </strong>
+                                      </td>
+                                      <td>
+                                        <strong>
+                                          {getKotaName(
+                                            asset.provinsi_id,
+                                            asset.kota_id
+                                          )}
+                                        </strong>
+                                      </td>
+                                      <td>
+                                        <strong>
+                                          {asset.kecamatan || "-"}
+                                        </strong>
+                                      </td>
+                                      <td>
+                                        <strong>
+                                          {asset.kelurahan || "-"}
+                                        </strong>
                                       </td>
                                       <td>
                                         <span
@@ -857,6 +884,8 @@ const LaporanPage = () => {
                                               : asset.status ===
                                                 "Tidak Dimiliki/Tidak Dikuasai"
                                               ? "bg-danger"
+                                              : asset.status === "Dalam Proses"
+                                              ? "bg-info"
                                               : "bg-warning text-dark"
                                           }`}
                                         >
@@ -865,23 +894,12 @@ const LaporanPage = () => {
                                       </td>
                                       <td className="text-end">
                                         <strong>
-                                          {formatLuas(asset).toLocaleString(
-                                            "id-ID"
-                                          )}
+                                          {asset.area
+                                            ? Number(asset.area).toLocaleString(
+                                                "id-ID"
+                                              )
+                                            : "-"}
                                         </strong>
-                                      </td>
-                                      <td className="text-center">
-                                        {asset.pemilikan_sertifikat === "Ya" ? (
-                                          <span className="badge bg-success">
-                                            <i className="fas fa-check me-1"></i>
-                                            Ada
-                                          </span>
-                                        ) : (
-                                          <span className="badge bg-danger">
-                                            <i className="fas fa-times me-1"></i>
-                                            Belum
-                                          </span>
-                                        )}
                                       </td>
                                     </tr>
                                   ))}
@@ -903,4 +921,4 @@ const LaporanPage = () => {
   );
 };
 
-export default LaporanPage;
+export default LaporanYardipPage;
