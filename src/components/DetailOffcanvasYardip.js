@@ -1,12 +1,5 @@
 import React from "react";
-import {
-  Offcanvas,
-  Badge,
-  Card,
-  Row,
-  Col,
-  Button,
-} from "react-bootstrap";
+import { Offcanvas, Badge, Card, Row, Col, Button } from "react-bootstrap";
 import {
   FaBuilding,
   FaMapMarkerAlt,
@@ -43,11 +36,7 @@ const getStatusBadgeVariant = (status) => {
   }
 };
 
-const DetailOffcanvasYardip = ({
-  show,
-  handleClose,
-  asetYardip,
-}) => {
+const DetailOffcanvasYardip = ({ show, handleClose, asetYardip }) => {
   if (!asetYardip) return null;
 
   // Siapkan data untuk mini-map
@@ -93,18 +82,20 @@ const DetailOffcanvasYardip = ({
   const prepareAssetForMap = () => {
     if (!hasValidLocation) return [];
 
-    return [{
-      id: asetYardip.id || `temp-${Date.now()}`,
-      nama: asetYardip.pengelola || "Unknown",
-      kodim: asetYardip.bidang || "",
-      lokasi: validatedLocation,
-      luas: Number(asetYardip.area) || 0,
-      status: asetYardip.status || "",
-      kabkota: asetYardip.kabkota || "",
-      kecamatan: asetYardip.kecamatan || "",
-      kelurahan: asetYardip.kelurahan || "",
-      type: "yardip",
-    }];
+    return [
+      {
+        id: asetYardip.id || `temp-${Date.now()}`,
+        nama: asetYardip.pengelola || "Unknown",
+        kodim: asetYardip.bidang || "",
+        lokasi: validatedLocation,
+        luas: Number(asetYardip.area) || 0,
+        status: asetYardip.status || "",
+        kabkota: asetYardip.kabkota || "",
+        kecamatan: asetYardip.kecamatan || "",
+        kelurahan: asetYardip.kelurahan || "",
+        type: "yardip",
+      },
+    ];
   };
 
   const assetForMapDisplay = prepareAssetForMap();
@@ -132,7 +123,9 @@ const DetailOffcanvasYardip = ({
         {asetYardip.lokasi && (
           <div style={{ height: "200px", width: "100%" }}>
             <PetaAsetYardip
-              key={`detail-yardip-${asetYardip.id}-${asetYardip.updated_at || Date.now()}`}
+              key={`detail-yardip-${asetYardip.id}-${
+                asetYardip.updated_at || Date.now()
+              }`}
               assets={assetForMapDisplay}
               fitBounds={true}
               isDrawing={false}
@@ -155,9 +148,7 @@ const DetailOffcanvasYardip = ({
             <Card.Body>
               <div className="mb-3">
                 <h5 className="mb-1">{asetYardip.pengelola || "N/A"}</h5>
-                <small className="text-muted">
-                  Pengelola Aset
-                </small>
+                <small className="text-muted">Pengelola Aset</small>
                 <div className="mt-2">
                   <Badge bg={getStatusBadgeVariant(asetYardip.status)} pill>
                     {asetYardip.status || "Status Tidak Diketahui"}
@@ -168,18 +159,12 @@ const DetailOffcanvasYardip = ({
                 </div>
               </div>
 
-              {/* Detailed Information Table */}
+              {/* Detailed Information Table - ID DIHAPUS */}
               <div className="table-responsive">
                 <table className="table table-sm table-borderless mb-0">
                   <tbody>
                     <tr>
                       <td width="40%">
-                        <strong>ID:</strong>
-                      </td>
-                      <td>{asetYardip.id || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td>
                         <strong>Pengelola:</strong>
                       </td>
                       <td>{asetYardip.pengelola || "-"}</td>
@@ -239,7 +224,8 @@ const DetailOffcanvasYardip = ({
                       <td>
                         {asetYardip.area ? (
                           <span className="text-success">
-                            {Number(asetYardip.area).toLocaleString("id-ID")} m²
+                            {Number(asetYardip.area).toLocaleString("id-ID")}{" "}
+                            mÂ²
                           </span>
                         ) : (
                           "-"
@@ -310,7 +296,9 @@ const DetailOffcanvasYardip = ({
                       </td>
                       <td>
                         {asetYardip.created_at
-                          ? new Date(asetYardip.created_at).toLocaleString("id-ID")
+                          ? new Date(asetYardip.created_at).toLocaleString(
+                              "id-ID"
+                            )
                           : "-"}
                       </td>
                     </tr>
@@ -320,7 +308,9 @@ const DetailOffcanvasYardip = ({
                           <strong>Terakhir Diubah:</strong>
                         </td>
                         <td>
-                          {new Date(asetYardip.updated_at).toLocaleString("id-ID")}
+                          {new Date(asetYardip.updated_at).toLocaleString(
+                            "id-ID"
+                          )}
                         </td>
                       </tr>
                     )}
@@ -364,7 +354,9 @@ const DetailOffcanvasYardip = ({
                       <br />
                       <span className="text-success">
                         {asetYardip.area
-                          ? `${Number(asetYardip.area).toLocaleString("id-ID")} m²`
+                          ? `${Number(asetYardip.area).toLocaleString(
+                              "id-ID"
+                            )} mÂ²`
                           : "Tidak tersedia"}
                       </span>
                     </div>

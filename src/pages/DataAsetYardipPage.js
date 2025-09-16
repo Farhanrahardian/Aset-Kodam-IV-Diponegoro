@@ -274,7 +274,7 @@ const FilterPanelTop = ({
   );
 };
 
-// Enhanced table component untuk yardip - UPDATED VERSION dengan perbaikan kolom kelurahan
+// Enhanced table component untuk yardip - FIXED HORIZONTAL SCROLL
 const TabelAsetYardip = ({ assets, onEdit, onDelete, onViewDetail }) => {
   if (!assets || assets.length === 0) {
     return (
@@ -315,67 +315,135 @@ const TabelAsetYardip = ({ assets, onEdit, onDelete, onViewDetail }) => {
   };
 
   return (
-    <Table striped bordered hover responsive>
-      <thead className="table-dark">
+    <Table
+      striped
+      bordered
+      hover
+      className="mb-0"
+      style={{
+        minWidth: "1400px", // Increased minimum width
+        width: "100%",
+      }}
+    >
+      <thead
+        className="table-dark"
+        style={{ position: "sticky", top: 0, zIndex: 10 }}
+      >
         <tr>
-          <th style={{ width: "15%" }}>Pengelola</th>
-          <th style={{ width: "10%" }}>Bidang</th>
-          <th style={{ width: "12%" }}>Peruntukan</th>
-          <th style={{ width: "12%" }}>Provinsi</th>
-          <th style={{ width: "12%" }}>Kota</th>
-          <th style={{ width: "15%" }}>Kelurahan</th>
-          <th style={{ width: "8%" }}>Status</th>
-          <th style={{ width: "8%" }}>Luas</th>
-          <th style={{ width: "8%" }}>Aksi</th>
+          <th style={{ minWidth: "200px", width: "200px" }}>Pengelola</th>
+          <th style={{ minWidth: "130px", width: "130px" }}>Bidang</th>
+          <th style={{ minWidth: "160px", width: "160px" }}>Peruntukan</th>
+          <th style={{ minWidth: "130px", width: "130px" }}>Provinsi</th>
+          <th style={{ minWidth: "130px", width: "130px" }}>Kota</th>
+          <th style={{ minWidth: "160px", width: "160px" }}>Kelurahan</th>
+          <th style={{ minWidth: "120px", width: "120px" }}>Status</th>
+          <th style={{ minWidth: "120px", width: "120px" }}>Luas</th>
+          <th style={{ minWidth: "180px", width: "180px" }}>Aksi</th>
         </tr>
       </thead>
       <tbody>
         {assets.map((asset) => (
           <tr key={asset.id}>
-            <td>
-              <strong>{asset.pengelola || "-"}</strong>
+            <td style={{ minWidth: "200px", width: "200px" }}>
+              <div
+                style={{
+                  wordWrap: "break-word",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <strong title={asset.pengelola || "-"}>
+                  {asset.pengelola || "-"}
+                </strong>
+              </div>
             </td>
-            <td>
-              <span className="badge bg-info">{asset.bidang || "-"}</span>
+            <td style={{ minWidth: "130px", width: "130px" }}>
+              <span className="badge bg-info" title={asset.bidang || "-"}>
+                {asset.bidang || "-"}
+              </span>
             </td>
-            <td>
-              <div style={{ maxWidth: "120px", fontSize: "0.9em" }}>
+            <td style={{ minWidth: "160px", width: "160px" }}>
+              <div
+                style={{
+                  fontSize: "0.9em",
+                  wordWrap: "break-word",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+                title={asset.peruntukan || "-"}
+              >
                 {asset.peruntukan || "-"}
               </div>
             </td>
-            <td>
-              <span className="badge bg-primary">{getProvinsiName(asset)}</span>
+            <td style={{ minWidth: "130px", width: "130px" }}>
+              <span className="badge bg-primary" title={getProvinsiName(asset)}>
+                {getProvinsiName(asset)}
+              </span>
             </td>
-            <td>
-              <strong>{getKotaName(asset)}</strong>
+            <td style={{ minWidth: "130px", width: "130px" }}>
+              <div
+                style={{
+                  wordWrap: "break-word",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+                title={getKotaName(asset)}
+              >
+                <strong>{getKotaName(asset)}</strong>
+              </div>
             </td>
-            <td>
-              <div style={{ maxWidth: "150px", fontSize: "0.9em" }}>
-                {/* PERBAIKAN: Hanya tampilkan kelurahan saja tanpa kecamatan */}
+            <td style={{ minWidth: "160px", width: "160px" }}>
+              <div
+                style={{
+                  fontSize: "0.9em",
+                  wordWrap: "break-word",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+                title={asset.kelurahan || "-"}
+              >
                 <strong>{asset.kelurahan || "-"}</strong>
               </div>
             </td>
-            <td>
-              <span className={`badge ${getStatusBadgeClass(asset.status)}`}>
-                {asset.status || "-"}
+            <td style={{ minWidth: "120px", width: "120px" }}>
+              <span
+                className={`badge ${getStatusBadgeClass(asset.status)}`}
+                title={asset.status || "-"}
+                style={{ fontSize: "0.75em" }}
+              >
+                {asset.status === "Dimiliki/Dikuasai"
+                  ? "Dimiliki"
+                  : asset.status === "Tidak Dimiliki/Tidak Dikuasai"
+                  ? "T. Dimiliki"
+                  : asset.status || "-"}
               </span>
             </td>
-            <td>
-              {asset.area ? (
-                <span className="text-muted">
-                  {Number(asset.area).toLocaleString("id-ID")} m²
-                </span>
-              ) : (
-                "-"
-              )}
+            <td style={{ minWidth: "120px", width: "120px" }}>
+              <div style={{ fontSize: "0.9em" }}>
+                {asset.area ? (
+                  <span
+                    className="text-muted"
+                    title={`${Number(asset.area).toLocaleString("id-ID")} m²`}
+                  >
+                    {Number(asset.area).toLocaleString("id-ID")} m²
+                  </span>
+                ) : (
+                  "-"
+                )}
+              </div>
             </td>
-            <td>
-              <div className="d-flex gap-1 flex-wrap">
+            <td style={{ minWidth: "180px", width: "180px" }}>
+              <div className="d-flex gap-1 flex-nowrap">
                 <Button
                   variant="info"
                   size="sm"
                   onClick={() => onViewDetail(asset)}
                   title="Lihat Detail"
+                  style={{ fontSize: "0.75rem", padding: "0.25rem 0.5rem" }}
                 >
                   Detail
                 </Button>
@@ -386,6 +454,7 @@ const TabelAsetYardip = ({ assets, onEdit, onDelete, onViewDetail }) => {
                     size="sm"
                     onClick={() => onEdit(asset)}
                     title="Edit Aset"
+                    style={{ fontSize: "0.75rem", padding: "0.25rem 0.5rem" }}
                   >
                     Edit
                   </Button>
@@ -397,6 +466,7 @@ const TabelAsetYardip = ({ assets, onEdit, onDelete, onViewDetail }) => {
                     size="sm"
                     onClick={() => onDelete(asset.id)}
                     title="Hapus Aset"
+                    style={{ fontSize: "0.75rem", padding: "0.25rem 0.5rem" }}
                   >
                     Hapus
                   </Button>
@@ -1220,7 +1290,7 @@ const DataAsetYardipPage = () => {
               </Card.Body>
               <Card.Footer className="bg-light">
                 <Row className="text-center">
-                  <Col xs={6} sm={3}>
+                  <Col xs={6} sm={4}>
                     <div className="d-flex align-items-center justify-content-center">
                       <div
                         style={{
@@ -1234,7 +1304,7 @@ const DataAsetYardipPage = () => {
                       <small>Dimiliki/Dikuasai</small>
                     </div>
                   </Col>
-                  <Col xs={6} sm={3}>
+                  <Col xs={6} sm={4}>
                     <div className="d-flex align-items-center justify-content-center">
                       <div
                         style={{
@@ -1248,7 +1318,7 @@ const DataAsetYardipPage = () => {
                       <small>Tidak Dimiliki</small>
                     </div>
                   </Col>
-                  <Col xs={6} sm={3}>
+                  <Col xs={12} sm={4}>
                     <div className="d-flex align-items-center justify-content-center">
                       <div
                         style={{
@@ -1280,130 +1350,95 @@ const DataAsetYardipPage = () => {
               filteredAssets={filteredAssets.length}
             />
 
-            {/* TABEL DATA */}
+            {/* TABEL DATA - FIXED HORIZONTAL SCROLL */}
             <Card>
               <Card.Header className="bg-light">
                 <h5 className="mb-0">Daftar Aset Yardip</h5>
               </Card.Header>
               <Card.Body className="p-0">
-                <div style={{ maxHeight: "60vh", overflowY: "auto" }}>
-                  {assets.length === 0 ? (
-                    <div className="text-center py-5">
-                      <div className="text-muted">
-                        <i className="fas fa-folder-open fa-3x mb-3"></i>
-                        <h5>Belum Ada Data Aset Yardip</h5>
-                        <p>
-                          Silakan tambah aset yardip baru di halaman Tambah Aset
-                          Yardip.
-                        </p>
-                      </div>
+                {assets.length === 0 ? (
+                  <div className="text-center py-5">
+                    <div className="text-muted">
+                      <i className="fas fa-folder-open fa-3x mb-3"></i>
+                      <h5>Belum Ada Data Aset Yardip</h5>
+                      <p>
+                        Silakan tambah aset yardip baru di halaman Tambah Aset
+                        Yardip.
+                      </p>
                     </div>
-                  ) : (
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      height: "60vh",
+                      overflow: "auto",
+                      border: "1px solid #dee2e6",
+                      borderRadius: "0.375rem",
+                    }}
+                  >
                     <TabelAsetYardip
                       assets={filteredAssets}
                       onEdit={user ? handleEditAsset : null}
                       onDelete={user ? handleDeleteAsset : null}
                       onViewDetail={handleViewDetail}
                     />
-                  )}
-                </div>
+                  </div>
+                )}
               </Card.Body>
             </Card>
 
-            {/* SUMMARY STATISTICS */}
+            {/* SUMMARY STATISTICS - TANPA TOTAL LUAS */}
             {filteredAssets.length > 0 && (
               <Card className="mt-3">
                 <Card.Body>
-                  <Row className="text-center">
-                    <Col md={2}>
-                      <div className="border-end">
-                        <h5 className="text-primary">
+                  <Row className="text-center g-3">
+                    <Col lg className="col-6 col-md-3">
+                      <div className="bg-light p-3 rounded h-100">
+                        <h4 className="text-primary mb-1">
                           {filteredAssets.length}
-                        </h5>
-                        <small className="text-muted">Total Aset</small>
+                        </h4>
+                        <small className="text-muted fw-bold">Total Aset</small>
                       </div>
                     </Col>
-                    <Col md={2}>
-                      <div className="border-end">
-                        <h5 className="text-success">
+                    <Col lg className="col-6 col-md-3">
+                      <div className="bg-light p-3 rounded h-100">
+                        <h4 className="text-success mb-1">
                           {
                             filteredAssets.filter(
                               (a) => a.status === "Dimiliki/Dikuasai"
                             ).length
                           }
-                        </h5>
-                        <small className="text-muted">Dimiliki/Dikuasai</small>
+                        </h4>
+                        <small className="text-muted fw-bold">
+                          Dimiliki/Dikuasai
+                        </small>
                       </div>
                     </Col>
-                    <Col md={2}>
-                      <div className="border-end">
-                        <h5 className="text-danger">
+                    <Col lg className="col-6 col-md-3">
+                      <div className="bg-light p-3 rounded h-100">
+                        <h4 className="text-danger mb-1">
                           {
                             filteredAssets.filter(
                               (a) =>
                                 a.status === "Tidak Dimiliki/Tidak Dikuasai"
                             ).length
                           }
-                        </h5>
-                        <small className="text-muted">
-                          Tidak Dimiliki/Tidak Dikuasai
+                        </h4>
+                        <small className="text-muted fw-bold">
+                          Tidak Dimiliki
                         </small>
                       </div>
                     </Col>
-                    <Col md={2}>
-                      <div className="border-end">
-                        <h5 className="text-warning">
+                    <Col lg className="col-6 col-md-3">
+                      <div className="bg-light p-3 rounded h-100">
+                        <h4 className="text-warning mb-1">
                           {
                             filteredAssets.filter(
                               (a) => a.status === "Lain-lain"
                             ).length
                           }
-                        </h5>
-                        <small className="text-muted">Lain-lain</small>
-                      </div>
-                    </Col>
-                    <Col md={2}>
-                      <div className="border-end">
-                        <h5 className="text-muted">
-                          {filteredAssets
-                            .reduce(
-                              (total, a) => total + (Number(a.area) || 0),
-                              0
-                            )
-                            .toLocaleString("id-ID")}
-                        </h5>
-                        <small className="text-muted">Total Luas (m²)</small>
-                      </div>
-                    </Col>
-                    <Col md={2}>
-                      <div>
-                        <h5 className="text-info">
-                          {selectedProvinsi
-                            ? [
-                                ...new Set(
-                                  filteredAssets.map((a) => a.kota || a.kabkota)
-                                ),
-                              ].filter(Boolean).length
-                            : [
-                                ...new Set(
-                                  assets.map((a) => {
-                                    const provinsi =
-                                      a.provinsi ||
-                                      (a.provinsi_id === "jateng"
-                                        ? "Jawa Tengah"
-                                        : a.provinsi_id === "diy"
-                                        ? "DI Yogyakarta"
-                                        : a.provinsi_id);
-                                    return provinsi;
-                                  })
-                                ),
-                              ].filter(Boolean).length}
-                        </h5>
-                        <small className="text-muted">
-                          {selectedProvinsi
-                            ? "Kota Terwakili"
-                            : "Provinsi Terwakili"}
-                        </small>
+                        </h4>
+                        <small className="text-muted fw-bold">Lain-lain</small>
                       </div>
                     </Col>
                   </Row>

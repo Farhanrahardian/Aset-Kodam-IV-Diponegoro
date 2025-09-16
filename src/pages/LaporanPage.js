@@ -779,7 +779,7 @@ const LaporanPage = () => {
                             .length
                         }
                       </h3>
-                      <small>Status Lain-lain</small>
+                      <small>Lain-lain</small>
                     </Card.Body>
                   </Card>
                 </Col>
