@@ -67,7 +67,9 @@ const EditAsetPage = () => {
         });
         const photosUploadRes = await axios.post(`${API_URL}/upload/asset-photos`, photosFormData);
         // Replace old photos with new ones
-        updatedData.foto_aset = photosUploadRes.data.files.map(file => file.url);
+                const newPhotoUrls = photosUploadRes.data.files.map(file => file.url);
+        const existingPhotoUrls = updatedData.foto_aset || [];
+        updatedData.foto_aset = [...existingPhotoUrls, ...newPhotoUrls];
       } catch (err) {
         toast.error("Gagal mengupload foto aset baru.", { id: toastId });
         console.error("Asset photos upload error:", err);

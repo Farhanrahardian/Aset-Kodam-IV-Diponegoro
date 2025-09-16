@@ -435,7 +435,7 @@ const DetailOffcanvasAset = ({
             </Card.Body>
           </Card>
 
-          {/* Image Preview Card - jika ada gambar */}
+          {/* Image Preview Card - Bukti Pemilikan */}
           {hasValidImage && (
             <Card className="mb-3 shadow-sm">
               <Card.Header className="bg-info text-white">
@@ -459,6 +459,37 @@ const DetailOffcanvasAset = ({
                     Klik gambar untuk melihat ukuran penuh
                   </small>
                 </div>
+              </Card.Body>
+            </Card>
+          )}
+
+          {/* Asset Photos Card */}
+          {aset.foto_aset && Array.isArray(aset.foto_aset) && aset.foto_aset.length > 0 && (
+            <Card className="mb-3 shadow-sm">
+              <Card.Header className="bg-success text-white">
+                <FaFileAlt className="me-2" /> Foto Aset
+              </Card.Header>
+              <Card.Body>
+                <Row>
+                  {aset.foto_aset.map((foto, index) => (
+                    <Col key={index} md={4} className="mb-3">
+                      <Image
+                        src={`${API_URL}${foto}`}
+                        alt={`Foto Aset ${index + 1}`}
+                        fluid
+                        rounded
+                        style={{
+                          height: "100px",
+                          width: "100%",
+                          objectFit: "cover",
+                          cursor: "pointer",
+                          border: "1px solid #ddd",
+                        }}
+                        onClick={() => window.open(`${API_URL}${foto}`, "_blank")}
+                      />
+                    </Col>
+                  ))}
+                </Row>
               </Card.Body>
             </Card>
           )}

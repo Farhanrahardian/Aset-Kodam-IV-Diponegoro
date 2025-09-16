@@ -144,6 +144,48 @@ app.put('/assets/:id', (req, res) => {
     res.json(db.assets[assetIndex]);
 });
 
+// Delete an asset by ID
+app.delete('/assets/:id', (req, res) => {
+    const { id } = req.params;
+    const db = readDb();
+
+    if (!db.assets) {
+        return res.status(404).json({ error: "Resource 'assets' not found" });
+    }
+
+    const assetIndex = db.assets.findIndex(asset => asset.id === id);
+
+    if (assetIndex === -1) {
+        return res.status(404).json({ error: 'Asset not found' });
+    }
+
+    const assetToDelete = db.assets[assetIndex];
+
+    // Delete associated files
+    if (assetToDelete.bukti_pemilikan_filename) {
+        const filePath = path.join(__dirname, 'public', 'uploads', assetToDelete.bukti_pemilikan_filename);
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
+    }
+
+    if (assetToDelete.foto_aset && Array.isArray(assetToDelete.foto_aset)) {
+        assetToDelete.foto_aset.forEach(fotoUrl => {
+            const filename = path.basename(fotoUrl);
+            const filePath = path.join(__dirname, 'public', 'uploads', filename);
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+            }
+        });
+    }
+
+    // Remove the asset from the array
+    db.assets.splice(assetIndex, 1);
+    writeDb(db);
+
+    res.status(200).json({ message: 'Asset deleted successfully' });
+});
+
 
 
 app.listen(port, () => {

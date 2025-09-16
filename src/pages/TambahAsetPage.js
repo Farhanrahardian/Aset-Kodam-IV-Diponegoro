@@ -218,11 +218,11 @@ const TambahAsetPage = () => {
   const handleSaveAsset = async (assetData, buktiPemilikanFile, assetPhotos) => {
     const toastId = toast.loading("Menyimpan data aset...");
 
-    let buktiPemilikanUrl = "";
-    let buktiPemilikanFilename = "";
-    let assetPhotoUrls = [];
+    let buktiPemilikanUrl = assetData.bukti_pemilikan_url || "";
+    let buktiPemilikanFilename = assetData.bukti_pemilikan_filename || "";
+    let assetPhotoUrls = assetData.foto_aset || [];
 
-    // 1. Upload Bukti Pemilikan (single file)
+    // 1. Upload Bukti Pemilikan (if new file is provided)
     if (buktiPemilikanFile) {
       try {
         toast.loading("Mengupload bukti pemilikan...", { id: toastId });
@@ -236,6 +236,7 @@ const TambahAsetPage = () => {
 
         buktiPemilikanUrl = uploadRes.data.url;
         buktiPemilikanFilename = uploadRes.data.filename;
+        console.log("DEBUG: URL Bukti Kepemilikan setelah upload:", buktiPemilikanUrl);
         toast.loading(`Bukti pemilikan berhasil diupload.`, { id: toastId });
       } catch (err) {
         toast.error("Gagal mengupload bukti pemilikan.", { id: toastId });
@@ -244,7 +245,7 @@ const TambahAsetPage = () => {
       }
     }
 
-    // 2. Upload Foto Aset (multiple files)
+    // 2. Upload Foto Aset (if new files are provided)
     if (assetPhotos && assetPhotos.length > 0) {
       try {
         toast.loading(`Mengupload ${assetPhotos.length} foto aset...`, { id: toastId });
@@ -257,8 +258,11 @@ const TambahAsetPage = () => {
           `${API_URL}/upload/asset-photos`,
           photosFormData
         );
-
-        assetPhotoUrls = photosUploadRes.data.files.map(file => file.url);
+        
+        const newPhotoUrls = photosUploadRes.data.files.map(file => file.url);
+        assetPhotoUrls = [...new Set([...assetPhotoUrls, ...newPhotoUrls])];
+        console.log("DEBUG: URL Foto Aset setelah upload:", assetPhotoUrls);
+        
         toast.loading("Foto aset berhasil diupload.", { id: toastId });
       } catch (err) {
         toast.error("Gagal mengupload foto aset.", { id: toastId });
@@ -267,31 +271,24 @@ const TambahAsetPage = () => {
       }
     }
 
-
     // 3. Prepare final payload
-    const koremIdToSave = selectedKoremId;
-    const kodimToSave = selectedKodimId === "Berdiri Sendiri" ? "Kodim 0733/Kota Semarang" : selectedKodimId;
-
     const assetPayload = {
       ...assetData,
       id: `T${Date.now()}`,
-      korem_id: koremIdToSave,
-      kodim: kodimToSave,
+      korem_id: selectedKoremId,
+      kodim: selectedKodimId === "Berdiri Sendiri" ? "Kodim 0733/Kota Semarang" : selectedKodimId,
       lokasi: drawnAsset ? JSON.stringify(drawnAsset.geometry) : null,
-      luas: drawnAsset ? drawnAsset.area : 0,
-      sertifikat_bidang: assetData.sertifikat_bidang || 0,
-      sertifikat_luas: assetData.sertifikat_luas || 0,
-      belum_sertifikat_bidang: assetData.belum_sertifikat_bidang || 0,
-      belum_sertifikat_luas: assetData.belum_sertifikat_luas || 0,
+      luas: drawnAsset ? (drawnAsset.area || 0) : (assetData.luas || 0),
       bukti_pemilikan_url: buktiPemilikanUrl,
       bukti_pemilikan_filename: buktiPemilikanFilename,
-      foto_aset: assetPhotoUrls, // Add asset photos to payload
+      foto_aset: assetPhotoUrls,
     };
 
     // 4. Save asset data to db.json
     try {
+      console.log("DEBUG: Final payload TEPAT SEBELUM disimpan:", assetPayload);
       toast.loading("Menyimpan data aset ke database...", { id: toastId });
-      if (!drawnAsset || !drawnAsset.geometry) {
+      if (!assetPayload.lokasi) {
         toast.error("Data lokasi dari gambar tidak tersedia.", { id: toastId });
         return;
       }
