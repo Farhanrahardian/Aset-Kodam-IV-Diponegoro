@@ -51,6 +51,9 @@ const FormAset = ({
   }, [assetToEdit, initialGeometry, initialArea]);
 
   useEffect(() => {
+    if (selectedKoremId === undefined) {
+      return;
+    }
     // Sync form state when selection comes from the map
     if (selectedKoremId !== formData.korem_id) {
       setFormData((prev) => ({

@@ -787,7 +787,7 @@ const DataAsetYardipPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // State untuk edit asset
+  const [showEditModal, setShowEditModal] = useState(false);
   const [editingAsset, setEditingAsset] = useState(null);
 
   // State untuk modal detail
@@ -1152,6 +1152,7 @@ const DataAsetYardipPage = () => {
     console.log("Valid asset for editing:", asset);
 
     setEditingAsset(asset);
+    setShowEditModal(true);
     setIsEditingLocation(false);
     setEditedLocationData(null);
 
@@ -1179,6 +1180,7 @@ const DataAsetYardipPage = () => {
 
   const handleCancelEdit = useCallback(() => {
     setEditingAsset(null);
+    setShowEditModal(false);
     setIsEditingLocation(false);
     setEditedLocationData(null);
     setEditSelectedProvince("");
@@ -1318,6 +1320,7 @@ const DataAsetYardipPage = () => {
 
           // Reset semua editing state
           setEditingAsset(null);
+          setShowEditModal(false);
           setIsEditingLocation(false);
           setEditedLocationData(null);
           setEditSelectedProvince("");
@@ -1537,8 +1540,7 @@ const DataAsetYardipPage = () => {
       <h3>Data Aset Yardip</h3>
       {error && <Alert variant="danger">{error}</Alert>}
 
-      {/* Jika tidak sedang edit, tampilkan konten utama */}
-      {!editingAsset && (
+      
         <Row>
           <Col md={12}>
             {/* PETA UTAMA - DENGAN PIN MARKERS */}
@@ -1752,12 +1754,15 @@ const DataAsetYardipPage = () => {
             )}
           </Col>
         </Row>
-      )}
+      
 
-      {/* FORM EDIT menggunakan komponen EditYardip */}
-      {editingAsset && !isEditingLocation && (
-        <Row>
-          <Col md={12}>
+      {/* MODAL DETAIL ASET */}
+      <Modal show={showEditModal} onHide={handleCancelEdit} size="xl" centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Edit Aset Yardip</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {editingAsset && !isEditingLocation && (
             <EditYardip
               editingAsset={editingAsset}
               editedLocationData={editedLocationData}
@@ -1771,14 +1776,8 @@ const DataAsetYardipPage = () => {
               onCancelEditLocation={handleCancelEditLocation}
               isEditingLocation={isEditingLocation}
             />
-          </Col>
-        </Row>
-      )}
-
-      {/* PETA EDIT menggunakan komponen EditYardipLocation */}
-      {editingAsset && isEditingLocation && (
-        <Row>
-          <Col md={12}>
+          )}
+          {editingAsset && isEditingLocation && (
             <EditYardipLocation
               editingAsset={editingAsset}
               isEditingLocation={isEditingLocation}
@@ -1793,11 +1792,10 @@ const DataAsetYardipPage = () => {
               prepareEditAssetForMap={preparedEditAssetForMap}
               editedLocationData={editedLocationData}
             />
-          </Col>
-        </Row>
-      )}
+          )}
+        </Modal.Body>
+      </Modal>
 
-      {/* MODAL DETAIL ASET */}
       <DetailModalYardip
         asset={selectedAssetDetail}
         show={showDetailModal}

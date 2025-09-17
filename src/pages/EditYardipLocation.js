@@ -204,6 +204,7 @@ const EditYardipLocation = ({
                 assets={editAssetData}
                 isDrawing={true}
                 onDrawingCreated={handleDrawingCreated}
+                onDrawingEdited={handleDrawingCreated}
                 jatengBoundary={jatengBoundary}
                 diyBoundary={diyBoundary}
                 cityBounds={editCityBounds}

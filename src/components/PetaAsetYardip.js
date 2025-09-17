@@ -89,6 +89,7 @@ const MapSearch = () => {
 
 const PetaAsetYardip = ({
   onDrawingCreated,
+  onDrawingEdited,
   assets = [],
   isDrawing = false,
   jatengBoundary,
@@ -464,6 +465,21 @@ const PetaAsetYardip = ({
     }
   };
 
+  const handleEdited = (e) => {
+    const { layers } = e;
+    layers.eachLayer((layer) => {
+      const geojson = layer.toGeoJSON();
+      const area = turf.area(geojson);
+
+      if (typeof onDrawingEdited === "function") {
+        onDrawingEdited({
+          geometry: geojson.geometry,
+          area: area,
+        });
+      }
+    });
+  };
+
   // Helper function to create GeoJSON from asset data
   const createGeoJSONFromAsset = (asset) => {
     if (!asset.lokasi) return null;
@@ -763,7 +779,7 @@ const PetaAsetYardip = ({
         <EditControl
           position="topright"
           onCreated={handleCreated}
-          onEdited={() => {}}
+          onEdited={handleEdited}
           onDeleted={() => {}}
           draw={{
             rectangle: false,

@@ -183,8 +183,7 @@ const MapController = ({ view, koremData, kodimData, assets, setView, onMapKorem
 };
 
 // --- MAIN COMPONENT ---
-const PetaAset = React.memo(
-  ({
+const PetaAset = ({
     assets = [],
     onAssetClick,
     asetPilihan,
@@ -506,6 +505,6 @@ const PetaAset = React.memo(
       </div>
     );
   }
-);
+;
 
 export default PetaAset;

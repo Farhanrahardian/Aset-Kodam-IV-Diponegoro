@@ -25,6 +25,8 @@ L.Icon.Default.mergeOptions({
   shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
 });
 
+
+
 // Define styles outside the component to prevent re-creation on re-renders
 const koremStyle = {
   fillColor: "#2E7D32",
@@ -135,15 +137,34 @@ const MapSearch = () => {
 
 const PetaGambarAset = ({
   onPolygonCreated,
+  onPolygonEdited,
+  geometry,
   selectedKorem,
   selectedKodim,
   isLocationSelected,
   onLocationSelect,
 }) => {
-  const featureGroupRef = useRef(null);
+  
+  const [fg, setFg] = useState(null);
+  const featureGroupRef = useCallback(node => {
+    if (node !== null) {
+      setFg(node);
+    }
+  }, []);
+  const selectedLayerRef = useRef(null);
   const [koremBoundaries, setKoremBoundaries] = useState(null);
   const [kodimBoundaries, setKodimBoundaries] = useState(null);
-  const selectedLayerRef = useRef(null);
+  useEffect(() => {
+    if (fg && geometry) {
+      const layer = L.geoJSON(geometry, {
+        style: {
+          color: 'red',
+        }
+      });
+      fg.clearLayers();
+      layer.eachLayer(l => fg.addLayer(l));
+    }
+  }, [fg, geometry]);
 
   const mapCenter = [-7.5, 110.0]; // Center of Central Java
   const initialZoom = 8;
@@ -244,19 +265,54 @@ const PetaGambarAset = ({
 
   const handleCreated = (e) => {
     const { layerType, layer } = e;
+    console.log("handleCreated triggered. layerType:", layerType, "layer:", layer);
+
     if (layerType === "polygon") {
+      try {
+        const geojson = layer.toGeoJSON();
+        console.log("GeoJSON created:", geojson);
+
+        if (!geojson || !geojson.geometry) {
+          console.error("Invalid GeoJSON or geometry is missing.");
+          return;
+        }
+
+        const area = turf.area(geojson);
+        console.log("Area calculated:", area);
+
+        if (featureGroupRef.current) {
+          featureGroupRef.current.clearLayers();
+          featureGroupRef.current.addLayer(layer);
+          console.log("Layer added to FeatureGroup.");
+        } else {
+          console.error("featureGroupRef.current is null or undefined.");
+          return;
+        }
+
+        onPolygonCreated({
+          geometry: geojson.geometry,
+          area: area,
+        });
+        console.log("onPolygonCreated called successfully.");
+      } catch (error) {
+        console.error("Error in handleCreated:", error);
+      }
+    }
+  };
+
+  const handleEdited = (e) => {
+    const { layers } = e;
+    layers.eachLayer((layer) => {
       const geojson = layer.toGeoJSON();
       const area = turf.area(geojson);
-
-      featureGroupRef.current.clearLayers();
-      featureGroupRef.current.addLayer(layer);
-
-      onPolygonCreated({
+      onPolygonEdited({
         geometry: geojson.geometry,
         area: area,
       });
-    }
+    });
   };
+
+  
 
   const handleBackToKorem = () => {
     onLocationSelect && onLocationSelect("KOREM", null, null);
@@ -389,9 +445,10 @@ const PetaGambarAset = ({
         <FeatureGroup ref={featureGroupRef}>
           {isLocationSelected && (
             <EditControl
+              key={fg ? 'edit-control-' + fg._leaflet_id : 'edit-control-null'}
               position="topleft"
               onCreated={handleCreated}
-              onEdited={() => {}}
+              onEdited={handleEdited}
               onDeleted={() => {}}
               draw={{
                 rectangle: false,
@@ -407,8 +464,14 @@ const PetaGambarAset = ({
                   },
                 },
               }}
+              edit={{
+                featureGroup: fg,
+                remove: true,
+                edit: true,
+              }}
             />
           )}
+          
         </FeatureGroup>
       </MapContainer>
       {selectedKorem && !selectedKodim && (

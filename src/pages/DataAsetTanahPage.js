@@ -30,6 +30,7 @@ import { normalizeKodimName } from "../utils/kodimUtils";
 import FormAset from "../components/FormAset";
 import PetaAset from "../components/PetaAset";
 import DetailOffcanvasAset from "../components/DetailOffcanvasAset";
+import PetaGambarAset from "../components/PetaGambarAset";
 import jatengBoundary from "../data/indonesia_jawatengah.json";
 import diyBoundary from "../data/indonesia_yogyakarta.json";
 
@@ -777,6 +778,7 @@ const DataAsetTanahPage = () => {
   const [koremGeoJSON, setKoremGeoJSON] = useState(null);
   const [kodimGeoJSON, setKodimGeoJSON] = useState(null);
   const [koremDataForMap, setKoremDataForMap] = useState(null);
+  const [mapKey, setMapKey] = useState(0);
 
   const handleMarkerClick = (asset) => {
     setAssetForOffcanvas(asset);
@@ -861,6 +863,7 @@ const DataAsetTanahPage = () => {
       console.log("All Kodims:", allKodims);
       setAllKodimList(allKodims);
       setError(null);
+      setMapKey(prev => prev + 1);
     } catch (err) {
       setError("Gagal memuat data dari server. Pastikan server API dan file GeoJSON tersedia.");
       console.error(err);
@@ -1112,8 +1115,70 @@ const DataAsetTanahPage = () => {
     setSelectedAssetDetail(null);
   };
 
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingAsset, setEditingAsset] = useState(null);
+  const [editedGeometry, setEditedGeometry] = useState(null);
+
   const handleEditAsset = (asset) => {
-    navigate(`/edit-aset/${asset.id}`);
+    setEditingAsset({...asset});
+    setShowEditModal(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setEditingAsset(null);
+    setShowEditModal(false);
+    setEditedGeometry(null);
+  };
+
+  const handlePolygonEdited = (data) => {
+    setEditedGeometry(data);
+  };
+
+  
+
+  const handleUpdateAsset = async (formData, buktiPemilikanFile, assetPhotos) => {
+    const toastId = toast.loading("Menyimpan perubahan...");
+    try {
+      let buktiPemilikanUrl = formData.bukti_pemilikan_url || "";
+      let buktiPemilikanFilename = formData.bukti_pemilikan_filename || "";
+      let assetPhotoUrls = formData.foto_aset || [];
+
+      if (buktiPemilikanFile) {
+        const fileFormData = new FormData();
+        fileFormData.append("bukti_pemilikan", buktiPemilikanFile);
+        const uploadRes = await axios.post(`${API_URL}/upload/bukti-pemilikan`, fileFormData);
+        buktiPemilikanUrl = uploadRes.data.url;
+        buktiPemilikanFilename = uploadRes.data.filename;
+      }
+
+      if (assetPhotos && assetPhotos.length > 0) {
+        const photosFormData = new FormData();
+        assetPhotos.forEach(photo => {
+          photosFormData.append("asset_photos", photo);
+        });
+        const photosUploadRes = await axios.post(`${API_URL}/upload/asset-photos`, photosFormData);
+        const newPhotoUrls = photosUploadRes.data.files.map(file => file.url);
+        assetPhotoUrls = [...new Set([...assetPhotoUrls, ...newPhotoUrls])];
+      }
+
+      const updatedData = { ...formData };
+      if (editedGeometry) {
+        updatedData.lokasi = JSON.stringify(editedGeometry.geometry);
+        updatedData.luas = editedGeometry.area;
+      }
+      updatedData.bukti_pemilikan_url = buktiPemilikanUrl;
+      updatedData.bukti_pemilikan_filename = buktiPemilikanFilename;
+      updatedData.foto_aset = assetPhotoUrls;
+
+      await axios.put(`${API_URL}/assets/${editingAsset.id}`, updatedData);
+
+      toast.success("Aset berhasil diperbarui.", { id: toastId });
+      handleCloseEditModal();
+      fetchData(); // Refresh data
+    } catch (error) {
+      toast.error("Gagal memperbarui aset.", { id: toastId });
+      console.error("Error updating asset:", error);
+    }
   };
 
   const handleDeleteAsset = async (id) => {
@@ -1155,6 +1220,7 @@ const DataAsetTanahPage = () => {
             <Card.Header as="h5">Peta Aset Tanah</Card.Header>
             <Card.Body style={{ height: "50vh", padding: 0 }}>
               <PetaAset
+                key={mapKey}
                 assets={filteredAssets}
                 onAssetClick={handleMarkerClick}
                 asetPilihan={assetForOffcanvas} // Pass selected asset for highlighting
@@ -1270,6 +1336,43 @@ const DataAsetTanahPage = () => {
         koremList={koremList}
         allKodimList={allKodimList}
       />
+
+      <Modal show={showEditModal} onHide={handleCloseEditModal} size="xl" centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Edit Aset Tanah</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {editingAsset && (() => {
+            const korem = koremList.find(k => k.id === editingAsset.korem_id);
+            const kodim = { nama: editingAsset.kodim };
+            return (
+              <Row>
+                <Col md={7}>
+                  <div style={{ height: "70vh", width: "100%" }}>
+                    <PetaGambarAset
+                      onPolygonEdited={handlePolygonEdited}
+                      geometry={editedGeometry ? editedGeometry.geometry : (editingAsset.lokasi ? (typeof editingAsset.lokasi === 'string' ? JSON.parse(editingAsset.lokasi) : editingAsset.lokasi) : null)}
+                      isLocationSelected={true}
+                      selectedKorem={korem}
+                      selectedKodim={kodim}
+                    />
+                  </div>
+                </Col>
+                <Col md={5}>
+                  <FormAset
+                    assetToEdit={editingAsset}
+                    onSave={handleUpdateAsset}
+                    onCancel={handleCloseEditModal}
+                    koremList={koremList}
+                    isEnabled={true}
+                    initialArea={editedGeometry ? editedGeometry.area : (editingAsset.luas || 0)}
+                  />
+                </Col>
+              </Row>
+            );
+          })()}
+        </Modal.Body>
+      </Modal>
     </Container>
   );
 };
