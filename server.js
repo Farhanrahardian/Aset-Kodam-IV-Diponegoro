@@ -146,9 +146,19 @@ app.put("/assets/:id", (req, res) => {
     (asset) => String(asset.id) === String(id)
   );
 
-  if (assetIndex === -1) {
+if (assetIndex === -1) {
     return res.status(404).json({ error: "Asset not found" });
   }
+
+  console.log('--- UPDATE ASSET ---');
+  console.log('ID:', id);
+  console.log('Received Body (updatedAsset):', JSON.stringify(updatedAsset, null, 2));
+  const finalAsset = { ...db.assets[assetIndex], ...updatedAsset };
+  console.log('Final Asset to be Saved:', JSON.stringify(finalAsset, null, 2));
+
+  // Update the asset in the array
+  db.assets[assetIndex] = finalAsset;
+  writeDb(db);
 
   // Update the asset in the array
   db.assets[assetIndex] = { ...db.assets[assetIndex], ...updatedAsset };

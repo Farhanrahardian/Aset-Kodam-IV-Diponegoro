@@ -75,22 +75,20 @@ const TambahAsetPage = () => {
       setSelectedKodimId(kodimName);
 
       const koremData = koremList.find((k) => k.id === koremId);
-      // Special case: display "Kodim 0733/Kota Semarang" instead of "Berdiri Sendiri"
       const displayNama = koremData?.nama === "Berdiri Sendiri" ? "Kodim 0733/Kota Semarang" : koremData?.nama;
       setSelectedKorem(koremData ? { id: koremData.id, nama: displayNama } : null);
 
-      // Special handling for Kota Semarang
-      if (kodimName === "Kodim 0733/Kota Semarang" || (koremData?.nama === "Berdiri Sendiri" && !kodimName)) {
-        // Find the feature where listkodim_Korem is "Berdiri Sendiri"
+      // Determine if we are dealing with the special Semarang case
+      const isSemarangCase = kodimName === "Kodim 0733/Kota Semarang" || koremData?.nama === "Berdiri Sendiri";
+
+      if (isSemarangCase) {
+        setSelectedKodimId("Kodim 0733/Kota Semarang"); // Ensure Kodim ID is set
         const kodimFeature = kodimBoundaries?.features.find(
-          (f) => f.properties.listkodim_Korem === "Berdiri Sendiri"
+          (f) => f.properties.listkodim_Kodim === "Kodim 0733/Semarang (BS)"
         );
         setSelectedKodim(kodimFeature ? { nama: "Kodim 0733/Kota Semarang", geometry: kodimFeature.geometry } : null);
         setIsLocationSelected(true);
-        return;
-      }
-
-      if (kodimName && kodimBoundaries) {
+      } else if (kodimName && kodimBoundaries) {
         const kodimFeature = kodimBoundaries.features.find((f) => {
           const featureName = normalizeKodimName(f.properties.listkodim_Kodim);
           // Special case handling for Grobogan
@@ -276,7 +274,7 @@ const TambahAsetPage = () => {
       ...assetData,
       id: `T${Date.now()}`,
       korem_id: selectedKoremId,
-      kodim: selectedKodimId === "Berdiri Sendiri" ? "Kodim 0733/Kota Semarang" : selectedKodimId,
+      kodim: selectedKodimId,
       lokasi: drawnAsset ? JSON.stringify(drawnAsset.geometry) : null,
       luas: drawnAsset ? (drawnAsset.area || 0) : (assetData.luas || 0),
       bukti_pemilikan_url: buktiPemilikanUrl,

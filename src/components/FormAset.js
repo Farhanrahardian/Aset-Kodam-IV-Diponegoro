@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useImperativeHandle, forwardRef } from "react";
 import { Button, Form, Row, Col, Card, Alert } from "react-bootstrap";
 import toast from "react-hot-toast";
 
-const FormAset = ({
+const FormAset = forwardRef(({
   onSave,
   onCancel,
   koremList,
@@ -14,12 +14,23 @@ const FormAset = ({
   viewMode = false,
   selectedKoremId,
   selectedKodimId,
-}) => {
+  isEditMode = false,
+}, ref) => {
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
   const [kodimList, setKodimList] = useState([]);
   const [buktiPemilikanFile, setBuktiPemilikanFile] = useState(null);
   const [assetPhotos, setAssetPhotos] = useState([]);
+
+  useImperativeHandle(ref, () => ({
+    getFormData: () => {
+      return {
+        formData,
+        buktiPemilikanFile,
+        assetPhotos,
+      };
+    }
+  }));
 
   useEffect(() => {
     if (assetToEdit) {
@@ -51,23 +62,22 @@ const FormAset = ({
   }, [assetToEdit, initialGeometry, initialArea]);
 
   useEffect(() => {
-    if (selectedKoremId === undefined) {
-      return;
+    // When creating a new asset, sync Korem/Kodim from map selection
+    if (!assetToEdit) {
+      if (selectedKoremId !== formData.korem_id) {
+        setFormData((prev) => ({
+          ...prev,
+          korem_id: selectedKoremId,
+          kodim: selectedKodimId || "", // Reset kodim when korem changes from map
+        }));
+      } else if (selectedKodimId !== formData.kodim) {
+        setFormData((prev) => ({
+          ...prev,
+          kodim: selectedKodimId,
+        }));
+      }
     }
-    // Sync form state when selection comes from the map
-    if (selectedKoremId !== formData.korem_id) {
-      setFormData((prev) => ({
-        ...prev,
-        korem_id: selectedKoremId,
-        kodim: selectedKodimId || "", // Reset kodim when korem changes from map
-      }));
-    } else if (selectedKodimId !== formData.kodim) {
-      setFormData((prev) => ({
-        ...prev,
-        kodim: selectedKodimId,
-      }));
-    }
-  }, [selectedKoremId, selectedKodimId, formData.korem_id, formData.kodim]);
+  }, [assetToEdit, selectedKoremId, selectedKodimId, formData.korem_id, formData.kodim]);
 
   useEffect(() => {
     if (formData.korem_id) {
@@ -82,32 +92,36 @@ const FormAset = ({
           })) || [];
         setKodimList(kodimObjects);
 
-        // Jika KODIM sudah dipilih sebelumnya dan tidak ada dalam daftar KODIM baru,
-        // maka reset pemilihan KODIM
-        if (formData.kodim && kodimObjects.length > 0) {
-          const kodimExists = kodimObjects.some(k => k.id === formData.kodim);
-          if (!kodimExists) {
-            setFormData((prev) => ({ ...prev, kodim: "" }));
-            onLocationChange && onLocationChange(formData.korem_id, "");
+        // Only perform validation and auto-selection for new assets
+        if (!assetToEdit) {
+          if (formData.kodim && kodimObjects.length > 0) {
+            const kodimExists = kodimObjects.some(
+              (k) => k.id === formData.kodim
+            );
+            if (!kodimExists) {
+              setFormData((prev) => ({ ...prev, kodim: "" }));
+              onLocationChange && onLocationChange(formData.korem_id, "");
+            }
+          } else if (kodimObjects.length === 0) {
+            const newKodim =
+              selectedKoremData.nama === "Berdiri Sendiri" ||
+              selectedKoremData.nama === "Kodim 0733/Kota Semarang"
+                ? "Kodim 0733/Kota Semarang"
+                : selectedKoremData.nama;
+            setFormData((prev) => ({ ...prev, kodim: newKodim }));
+            onLocationChange && onLocationChange(formData.korem_id, newKodim);
           }
-        } else if (kodimObjects.length === 0) {
-          // Jika tidak ada daftar KODIM (KOrem berdiri sendiri)
-          // Special case for Kota Semarang which is "Kodim 0733/Kota Semarang"
-          const newKodim = selectedKoremData.nama === "Berdiri Sendiri" || selectedKoremData.nama === "Kodim 0733/Kota Semarang"
-            ? "Kodim 0733/Kota Semarang" 
-            : selectedKoremData.nama;
-          setFormData((prev) => ({ ...prev, kodim: newKodim }));
-          onLocationChange && onLocationChange(formData.korem_id, newKodim);
         }
       }
     } else {
       setKodimList([]);
-      // Reset KODIM selection when KOREM is cleared
-      setFormData((prev) => ({ ...prev, kodim: "" }));
+      // Only reset kodim for new assets
+      if (!assetToEdit) {
+        setFormData((prev) => ({ ...prev, kodim: "" }));
+      }
     }
-  }, [formData.korem_id, koremList, onLocationChange, formData.kodim]);
+  }, [assetToEdit, formData.korem_id, koremList, onLocationChange, formData.kodim]);
 
-  // Update luas otomatis dari peta ketika initialArea berubah
   useEffect(() => {
     if (initialArea && initialArea > 0) {
       const areaValue = parseFloat(initialArea.toFixed(2));
@@ -115,16 +129,14 @@ const FormAset = ({
       setFormData((prev) => {
         const updatedData = { ...prev };
 
-        // Update sesuai dengan status sertifikat
         if (prev.pemilikan_sertifikat === "Ya") {
           updatedData.sertifikat_luas = areaValue;
-          updatedData.belum_sertifikat_luas = ""; // Clear yang tidak terpakai
+          updatedData.belum_sertifikat_luas = "";
         } else {
           updatedData.belum_sertifikat_luas = areaValue;
-          updatedData.sertifikat_luas = ""; // Clear yang tidak terpakai
+          updatedData.sertifikat_luas = "";
         }
 
-        // Tetap update field luas untuk keperluan internal/backup
         updatedData.luas = areaValue;
 
         return updatedData;
@@ -136,11 +148,9 @@ const FormAset = ({
     const { name, value } = e.target;
 
     if (name === "korem_id") {
-      // Special handling for "Kodim 0733/Kota Semarang" (formerly "Berdiri Sendiri")
       const selectedKoremData = koremList.find(k => k.id === value);
       let kodimValue = "";
       
-      // If it's "Kodim 0733/Kota Semarang", automatically set kodim to "Kodim 0733/Kota Semarang"
       if (selectedKoremData && (selectedKoremData.nama === "Berdiri Sendiri" || selectedKoremData.nama === "Kodim 0733/Kota Semarang")) {
         kodimValue = "Kodim 0733/Kota Semarang";
       }
@@ -152,7 +162,6 @@ const FormAset = ({
       });
       onLocationChange && onLocationChange(value, kodimValue);
     } else if (name === "pemilikan_sertifikat") {
-      // Ketika status sertifikat berubah, pindahkan data luas ke field yang sesuai
       const currentArea =
         formData.sertifikat_luas ||
         formData.belum_sertifikat_luas ||
@@ -166,11 +175,9 @@ const FormAset = ({
         };
 
         if (value === "Ya") {
-          // Pindah ke sertifikat
           updatedData.sertifikat_luas = currentArea || "";
           updatedData.belum_sertifikat_luas = "";
         } else {
-          // Pindah ke belum sertifikat
           updatedData.belum_sertifikat_luas = currentArea || "";
           updatedData.sertifikat_luas = "";
         }
@@ -203,25 +210,21 @@ const FormAset = ({
       return;
     }
 
-    // Prepare data untuk disimpan dengan memastikan konsistensi luas
     const dataToSave = { ...formData };
 
-    // Pastikan data luas konsisten dengan pilihan sertifikat
     if (formData.pemilikan_sertifikat === "Ya") {
-      // Jika bersertifikat, pastikan sertifikat_luas terisi
       if (!dataToSave.sertifikat_luas && (dataToSave.luas || initialArea)) {
         dataToSave.sertifikat_luas = dataToSave.luas || initialArea;
       }
-      dataToSave.belum_sertifikat_luas = ""; // Clear yang tidak terpakai
+      dataToSave.belum_sertifikat_luas = "";
     } else {
-      // Jika tidak bersertifikat, pastikan belum_sertifikat_luas terisi
       if (
         !dataToSave.belum_sertifikat_luas &&
         (dataToSave.luas || initialArea)
       ) {
         dataToSave.belum_sertifikat_luas = dataToSave.luas || initialArea;
       }
-      dataToSave.sertifikat_luas = ""; // Clear yang tidak terpakai
+      dataToSave.sertifikat_luas = "";
     }
 
     onSave(dataToSave, buktiPemilikanFile, assetPhotos);
@@ -236,7 +239,6 @@ const FormAset = ({
     { value: "Lain-lain", label: "Lain-lain" },
   ];
 
-  // Helper function untuk mendapatkan nilai luas yang sedang aktif
   const getCurrentAreaValue = () => {
     if (formData.pemilikan_sertifikat === "Ya") {
       return formData.sertifikat_luas || "";
@@ -267,7 +269,7 @@ const FormAset = ({
                         value={formData.korem_id || ""}
                         onChange={handleChange}
                         required
-                        disabled={viewMode}
+                        disabled={viewMode || !!assetToEdit}
                       >
                         <option value="">-- Pilih Korem --</option>
                         {koremList.map((korem) => (
@@ -287,6 +289,7 @@ const FormAset = ({
                         onChange={handleChange}
                         disabled={
                           viewMode ||
+                          !!assetToEdit ||
                           !formData.korem_id ||
                           kodimList.length === 0
                         }
@@ -498,7 +501,6 @@ const FormAset = ({
                     </Form.Text>
                   </Form.Group>
 
-                  {/* Data Sertifikat - Kondisional berdasarkan pilihan */}
                   {formData.pemilikan_sertifikat === "Ya" && (
                     <Card className="mb-3 border-success">
                       <Card.Header className="bg-success bg-opacity-10">
@@ -603,7 +605,6 @@ const FormAset = ({
                     </Card>
                   )}
 
-                  {/* Info Area saat ini */}
                   {(initialArea || getCurrentAreaValue()) && (
                     <div className="alert alert-info">
                       <small>
@@ -624,24 +625,26 @@ const FormAset = ({
               </Card>
             </fieldset>
 
-            <div className="d-flex gap-2 justify-content-end mt-3">
-              <Button variant="secondary" onClick={onCancel}>
-                Batalkan
-              </Button>
-              <Button
-                variant="primary"
-                type="button"
-                onClick={handleSave}
-                disabled={!isEnabled}
-              >
-                Simpan Aset
-              </Button>
-            </div>
+            {!assetToEdit && (
+              <div className="d-flex gap-2 justify-content-end mt-3">
+                <Button variant="secondary" onClick={onCancel}>
+                  Batalkan
+                </Button>
+                <Button
+                  variant="primary"
+                  type="button"
+                  onClick={handleSave}
+                  disabled={!isEnabled}
+                >
+                  Simpan Aset
+                </Button>
+              </div>
+            )}
           </Form>
         </Card.Body>
       </Card>
     </>
   );
-};
+});
 
 export default FormAset;

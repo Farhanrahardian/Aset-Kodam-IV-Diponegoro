@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { OverlayTrigger, Tooltip, Modal, Image } from "react-bootstrap";
 import {
   FaInfoCircle,
@@ -27,12 +27,9 @@ import * as turf from "@turf/turf";
 
 import { parseLocation, getCentroid } from "../utils/locationUtils";
 import { normalizeKodimName } from "../utils/kodimUtils";
-import FormAset from "../components/FormAset";
 import PetaAset from "../components/PetaAset";
 import DetailOffcanvasAset from "../components/DetailOffcanvasAset";
-import PetaGambarAset from "../components/PetaGambarAset";
-import jatengBoundary from "../data/indonesia_jawatengah.json";
-import diyBoundary from "../data/indonesia_yogyakarta.json";
+import EditAsetModal from "../components/EditAsetModal"; // Import the new modal
 
 const API_URL = "http://localhost:3001";
 
@@ -90,8 +87,9 @@ const TabelAset = ({ assets, onEdit, onDelete, onViewDetail, koremList, allKodim
   }
 
   const getKodimName = (asset) => {
-    if (!asset.kodim) return "-";
-    const assetKodimIdentifier = String(asset.kodim).trim();
+    const assetKodimIdentifier = String(asset.kodim || asset.kodim_id || "").trim();
+    if (!assetKodimIdentifier) return "-";
+    
     // Normalisasi nama kodim untuk pencocokan
     const normalizedAssetKodim = normalizeKodimName(assetKodimIdentifier);
     
@@ -103,7 +101,7 @@ const TabelAset = ({ assets, onEdit, onDelete, onViewDetail, koremList, allKodim
     const kodim = allKodimList.find(
       (k) => k.id === assetKodimIdentifier || k.nama === assetKodimIdentifier || normalizeKodimName(k.nama) === normalizedAssetKodim
     );
-    return kodim ? kodim.nama : asset.kodim_nama || asset.kodim || "-";
+    return kodim ? kodim.nama : asset.kodim_nama || assetKodimIdentifier || "-";
   };
 
   const renderLuas = (asset) => {
@@ -752,7 +750,6 @@ const DetailModalAset = ({ asset, show, onHide, koremList, allKodimList, koremGe
 
 const DataAsetTanahPage = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
   const [assets, setAssets] = useState([]);
   const [koremList, setKoremList] = useState([]);
@@ -769,6 +766,9 @@ const DataAsetTanahPage = () => {
 
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedAssetDetail, setSelectedAssetDetail] = useState(null);
+  
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingAsset, setEditingAsset] = useState(null);
 
   const [showOffcanvas, setShowOffcanvas] = useState(false);
   const [assetForOffcanvas, setAssetForOffcanvas] = useState(null);
@@ -778,7 +778,7 @@ const DataAsetTanahPage = () => {
   const [koremGeoJSON, setKoremGeoJSON] = useState(null);
   const [kodimGeoJSON, setKodimGeoJSON] = useState(null);
   const [koremDataForMap, setKoremDataForMap] = useState(null);
-  const [mapKey, setMapKey] = useState(0);
+  const [kodimDataForMap, setKodimDataForMap] = useState(null);
 
   const handleMarkerClick = (asset) => {
     setAssetForOffcanvas(asset);
@@ -863,7 +863,6 @@ const DataAsetTanahPage = () => {
       console.log("All Kodims:", allKodims);
       setAllKodimList(allKodims);
       setError(null);
-      setMapKey(prev => prev + 1);
     } catch (err) {
       setError("Gagal memuat data dari server. Pastikan server API dan file GeoJSON tersedia.");
       console.error(err);
@@ -880,73 +879,83 @@ const DataAsetTanahPage = () => {
     if (location.state?.refresh) {
       fetchData();
       // Reset the state to avoid re-fetching on other re-renders
-      navigate(location.pathname, { replace: true, state: {} });
+      // navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [location, navigate, fetchData]);
+  }, [location, fetchData]);
 
   // Effect to calculate asset counts per korem
   useEffect(() => {
-    console.log("Calculating asset counts per korem");
-    console.log("Assets count:", assets.length);
-    console.log("Korem GeoJSON features count:", koremGeoJSON?.features?.length);
-    console.log("Korem GeoJSON data:", koremGeoJSON);
+    console.log("Calculating asset counts per korem (Revised Logic)");
     
     if (assets.length > 0 && koremGeoJSON?.features) {
-      const koremDataWithCounts = JSON.parse(JSON.stringify(koremGeoJSON));
+      const koremFeatures = JSON.parse(JSON.stringify(koremGeoJSON.features));
 
-      koremDataWithCounts.features.forEach((koremFeature) => {
-        let count = 0;
-        console.log(`Processing korem: ${koremFeature.properties.listkodim_Korem} (ID: ${koremFeature.properties.id})`);
-        
-        if (koremFeature.geometry) {
-          assets.forEach((asset) => {
-            // Tangani kasus khusus untuk Kodim Kota Semarang ("Berdiri Sendiri")
-            if (koremFeature.properties.listkodim_Korem === "Kodim 0733/Kota Semarang") {
-              // Untuk "Berdiri Sendiri", hitung aset dengan kodim "Kodim 0733/Kota Semarang" atau "Kodim 0733/Semarang (BS)"
-              const normalizedAssetKodim = normalizeKodimName(String(asset.kodim || "").trim());
-              if (normalizedAssetKodim === "Kodim 0733/Kota Semarang" || asset.kodim === "Kodim 0733/Semarang (BS)") {
-                const geometry = parseLocation(asset.lokasi);
-                const centroid = getCentroid(geometry);
-                if (centroid) {
-                  const point = turf.point([centroid[1], centroid[0]]);
-                  if (turf.booleanPointInPolygon(point, koremFeature.geometry)) {
-                    count++;
-                  }
-                }
-              }
-            } else {
-              // Untuk korem lainnya
-              // Cari korem berdasarkan nama korem untuk pencocokan
-              const koremListData = koremList.find(k => k.nama === koremFeature.properties.listkodim_Korem);
-              if (koremListData && asset.korem_id == koremListData.id) {
-                const geometry = parseLocation(asset.lokasi);
-                const centroid = getCentroid(geometry);
-                if (centroid) {
-                  const point = turf.point([centroid[1], centroid[0]]);
-                  if (turf.booleanPointInPolygon(point, koremFeature.geometry)) {
-                    count++;
-                  }
-                }
-              }
+      // Initialize counts
+      koremFeatures.forEach(f => { f.properties.asset_count = 0; });
+
+      assets.forEach(asset => {
+        const geometry = parseLocation(asset.lokasi);
+        const centroid = getCentroid(geometry);
+
+        if (centroid) {
+          const point = turf.point([centroid[1], centroid[0]]);
+          // Find which korem polygon the asset is in
+          for (const koremFeature of koremFeatures) {
+            if (koremFeature.geometry && turf.booleanPointInPolygon(point, koremFeature.geometry)) {
+              koremFeature.properties.asset_count++;
+              // Break after finding the containing polygon
+              break; 
             }
-          });
+          }
         }
-        console.log(`Korem ${koremFeature.properties.listkodim_Korem}: ${count} assets`);
-        koremFeature.properties.asset_count = count;
       });
       
-      console.log("Korem data with counts:", koremDataWithCounts);
-      setKoremDataForMap(koremDataWithCounts);
+      console.log("Korem data with revised counts:", { ...koremGeoJSON, features: koremFeatures });
+      setKoremDataForMap({ ...koremGeoJSON, features: koremFeatures });
+
     } else if (koremGeoJSON?.features) {
-        const koremDataWithCounts = JSON.parse(JSON.stringify(koremGeoJSON));
-        koremDataWithCounts.features.forEach((koremFeature) => {
-            koremFeature.properties.asset_count = 0;
-            console.log(`Korem ${koremFeature.properties.listkodim_Korem}: 0 assets (no data)`);
-        });
-        console.log("Korem data with zero counts:", koremDataWithCounts);
-        setKoremDataForMap(koremDataWithCounts);
+        // If no assets, just initialize counts to 0
+        const koremFeatures = JSON.parse(JSON.stringify(koremGeoJSON.features));
+        koremFeatures.forEach(f => { f.properties.asset_count = 0; });
+        setKoremDataForMap({ ...koremGeoJSON, features: koremFeatures });
     }
-  }, [assets, koremGeoJSON, koremList]);
+  }, [assets, koremGeoJSON]);
+
+  // Effect to calculate asset counts per kodim
+  useEffect(() => {
+    console.log("Calculating asset counts per kodim");
+    
+    if (assets.length > 0 && kodimGeoJSON?.features) {
+        const kodimFeatures = JSON.parse(JSON.stringify(kodimGeoJSON.features));
+
+        // Initialize counts
+        kodimFeatures.forEach(f => { f.properties.asset_count = 0; });
+
+        assets.forEach(asset => {
+            const geometry = parseLocation(asset.lokasi);
+            const centroid = getCentroid(geometry);
+
+            if (centroid) {
+                const point = turf.point([centroid[1], centroid[0]]);
+                // Find which kodim polygon the asset is in
+                for (const kodimFeature of kodimFeatures) {
+                    if (kodimFeature.geometry && turf.booleanPointInPolygon(point, kodimFeature.geometry)) {
+                        kodimFeature.properties.asset_count++;
+                        break; 
+                    }
+                }
+            }
+        });
+      
+        setKodimDataForMap({ ...kodimGeoJSON, features: kodimFeatures });
+
+    } else if (kodimGeoJSON?.features) {
+        // If no assets, just initialize counts to 0
+        const kodimFeatures = JSON.parse(JSON.stringify(kodimGeoJSON.features));
+        kodimFeatures.forEach(f => { f.properties.asset_count = 0; });
+        setKodimDataForMap({ ...kodimGeoJSON, features: kodimFeatures });
+    }
+  }, [assets, kodimGeoJSON]);
 
   useEffect(() => {
     console.log("Filter effect triggered");
@@ -955,31 +964,31 @@ const DataAsetTanahPage = () => {
     console.log("Status Filter:", statusFilter);
     
     let filtered = assets;
-    if (selectedKorem) {
-      filtered = filtered.filter((asset) => asset.korem_id == selectedKorem.id);
-    }
+
     if (selectedKodim) {
       console.log("Filtering by Kodim:", selectedKodim);
+      const filterKodim = normalizeKodimName(String(selectedKodim || "").trim());
+      
       filtered = filtered.filter((asset) => {
         const assetKodim = normalizeKodimName(String(asset.kodim || "").trim());
-        const filterKodim = normalizeKodimName(String(selectedKodim || "").trim());
-        console.log("Comparing asset.kodim (normalized):", assetKodim, "with selectedKodim (normalized):", filterKodim);
         
-        // Tangani kasus khusus untuk Kodim Kota Semarang
         if (filterKodim === "Kodim 0733/Kota Semarang") {
-          // Aset dengan kodim "Kodim 0733/Kota Semarang" atau "Kodim 0733/Semarang (BS)"
           return assetKodim === "Kodim 0733/Kota Semarang" || asset.kodim === "Kodim 0733/Semarang (BS)";
         }
         
         return assetKodim === filterKodim;
       });
+    } else if (selectedKorem) {
+      filtered = filtered.filter((asset) => asset.korem_id == selectedKorem.id);
     }
+
     if (statusFilter) {
       filtered = filtered.filter((asset) => asset.status === statusFilter);
     }
+    
     console.log("Filtered assets count:", filtered.length);
     setFilteredAssets(filtered);
-  }, [selectedKorem, selectedKodim, statusFilter, assets, koremList]);
+  }, [selectedKorem, selectedKodim, statusFilter, assets]);
 
   const assetsOnMapCount = useMemo(() => 
     filteredAssets.filter(asset => {
@@ -1115,69 +1124,51 @@ const DataAsetTanahPage = () => {
     setSelectedAssetDetail(null);
   };
 
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editingAsset, setEditingAsset] = useState(null);
-  const [editedGeometry, setEditedGeometry] = useState(null);
-
   const handleEditAsset = (asset) => {
-    setEditingAsset({...asset});
+    setEditingAsset(asset);
     setShowEditModal(true);
   };
 
   const handleCloseEditModal = () => {
     setEditingAsset(null);
     setShowEditModal(false);
-    setEditedGeometry(null);
   };
 
-  const handlePolygonEdited = (data) => {
-    setEditedGeometry(data);
-  };
-
-  
-
-  const handleUpdateAsset = async (formData, buktiPemilikanFile, assetPhotos) => {
+  const handleSaveAsset = async (assetData, buktiPemilikanFile, assetPhotos) => {
     const toastId = toast.loading("Menyimpan perubahan...");
-    try {
-      let buktiPemilikanUrl = formData.bukti_pemilikan_url || "";
-      let buktiPemilikanFilename = formData.bukti_pemilikan_filename || "";
-      let assetPhotoUrls = formData.foto_aset || [];
+    const { id } = assetData;
+    let updatedData = { ...assetData };
 
+    try {
       if (buktiPemilikanFile) {
-        const fileFormData = new FormData();
-        fileFormData.append("bukti_pemilikan", buktiPemilikanFile);
-        const uploadRes = await axios.post(`${API_URL}/upload/bukti-pemilikan`, fileFormData);
-        buktiPemilikanUrl = uploadRes.data.url;
-        buktiPemilikanFilename = uploadRes.data.filename;
+        toast.loading("Mengupload bukti pemilikan...", { id: toastId });
+        const formData = new FormData();
+        formData.append("bukti_pemilikan", buktiPemilikanFile);
+        const uploadRes = await axios.post(`${API_URL}/upload/bukti-pemilikan`, formData);
+        updatedData.bukti_pemilikan_url = uploadRes.data.url;
+        updatedData.bukti_pemilikan_filename = uploadRes.data.filename;
       }
 
       if (assetPhotos && assetPhotos.length > 0) {
+        toast.loading(`Mengupload ${assetPhotos.length} foto aset...`, { id: toastId });
         const photosFormData = new FormData();
         assetPhotos.forEach(photo => {
           photosFormData.append("asset_photos", photo);
         });
         const photosUploadRes = await axios.post(`${API_URL}/upload/asset-photos`, photosFormData);
         const newPhotoUrls = photosUploadRes.data.files.map(file => file.url);
-        assetPhotoUrls = [...new Set([...assetPhotoUrls, ...newPhotoUrls])];
+        updatedData.foto_aset = [...(updatedData.foto_aset || []), ...newPhotoUrls];
       }
 
-      const updatedData = { ...formData };
-      if (editedGeometry) {
-        updatedData.lokasi = JSON.stringify(editedGeometry.geometry);
-        updatedData.luas = editedGeometry.area;
-      }
-      updatedData.bukti_pemilikan_url = buktiPemilikanUrl;
-      updatedData.bukti_pemilikan_filename = buktiPemilikanFilename;
-      updatedData.foto_aset = assetPhotoUrls;
-
-      await axios.put(`${API_URL}/assets/${editingAsset.id}`, updatedData);
-
-      toast.success("Aset berhasil diperbarui.", { id: toastId });
+      toast.loading("Menyimpan data ke database...", { id: toastId });
+      await axios.put(`${API_URL}/assets/${id}`, updatedData);
+      
+      toast.success("Aset berhasil diperbarui!", { id: toastId });
       handleCloseEditModal();
       fetchData(); // Refresh data
-    } catch (error) {
-      toast.error("Gagal memperbarui aset.", { id: toastId });
-      console.error("Error updating asset:", error);
+    } catch (err) {
+      toast.error("Gagal menyimpan perubahan.", { id: toastId });
+      console.error("Gagal menyimpan aset", err);
     }
   };
 
@@ -1220,13 +1211,12 @@ const DataAsetTanahPage = () => {
             <Card.Header as="h5">Peta Aset Tanah</Card.Header>
             <Card.Body style={{ height: "50vh", padding: 0 }}>
               <PetaAset
-                key={mapKey}
                 assets={filteredAssets}
                 onAssetClick={handleMarkerClick}
                 asetPilihan={assetForOffcanvas} // Pass selected asset for highlighting
                 markerColorMode="certificate"
                 koremData={koremDataForMap}
-                kodimData={kodimGeoJSON}
+                kodimData={kodimDataForMap}
                 koremFilter={selectedKorem} // Pass filter state
                 kodimFilter={selectedKodim} // Pass filter state
                 onMapKoremSelect={handleMapKoremSelect}
@@ -1329,6 +1319,14 @@ const DataAsetTanahPage = () => {
         kodimGeoJSON={kodimGeoJSON}
       />
 
+      <EditAsetModal
+        show={showEditModal}
+        onHide={handleCloseEditModal}
+        asset={editingAsset}
+        koremList={koremList}
+        onSave={handleSaveAsset}
+      />
+
       <DetailOffcanvasAset
         show={showOffcanvas}
         handleClose={handleCloseOffcanvas}
@@ -1336,43 +1334,6 @@ const DataAsetTanahPage = () => {
         koremList={koremList}
         allKodimList={allKodimList}
       />
-
-      <Modal show={showEditModal} onHide={handleCloseEditModal} size="xl" centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Edit Aset Tanah</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {editingAsset && (() => {
-            const korem = koremList.find(k => k.id === editingAsset.korem_id);
-            const kodim = { nama: editingAsset.kodim };
-            return (
-              <Row>
-                <Col md={7}>
-                  <div style={{ height: "70vh", width: "100%" }}>
-                    <PetaGambarAset
-                      onPolygonEdited={handlePolygonEdited}
-                      geometry={editedGeometry ? editedGeometry.geometry : (editingAsset.lokasi ? (typeof editingAsset.lokasi === 'string' ? JSON.parse(editingAsset.lokasi) : editingAsset.lokasi) : null)}
-                      isLocationSelected={true}
-                      selectedKorem={korem}
-                      selectedKodim={kodim}
-                    />
-                  </div>
-                </Col>
-                <Col md={5}>
-                  <FormAset
-                    assetToEdit={editingAsset}
-                    onSave={handleUpdateAsset}
-                    onCancel={handleCloseEditModal}
-                    koremList={koremList}
-                    isEnabled={true}
-                    initialArea={editedGeometry ? editedGeometry.area : (editingAsset.luas || 0)}
-                  />
-                </Col>
-              </Row>
-            );
-          })()}
-        </Modal.Body>
-      </Modal>
     </Container>
   );
 };

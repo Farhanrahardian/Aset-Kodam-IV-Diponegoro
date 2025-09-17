@@ -108,7 +108,9 @@ const Dashboard = () => {
       const kodimStats = {};
 
       // Initialize kodim stats for selected korem
-      selectedKoremData.kodim.forEach((kodimName) => {
+      if (selectedKoremData.nama === "Kodim 0733/Kota Semarang") {
+        // Special case for standalone Kodim
+        const kodimName = "Kodim 0733/Kota Semarang";
         kodimStats[kodimName] = {
           name: kodimName,
           korem: selectedKoremData.nama,
@@ -116,7 +118,18 @@ const Dashboard = () => {
           tidakBersertifikat: 0,
           total: 0,
         };
-      });
+      } else {
+        // Regular case
+        selectedKoremData.kodim.forEach((kodimName) => {
+          kodimStats[kodimName] = {
+            name: kodimName,
+            korem: selectedKoremData.nama,
+            bersertifikat: 0,
+            tidakBersertifikat: 0,
+            total: 0,
+          };
+        });
+      }
 
       // Count assets by kodim for selected korem
       assetsData

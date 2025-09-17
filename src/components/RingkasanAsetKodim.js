@@ -3,9 +3,9 @@ import { Card } from 'react-bootstrap';
 import tanahData from '../data/tanah.json';
 
 const RingkasanAsetKodim = () => {
-  const asetByKodim = tanahData.tanah.reduce((acc, aset) => {
-    const kodimId = aset.kodim_id || 'Lainnya';
-    acc[kodimId] = (acc[kodimId] || 0) + 1;
+  const asetByKodim = tanahData.reduce((acc, aset) => {
+    const kodimName = (aset.kodim || 'Lainnya').replace(/^Kodim\s/i, '');
+    acc[kodimName] = (acc[kodimName] || 0) + 1;
     return acc;
   }, {});
 
@@ -15,9 +15,9 @@ const RingkasanAsetKodim = () => {
         <Card.Title className="mb-3">Jumlah Aset per Kodim</Card.Title>
         <div style={{ overflowY: 'auto', maxHeight: '300px' }}>
           <ul className="list-group list-group-flush">
-            {Object.entries(asetByKodim).sort(([a], [b]) => a - b).map(([kodimId, count]) => (
-              <li key={kodimId} className="list-group-item d-flex justify-content-between align-items-center">
-                Kodim {kodimId}
+            {Object.entries(asetByKodim).sort(([a], [b]) => a.localeCompare(b)).map(([kodimName, count]) => (
+              <li key={kodimName} className="list-group-item d-flex justify-content-between align-items-center">
+                {kodimName}
                 <span className="badge bg-primary rounded-pill">{count}</span>
               </li>
             ))}
