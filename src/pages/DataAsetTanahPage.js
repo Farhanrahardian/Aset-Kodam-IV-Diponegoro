@@ -489,6 +489,12 @@ const DetailModalAset = ({ asset, show, onHide, koremList, allKodimList, koremGe
                     </tr>
                     <tr>
                       <td>
+                        <strong>Keterangan:</strong>
+                      </td>
+                      <td>{asset.keterangan || "-"}</td>
+                    </tr>
+                    <tr>
+                      <td>
                         <strong>{luasInfo.label}:</strong>
                       </td>
                       <td>

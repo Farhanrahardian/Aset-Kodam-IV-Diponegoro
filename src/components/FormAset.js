@@ -393,6 +393,17 @@ const FormAset = forwardRef(({
                       </Form.Group>
                     </Col>
                   </Row>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Keterangan</Form.Label>
+                    <Form.Control
+                      as="textarea"
+                      rows={3}
+                      name="keterangan"
+                      value={formData.keterangan || ""}
+                      onChange={handleChange}
+                      placeholder="Masukkan keterangan tambahan jika ada"
+                    />
+                  </Form.Group>
                 </Card.Body>
               </Card>
 
