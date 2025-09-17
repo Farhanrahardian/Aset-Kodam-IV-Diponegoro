@@ -826,13 +826,17 @@ const DataAsetYardipPage = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API_URL}/yardip_assets`);
+      const res = await axios.get(`${API_URL}/yardip_assets`, {
+        timeout: 10000,
+      });
+      console.log("Fetched yardip assets:", res.data);
       setAssets(res.data || []);
       setFilteredAssets(res.data || []);
       setError(null);
     } catch (err) {
-      console.error(err);
+      console.error("Fetch error:", err);
       setError("Gagal memuat data aset yardip.");
+      toast.error("Gagal memuat data aset yardip.");
     } finally {
       setLoading(false);
     }
@@ -958,33 +962,195 @@ const DataAsetYardipPage = () => {
     setZoomToAsset(null);
   }, []);
 
-  const handleDeleteAsset = useCallback(async (id) => {
-    const result = await Swal.fire({
-      title: "Apakah Anda yakin?",
-      text: "Data yang dihapus tidak dapat dikembalikan!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Ya, hapus!",
-      cancelButtonText: "Batal",
-    });
-
-    if (result.isConfirmed) {
-      const toastId = toast.loading("Menghapus aset...");
-      try {
-        await axios.delete(`${API_URL}/yardip_assets/${id}`);
-        setAssets((prevAssets) => prevAssets.filter((a) => a.id !== id));
-        toast.success("Aset berhasil dihapus.", { id: toastId });
-      } catch (err) {
-        toast.error("Gagal menghapus aset.", { id: toastId });
-        console.error(err);
+  // SIMPLE AND EFFECTIVE DELETE HANDLER untuk JSON Server
+  const handleDeleteAsset = useCallback(
+    async (id) => {
+      // Validasi ID
+      if (!id) {
+        console.error("ID tidak valid:", id);
+        toast.error("ID aset tidak valid");
+        return;
       }
-    }
-  }, []);
 
+      const assetId = String(id);
+      console.log("Deleting yardip asset ID:", assetId);
+
+      // Cari aset untuk konfirmasi
+      const assetToDelete = assets.find((a) => String(a.id) === assetId);
+      if (!assetToDelete) {
+        console.error("Asset not found:", assetId);
+        toast.error("Aset tidak ditemukan");
+        await fetchData(); // Refresh jika tidak ditemukan
+        return;
+      }
+
+      // Konfirmasi penghapusan
+      const result = await Swal.fire({
+        title: "Hapus Aset Yardip?",
+        html: `Yakin ingin menghapus:<br/><strong>"${assetToDelete.pengelola}"</strong>?`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#6c757d",
+        confirmButtonText: "Ya, Hapus!",
+        cancelButtonText: "Batal",
+      });
+
+      if (!result.isConfirmed) return;
+
+      const toastId = toast.loading("Menghapus aset...");
+
+      try {
+        // Step 1: Hapus dari server menggunakan JSON Server API
+        const deleteUrl = `${API_URL}/yardip_assets/${assetId}`;
+        console.log("DELETE URL:", deleteUrl);
+
+        const deleteConfig = {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          timeout: 20000,
+        };
+
+        await axios(deleteUrl, deleteConfig);
+        console.log("Server delete request sent");
+
+        // Step 2: Langsung update state lokal tanpa menunggu verifikasi
+        // Ini memastikan UI langsung update
+        const newAssets = assets.filter((a) => String(a.id) !== assetId);
+        const newFilteredAssets = filteredAssets.filter(
+          (a) => String(a.id) !== assetId
+        );
+
+        setAssets(newAssets);
+        setFilteredAssets(newFilteredAssets);
+
+        console.log(
+          `State updated: ${assets.length} -> ${newAssets.length} assets`
+        );
+
+        // Step 3: Tutup modal yang terbuka jika diperlukan
+        if (selectedAssetDetail && String(selectedAssetDetail.id) === assetId) {
+          setShowDetailModal(false);
+          setSelectedAssetDetail(null);
+        }
+
+        if (assetForOffcanvas && String(assetForOffcanvas.id) === assetId) {
+          setShowOffcanvas(false);
+          setAssetForOffcanvas(null);
+        }
+
+        if (zoomToAsset && String(zoomToAsset.id) === assetId) {
+          setZoomToAsset(null);
+        }
+
+        // Step 4: Tampilkan success message
+        toast.success(`Aset "${assetToDelete.pengelola}" berhasil dihapus!`, {
+          id: toastId,
+          duration: 4000,
+        });
+
+        // Step 5: Verifikasi dan refresh setelah 2 detik untuk memastikan konsistensi
+        setTimeout(async () => {
+          try {
+            console.log("Post-delete verification...");
+
+            // Coba ambil data yang baru saja dihapus
+            const verifyResponse = await axios.get(
+              `${API_URL}/yardip_assets/${assetId}`,
+              {
+                timeout: 10000,
+                validateStatus: (status) => status === 404 || status === 200,
+              }
+            );
+
+            if (verifyResponse.status === 200) {
+              // Jika masih ada, berarti delete gagal - refresh ulang
+              console.log("Asset still exists, refreshing data...");
+              await fetchData();
+              toast.error("Penghapusan gagal, data telah disegarkan", {
+                duration: 3000,
+              });
+            } else {
+              console.log("Delete verified successfully");
+            }
+          } catch (verifyError) {
+            if (verifyError.response?.status === 404) {
+              console.log("Delete verified: Asset not found (404)");
+            } else {
+              console.log(
+                "Verification error, refreshing data:",
+                verifyError.message
+              );
+              await fetchData();
+            }
+          }
+        }, 2000);
+      } catch (error) {
+        console.error("Delete error:", error);
+
+        let errorMessage = "Gagal menghapus aset";
+
+        if (error.code === "ECONNABORTED") {
+          errorMessage = "Timeout - periksa koneksi ke JSON Server";
+        } else if (error.response?.status === 404) {
+          // Jika 404, anggap sudah berhasil dihapus
+          console.log("Asset already deleted (404)");
+          const newAssets = assets.filter((a) => String(a.id) !== assetId);
+          const newFilteredAssets = filteredAssets.filter(
+            (a) => String(a.id) !== assetId
+          );
+          setAssets(newAssets);
+          setFilteredAssets(newFilteredAssets);
+
+          if (
+            selectedAssetDetail &&
+            String(selectedAssetDetail.id) === assetId
+          ) {
+            setShowDetailModal(false);
+            setSelectedAssetDetail(null);
+          }
+          if (assetForOffcanvas && String(assetForOffcanvas.id) === assetId) {
+            setShowOffcanvas(false);
+            setAssetForOffcanvas(null);
+          }
+
+          toast.success("Aset berhasil dihapus!", { id: toastId });
+          return;
+        } else if (error.response?.status >= 500) {
+          errorMessage = "Server error - restart JSON Server";
+        } else if (!error.response) {
+          errorMessage = "Tidak dapat terhubung ke JSON Server";
+        }
+
+        // Rollback state jika ada error
+        await fetchData();
+        toast.error(errorMessage, { id: toastId, duration: 5000 });
+      }
+    },
+    [
+      assets,
+      filteredAssets,
+      selectedAssetDetail,
+      assetForOffcanvas,
+      zoomToAsset,
+      fetchData,
+    ]
+  );
+
+  // Enhanced Edit handler yang lebih robust
   const handleEditAsset = useCallback((asset) => {
-    console.log("Starting edit for asset:", asset);
+    console.log("Starting edit for yardip asset:", asset);
+
+    // Validasi asset
+    if (!asset || !asset.id) {
+      toast.error("Data aset tidak valid");
+      return;
+    }
+
+    console.log("Valid asset for editing:", asset);
+
     setEditingAsset(asset);
     setIsEditingLocation(false);
     setEditedLocationData(null);
@@ -1042,7 +1208,7 @@ const DataAsetYardipPage = () => {
   }, []);
 
   const handleEditLocation = useCallback(() => {
-    console.log("Starting location edit for asset:", editingAsset);
+    console.log("Starting location edit for yardip asset:", editingAsset);
     setIsEditingLocation(true);
     setEditedLocationData(null);
   }, [editingAsset]);
@@ -1053,7 +1219,7 @@ const DataAsetYardipPage = () => {
   }, []);
 
   const handleLocationDrawingCreated = useCallback((data) => {
-    console.log("New location data created:", data);
+    console.log("New location data created for yardip:", data);
     setEditedLocationData(data);
     setIsEditingLocation(false);
 
@@ -1062,20 +1228,39 @@ const DataAsetYardipPage = () => {
     );
   }, []);
 
+  // Enhanced Save handler dengan penanganan error yang lebih baik
   const handleSaveAsset = useCallback(
     async (updatedData) => {
-      if (!editingAsset) return;
+      if (!editingAsset) {
+        toast.error("Tidak ada aset yang sedang diedit");
+        return;
+      }
+
+      // Validasi data yang lebih ketat
+      if (!updatedData.pengelola || !updatedData.bidang) {
+        toast.error("Pengelola dan Bidang harus diisi");
+        return;
+      }
+
+      console.log("Saving yardip asset with ID:", editingAsset.id);
 
       const selectedCityData = kotaData[editSelectedProvince]?.find(
         (c) => c.id === editSelectedCity
       );
 
       const finalData = {
-        ...updatedData,
+        ...editingAsset, // Keep all original data first
+        ...updatedData, // Then override with updated data
+        // Ensure ID is preserved
+        id: editingAsset.id,
+        // Update timestamp
+        updated_at: new Date().toISOString(),
+        // Update location if edited
         ...(editedLocationData && {
           lokasi: editedLocationData.geometry || editedLocationData.coordinates,
           area: editedLocationData.area,
         }),
+        // Update province/city if selected
         ...(editSelectedProvince &&
           editSelectedCity && {
             provinsi_id: editSelectedProvince,
@@ -1088,34 +1273,131 @@ const DataAsetYardipPage = () => {
           }),
       };
 
-      console.log("Saving asset with data:", finalData);
+      console.log("Saving yardip asset with data:", finalData);
 
       const toastId = toast.loading("Menyimpan perubahan...");
       try {
-        const response = await axios.put(
-          `${API_URL}/yardip_assets/${editingAsset.id}`,
-          finalData
-        );
+        // URL endpoint yang benar untuk JSON Server
+        const updateUrl = `${API_URL}/yardip_assets/${editingAsset.id}`;
+        console.log("Update URL:", updateUrl);
 
-        setAssets((prevAssets) =>
-          prevAssets.map((a) => (a.id === editingAsset.id ? response.data : a))
-        );
+        // Gunakan axios.put dengan timeout yang lebih panjang
+        const response = await axios.put(updateUrl, finalData, {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          timeout: 30000, // 30 second timeout for updates
+        });
 
-        toast.success("Aset berhasil diperbarui!", { id: toastId });
+        console.log("Update response:", {
+          status: response.status,
+          statusText: response.statusText,
+          data: response.data ? "Data received" : "No data",
+        });
 
-        // Reset semua editing state
-        setEditingAsset(null);
-        setIsEditingLocation(false);
-        setEditedLocationData(null);
-        setEditSelectedProvince("");
-        setEditSelectedCity("");
-        setEditCityBounds(null);
+        // Verifikasi response sukses
+        if (response.status >= 200 && response.status < 300) {
+          // Use response data if available, otherwise use finalData
+          const updatedAsset = response.data || finalData;
+
+          // Update state dengan data terbaru
+          setAssets((prevAssets) =>
+            prevAssets.map((a) =>
+              String(a.id) === String(editingAsset.id) ? updatedAsset : a
+            )
+          );
+
+          // Update filtered assets juga
+          setFilteredAssets((prevFiltered) =>
+            prevFiltered.map((a) =>
+              String(a.id) === String(editingAsset.id) ? updatedAsset : a
+            )
+          );
+
+          toast.success("Aset yardip berhasil diperbarui!", { id: toastId });
+
+          // Reset semua editing state
+          setEditingAsset(null);
+          setIsEditingLocation(false);
+          setEditedLocationData(null);
+          setEditSelectedProvince("");
+          setEditSelectedCity("");
+          setEditCityBounds(null);
+
+          // Optional: Refresh data to ensure consistency
+          setTimeout(async () => {
+            console.log("Post-update data refresh...");
+            await fetchData();
+          }, 2000);
+        } else {
+          throw new Error(`Unexpected response status: ${response.status}`);
+        }
       } catch (err) {
-        toast.error("Gagal menyimpan perubahan.", { id: toastId });
         console.error("Save error:", err);
+
+        // Pesan error yang lebih spesifik
+        let errorMessage = "Gagal menyimpan perubahan.";
+        let shouldRefresh = false;
+
+        if (err.code === "ECONNABORTED") {
+          errorMessage = "Request timeout. Periksa koneksi internet Anda.";
+          shouldRefresh = true;
+        } else if (err.response) {
+          const status = err.response.status;
+          const statusText = err.response.statusText;
+
+          switch (status) {
+            case 404:
+              errorMessage = `Aset yardip dengan ID ${editingAsset.id} tidak ditemukan di server.`;
+              shouldRefresh = true;
+              break;
+            case 400:
+              errorMessage =
+                "Data yang dikirim tidak valid. Periksa form input.";
+              break;
+            case 403:
+              errorMessage = "Tidak memiliki izin untuk mengubah aset ini.";
+              break;
+            case 422:
+              errorMessage = "Data tidak dapat diproses. Periksa format input.";
+              break;
+            case 500:
+              errorMessage = "Server error. Coba lagi beberapa saat.";
+              shouldRefresh = true;
+              break;
+            default:
+              errorMessage = `Error ${status}: ${statusText}`;
+              shouldRefresh = true;
+          }
+        } else if (err.request) {
+          errorMessage =
+            "Tidak dapat terhubung ke server. Periksa koneksi internet Anda.";
+          shouldRefresh = true;
+        }
+
+        toast.error(errorMessage, { id: toastId });
+
+        // Refresh data jika perlu
+        if (shouldRefresh) {
+          setTimeout(async () => {
+            try {
+              await fetchData();
+              toast.info("Data telah disegarkan dari server.");
+            } catch (refreshErr) {
+              console.error("Failed to refresh data:", refreshErr);
+              toast.error("Gagal menyegarkan data dari server.");
+            }
+          }, 3000);
+        }
       }
     },
-    [editingAsset, editSelectedProvince, editSelectedCity, editedLocationData]
+    [
+      editingAsset,
+      editSelectedProvince,
+      editSelectedCity,
+      editedLocationData,
+      fetchData,
+    ]
   );
 
   const handleViewDetail = useCallback((asset) => {
@@ -1131,7 +1413,7 @@ const DataAsetYardipPage = () => {
 
   // Validasi lokasi - menggunakan useCallback
   const validateAndParseLocation = useCallback((locationData) => {
-    console.log("Validating location data:", locationData);
+    console.log("Validating yardip location data:", locationData);
 
     if (!locationData) {
       console.log("No location data provided");
@@ -1176,7 +1458,7 @@ const DataAsetYardipPage = () => {
       }
     }
 
-    console.warn("Unrecognized location format:", lokasi);
+    console.warn("Unrecognized yardip location format:", lokasi);
     return null;
   }, []);
 
@@ -1189,7 +1471,7 @@ const DataAsetYardipPage = () => {
         if (!validatedLocation) return null;
 
         return {
-          id: asset.id || `temp-${Date.now()}`,
+          id: asset.id,
           nama: asset.pengelola || "Unknown",
           kodim: asset.bidang || "",
           lokasi: validatedLocation,
@@ -1199,7 +1481,7 @@ const DataAsetYardipPage = () => {
           kecamatan: asset.kecamatan || "",
           kelurahan: asset.kelurahan || "",
           type: "yardip",
-          originalAsset: asset, // Keep reference to original asset
+          originalAsset: asset, // Keep reference
         };
       })
       .filter(Boolean);
@@ -1208,21 +1490,21 @@ const DataAsetYardipPage = () => {
   // Prepare current asset for map display during editing - menggunakan useMemo
   const preparedEditAssetForMap = useMemo(() => {
     if (!editingAsset) {
-      console.log("No editing asset available");
+      console.log("No editing yardip asset available");
       return [];
     }
 
-    console.log("Preparing edit asset for map:", editingAsset);
+    console.log("Preparing edit yardip asset for map:", editingAsset);
 
     const validatedLocation = validateAndParseLocation(editingAsset.lokasi);
 
     if (!validatedLocation) {
-      console.log("No valid location found for editing asset");
+      console.log("No valid location found for editing yardip asset");
       return [];
     }
 
     const assetForMap = {
-      id: editingAsset.id || `temp-${Date.now()}`,
+      id: editingAsset.id,
       nama: editingAsset.pengelola || "Unknown",
       kodim: editingAsset.bidang || "",
       lokasi: validatedLocation,
@@ -1234,7 +1516,7 @@ const DataAsetYardipPage = () => {
       type: "yardip",
     };
 
-    console.log("Asset prepared for map:", assetForMap);
+    console.log("Yardip asset prepared for map:", assetForMap);
     return [assetForMap];
   }, [editingAsset, validateAndParseLocation]);
 
@@ -1387,7 +1669,7 @@ const DataAsetYardipPage = () => {
               </Card.Body>
             </Card>
 
-            {/* SUMMARY STATISTICS - TANPA TOTAL LUAS */}
+            {/* SUMMARY STATISTICS */}
             {filteredAssets.length > 0 && (
               <Card className="mt-3">
                 <Card.Body>
