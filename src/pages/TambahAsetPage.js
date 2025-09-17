@@ -294,9 +294,11 @@ const TambahAsetPage = () => {
       await axios.post(`${API_URL}/assets`, assetPayload);
 
       toast.success("Aset berhasil ditambahkan!", { id: toastId });
-      navigate("/data-aset-tanah", { state: { refresh: true } });
+      setTimeout(() => {
+        navigate("/data-aset-tanah", { state: { refresh: true } });
+      }, 1000);
     } catch (err) {
-      toast.error("Gagal menyimpan aset ke database.", { id: toastId });
+      toast.error("Gagal menambahkan aset.", { id: toastId });
       console.error("Save error:", err.response?.data || err.message);
     }
   };

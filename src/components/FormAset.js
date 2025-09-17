@@ -1,6 +1,17 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from "react";
-import { Button, Form, Row, Col, Card, Alert } from "react-bootstrap";
+import { Button, Form, Row, Col, Card, Alert, Image } from "react-bootstrap";
 import toast from "react-hot-toast";
+
+const isImageFile = (filename) => {
+  if (!filename) return false;
+  const imageExtensions = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"];
+  return imageExtensions.some((ext) => filename.toLowerCase().endsWith(ext));
+};
+
+const isPdfFile = (filename) => {
+  if (!filename) return false;
+  return filename.toLowerCase().endsWith(".pdf");
+};
 
 const FormAset = forwardRef(({
   onSave,
@@ -487,6 +498,32 @@ const FormAset = forwardRef(({
 
                   <Form.Group className="mb-3">
                     <Form.Label>Upload Bukti Pemilikan</Form.Label>
+                    {isEditMode && formData.bukti_pemilikan_url && (
+                      <div className="mb-2">
+                        <Card body>
+                          <div className="d-flex justify-content-between align-items-center">
+                            <div>
+                              {isImageFile(formData.bukti_pemilikan_filename) ? (
+                                <Image src={formData.bukti_pemilikan_url.startsWith('http') ? formData.bukti_pemilikan_url : `http://localhost:3001${formData.bukti_pemilikan_url}`} alt="Preview" style={{ height: '50px', marginRight: '10px', cursor: 'pointer' }} fluid onClick={() => window.open(formData.bukti_pemilikan_url.startsWith('http') ? formData.bukti_pemilikan_url : `http://localhost:3001${formData.bukti_pemilikan_url}`, '_blank')} />
+                              ) : isPdfFile(formData.bukti_pemilikan_filename) ? (
+                                <Button variant="outline-secondary" size="sm" onClick={() => window.open(formData.bukti_pemilikan_url.startsWith('http') ? formData.bukti_pemilikan_url : `http://localhost:3001${formData.bukti_pemilikan_url}`, '_blank')}>Lihat PDF</Button>
+                              ) : (
+                                <a href={formData.bukti_pemilikan_url.startsWith('http') ? formData.bukti_pemilikan_url : `http://localhost:3001${formData.bukti_pemilikan_url}`} target="_blank" rel="noopener noreferrer">
+                                  Lihat File
+                                </a>
+                              )}
+                              <span className="ms-2 fst-italic">{formData.bukti_pemilikan_filename}</span>
+                            </div>
+                            <Button variant="danger" size="sm" onClick={() => {
+                              setFormData(prev => ({...prev, bukti_pemilikan_url: '', bukti_pemilikan_filename: ''}));
+                              toast.success('Bukti pemilikan akan dihapus setelah disimpan.');
+                            }}>
+                              Hapus
+                            </Button>
+                          </div>
+                        </Card>
+                      </div>
+                    )}
                     <Form.Control
                       type="file"
                       name="bukti_pemilikan_file"
@@ -494,12 +531,40 @@ const FormAset = forwardRef(({
                       accept=".pdf,.jpg,.jpeg,.png"
                     />
                     <Form.Text className="text-muted">
-                      Format: PDF, JPG, JPEG, PNG (Maks. 5MB)
+                      {isEditMode ? 'Upload file baru untuk mengganti yang lama.' : 'Format: PDF, JPG, JPEG, PNG (Maks. 5MB)'}
                     </Form.Text>
                   </Form.Group>
 
                   <Form.Group className="mb-3">
                     <Form.Label>Foto Aset</Form.Label>
+                    {isEditMode && formData.foto_aset && formData.foto_aset.length > 0 && (
+                      <div className="mb-2 p-2 border rounded">
+                        <p><strong>Foto saat ini:</strong></p>
+                        <div className="d-flex flex-wrap gap-2">
+                          {formData.foto_aset.map((photoUrl, index) => (
+                            <Card key={index} className="position-relative" style={{ width: '100px', height: '100px' }}>
+                              <Card.Img 
+                                src={photoUrl.startsWith('http') ? photoUrl : `http://localhost:3001${photoUrl}`} 
+                                alt={`Foto Aset ${index + 1}`} 
+                                style={{ objectFit: 'cover', width: '100%', height: '100%' }} 
+                              />
+                              <Button 
+                                variant="danger" 
+                                size="sm" 
+                                className="position-absolute top-0 end-0 m-1"
+                                onClick={() => {
+                                  const newPhotos = formData.foto_aset.filter(url => url !== photoUrl);
+                                  setFormData(prev => ({...prev, foto_aset: newPhotos}));
+                                  toast.success('Foto akan dihapus setelah disimpan.');
+                                }}
+                              >
+                                X
+                              </Button>
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     <Form.Control
                       type="file"
                       name="asset_photos"
@@ -508,7 +573,7 @@ const FormAset = forwardRef(({
                       accept=".jpg,.jpeg,.png"
                     />
                     <Form.Text className="text-muted">
-                      Format: JPG, JPEG, PNG. Bisa pilih beberapa file sekaligus
+                      {isEditMode ? 'Upload file baru untuk menambah foto.' : 'Format: JPG, JPEG, PNG. Bisa pilih beberapa file sekaligus'}
                     </Form.Text>
                   </Form.Group>
 

@@ -55,9 +55,13 @@
         ]
       },
       "id": "T1758029611878",
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": "",
-      "foto_aset": []
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1758113841497.png",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1758113841497.png",
+      "foto_aset": [
+        "/uploads/asset_photos-1758113841507.png",
+        "/uploads/asset_photos-1758113864330.png",
+        "/uploads/asset_photos-1758113864332.png"
+      ]
     },
     {
       "nama": "",
@@ -70,12 +74,12 @@
       "peruntukan": "",
       "status": "",
       "asal_milik": "",
-      "pemilikan_sertifikat": "Ya",
+      "pemilikan_sertifikat": "Tidak",
       "keterangan_bukti_pemilikan": "",
       "sertifikat_bidang": "",
-      "sertifikat_luas": 63439202.46,
+      "sertifikat_luas": "",
       "belum_sertifikat_bidang": "",
-      "belum_sertifikat_luas": "",
+      "belum_sertifikat_luas": 63439202.46,
       "keterangan": "",
       "atas_nama_pemilik_sertifikat": "",
       "lokasi": {
@@ -83,29 +87,79 @@
         "coordinates": [
           [
             [
-              110.634041,
-              -7.034728
+              110.589409,
+              -6.936691
             ],
             [
               110.574501,
               -6.969624
             ],
             [
-              110.677986,
-              -6.97923
+              110.613785,
+              -6.956086
             ],
             [
-              110.681579,
-              -6.888449
+              110.618591,
+              -6.929137
             ],
             [
-              110.634041,
-              -7.034728
+              110.589409,
+              -6.936691
             ]
           ]
         ]
       },
       "id": "T1758103468910",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1758114345147.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1758114345147.pdf",
+      "foto_aset": []
+    },
+    {
+      "nama": "1",
+      "korem_id": "5",
+      "kodim": "Kodim 0733/Kota Semarang",
+      "luas": 764196.2079421789,
+      "kib_kode_barang": "1",
+      "nomor_registrasi": "1",
+      "alamat": "1",
+      "peruntukan": "1",
+      "status": "Dimiliki/Dikuasai",
+      "asal_milik": "1",
+      "pemilikan_sertifikat": "Ya",
+      "keterangan_bukti_pemilikan": "1",
+      "sertifikat_bidang": "1",
+      "sertifikat_luas": 764196.21,
+      "belum_sertifikat_bidang": "",
+      "belum_sertifikat_luas": "",
+      "keterangan": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "atas_nama_pemilik_sertifikat": "1",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.323986,-6.960957],[110.341146,-6.966414],[110.331193,-6.970506],[110.323986,-6.960957]]]}",
+      "id": "T1758112154988",
+      "bukti_pemilikan_url": "",
+      "bukti_pemilikan_filename": "",
+      "foto_aset": []
+    },
+    {
+      "nama": "",
+      "korem_id": "3",
+      "kodim": "Kodim 0719/Jepara",
+      "luas": 24209669.192590866,
+      "kib_kode_barang": "",
+      "nomor_registrasi": "",
+      "alamat": "",
+      "peruntukan": "",
+      "status": "",
+      "asal_milik": "",
+      "pemilikan_sertifikat": "Ya",
+      "keterangan_bukti_pemilikan": "",
+      "sertifikat_bidang": "",
+      "sertifikat_luas": 24209669.19,
+      "belum_sertifikat_bidang": "",
+      "belum_sertifikat_luas": "",
+      "keterangan": "",
+      "atas_nama_pemilik_sertifikat": "",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.692254,-6.644309],[110.725201,-6.704369],[110.74442,-6.619736],[110.692254,-6.644309]]]}",
+      "id": "T1758115534493",
       "bukti_pemilikan_url": "",
       "bukti_pemilikan_filename": "",
       "foto_aset": []

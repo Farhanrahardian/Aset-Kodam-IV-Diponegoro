@@ -85,7 +85,6 @@ const EditAsetModal = ({ show, onHide, asset, koremList, onSave }) => {
         const geoJSON = layer.toGeoJSON();
         const latLngs = geoJSON.geometry.coordinates[0].map(coord => [coord[1], coord[0]]);
         setGeometry({ type: "Polygon", coordinates: [latLngs] });
-        toast.success("Poligon berhasil diperbarui.");
       }
     });
   };

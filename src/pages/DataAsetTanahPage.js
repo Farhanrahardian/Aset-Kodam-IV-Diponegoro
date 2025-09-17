@@ -105,39 +105,8 @@ const TabelAset = ({ assets, onEdit, onDelete, onViewDetail, koremList, allKodim
   };
 
   const renderLuas = (asset) => {
-    const sertifikatLuas = parseFloat(asset.sertifikat_luas) || 0;
-    const belumSertifikatLuas = parseFloat(asset.belum_sertifikat_luas) || 0;
-    const petaLuas = parseFloat(asset.luas) || 0;
-
-    const items = [];
-
-    if (sertifikatLuas > 0) {
-      items.push(
-        <div key="sertifikat" className="text-success">
-          {sertifikatLuas.toLocaleString("id-ID")} m²{" "}
-          <small>(Sertifikat)</small>
-        </div>
-      );
-    }
-
-    if (belumSertifikatLuas > 0) {
-      items.push(
-        <div key="belum" className="text-warning">
-          {belumSertifikatLuas.toLocaleString("id-ID")} m²{" "}
-          <small>(Belum Sertifikat)</small>
-        </div>
-      );
-    }
-
-    if (petaLuas > 0 && items.length === 0) {
-      items.push(
-        <div key="peta" className="text-muted">
-          {petaLuas.toLocaleString("id-ID")} m² <small>(Peta)</small>
-        </div>
-      );
-    }
-
-    return items.length > 0 ? items : "-";
+    const totalLuas = parseFloat(asset.luas) || 0;
+    return totalLuas > 0 ? totalLuas.toLocaleString("id-ID") + " m²" : "-";
   };
 
   return (
@@ -151,6 +120,7 @@ const TabelAset = ({ assets, onEdit, onDelete, onViewDetail, koremList, allKodim
           <th style={{ width: "10%" }}>Peruntukan</th>
           <th style={{ width: "8%" }}>Status</th>
           <th style={{ width: "10%" }}>Luas</th>
+          <th style={{ width: "8%" }}>Sertifikat</th>
           <th style={{ width: "8%" }}>Aksi</th>
         </tr>
       </thead>
@@ -180,6 +150,13 @@ const TabelAset = ({ assets, onEdit, onDelete, onViewDetail, koremList, allKodim
                 </span>
               </td>
               <td>{renderLuas(asset)}</td>
+              <td>
+                {asset.pemilikan_sertifikat === "Ya" ? (
+                  <span className="badge bg-success">Ya</span>
+                ) : (
+                  <span className="badge bg-warning text-dark">Tidak</span>
+                )}
+              </td>
               <td>
                 <div className="d-flex gap-1 flex-wrap">
                   <Button
@@ -371,41 +348,6 @@ const DetailModalAset = ({ asset, show, onHide, koremList, allKodimList, koremGe
   const hasValidImage = imageUrl && isImageFile(filename);
   const hasPdf = imageUrl && isPdfFile(filename);
 
-  const renderLuasInfo = (asset) => {
-    const hasSertifikat = asset.pemilikan_sertifikat === "Ya";
-    const sertifikatLuas = parseFloat(asset.sertifikat_luas) || 0;
-    const belumSertifikatLuas = parseFloat(asset.belum_sertifikat_luas) || 0;
-    const petaLuas = parseFloat(asset.luas) || 0;
-
-    if (hasSertifikat && sertifikatLuas > 0) {
-      return {
-        label: "Luas Bersertifikat",
-        value: `${sertifikatLuas.toLocaleString("id-ID")} m²`,
-        className: "text-success",
-      };
-    } else if (!hasSertifikat && belumSertifikatLuas > 0) {
-      return {
-        label: "Luas Tidak Bersertifikat",
-        value: `${belumSertifikatLuas.toLocaleString("id-ID")} m²`,
-        className: "text-warning",
-      };
-    } else if (petaLuas > 0) {
-      return {
-        label: "Luas",
-        value: `${petaLuas.toLocaleString("id-ID")} m²`,
-        className: "text-muted",
-      };
-    }
-
-    return {
-      label: "Luas",
-      value: "-",
-      className: "text-muted",
-    };
-  };
-
-  const luasInfo = renderLuasInfo(asset);
-
   return (
     <Modal show={show} onHide={onHide} size="xl" centered>
       <Modal.Header closeButton>
@@ -491,16 +433,28 @@ const DetailModalAset = ({ asset, show, onHide, koremList, allKodimList, koremGe
                       <td>
                         <strong>Keterangan:</strong>
                       </td>
-                      <td>{asset.keterangan || "-"}</td>
+                      <td style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{asset.keterangan || "-"}</td>
                     </tr>
                     <tr>
                       <td>
-                        <strong>{luasInfo.label}:</strong>
+                        <strong>Luas:</strong>
                       </td>
                       <td>
-                        <span className={luasInfo.className}>
-                          {luasInfo.value}
+                        <span>
+                          {(asset.luas ? parseFloat(asset.luas).toLocaleString("id-ID") : '0')} m²
                         </span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Sertifikat:</strong>
+                      </td>
+                      <td>
+                        {asset.pemilikan_sertifikat === "Ya" ? (
+                          <span className="badge bg-success">Ya</span>
+                        ) : (
+                          <span className="badge bg-warning text-dark">Tidak</span>
+                        )}
                       </td>
                     </tr>
                     <tr>
@@ -565,20 +519,28 @@ const DetailModalAset = ({ asset, show, onHide, koremList, allKodimList, koremGe
                         )}
                       </td>
                     </tr>
-                    {hasValidImage && (
+                    {asset.foto_aset && asset.foto_aset.length > 0 && (
                       <tr>
                         <td>
                           <strong>Foto Aset:</strong>
                         </td>
                         <td>
-                          <Image
-                            src={imageUrl}
-                            alt="Foto Aset"
-                            fluid
-                            rounded
-                            style={{ maxHeight: "300px", cursor: "pointer" }}
-                            onClick={() => window.open(imageUrl, "_blank")}
-                          />
+                          <div className="d-flex flex-wrap gap-2">
+                            {asset.foto_aset.map((fotoUrl, index) => {
+                              const fullUrl = fotoUrl.startsWith('http') ? fotoUrl : `${API_URL}${fotoUrl}`;
+                              return (
+                                <div key={index} style={{ width: '100px', height: '100px', border: '1px solid #ddd', borderRadius: '4px', overflow: 'hidden' }}>
+                                  <Image
+                                    src={fullUrl}
+                                    alt={`Foto Aset ${index + 1}`}
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
+                                    onClick={() => window.open(fullUrl, '_blank')}
+                                    fluid
+                                  />
+                                </div>
+                              );
+                            })}
+                          </div>
                         </td>
                       </tr>
                     )}
