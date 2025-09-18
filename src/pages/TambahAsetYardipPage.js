@@ -1,12 +1,5 @@
 import React, { useState, useCallback, useMemo } from "react";
-import {
-  Container,
-  Row,
-  Col,
-  Button,
-  Alert,
-  Card,
-} from "react-bootstrap";
+import { Container, Row, Col, Button, Alert, Card } from "react-bootstrap";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -164,7 +157,7 @@ const kotaData = {
 
 const TambahAsetYardipPage = () => {
   const navigate = useNavigate();
-  
+
   // Consolidated map state untuk mengurangi re-renders
   const [mapState, setMapState] = useState({
     isDrawing: false,
@@ -172,9 +165,9 @@ const TambahAsetYardipPage = () => {
     manualAreaAdjustment: null,
     isLocationSelected: false,
     cityBounds: null,
-    mapKey: Date.now() // Key untuk force re-render map jika perlu
+    mapKey: Date.now(), // Key untuk force re-render map jika perlu
   });
-  
+
   const [error, setError] = useState(null);
 
   // Location selection states
@@ -183,8 +176,8 @@ const TambahAsetYardipPage = () => {
 
   // Handle location change dari form - menggunakan useCallback
   const handleLocationChange = useCallback((province, city) => {
-    console.log('Location change:', province, city);
-    
+    console.log("Location change:", province, city);
+
     setSelectedProvince(province);
     setSelectedCity(city);
 
@@ -193,7 +186,7 @@ const TambahAsetYardipPage = () => {
       const selectedCityData = cities?.find((c) => c.id === city);
 
       if (selectedCityData) {
-        setMapState(prev => ({
+        setMapState((prev) => ({
           ...prev,
           cityBounds: selectedCityData.bounds,
           isLocationSelected: true,
@@ -201,7 +194,7 @@ const TambahAsetYardipPage = () => {
           isDrawing: false,
           newAssetData: null,
           manualAreaAdjustment: null,
-          mapKey: Date.now() // Force map re-render
+          mapKey: Date.now(), // Force map re-render
         }));
 
         toast.success(
@@ -210,14 +203,14 @@ const TambahAsetYardipPage = () => {
         );
       }
     } else {
-      setMapState(prev => ({
+      setMapState((prev) => ({
         ...prev,
         cityBounds: null,
         isLocationSelected: false,
         isDrawing: false,
         newAssetData: null,
         manualAreaAdjustment: null,
-        mapKey: Date.now()
+        mapKey: Date.now(),
       }));
     }
   }, []);
@@ -225,15 +218,17 @@ const TambahAsetYardipPage = () => {
   // Handle manual area change dari form - menggunakan useCallback
   const handleAreaChange = useCallback((newArea) => {
     console.log("Manual area change received:", newArea);
-    
-    setMapState(prev => ({
+
+    setMapState((prev) => ({
       ...prev,
       manualAreaAdjustment: newArea,
-      newAssetData: prev.newAssetData ? {
-        ...prev.newAssetData,
-        area: newArea,
-        isManuallyAdjusted: true,
-      } : prev.newAssetData
+      newAssetData: prev.newAssetData
+        ? {
+            ...prev.newAssetData,
+            area: newArea,
+            isManuallyAdjusted: true,
+          }
+        : prev.newAssetData,
     }));
 
     toast.success(`Luas area diubah menjadi ${newArea.toFixed(2)} m²`);
@@ -242,12 +237,12 @@ const TambahAsetYardipPage = () => {
   // Handle drawing created - menggunakan useCallback
   const handleDrawingCreated = useCallback((data) => {
     console.log("Drawing created data:", data);
-    
-    setMapState(prev => ({
+
+    setMapState((prev) => ({
       ...prev,
       newAssetData: data,
       isDrawing: false,
-      manualAreaAdjustment: null // Reset manual adjustment when new drawing is created
+      manualAreaAdjustment: null, // Reset manual adjustment when new drawing is created
     }));
 
     toast.success(
@@ -257,9 +252,9 @@ const TambahAsetYardipPage = () => {
 
   // Toggle drawing mode - menggunakan useCallback
   const toggleDrawing = useCallback(() => {
-    setMapState(prev => ({
+    setMapState((prev) => ({
       ...prev,
-      isDrawing: !prev.isDrawing
+      isDrawing: !prev.isDrawing,
     }));
   }, []);
 
@@ -271,77 +266,90 @@ const TambahAsetYardipPage = () => {
       manualAreaAdjustment: null,
       isLocationSelected: mapState.isLocationSelected,
       cityBounds: mapState.cityBounds,
-      mapKey: Date.now()
+      mapKey: Date.now(),
     });
     setError(null);
     toast.success("Gambar peta telah direset!");
   }, [mapState.isLocationSelected, mapState.cityBounds]);
 
   // Handle save asset - menggunakan useCallback
-  const handleSaveAsset = useCallback(async (assetData) => {
-    if (!mapState.newAssetData) {
-      toast.error("Silakan gambar lokasi di peta terlebih dahulu!");
-      return;
-    }
-
-    const toastId = toast.loading("Menyimpan data aset yardip...");
-    try {
-      let formattedLokasi;
-
-      if (mapState.newAssetData.geometry && mapState.newAssetData.geometry.coordinates) {
-        formattedLokasi = mapState.newAssetData.geometry.coordinates;
-      } else if (Array.isArray(mapState.newAssetData.geometry)) {
-        formattedLokasi = mapState.newAssetData.geometry;
-      } else {
-        formattedLokasi = mapState.newAssetData.geometry;
+  const handleSaveAsset = useCallback(
+    async (assetData) => {
+      if (!mapState.newAssetData) {
+        toast.error("Silakan gambar lokasi di peta terlebih dahulu!");
+        return;
       }
 
-      const selectedCityData = kotaData[selectedProvince]?.find(
-        (c) => c.id === selectedCity
-      );
+      const toastId = toast.loading("Menyimpan data aset yardip...");
+      try {
+        let formattedLokasi;
 
-      // Use manual area if available, otherwise use drawn area
-      const finalArea = mapState.manualAreaAdjustment || mapState.newAssetData.area;
+        if (
+          mapState.newAssetData.geometry &&
+          mapState.newAssetData.geometry.coordinates
+        ) {
+          formattedLokasi = mapState.newAssetData.geometry.coordinates;
+        } else if (Array.isArray(mapState.newAssetData.geometry)) {
+          formattedLokasi = mapState.newAssetData.geometry;
+        } else {
+          formattedLokasi = mapState.newAssetData.geometry;
+        }
 
-      const payload = {
-        ...assetData,
-        id: `Y${Date.now()}`,
-        lokasi: JSON.stringify(formattedLokasi),
-        area: finalArea,
-        originalDrawnArea: mapState.newAssetData.area,
-        isManuallyAdjusted: !!mapState.manualAreaAdjustment,
-        type: "yardip",
-        kota: selectedCityData?.name || "",
-        kota_id: selectedCity,
-        provinsi:
-          selectedProvince === "jateng" ? "Jawa Tengah" : "DI Yogyakarta",
-        provinsi_id: selectedProvince,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
+        const selectedCityData = kotaData[selectedProvince]?.find(
+          (c) => c.id === selectedCity
+        );
 
-      console.log("Payload being sent:", payload);
+        // Use manual area if available, otherwise use drawn area
+        const finalArea =
+          mapState.manualAreaAdjustment || mapState.newAssetData.area;
 
-      const response = await axios.post(`${API_URL}/yardip_assets`, payload);
+        const payload = {
+          ...assetData,
+          id: `Y${Date.now()}`,
+          lokasi: JSON.stringify(formattedLokasi),
+          area: finalArea,
+          originalDrawnArea: mapState.newAssetData.area,
+          isManuallyAdjusted: !!mapState.manualAreaAdjustment,
+          type: "yardip",
+          kota: selectedCityData?.name || "",
+          kota_id: selectedCity,
+          provinsi:
+            selectedProvince === "jateng" ? "Jawa Tengah" : "DI Yogyakarta",
+          provinsi_id: selectedProvince,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
 
-      console.log("Response from server:", response.data);
+        console.log("Payload being sent:", payload);
 
-      toast.success("Aset Yardip berhasil ditambahkan!", { id: toastId });
+        const response = await axios.post(`${API_URL}/yardip_assets`, payload);
 
-      setTimeout(() => {
-        navigate("/data-aset-yardip");
-      }, 1500);
-    } catch (err) {
-      toast.error("Gagal menyimpan aset yardip.", { id: toastId });
-      console.error("Error saving yardip asset:", err);
-      console.error("Error response:", err.response?.data);
-      setError(
-        `Gagal menyimpan aset yardip: ${
-          err.response?.data?.message || err.message
-        }`
-      );
-    }
-  }, [mapState.newAssetData, mapState.manualAreaAdjustment, selectedProvince, selectedCity, navigate]);
+        console.log("Response from server:", response.data);
+
+        toast.success("Aset Yardip berhasil ditambahkan!", { id: toastId });
+
+        setTimeout(() => {
+          navigate("/data-aset-yardip");
+        }, 1500);
+      } catch (err) {
+        toast.error("Gagal menyimpan aset yardip.", { id: toastId });
+        console.error("Error saving yardip asset:", err);
+        console.error("Error response:", err.response?.data);
+        setError(
+          `Gagal menyimpan aset yardip: ${
+            err.response?.data?.message || err.message
+          }`
+        );
+      }
+    },
+    [
+      mapState.newAssetData,
+      mapState.manualAreaAdjustment,
+      selectedProvince,
+      selectedCity,
+      navigate,
+    ]
+  );
 
   // Handle cancel - menggunakan useCallback
   const handleCancel = useCallback(() => {
@@ -361,19 +369,21 @@ const TambahAsetYardipPage = () => {
 
   // Error boundary handlers
   const handleMapError = useCallback(() => {
-    console.warn('Map error occurred, resetting map state');
-    setMapState(prev => ({
+    console.warn("Map error occurred, resetting map state");
+    setMapState((prev) => ({
       ...prev,
-      mapKey: Date.now()
+      mapKey: Date.now(),
     }));
   }, []);
 
   const handleFallbackMode = useCallback(() => {
-    toast.info("Beralih ke mode tanpa peta. Anda tetap bisa mengisi form data.");
-    setMapState(prev => ({
+    toast.info(
+      "Beralih ke mode tanpa peta. Anda tetap bisa mengisi form data."
+    );
+    setMapState((prev) => ({
       ...prev,
       isLocationSelected: true,
-      newAssetData: { area: 0, geometry: null } // Dummy data untuk enable form
+      newAssetData: { area: 0, geometry: null }, // Dummy data untuk enable form
     }));
   }, []);
 
@@ -382,9 +392,7 @@ const TambahAsetYardipPage = () => {
       <h3 className="mb-4">
         Tambah Aset Yardip Baru
         {selectedCityData && (
-          <small className="text-muted ms-2">
-            - {selectedCityData.name}
-          </small>
+          <small className="text-muted ms-2">- {selectedCityData.name}</small>
         )}
       </h3>
 
@@ -424,8 +432,8 @@ const TambahAsetYardipPage = () => {
               <div className="fw-bold">Luas Area Telah Diubah Manual</div>
               <small className="text-warning">
                 Dari {mapState.newAssetData.area.toFixed(2)} m² menjadi{" "}
-                {mapState.manualAreaAdjustment.toFixed(2)} m² • Polygon di peta akan
-                menyesuaikan dengan luas baru
+                {mapState.manualAreaAdjustment.toFixed(2)} m² • Polygon di peta
+                akan menyesuaikan dengan luas baru
               </small>
             </div>
           </div>
@@ -459,22 +467,26 @@ const TambahAsetYardipPage = () => {
                 </div>
                 <div className="col-md-6">
                   <strong>Map & Area State:</strong>
-                  <br />- Location Selected: {mapState.isLocationSelected ? "Yes" : "No"}
+                  <br />- Location Selected:{" "}
+                  {mapState.isLocationSelected ? "Yes" : "No"}
                   <br />- City Bounds:{" "}
                   {mapState.cityBounds
                     ? `${mapState.cityBounds[0][0]},${mapState.cityBounds[0][1]} to ${mapState.cityBounds[1][0]},${mapState.cityBounds[1][1]}`
                     : "None"}
-                  <br />- Drawing State: {mapState.isDrawing ? "Active" : "Inactive"}
-                  <br />- New Asset Data: {mapState.newAssetData ? "Ready" : "None"}
+                  <br />- Drawing State:{" "}
+                  {mapState.isDrawing ? "Active" : "Inactive"}
+                  <br />- New Asset Data:{" "}
+                  {mapState.newAssetData ? "Ready" : "None"}
                   {mapState.newAssetData && (
                     <>
-                      <br />- Original Area: {mapState.newAssetData.area?.toFixed(2)} m²
+                      <br />- Original Area:{" "}
+                      {mapState.newAssetData.area?.toFixed(2)} m²
                       <br />- Manual Adjustment:{" "}
                       {mapState.manualAreaAdjustment
                         ? mapState.manualAreaAdjustment.toFixed(2) + " m²"
                         : "None"}
-                      <br />- Effective Area:{" "}
-                      {currentEffectiveArea.toFixed(2)} m²
+                      <br />- Effective Area: {currentEffectiveArea.toFixed(2)}{" "}
+                      m²
                       <br />- Geometry Type:{" "}
                       {mapState.newAssetData.geometry?.type || "Array"}
                     </>
@@ -561,8 +573,8 @@ const TambahAsetYardipPage = () => {
             style={{ height: "70vh", width: "100%" }}
           >
             {mapState.isLocationSelected ? (
-              <MapErrorBoundary 
-                height="70vh" 
+              <MapErrorBoundary
+                height="70vh"
                 onRetry={handleMapError}
                 onFallback={handleFallbackMode}
               >
@@ -582,13 +594,13 @@ const TambahAsetYardipPage = () => {
             ) : (
               <div
                 className="position-absolute d-flex align-items-center justify-content-center w-100 h-100 bg-white bg-opacity-75"
-                style={{ zIndex: 1000 }}
+                style={{ zIndex: 900 }}
               >
                 <div className="text-center">
                   <i className="bi bi-geo-alt display-4 text-muted mb-3"></i>
                   <h5 className="text-muted">Pilih Lokasi Terlebih Dahulu</h5>
                   <p className="text-muted">
-                    Gunakan form di sebelah kanan untuk memilih provinsi dan
+                    Gunakan form yang di sediakan untuk memilih provinsi dan
                     kota
                   </p>
                 </div>
@@ -602,8 +614,12 @@ const TambahAsetYardipPage = () => {
             <FormYardip
               onSave={handleSaveAsset}
               onCancel={handleCancel}
-              initialGeometry={mapState.newAssetData ? mapState.newAssetData.geometry : null}
-              initialArea={mapState.newAssetData ? mapState.newAssetData.area : null}
+              initialGeometry={
+                mapState.newAssetData ? mapState.newAssetData.geometry : null
+              }
+              initialArea={
+                mapState.newAssetData ? mapState.newAssetData.area : null
+              }
               isEnabled={true} // Form always enabled, but location selection controls map
               selectedCity={selectedCityData?.name}
               selectedProvince={
