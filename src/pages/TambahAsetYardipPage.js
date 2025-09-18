@@ -12,8 +12,10 @@ import diyBoundary from "../data/indonesia_yogyakarta.json";
 const API_URL = "http://localhost:3001";
 
 // Enhanced city data with better bounds for auto zoom
+// Enhanced city data with all 35 cities in Central Java (simplified naming)
 const kotaData = {
   jateng: [
+    // === KOTA-KOTA (6 kota) ===
     {
       id: "semarang",
       name: "Semarang",
@@ -31,19 +33,11 @@ const kotaData = {
       ],
     },
     {
-      id: "yogya",
-      name: "Yogyakarta",
-      bounds: [
-        [-7.72, 110.32],
-        [-7.82, 110.42],
-      ],
-    },
-    {
-      id: "magelang",
+      id: "magelang_kota",
       name: "Magelang",
       bounds: [
-        [-7.42, 110.18],
-        [-7.52, 110.28],
+        [-7.46, 110.2],
+        [-7.5, 110.24],
       ],
     },
     {
@@ -55,59 +49,253 @@ const kotaData = {
       ],
     },
     {
-      id: "tegal",
+      id: "tegal_kota",
       name: "Tegal",
       bounds: [
-        [-6.83, 109.12],
-        [-6.93, 109.22],
+        [-6.85, 109.13],
+        [-6.89, 109.17],
       ],
     },
     {
-      id: "pekalongan",
+      id: "pekalongan_kota",
       name: "Pekalongan",
       bounds: [
-        [-6.83, 109.63],
-        [-6.93, 109.73],
+        [-6.87, 109.65],
+        [-6.91, 109.69],
+      ],
+    },
+
+    // === KABUPATEN-KABUPATEN (29 kabupaten - ditampilkan sebagai kota) ===
+    {
+      id: "banjarnegara",
+      name: "Banjarnegara",
+      bounds: [
+        [-7.27, 109.52],
+        [-7.47, 109.72],
       ],
     },
     {
-      id: "purwokerto",
-      name: "Purwokerto",
+      id: "banyumas",
+      name: "Banyumas",
       bounds: [
-        [-7.42, 109.22],
-        [-7.52, 109.32],
+        [-7.32, 109.02],
+        [-7.52, 109.42],
+      ],
+    },
+    {
+      id: "batang",
+      name: "Batang",
+      bounds: [
+        [-6.87, 109.62],
+        [-7.17, 110.02],
+      ],
+    },
+    {
+      id: "blora",
+      name: "Blora",
+      bounds: [
+        [-6.87, 111.32],
+        [-7.27, 111.52],
+      ],
+    },
+    {
+      id: "boyolali",
+      name: "Boyolali",
+      bounds: [
+        [-7.42, 110.52],
+        [-7.72, 110.82],
+      ],
+    },
+    {
+      id: "brebes",
+      name: "Brebes",
+      bounds: [
+        [-6.82, 108.82],
+        [-7.22, 109.22],
       ],
     },
     {
       id: "cilacap",
       name: "Cilacap",
       bounds: [
-        [-7.68, 109.02],
-        [-7.78, 109.12],
+        [-7.52, 108.82],
+        [-7.82, 109.32],
       ],
     },
     {
-      id: "kudus",
-      name: "Kudus",
+      id: "demak",
+      name: "Demak",
       bounds: [
-        [-6.78, 110.82],
-        [-6.88, 110.92],
+        [-6.82, 110.52],
+        [-7.02, 110.82],
+      ],
+    },
+    {
+      id: "grobogan",
+      name: "Grobogan",
+      bounds: [
+        [-7.02, 110.72],
+        [-7.42, 111.22],
       ],
     },
     {
       id: "jepara",
       name: "Jepara",
       bounds: [
-        [-6.55, 110.62],
-        [-6.65, 110.72],
+        [-6.52, 110.52],
+        [-6.72, 110.82],
+      ],
+    },
+    {
+      id: "karanganyar",
+      name: "Karanganyar",
+      bounds: [
+        [-7.42, 110.82],
+        [-7.72, 111.12],
+      ],
+    },
+    {
+      id: "kebumen",
+      name: "Kebumen",
+      bounds: [
+        [-7.52, 109.52],
+        [-7.82, 109.82],
+      ],
+    },
+    {
+      id: "kendal",
+      name: "Kendal",
+      bounds: [
+        [-6.92, 109.92],
+        [-7.22, 110.32],
+      ],
+    },
+    {
+      id: "klaten",
+      name: "Klaten",
+      bounds: [
+        [-7.62, 110.52],
+        [-7.82, 110.82],
+      ],
+    },
+    {
+      id: "kudus",
+      name: "Kudus",
+      bounds: [
+        [-6.72, 110.72],
+        [-6.92, 110.92],
+      ],
+    },
+    {
+      id: "magelang_kab",
+      name: "Magelang (Kabupaten)",
+      bounds: [
+        [-7.32, 110.02],
+        [-7.62, 110.32],
+      ],
+    },
+    {
+      id: "pati",
+      name: "Pati",
+      bounds: [
+        [-6.62, 110.92],
+        [-7.02, 111.32],
+      ],
+    },
+    {
+      id: "pekalongan_kab",
+      name: "Pekalongan (Kabupaten)",
+      bounds: [
+        [-6.82, 109.52],
+        [-7.12, 109.82],
+      ],
+    },
+    {
+      id: "pemalang",
+      name: "Pemalang",
+      bounds: [
+        [-6.82, 109.22],
+        [-7.12, 109.62],
+      ],
+    },
+    {
+      id: "purbalingga",
+      name: "Purbalingga",
+      bounds: [
+        [-7.32, 109.22],
+        [-7.52, 109.52],
+      ],
+    },
+    {
+      id: "purworejo",
+      name: "Purworejo",
+      bounds: [
+        [-7.62, 109.82],
+        [-7.92, 110.22],
       ],
     },
     {
       id: "rembang",
       name: "Rembang",
       bounds: [
-        [-6.68, 111.32],
-        [-6.78, 111.42],
+        [-6.62, 111.22],
+        [-6.92, 111.52],
+      ],
+    },
+    {
+      id: "semarang_kab",
+      name: "Semarang (Kabupaten)",
+      bounds: [
+        [-7.02, 110.22],
+        [-7.42, 110.72],
+      ],
+    },
+    {
+      id: "sragen",
+      name: "Sragen",
+      bounds: [
+        [-7.22, 110.92],
+        [-7.52, 111.22],
+      ],
+    },
+    {
+      id: "sukoharjo",
+      name: "Sukoharjo",
+      bounds: [
+        [-7.62, 110.72],
+        [-7.82, 110.92],
+      ],
+    },
+    {
+      id: "tegal_kab",
+      name: "Tegal (Kabupaten)",
+      bounds: [
+        [-6.82, 108.92],
+        [-7.12, 109.32],
+      ],
+    },
+    {
+      id: "temanggung",
+      name: "Temanggung",
+      bounds: [
+        [-7.22, 109.92],
+        [-7.52, 110.32],
+      ],
+    },
+    {
+      id: "wonogiri",
+      name: "Wonogiri",
+      bounds: [
+        [-7.72, 110.82],
+        [-8.12, 111.22],
+      ],
+    },
+    {
+      id: "wonosobo",
+      name: "Wonosobo",
+      bounds: [
+        [-7.22, 109.82],
+        [-7.62, 110.12],
       ],
     },
   ],
