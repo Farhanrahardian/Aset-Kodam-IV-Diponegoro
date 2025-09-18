@@ -12,290 +12,289 @@ import diyBoundary from "../data/indonesia_yogyakarta.json";
 const API_URL = "http://localhost:3001";
 
 // Enhanced city data with better bounds for auto zoom
-// Enhanced city data with all 35 cities in Central Java (simplified naming)
 const kotaData = {
   jateng: [
-    // === KOTA-KOTA (6 kota) ===
+    // === KOTA-KOTA (6 kota) dengan bounds besar tapi pusat tepat di tengah kota ===
     {
       id: "semarang",
       name: "Semarang",
       bounds: [
-        [-6.95, 110.35],
-        [-7.05, 110.45],
+        [-6.9, 110.35], // Bounds diperluas, tapi pusat tetap di Semarang (-7.00, 110.42)
+        [-7.1, 110.49],
       ],
     },
     {
       id: "solo",
       name: "Surakarta (Solo)",
       bounds: [
-        [-7.52, 110.75],
-        [-7.62, 110.85],
+        [-7.46, 110.75], // Bounds diperluas, pusat di Solo (-7.56, 110.83)
+        [-7.66, 110.91],
       ],
     },
     {
       id: "magelang_kota",
       name: "Magelang",
       bounds: [
-        [-7.46, 110.2],
-        [-7.5, 110.24],
+        [-7.37, 110.14], // Bounds diperluas, pusat di Magelang (-7.47, 110.22)
+        [-7.57, 110.3],
       ],
     },
     {
       id: "salatiga",
       name: "Salatiga",
       bounds: [
-        [-7.32, 110.42],
-        [-7.42, 110.52],
+        [-7.23, 110.42], // Bounds diperluas, pusat di Salatiga (-7.33, 110.50)
+        [-7.43, 110.58],
       ],
     },
     {
       id: "tegal_kota",
       name: "Tegal",
       bounds: [
-        [-6.85, 109.13],
-        [-6.89, 109.17],
+        [-6.76, 109.06], // Bounds diperluas, pusat di Tegal (-6.86, 109.14)
+        [-6.96, 109.22],
       ],
     },
     {
       id: "pekalongan_kota",
       name: "Pekalongan",
       bounds: [
-        [-6.87, 109.65],
-        [-6.91, 109.69],
+        [-6.78, 109.6], // Bounds diperluas, pusat di Pekalongan (-6.88, 109.68)
+        [-6.98, 109.76],
       ],
     },
 
-    // === KABUPATEN-KABUPATEN (29 kabupaten - ditampilkan sebagai kota) ===
+    // === KABUPATEN-KABUPATEN (29 kabupaten) dengan bounds besar, pusat di ibukota ===
     {
       id: "banjarnegara",
       name: "Banjarnegara",
       bounds: [
-        [-7.27, 109.52],
-        [-7.47, 109.72],
+        [-7.2, 109.61], // Bounds diperluas, pusat di Banjarnegara (-7.30, 109.69)
+        [-7.4, 109.77],
       ],
     },
     {
       id: "banyumas",
       name: "Banyumas",
       bounds: [
-        [-7.32, 109.02],
-        [-7.52, 109.42],
+        [-7.41, 109.22], // Bounds diperluas, pusat di Purwokerto (-7.51, 109.30)
+        [-7.61, 109.38],
       ],
     },
     {
       id: "batang",
       name: "Batang",
       bounds: [
-        [-6.87, 109.62],
-        [-7.17, 110.02],
+        [-6.8, 109.66], // Bounds diperluas, pusat di Batang (-6.90, 109.74)
+        [-7.0, 109.82],
       ],
     },
     {
       id: "blora",
       name: "Blora",
       bounds: [
-        [-6.87, 111.32],
-        [-7.27, 111.52],
+        [-6.86, 111.34], // Bounds diperluas, pusat di Blora (-6.96, 111.42)
+        [-7.06, 111.5],
       ],
     },
     {
       id: "boyolali",
       name: "Boyolali",
       bounds: [
-        [-7.42, 110.52],
-        [-7.72, 110.82],
+        [-7.43, 110.52], // Bounds diperluas, pusat di Boyolali (-7.53, 110.60)
+        [-7.63, 110.68],
       ],
     },
     {
       id: "brebes",
       name: "Brebes",
       bounds: [
-        [-6.82, 108.82],
-        [-7.22, 109.22],
+        [-6.77, 108.97], // Bounds diperluas, pusat di Brebes (-6.87, 109.05)
+        [-6.97, 109.13],
       ],
     },
     {
       id: "cilacap",
       name: "Cilacap",
       bounds: [
-        [-7.52, 108.82],
-        [-7.82, 109.32],
+        [-7.62, 108.94], // Bounds diperluas, pusat di Cilacap (-7.72, 109.02)
+        [-7.82, 109.1],
       ],
     },
     {
       id: "demak",
       name: "Demak",
       bounds: [
-        [-6.82, 110.52],
-        [-7.02, 110.82],
+        [-6.79, 110.57], // Bounds diperluas, pusat di Demak (-6.89, 110.65)
+        [-6.99, 110.73],
       ],
     },
     {
       id: "grobogan",
       name: "Grobogan",
       bounds: [
-        [-7.02, 110.72],
-        [-7.42, 111.22],
+        [-6.95, 110.84], // Bounds diperluas, pusat di Purwodadi (-7.05, 110.92)
+        [-7.15, 111.0],
       ],
     },
     {
       id: "jepara",
       name: "Jepara",
       bounds: [
-        [-6.52, 110.52],
-        [-6.72, 110.82],
+        [-6.48, 110.59], // Bounds diperluas, pusat di Jepara (-6.58, 110.67)
+        [-6.68, 110.75],
       ],
     },
     {
       id: "karanganyar",
       name: "Karanganyar",
       bounds: [
-        [-7.42, 110.82],
-        [-7.72, 111.12],
+        [-7.55, 110.88], // Bounds diperluas, pusat di Karanganyar (-7.65, 110.96)
+        [-7.75, 111.04],
       ],
     },
     {
       id: "kebumen",
       name: "Kebumen",
       bounds: [
-        [-7.52, 109.52],
-        [-7.82, 109.82],
+        [-7.56, 109.58], // Bounds diperluas, pusat di Kebumen (-7.66, 109.66)
+        [-7.76, 109.74],
       ],
     },
     {
       id: "kendal",
       name: "Kendal",
       bounds: [
-        [-6.92, 109.92],
-        [-7.22, 110.32],
+        [-6.81, 110.13], // Bounds diperluas, pusat di Kendal (-6.91, 110.21)
+        [-7.01, 110.29],
       ],
     },
     {
       id: "klaten",
       name: "Klaten",
       bounds: [
-        [-7.62, 110.52],
-        [-7.82, 110.82],
+        [-7.6, 110.53], // Bounds diperluas, pusat di Klaten (-7.70, 110.61)
+        [-7.8, 110.69],
       ],
     },
     {
       id: "kudus",
       name: "Kudus",
       bounds: [
-        [-6.72, 110.72],
-        [-6.92, 110.92],
+        [-6.7, 110.77], // Bounds diperluas, pusat di Kudus (-6.80, 110.85)
+        [-6.9, 110.93],
       ],
     },
     {
       id: "magelang_kab",
       name: "Magelang (Kabupaten)",
       bounds: [
-        [-7.32, 110.02],
-        [-7.62, 110.32],
+        [-7.44, 110.14], // Bounds diperluas, pusat di Mungkid (-7.54, 110.22)
+        [-7.64, 110.3],
       ],
     },
     {
       id: "pati",
       name: "Pati",
       bounds: [
-        [-6.62, 110.92],
-        [-7.02, 111.32],
+        [-6.65, 110.96], // Bounds diperluas, pusat di Pati (-6.75, 111.04)
+        [-6.85, 111.12],
       ],
     },
     {
       id: "pekalongan_kab",
       name: "Pekalongan (Kabupaten)",
       bounds: [
-        [-6.82, 109.52],
-        [-7.12, 109.82],
+        [-6.8, 109.58], // Bounds diperluas, pusat di Kajen (-6.90, 109.66)
+        [-7.0, 109.74],
       ],
     },
     {
       id: "pemalang",
       name: "Pemalang",
       bounds: [
-        [-6.82, 109.22],
-        [-7.12, 109.62],
+        [-6.79, 109.3], // Bounds diperluas, pusat di Pemalang (-6.89, 109.38)
+        [-6.99, 109.46],
       ],
     },
     {
       id: "purbalingga",
       name: "Purbalingga",
       bounds: [
-        [-7.32, 109.22],
-        [-7.52, 109.52],
+        [-7.28, 109.29], // Bounds diperluas, pusat di Purbalingga (-7.38, 109.37)
+        [-7.48, 109.45],
       ],
     },
     {
       id: "purworejo",
       name: "Purworejo",
       bounds: [
-        [-7.62, 109.82],
-        [-7.92, 110.22],
+        [-7.62, 109.93], // Bounds diperluas, pusat di Purworejo (-7.72, 110.01)
+        [-7.82, 110.09],
       ],
     },
     {
       id: "rembang",
       name: "Rembang",
       bounds: [
-        [-6.62, 111.22],
-        [-6.92, 111.52],
+        [-6.6, 111.27], // Bounds diperluas, pusat di Rembang (-6.70, 111.35)
+        [-6.8, 111.43],
       ],
     },
     {
       id: "semarang_kab",
       name: "Semarang (Kabupaten)",
       bounds: [
-        [-7.02, 110.22],
-        [-7.42, 110.72],
+        [-7.05, 110.33], // Bounds diperluas, pusat di Ungaran (-7.15, 110.41)
+        [-7.25, 110.49],
       ],
     },
     {
       id: "sragen",
       name: "Sragen",
       bounds: [
-        [-7.22, 110.92],
-        [-7.52, 111.22],
+        [-7.32, 110.95], // Bounds diperluas, pusat di Sragen (-7.42, 111.03)
+        [-7.52, 111.11],
       ],
     },
     {
       id: "sukoharjo",
       name: "Sukoharjo",
       bounds: [
-        [-7.62, 110.72],
-        [-7.82, 110.92],
+        [-7.58, 110.76], // Bounds diperluas, pusat di Sukoharjo (-7.68, 110.84)
+        [-7.78, 110.92],
       ],
     },
     {
       id: "tegal_kab",
       name: "Tegal (Kabupaten)",
       bounds: [
-        [-6.82, 108.92],
-        [-7.12, 109.32],
+        [-6.79, 109.06], // Bounds diperluas, pusat di Slawi (-6.89, 109.14)
+        [-6.99, 109.22],
       ],
     },
     {
       id: "temanggung",
       name: "Temanggung",
       bounds: [
-        [-7.22, 109.92],
-        [-7.52, 110.32],
+        [-7.21, 110.1], // Bounds diperluas, pusat di Temanggung (-7.31, 110.18)
+        [-7.41, 110.26],
       ],
     },
     {
       id: "wonogiri",
       name: "Wonogiri",
       bounds: [
-        [-7.72, 110.82],
-        [-8.12, 111.22],
+        [-7.71, 110.86], // Bounds diperluas, pusat di Wonogiri (-7.81, 110.94)
+        [-7.91, 111.02],
       ],
     },
     {
       id: "wonosobo",
       name: "Wonosobo",
       bounds: [
-        [-7.22, 109.82],
-        [-7.62, 110.12],
+        [-7.26, 109.83], // Bounds diperluas, pusat di Wonosobo (-7.36, 109.91)
+        [-7.46, 109.99],
       ],
     },
   ],
@@ -304,40 +303,40 @@ const kotaData = {
       id: "jogja",
       name: "Yogyakarta",
       bounds: [
-        [-7.72, 110.32],
-        [-7.82, 110.42],
+        [-7.69, 110.29], // Bounds diperluas, pusat di Yogyakarta (-7.79, 110.37)
+        [-7.89, 110.45],
       ],
     },
     {
       id: "sleman",
       name: "Sleman",
       bounds: [
-        [-7.62, 110.28],
-        [-7.72, 110.38],
+        [-7.61, 110.28], // Bounds diperluas, pusat di Sleman (-7.71, 110.36)
+        [-7.81, 110.44],
       ],
     },
     {
       id: "bantul",
       name: "Bantul",
       bounds: [
-        [-7.82, 110.28],
-        [-7.92, 110.38],
+        [-7.78, 110.25], // Bounds diperluas, pusat di Bantul (-7.88, 110.33)
+        [-7.98, 110.41],
       ],
     },
     {
       id: "kulonprogo",
       name: "Kulon Progo",
       bounds: [
-        [-7.72, 110.05],
-        [-7.82, 110.15],
+        [-7.72, 110.08], // Bounds diperluas, pusat di Wates (-7.82, 110.16)
+        [-7.92, 110.24],
       ],
     },
     {
       id: "gunungkidul",
       name: "Gunung Kidul",
       bounds: [
-        [-7.92, 110.45],
-        [-8.02, 110.55],
+        [-7.81, 110.53], // Bounds diperluas, pusat di Wonosari (-7.91, 110.61)
+        [-8.01, 110.69],
       ],
     },
   ],

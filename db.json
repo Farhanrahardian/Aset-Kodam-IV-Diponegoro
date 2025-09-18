@@ -529,6 +529,29 @@
       "provinsi": "Jawa Tengah",
       "kota": "Rembang",
       "id": "Y1757820829677"
+    },
+    {
+      "pengelola": "mjeed",
+      "bidang": "Tanah Gudang Kantor",
+      "kabkota": "Semarang",
+      "kecamatan": "sss",
+      "kelurahan": "smganta",
+      "peruntukan": "asas",
+      "status": "Dimiliki/Dikuasai",
+      "keterangan": "ad",
+      "type": "yardip",
+      "lokasi": "[[[111.043337,-7.373626],[111.061206,-7.397456],[111.034414,-7.418558],[110.989741,-7.385878],[110.997984,-7.349112],[111.015173,-7.347751],[111.033729,-7.355241],[111.043337,-7.373626]]]",
+      "area": 36394257.56983546,
+      "isManualArea": false,
+      "originalDrawnArea": 36394257.56983546,
+      "created_at": "2025-09-18T03:45:17.521Z",
+      "updated_at": "2025-09-18T03:45:17.521Z",
+      "id": "Y1758167117520",
+      "isManuallyAdjusted": false,
+      "kota": "Sragen",
+      "kota_id": "sragen",
+      "provinsi": "Jawa Tengah",
+      "provinsi_id": "jateng"
     }
   ],
   "korem": [
