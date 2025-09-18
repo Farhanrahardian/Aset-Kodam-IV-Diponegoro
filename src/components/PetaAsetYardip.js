@@ -114,6 +114,38 @@ const PetaAsetYardip = ({
   const mapCenter = [-7.5, 110.0]; // Center of Central Java
   const initialZoom = 8;
 
+  // Inject CSS to control z-index of map controls - positioning search behind sidebar
+  useEffect(() => {
+    const style = document.createElement("style");
+    style.textContent = `
+      .leaflet-control-zoom,
+      .leaflet-control-layers,
+      .leaflet-control-geosearch,
+      .leaflet-draw,
+      .leaflet-draw-toolbar,
+      .leaflet-control-attribution,
+      .leaflet-control {
+        z-index: 500 !important;
+      }
+      
+      .leaflet-control-layers-expanded,
+      .leaflet-geosearch .results {
+        z-index: 501 !important;
+      }
+      
+      .leaflet-popup {
+        z-index: 1002 !important;
+      }
+    `;
+
+    document.head.appendChild(style);
+
+    // Cleanup function
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
   // Auto-zoom to selected area, city, assets, or specific asset
   useEffect(() => {
     const timer = setTimeout(() => {

@@ -10,3 +10,20 @@
   transform: translateX(5px); /* efek geser */
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2); /* kasih bayangan halus */
 }
+@media (max-width: 768px) {
+  /* Turunkan z-index semua control Leaflet biar gak nabrak sidebar */
+  .leaflet-control {
+    z-index: 400 !important; /* default 1000, jadi lebih rendah dari sidebar */
+  }
+
+  .leaflet-top,
+  .leaflet-bottom {
+    z-index: 400 !important;
+  }
+
+  /* Pastikan sidebar lebih tinggi */
+  .sidebar {
+    position: relative; /* atau fixed, sesuai layout kamu */
+    z-index: 1100; /* lebih tinggi dari Leaflet */
+  }
+}
