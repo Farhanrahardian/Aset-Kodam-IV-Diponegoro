@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import React from "react";
 import {
   Offcanvas,
@@ -91,6 +92,14 @@ const DetailOffcanvasAset = ({
   koremList = [],
   allKodimList = [],
 }) => {
+  const navigate = useNavigate();
+
+  const handleViewFile = (url) => {
+    if (!url) return;
+    const relativePath = url.replace(`${API_URL}/`, '');
+    navigate(`/view-file/${relativePath}`);
+  };
+
   if (!aset) return null;
 
   // Siapkan data untuk mini-map
@@ -327,7 +336,7 @@ const DetailOffcanvasAset = ({
                                   overflow: "hidden",
                                   cursor: "pointer",
                                 }}
-                                onClick={() => window.open(imageUrl, "_blank")}
+                                onClick={() => handleViewFile(imageUrl)}
                                 title="Klik untuk lihat gambar penuh"
                               >
                                 <img
@@ -348,7 +357,7 @@ const DetailOffcanvasAset = ({
                               <Button
                                 variant="link"
                                 size="sm"
-                                onClick={() => window.open(imageUrl, "_blank")}
+                                onClick={() => handleViewFile(imageUrl)}
                                 className="p-0"
                                 style={{ fontSize: "0.7em" }}
                               >
@@ -452,7 +461,7 @@ const DetailOffcanvasAset = ({
                     cursor: "pointer",
                     border: "1px solid #ddd",
                   }}
-                  onClick={() => window.open(imageUrl, "_blank")}
+                  onClick={() => handleViewFile(imageUrl)}
                 />
                 <div className="mt-2">
                   <small className="text-muted">
@@ -485,7 +494,7 @@ const DetailOffcanvasAset = ({
                           cursor: "pointer",
                           border: "1px solid #ddd",
                         }}
-                        onClick={() => window.open(`${API_URL}${foto}`, "_blank")}
+                        onClick={() => handleViewFile(`${API_URL}${foto}`)}
                       />
                     </Col>
                   ))}

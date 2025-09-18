@@ -13,6 +13,7 @@ import DataAsetYardipPage from "./pages/DataAsetYardipPage";
 import EditAsetPage from "./pages/EditAsetPage";
 import LaporanPage from "./pages/LaporanPage";
 import LaporanYardipPage from "./pages/LaporanYardipPage"; // ✅ import halaman laporan yardip
+import ViewFilePage from "./pages/ViewFilePage";
 import { Toaster } from "react-hot-toast";
 
 // CSS global
@@ -70,6 +71,7 @@ function App() {
                       element={<LaporanYardipPage />}
                     />{" "}
                     {/* ✅ route baru untuk Cetak Laporan Aset Yardip */}
+                    <Route path="/view-file/*" element={<ViewFilePage />} />
                     <Route path="/settings" element={<SettingsPage />} />
                   </Routes>
                 </MainLayout>
