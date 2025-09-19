@@ -1540,221 +1540,217 @@ const DataAsetYardipPage = () => {
       <h3>Data Aset Yardip</h3>
       {error && <Alert variant="danger">{error}</Alert>}
 
-      
-        <Row>
-          <Col md={12}>
-            {/* PETA UTAMA - DENGAN PIN MARKERS */}
-            <Card className="mb-4">
-              <Card.Header as="h5">
-                <div className="d-flex justify-content-between align-items-center">
-                  <span>Peta Aset Yardip</span>
-                  <small className="text-muted">
-                    <i className="fas fa-map-marker-alt me-1"></i>
-                    Tampilan Pin Marker - Klik untuk detail
-                  </small>
+      <Row>
+        <Col md={12}>
+          {/* PETA UTAMA - DENGAN PIN MARKERS */}
+          <Card className="mb-4">
+            <Card.Header as="h5">
+              <div className="d-flex justify-content-between align-items-center">
+                <span>Peta Aset Yardip</span>
+                <small className="text-muted">
+                  <i className="fas fa-map-marker-alt me-1"></i>
+                  Tampilan Pin Marker - Klik untuk detail
+                </small>
+              </div>
+            </Card.Header>
+            <Card.Body style={{ height: "50vh", padding: 0 }}>
+              <MapErrorBoundary
+                height="50vh"
+                onRetry={handleMapError}
+                onFallback={handleFallbackMode}
+              >
+                <PetaAsetYardip
+                  key={`main-map-${mapKey}`}
+                  assets={preparedAssetsForMainMap}
+                  onAssetClick={handleMarkerClick}
+                  zoomToAsset={zoomToAsset}
+                  markerColorMode="status"
+                  displayMode="marker" // PIN MARKERS UNTUK PETA UTAMA
+                  jatengBoundary={jatengBoundary}
+                  diyBoundary={diyBoundary}
+                />
+              </MapErrorBoundary>
+            </Card.Body>
+            <Card.Footer className="bg-light">
+              <Row className="text-center">
+                <Col xs={6} sm={4}>
+                  <div className="d-flex align-items-center justify-content-center">
+                    <div
+                      style={{
+                        width: "12px",
+                        height: "12px",
+                        backgroundColor: "#10b981",
+                        borderRadius: "50%",
+                        marginRight: "8px",
+                      }}
+                    ></div>
+                    <small>Dimiliki/Dikuasai</small>
+                  </div>
+                </Col>
+                <Col xs={6} sm={4}>
+                  <div className="d-flex align-items-center justify-content-center">
+                    <div
+                      style={{
+                        width: "12px",
+                        height: "12px",
+                        backgroundColor: "#ef4444",
+                        borderRadius: "50%",
+                        marginRight: "8px",
+                      }}
+                    ></div>
+                    <small>Tidak Dimiliki</small>
+                  </div>
+                </Col>
+                <Col xs={12} sm={4}>
+                  <div className="d-flex align-items-center justify-content-center">
+                    <div
+                      style={{
+                        width: "12px",
+                        height: "12px",
+                        backgroundColor: "#f59e0b",
+                        borderRadius: "50%",
+                        marginRight: "8px",
+                      }}
+                    ></div>
+                    <small>Lain-lain</small>
+                  </div>
+                </Col>
+              </Row>
+            </Card.Footer>
+          </Card>
+
+          {/* FILTER PANEL */}
+          <FilterPanelTop
+            assets={assets}
+            provinsiOptions={provinsiOptions}
+            kotaOptions={kotaOptions}
+            selectedProvinsi={selectedProvinsi}
+            selectedKota={selectedKota}
+            onSelectProvinsi={handleProvinsiChange}
+            onSelectKota={handleKotaChange}
+            onShowAll={handleShowAll}
+            totalAssets={assets.length}
+            filteredAssets={filteredAssets.length}
+          />
+
+          {/* TABEL DATA - FIXED HORIZONTAL SCROLL */}
+          <Card>
+            <Card.Header className="bg-light">
+              <h5 className="mb-0">Daftar Aset Yardip</h5>
+            </Card.Header>
+            <Card.Body className="p-0">
+              {assets.length === 0 ? (
+                <div className="text-center py-5">
+                  <div className="text-muted">
+                    <i className="fas fa-folder-open fa-3x mb-3"></i>
+                    <h5>Belum Ada Data Aset Yardip</h5>
+                    <p>
+                      Silakan tambah aset yardip baru di halaman Tambah Aset
+                      Yardip.
+                    </p>
+                  </div>
                 </div>
-              </Card.Header>
-              <Card.Body style={{ height: "50vh", padding: 0 }}>
-                <MapErrorBoundary
-                  height="50vh"
-                  onRetry={handleMapError}
-                  onFallback={handleFallbackMode}
+              ) : (
+                <div
+                  style={{
+                    height: "60vh",
+                    overflow: "auto",
+                    border: "1px solid #dee2e6",
+                    borderRadius: "0.375rem",
+                  }}
                 >
-                  <PetaAsetYardip
-                    key={`main-map-${mapKey}`}
-                    assets={preparedAssetsForMainMap}
-                    onAssetClick={handleMarkerClick}
-                    zoomToAsset={zoomToAsset}
-                    markerColorMode="status"
-                    displayMode="marker" // PIN MARKERS UNTUK PETA UTAMA
-                    jatengBoundary={jatengBoundary}
-                    diyBoundary={diyBoundary}
+                  <TabelAsetYardip
+                    assets={filteredAssets}
+                    onEdit={user ? handleEditAsset : null}
+                    onDelete={user ? handleDeleteAsset : null}
+                    onViewDetail={handleViewDetail}
                   />
-                </MapErrorBoundary>
-              </Card.Body>
-              <Card.Footer className="bg-light">
-                <Row className="text-center">
-                  <Col xs={6} sm={4}>
-                    <div className="d-flex align-items-center justify-content-center">
-                      <div
-                        style={{
-                          width: "12px",
-                          height: "12px",
-                          backgroundColor: "#10b981",
-                          borderRadius: "50%",
-                          marginRight: "8px",
-                        }}
-                      ></div>
-                      <small>Dimiliki/Dikuasai</small>
+                </div>
+              )}
+            </Card.Body>
+          </Card>
+
+          {/* SUMMARY STATISTICS */}
+          {filteredAssets.length > 0 && (
+            <Card className="mt-3">
+              <Card.Body>
+                <Row className="text-center g-3">
+                  <Col lg className="col-6 col-md-3">
+                    <div className="bg-light p-3 rounded h-100">
+                      <h4 className="text-primary mb-1">
+                        {filteredAssets.length}
+                      </h4>
+                      <small className="text-muted fw-bold">Total Aset</small>
                     </div>
                   </Col>
-                  <Col xs={6} sm={4}>
-                    <div className="d-flex align-items-center justify-content-center">
-                      <div
-                        style={{
-                          width: "12px",
-                          height: "12px",
-                          backgroundColor: "#ef4444",
-                          borderRadius: "50%",
-                          marginRight: "8px",
-                        }}
-                      ></div>
-                      <small>Tidak Dimiliki</small>
+                  <Col lg className="col-6 col-md-3">
+                    <div className="bg-light p-3 rounded h-100">
+                      <h4 className="text-success mb-1">
+                        {
+                          filteredAssets.filter(
+                            (a) => a.status === "Dimiliki/Dikuasai"
+                          ).length
+                        }
+                      </h4>
+                      <small className="text-muted fw-bold">
+                        Dimiliki/Dikuasai
+                      </small>
                     </div>
                   </Col>
-                  <Col xs={12} sm={4}>
-                    <div className="d-flex align-items-center justify-content-center">
-                      <div
-                        style={{
-                          width: "12px",
-                          height: "12px",
-                          backgroundColor: "#f59e0b",
-                          borderRadius: "50%",
-                          marginRight: "8px",
-                        }}
-                      ></div>
-                      <small>Lain-lain</small>
+                  <Col lg className="col-6 col-md-3">
+                    <div className="bg-light p-3 rounded h-100">
+                      <h4 className="text-danger mb-1">
+                        {
+                          filteredAssets.filter(
+                            (a) => a.status === "Tidak Dimiliki/Tidak Dikuasai"
+                          ).length
+                        }
+                      </h4>
+                      <small className="text-muted fw-bold">
+                        Tidak Dimiliki
+                      </small>
+                    </div>
+                  </Col>
+                  <Col lg className="col-6 col-md-3">
+                    <div className="bg-light p-3 rounded h-100">
+                      <h4 className="text-warning mb-1">
+                        {
+                          filteredAssets.filter((a) => a.status === "Lain-lain")
+                            .length
+                        }
+                      </h4>
+                      <small className="text-muted fw-bold">Lain-lain</small>
                     </div>
                   </Col>
                 </Row>
-              </Card.Footer>
-            </Card>
 
-            {/* FILTER PANEL */}
-            <FilterPanelTop
-              assets={assets}
-              provinsiOptions={provinsiOptions}
-              kotaOptions={kotaOptions}
-              selectedProvinsi={selectedProvinsi}
-              selectedKota={selectedKota}
-              onSelectProvinsi={handleProvinsiChange}
-              onSelectKota={handleKotaChange}
-              onShowAll={handleShowAll}
-              totalAssets={assets.length}
-              filteredAssets={filteredAssets.length}
-            />
-
-            {/* TABEL DATA - FIXED HORIZONTAL SCROLL */}
-            <Card>
-              <Card.Header className="bg-light">
-                <h5 className="mb-0">Daftar Aset Yardip</h5>
-              </Card.Header>
-              <Card.Body className="p-0">
-                {assets.length === 0 ? (
-                  <div className="text-center py-5">
-                    <div className="text-muted">
-                      <i className="fas fa-folder-open fa-3x mb-3"></i>
-                      <h5>Belum Ada Data Aset Yardip</h5>
-                      <p>
-                        Silakan tambah aset yardip baru di halaman Tambah Aset
-                        Yardip.
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div
-                    style={{
-                      height: "60vh",
-                      overflow: "auto",
-                      border: "1px solid #dee2e6",
-                      borderRadius: "0.375rem",
-                    }}
-                  >
-                    <TabelAsetYardip
-                      assets={filteredAssets}
-                      onEdit={user ? handleEditAsset : null}
-                      onDelete={user ? handleDeleteAsset : null}
-                      onViewDetail={handleViewDetail}
-                    />
-                  </div>
-                )}
-              </Card.Body>
-            </Card>
-
-            {/* SUMMARY STATISTICS */}
-            {filteredAssets.length > 0 && (
-              <Card className="mt-3">
-                <Card.Body>
-                  <Row className="text-center g-3">
-                    <Col lg className="col-6 col-md-3">
-                      <div className="bg-light p-3 rounded h-100">
-                        <h4 className="text-primary mb-1">
-                          {filteredAssets.length}
-                        </h4>
-                        <small className="text-muted fw-bold">Total Aset</small>
-                      </div>
-                    </Col>
-                    <Col lg className="col-6 col-md-3">
-                      <div className="bg-light p-3 rounded h-100">
-                        <h4 className="text-success mb-1">
-                          {
-                            filteredAssets.filter(
-                              (a) => a.status === "Dimiliki/Dikuasai"
-                            ).length
-                          }
-                        </h4>
-                        <small className="text-muted fw-bold">
-                          Dimiliki/Dikuasai
+                {/* Additional location breakdown */}
+                {(selectedProvinsi || selectedKota) && (
+                  <Row className="mt-3">
+                    <Col md={12}>
+                      <div className="bg-light p-2 rounded">
+                        <small className="text-muted">
+                          <strong>Filter Aktif:</strong>
+                          {selectedProvinsi && (
+                            <span className="badge bg-primary ms-1 me-1">
+                              Provinsi: {selectedProvinsi}
+                            </span>
+                          )}
+                          {selectedKota && (
+                            <span className="badge bg-secondary ms-1">
+                              Kota: {selectedKota}
+                            </span>
+                          )}
                         </small>
-                      </div>
-                    </Col>
-                    <Col lg className="col-6 col-md-3">
-                      <div className="bg-light p-3 rounded h-100">
-                        <h4 className="text-danger mb-1">
-                          {
-                            filteredAssets.filter(
-                              (a) =>
-                                a.status === "Tidak Dimiliki/Tidak Dikuasai"
-                            ).length
-                          }
-                        </h4>
-                        <small className="text-muted fw-bold">
-                          Tidak Dimiliki
-                        </small>
-                      </div>
-                    </Col>
-                    <Col lg className="col-6 col-md-3">
-                      <div className="bg-light p-3 rounded h-100">
-                        <h4 className="text-warning mb-1">
-                          {
-                            filteredAssets.filter(
-                              (a) => a.status === "Lain-lain"
-                            ).length
-                          }
-                        </h4>
-                        <small className="text-muted fw-bold">Lain-lain</small>
                       </div>
                     </Col>
                   </Row>
-
-                  {/* Additional location breakdown */}
-                  {(selectedProvinsi || selectedKota) && (
-                    <Row className="mt-3">
-                      <Col md={12}>
-                        <div className="bg-light p-2 rounded">
-                          <small className="text-muted">
-                            <strong>Filter Aktif:</strong>
-                            {selectedProvinsi && (
-                              <span className="badge bg-primary ms-1 me-1">
-                                Provinsi: {selectedProvinsi}
-                              </span>
-                            )}
-                            {selectedKota && (
-                              <span className="badge bg-secondary ms-1">
-                                Kota: {selectedKota}
-                              </span>
-                            )}
-                          </small>
-                        </div>
-                      </Col>
-                    </Row>
-                  )}
-                </Card.Body>
-              </Card>
-            )}
-          </Col>
-        </Row>
-      
+                )}
+              </Card.Body>
+            </Card>
+          )}
+        </Col>
+      </Row>
 
       {/* MODAL DETAIL ASET */}
       <Modal show={showEditModal} onHide={handleCancelEdit} size="xl" centered>
