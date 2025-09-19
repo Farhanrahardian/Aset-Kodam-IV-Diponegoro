@@ -222,6 +222,63 @@
       "foto_aset": [
         "/uploads/asset_photos-1758156118474.png"
       ]
+    },
+    {
+      "nama": "213",
+      "korem_id": "2",
+      "kodim": "Kodim 0731/Kulon Progo",
+      "luas": 26717977.52763268,
+      "kib_kode_barang": "1.21.21.212.121.221234",
+      "nomor_registrasi": "165211",
+      "alamat": "Diponegoro",
+      "peruntukan": "Desa",
+      "status": "Dimiliki/Dikuasai",
+      "asal_milik": "Suharto",
+      "pemilikan_sertifikat": "Ya",
+      "keterangan_bukti_pemilikan": "Sertifikar B21",
+      "sertifikat_bidang": "3",
+      "sertifikat_luas": 26717977.53,
+      "belum_sertifikat_bidang": "",
+      "belum_sertifikat_luas": "",
+      "keterangan": "Masuk tanggal 23 juni 2023",
+      "atas_nama_pemilik_sertifikat": "H.J Amin Rais",
+      "lokasi": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              110.138133,
+              -7.731945
+            ],
+            [
+              110.177929,
+              -7.7469
+            ],
+            [
+              110.144994,
+              -7.794481
+            ],
+            [
+              110.112059,
+              -7.782246
+            ],
+            [
+              110.138133,
+              -7.731945
+            ]
+          ]
+        ]
+      },
+      "id": "T1758261601428",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1758261601326.png",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1758261601326.png",
+      "foto_aset": [
+        "/uploads/asset_photos-1758261601369.png",
+        "/uploads/asset_photos-1758261601376.png",
+        "/uploads/asset_photos-1758261601382.png",
+        "/uploads/asset_photos-1758261601385.png",
+        "/uploads/asset_photos-1758261601397.png"
+      ]
     }
   ],
   "yardip_assets": [
@@ -280,12 +337,46 @@
       "status": "Tidak Dimiliki/Tidak Dikuasai",
       "keterangan": "ada",
       "type": "yardip",
-      "lokasi": "[[[110.355422,-6.9946],[110.393222,-6.995963],[110.385319,-7.022538],[110.35989,-7.01845],[110.355422,-6.9946]]]",
-      "area": 9111,
+      "lokasi": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              110.365745,
+              -7.004173
+            ],
+            [
+              110.382219,
+              -6.982023
+            ],
+            [
+              110.401439,
+              -6.987135
+            ],
+            [
+              110.402126,
+              -7.006558
+            ],
+            [
+              110.391143,
+              -7.014736
+            ],
+            [
+              110.36849,
+              -7.01201
+            ],
+            [
+              110.365745,
+              -7.004173
+            ]
+          ]
+        ]
+      },
+      "area": 10484731.86,
       "isManualArea": false,
       "originalDrawnArea": 9111,
       "created_at": "2025-09-09T07:09:06.250Z",
-      "updated_at": "2025-09-09T07:09:06.250Z",
+      "updated_at": "2025-09-19T06:04:29.617Z",
       "isManuallyAdjusted": true,
       "kota": "Semarang",
       "kota_id": "semarang",
@@ -529,29 +620,6 @@
       "provinsi": "Jawa Tengah",
       "kota": "Rembang",
       "id": "Y1757820829677"
-    },
-    {
-      "pengelola": "mjeed",
-      "bidang": "Tanah Gudang Kantor",
-      "kabkota": "Semarang",
-      "kecamatan": "sss",
-      "kelurahan": "smganta",
-      "peruntukan": "asas",
-      "status": "Dimiliki/Dikuasai",
-      "keterangan": "ad",
-      "type": "yardip",
-      "lokasi": "[[[111.043337,-7.373626],[111.061206,-7.397456],[111.034414,-7.418558],[110.989741,-7.385878],[110.997984,-7.349112],[111.015173,-7.347751],[111.033729,-7.355241],[111.043337,-7.373626]]]",
-      "area": 36394257.56983546,
-      "isManualArea": false,
-      "originalDrawnArea": 36394257.56983546,
-      "created_at": "2025-09-18T03:45:17.521Z",
-      "updated_at": "2025-09-18T03:45:17.521Z",
-      "id": "Y1758167117520",
-      "isManuallyAdjusted": false,
-      "kota": "Sragen",
-      "kota_id": "sragen",
-      "provinsi": "Jawa Tengah",
-      "provinsi_id": "jateng"
     }
   ],
   "korem": [

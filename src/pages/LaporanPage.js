@@ -483,17 +483,7 @@ const LaporanPage = () => {
             currentRow++;
             globalIndex++;
           });
-
-          // Tambahkan row kosong setelah setiap kodim untuk pemisah
-          const separatorRow = worksheet.getRow(currentRow);
-          separatorRow.height = 10;
-          currentRow++;
         });
-
-        // Tambahkan row kosong yang lebih besar setelah setiap korem untuk pemisah
-        const koremSeparatorRow = worksheet.getRow(currentRow);
-        koremSeparatorRow.height = 15;
-        currentRow++;
       });
 
       // Apply border ke semua cells yang berisi data

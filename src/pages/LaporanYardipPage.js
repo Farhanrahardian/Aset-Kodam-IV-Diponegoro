@@ -170,7 +170,211 @@ const LaporanYardipPage = () => {
     return grouped;
   };
 
-  // Function untuk export ke XLSX dengan format yang diperbaiki
+  // Helper function untuk memformat bidang dengan line breaks
+  const formatBidangForExcel = (bidang) => {
+    if (!bidang) return "-";
+
+    // Handle "Tanah Gudang Kantor" - pisah menjadi 3 baris
+    if (bidang.toLowerCase().includes("tanah gudang kantor")) {
+      return "Tanah\nGudang\nKantor";
+    }
+
+    // Handle "Tanah Bangunan" - pisah menjadi 2 baris
+    if (bidang.toLowerCase().includes("tanah bangunan")) {
+      return "Tanah\nBangunan";
+    }
+
+    return bidang;
+  };
+
+  // Helper function untuk create sheet dengan format standar
+  const createStandardSheet = (
+    workbook,
+    sheetName,
+    title,
+    subtitle,
+    assetsData
+  ) => {
+    const worksheet = workbook.addWorksheet(sheetName);
+
+    // Set column widths
+    worksheet.columns = [
+      { width: 8 }, // A - NO
+      { width: 15 }, // B - BIDANG
+      { width: 20 }, // C - LOKASI
+      { width: 15 }, // D - LUAS (M2)
+      { width: 25 }, // E - PERUNTUKAN
+      { width: 25 }, // F - STATUS
+      { width: 30 }, // G - KETERANGAN
+    ];
+
+    // Title (Row 1)
+    const titleCell = worksheet.getCell("A1");
+    titleCell.value = title;
+    titleCell.font = { bold: true, size: 14, name: "Arial" };
+    titleCell.alignment = { horizontal: "center", vertical: "middle" };
+    worksheet.mergeCells("A1:G1");
+
+    // Subtitle (Row 2)
+    const subtitleCell = worksheet.getCell("A2");
+    subtitleCell.value = subtitle;
+    subtitleCell.font = { bold: true, size: 12, name: "Arial" };
+    subtitleCell.alignment = { horizontal: "center", vertical: "middle" };
+    worksheet.mergeCells("A2:G2");
+
+    // Empty row (Row 3)
+    worksheet.getRow(3).height = 10;
+
+    // Header row (Row 4)
+    const headers = [
+      "NO",
+      "BIDANG",
+      "LOKASI",
+      "LUAS (M2)",
+      "PERUNTUKAN",
+      "STATUS",
+      "KETERANGAN",
+    ];
+    const headerRow = worksheet.getRow(4);
+    headers.forEach((header, index) => {
+      const cell = headerRow.getCell(index + 1);
+      cell.value = header;
+      cell.font = { bold: true, size: 11, name: "Arial" };
+      cell.alignment = {
+        horizontal: "center",
+        vertical: "middle",
+        wrapText: true,
+      };
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFD3D3D3" },
+      };
+    });
+    headerRow.height = 30;
+
+    // Number headers (Row 5)
+    const numberHeaders = ["1", "2", "3", "4", "5", "6", "7"];
+    const numberRow = worksheet.getRow(5);
+    numberHeaders.forEach((num, index) => {
+      const cell = numberRow.getCell(index + 1);
+      cell.value = num;
+      cell.font = { bold: true, size: 10, name: "Arial" };
+      cell.alignment = { horizontal: "center", vertical: "middle" };
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFD3D3D3" },
+      };
+    });
+    numberRow.height = 20;
+
+    return { worksheet, startRow: 6 };
+  };
+
+  // Helper function untuk add data rows dengan format 4-baris lokasi
+  const addDataRows = (worksheet, assets, startRow) => {
+    let currentRow = startRow;
+    let globalIndex = 1;
+
+    // Group by peruntukan
+    const groupedByPeruntukan = {};
+    assets.forEach((asset) => {
+      const peruntukan = asset.peruntukan || "Tidak Ada Peruntukan";
+      if (!groupedByPeruntukan[peruntukan]) {
+        groupedByPeruntukan[peruntukan] = [];
+      }
+      groupedByPeruntukan[peruntukan].push(asset);
+    });
+
+    // Loop through each peruntukan
+    Object.keys(groupedByPeruntukan).forEach((peruntukanName) => {
+      const peruntukanAssets = groupedByPeruntukan[peruntukanName];
+
+      // Add peruntukan header
+      const peruntukanHeaderRow = worksheet.getRow(currentRow);
+      const peruntukanHeaderCell = peruntukanHeaderRow.getCell(1);
+      peruntukanHeaderCell.value = peruntukanName.toUpperCase();
+      peruntukanHeaderCell.font = { bold: true, size: 12, name: "Arial" };
+      peruntukanHeaderCell.alignment = {
+        horizontal: "left",
+        vertical: "middle",
+      };
+      worksheet.mergeCells(`A${currentRow}:G${currentRow}`);
+      peruntukanHeaderRow.height = 25;
+      currentRow++;
+
+      // Add each asset
+      peruntukanAssets.forEach((asset) => {
+        // Row 1: No, Bidang, Kelurahan, Luas, Peruntukan, Status, Keterangan
+        const row1 = worksheet.getRow(currentRow);
+        row1.getCell(1).value = globalIndex;
+        row1.getCell(2).value = formatBidangForExcel(asset.bidang);
+        row1.getCell(3).value = asset.kelurahan || "-";
+        row1.getCell(4).value = asset.area ? Number(asset.area) : "-";
+        row1.getCell(5).value = asset.peruntukan || "-";
+        row1.getCell(6).value = asset.status || "-";
+        row1.getCell(7).value = asset.keterangan || "-";
+
+        // Row 2: Kecamatan
+        currentRow++;
+        const row2 = worksheet.getRow(currentRow);
+        row2.getCell(3).value = asset.kecamatan || "-";
+
+        // Row 3: Kota
+        currentRow++;
+        const row3 = worksheet.getRow(currentRow);
+        row3.getCell(3).value = getKotaName(asset.provinsi_id, asset.kota_id);
+
+        // Row 4: Provinsi
+        currentRow++;
+        const row4 = worksheet.getRow(currentRow);
+        row4.getCell(3).value = getProvinsiName(asset.provinsi_id);
+
+        // Format all 4 rows
+        [row1, row2, row3, row4].forEach((row) => {
+          for (let col = 1; col <= 7; col++) {
+            const cell = row.getCell(col);
+            cell.font = { size: 10, name: "Arial" };
+
+            if ([1, 4].includes(col)) {
+              cell.alignment = {
+                horizontal: col === 1 ? "center" : "right",
+                vertical: "middle",
+              };
+              if (
+                col === 4 &&
+                typeof cell.value === "number" &&
+                cell.value > 0
+              ) {
+                cell.numFmt = "#,##0";
+              }
+            } else if (col === 2) {
+              cell.alignment = {
+                horizontal: "center",
+                vertical: "middle",
+                wrapText: true,
+              };
+            } else {
+              cell.alignment = {
+                horizontal: "left",
+                vertical: "middle",
+                wrapText: true,
+              };
+            }
+          }
+          row.height = 20;
+        });
+
+        currentRow++;
+        globalIndex++;
+      });
+    });
+
+    return currentRow;
+  };
+
+  // Function untuk export ke XLSX dengan multiple sheets
   const exportToExcel = async () => {
     if (filteredAssets.length === 0) {
       alert("Tidak ada data untuk diekspor!");
@@ -180,10 +384,11 @@ const LaporanYardipPage = () => {
     setExporting(true);
 
     try {
-      // Siapkan judul berdasarkan filter
-      let title = "DAFTAR ASET TANAH YAYASAN RUMPUN DIPONEGORO SELAIN KEBUN";
-      let subtitle = "";
+      // Create workbook
+      const workbook = new ExcelJS.Workbook();
 
+      // Prepare subtitle based on filters
+      let subtitle = "";
       if (selectedProvinsi && selectedKota) {
         subtitle = `DI WILAYAH ${getKotaName(selectedProvinsi, selectedKota)}`;
       } else if (selectedProvinsi) {
@@ -192,249 +397,87 @@ const LaporanYardipPage = () => {
         subtitle = "DI SELURUH WILAYAH";
       }
 
-      // Buat workbook baru
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet("Laporan Aset Yardip");
+      // Group assets by bidang type
+      const tanahAssets = filteredAssets.filter(
+        (asset) => asset.bidang === "Tanah"
+      );
+      const nonTanahAssets = filteredAssets.filter(
+        (asset) => asset.bidang !== "Tanah" && asset.bidang
+      );
 
-      // Set column widths - 7 kolom utama
-      worksheet.columns = [
-        { width: 8 }, // A - NO
-        { width: 15 }, // B - BIDANG
-        { width: 20 }, // C - LOKASI (4 baris: Kelurahan, Kecamatan, Kota, Provinsi)
-        { width: 15 }, // D - LUAS (M2)
-        { width: 25 }, // E - PERUNTUKAN
-        { width: 25 }, // F - STATUS
-        { width: 30 }, // G - KETERANGAN
-      ];
+      // 1. Create main sheet for non-Tanah assets (Tanah Bangunan, Tanah Gudang Kantor, Ruko, etc.)
+      if (nonTanahAssets.length > 0) {
+        const { worksheet } = createStandardSheet(
+          workbook,
+          "Aset Selain Kebun",
+          "DAFTAR ASET TANAH YAYASAN RUMPUN DIPONEGORO SELAIN KEBUN",
+          subtitle,
+          nonTanahAssets
+        );
 
-      // Tambahkan title (Row 1)
-      const titleCell = worksheet.getCell("A1");
-      titleCell.value = title;
-      titleCell.font = {
-        bold: true,
-        size: 14,
-        name: "Arial",
-      };
-      titleCell.alignment = {
-        horizontal: "center",
-        vertical: "middle",
-      };
-      worksheet.mergeCells("A1:G1");
+        const endRow = addDataRows(worksheet, nonTanahAssets, 6);
 
-      // Tambahkan subtitle (Row 2)
-      const subtitleCell = worksheet.getCell("A2");
-      subtitleCell.value = subtitle;
-      subtitleCell.font = {
-        bold: true,
-        size: 12,
-        name: "Arial",
-      };
-      subtitleCell.alignment = {
-        horizontal: "center",
-        vertical: "middle",
-      };
-      worksheet.mergeCells("A2:G2");
-
-      // Row kosong (Row 3)
-      worksheet.getRow(3).height = 10;
-
-      // Header Row (Row 4)
-      const headers = [
-        "NO",
-        "BIDANG",
-        "LOKASI",
-        "LUAS (M2)",
-        "PERUNTUKAN",
-        "STATUS",
-        "KETERANGAN",
-      ];
-
-      const headerRow = worksheet.getRow(4);
-      headers.forEach((header, index) => {
-        const cell = headerRow.getCell(index + 1);
-        cell.value = header;
-        cell.font = {
-          bold: true,
-          size: 11,
-          name: "Arial",
-        };
-        cell.alignment = {
-          horizontal: "center",
-          vertical: "middle",
-          wrapText: true,
-        };
-        cell.fill = {
-          type: "pattern",
-          pattern: "solid",
-          fgColor: { argb: "FFD3D3D3" },
-        };
-      });
-      headerRow.height = 30;
-
-      // Header angka (Row 5)
-      const numberHeaders = ["1", "2", "3", "4", "5", "6", "7"];
-      const numberRow = worksheet.getRow(5);
-      numberHeaders.forEach((num, index) => {
-        const cell = numberRow.getCell(index + 1);
-        cell.value = num;
-        cell.font = {
-          bold: true,
-          size: 10,
-          name: "Arial",
-        };
-        cell.alignment = {
-          horizontal: "center",
-          vertical: "middle",
-        };
-        cell.fill = {
-          type: "pattern",
-          pattern: "solid",
-          fgColor: { argb: "FFD3D3D3" },
-        };
-      });
-      numberRow.height = 20;
-
-      // Group assets berdasarkan Peruntukan
-      const groupedAssets = {};
-      filteredAssets.forEach((asset) => {
-        const peruntukan = asset.peruntukan || "Tidak Ada Peruntukan";
-        if (!groupedAssets[peruntukan]) {
-          groupedAssets[peruntukan] = [];
-        }
-        groupedAssets[peruntukan].push(asset);
-      });
-
-      let currentRow = 6;
-      let globalIndex = 1;
-
-      // Helper function untuk memformat bidang khusus
-      const formatBidangName = (bidang) => {
-        if (!bidang) return "-";
-
-        // Handle "Tanah Gudang Kantor"
-        if (bidang.toLowerCase().includes("tanah gudang kantor")) {
-          return "Tanah\nGudang\nKantor";
-        }
-
-        // Handle "Tanah Bangunan"
-        if (bidang.toLowerCase().includes("tanah bangunan")) {
-          return "Tanah\nBangunan";
-        }
-
-        return bidang;
-      };
-
-      // Loop through each Peruntukan
-      Object.keys(groupedAssets).forEach((peruntukanName) => {
-        const peruntukanAssets = groupedAssets[peruntukanName];
-
-        // Tambahkan header PERUNTUKAN
-        const peruntukanHeaderRow = worksheet.getRow(currentRow);
-        const peruntukanHeaderCell = peruntukanHeaderRow.getCell(1);
-        peruntukanHeaderCell.value = peruntukanName.toUpperCase();
-        peruntukanHeaderCell.font = {
-          bold: true,
-          size: 12,
-          name: "Arial",
-        };
-        peruntukanHeaderCell.alignment = {
-          horizontal: "left",
-          vertical: "middle",
-        };
-
-        // Merge peruntukan header across all columns (A:G)
-        worksheet.mergeCells(`A${currentRow}:G${currentRow}`);
-        peruntukanHeaderRow.height = 25;
-        currentRow++;
-
-        // Tambahkan setiap aset sebagai data terpisah (tidak digroup by bidang)
-        peruntukanAssets.forEach((asset) => {
-          // Baris pertama: Nomor, Bidang, Kelurahan, Luas, Peruntukan, Status, Keterangan
-          const row1 = worksheet.getRow(currentRow);
-          row1.getCell(1).value = globalIndex; // NO
-          row1.getCell(2).value = formatBidangName(asset.bidang); // BIDANG dengan format khusus
-          row1.getCell(3).value = asset.kelurahan || "-"; // LOKASI - Kelurahan
-          row1.getCell(4).value = asset.area ? Number(asset.area) : "-"; // LUAS
-          row1.getCell(5).value = asset.peruntukan || "-"; // PERUNTUKAN
-          row1.getCell(6).value = asset.status || "-"; // STATUS
-          row1.getCell(7).value = asset.keterangan || "-"; // KETERANGAN
-
-          // Baris kedua: Kecamatan
-          currentRow++;
-          const row2 = worksheet.getRow(currentRow);
-          row2.getCell(3).value = asset.kecamatan || "-"; // LOKASI - Kecamatan
-
-          // Baris ketiga: Kota
-          currentRow++;
-          const row3 = worksheet.getRow(currentRow);
-          row3.getCell(3).value = getKotaName(asset.provinsi_id, asset.kota_id); // LOKASI - Kota
-
-          // Baris keempat: Provinsi
-          currentRow++;
-          const row4 = worksheet.getRow(currentRow);
-          row4.getCell(3).value = getProvinsiName(asset.provinsi_id); // LOKASI - Provinsi
-
-          // Set formatting untuk semua 4 baris
-          [row1, row2, row3, row4].forEach((row) => {
-            for (let col = 1; col <= 7; col++) {
-              const cell = row.getCell(col);
-              cell.font = {
-                size: 10,
-                name: "Arial",
-              };
-
-              // Set alignment
-              if ([1, 4].includes(col)) {
-                // Number columns (A, D) - center/right
-                cell.alignment = {
-                  horizontal: col === 1 ? "center" : "right",
-                  vertical: "middle",
-                };
-                if (
-                  col === 4 &&
-                  typeof cell.value === "number" &&
-                  cell.value > 0
-                ) {
-                  cell.numFmt = "#,##0";
-                }
-              } else if (col === 2) {
-                // Bidang column - center with wrap text for multi-line
-                cell.alignment = {
-                  horizontal: "center",
-                  vertical: "middle",
-                  wrapText: true,
-                };
-              } else {
-                // Text columns - left
-                cell.alignment = {
-                  horizontal: "left",
-                  vertical: "middle",
-                  wrapText: true,
-                };
-              }
-            }
-            row.height = 20;
-          });
-
-          currentRow++;
-          globalIndex++;
-        });
-      });
-
-      // Apply border ke semua cells yang berisi data
-      for (let row = 1; row < currentRow; row++) {
-        for (let col = 1; col <= 7; col++) {
-          const cell = worksheet.getCell(row, col);
-          cell.border = {
-            top: { style: "thin", color: { argb: "FF000000" } },
-            left: { style: "thin", color: { argb: "FF000000" } },
-            bottom: { style: "thin", color: { argb: "FF000000" } },
-            right: { style: "thin", color: { argb: "FF000000" } },
-          };
+        // Apply borders
+        for (let row = 1; row < endRow; row++) {
+          for (let col = 1; col <= 7; col++) {
+            const cell = worksheet.getCell(row, col);
+            cell.border = {
+              top: { style: "thin", color: { argb: "FF000000" } },
+              left: { style: "thin", color: { argb: "FF000000" } },
+              bottom: { style: "thin", color: { argb: "FF000000" } },
+              right: { style: "thin", color: { argb: "FF000000" } },
+            };
+          }
         }
       }
 
-      // Generate nama file
+      // 2. Create separate sheets for "Tanah" assets grouped by pengelola
+      if (tanahAssets.length > 0) {
+        // Group by pengelola
+        const groupedByPengelola = {};
+        tanahAssets.forEach((asset) => {
+          const pengelola = asset.pengelola || "Tanpa Pengelola";
+          if (!groupedByPengelola[pengelola]) {
+            groupedByPengelola[pengelola] = [];
+          }
+          groupedByPengelola[pengelola].push(asset);
+        });
+
+        // Create sheet for each pengelola
+        Object.keys(groupedByPengelola).forEach((pengelolaName) => {
+          const pengelolaAssets = groupedByPengelola[pengelolaName];
+
+          // Create safe sheet name (max 31 chars, no special characters)
+          const safeSheetName = `Tanah ${pengelolaName}`
+            .slice(0, 31)
+            .replace(/[\\/:*?[\]]/g, "");
+
+          const { worksheet } = createStandardSheet(
+            workbook,
+            safeSheetName,
+            `DAFTAR ASET TANAH ${pengelolaName.toUpperCase()}`,
+            subtitle,
+            pengelolaAssets
+          );
+
+          const endRow = addDataRows(worksheet, pengelolaAssets, 6);
+
+          // Apply borders
+          for (let row = 1; row < endRow; row++) {
+            for (let col = 1; col <= 7; col++) {
+              const cell = worksheet.getCell(row, col);
+              cell.border = {
+                top: { style: "thin", color: { argb: "FF000000" } },
+                left: { style: "thin", color: { argb: "FF000000" } },
+                bottom: { style: "thin", color: { argb: "FF000000" } },
+                right: { style: "thin", color: { argb: "FF000000" } },
+              };
+            }
+          }
+        });
+      }
+
+      // Generate filename
       const provinsiName = selectedProvinsi
         ? getProvinsiName(selectedProvinsi)
             .replace(/[^a-zA-Z0-9\s]/g, "")
@@ -444,13 +487,12 @@ const LaporanYardipPage = () => {
         new Date().toISOString().split("T")[0]
       }.xlsx`;
 
-      // Write dan download file
+      // Write and download file
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       });
 
-      // Download file
       const link = document.createElement("a");
       const url = URL.createObjectURL(blob);
       link.setAttribute("href", url);
@@ -461,7 +503,7 @@ const LaporanYardipPage = () => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      alert("File Excel berhasil didownload.");
+      alert("File Excel berhasil didownload dengan multiple sheets.");
     } catch (error) {
       console.error("Error exporting to Excel:", error);
       alert(`Gagal mengekspor data ke Excel: ${error.message}`);
