@@ -14,6 +14,7 @@ import toast from "react-hot-toast";
 import PetaGambarAset from "../components/PetaGambarAset";
 import FormAset from "../components/FormAset";
 import { normalizeKodimName } from "../utils/kodimUtils";
+import * as turf from "@turf/turf";
 
 const API_URL = "http://localhost:3001";
 
@@ -30,6 +31,8 @@ const TambahAsetPage = () => {
   const [selectedKodim, setSelectedKodim] = useState(null);
 
   const [drawnAsset, setDrawnAsset] = useState(null);
+  const [importedGeometry, setImportedGeometry] = useState(null);
+  const [geoJsonKey, setGeoJsonKey] = useState(0); // State baru untuk key
   const [isFormEnabled, setIsFormEnabled] = useState(false);
   const [isLocationSelected, setIsLocationSelected] = useState(false);
   const [selectionSource, setSelectionSource] = useState("form"); // 'form' or 'map'
@@ -78,11 +81,10 @@ const TambahAsetPage = () => {
       const displayNama = koremData?.nama === "Berdiri Sendiri" ? "Kodim 0733/Kota Semarang" : koremData?.nama;
       setSelectedKorem(koremData ? { id: koremData.id, nama: displayNama } : null);
 
-      // Determine if we are dealing with the special Semarang case
       const isSemarangCase = kodimName === "Kodim 0733/Kota Semarang" || koremData?.nama === "Berdiri Sendiri";
 
       if (isSemarangCase) {
-        setSelectedKodimId("Kodim 0733/Kota Semarang"); // Ensure Kodim ID is set
+        setSelectedKodimId("Kodim 0733/Kota Semarang");
         const kodimFeature = kodimBoundaries?.features.find(
           (f) => f.properties.listkodim_Kodim === "Kodim 0733/Semarang (BS)"
         );
@@ -91,7 +93,6 @@ const TambahAsetPage = () => {
       } else if (kodimName && kodimBoundaries) {
         const kodimFeature = kodimBoundaries.features.find((f) => {
           const featureName = normalizeKodimName(f.properties.listkodim_Kodim);
-          // Special case handling for Grobogan
           if (kodimName === "Kodim 0717/Grobogan") {
             return featureName === "Kodim 0717/Purwodadi";
           }
@@ -119,7 +120,6 @@ const TambahAsetPage = () => {
         return;
       }
 
-      // Special handling for Kota Semarang - directly process it without intermediate step
       if (koremName === "Berdiri Sendiri" || koremName === "Kodim 0733/Kota Semarang") {
         const matchingKorem = koremList.find(
           (korem) => korem.nama === "Kodim 0733/Kota Semarang" || korem.id === "5"
@@ -128,7 +128,6 @@ const TambahAsetPage = () => {
         if (matchingKorem) {
           setSelectedKoremId(matchingKorem.id);
           setSelectedKorem({ id: matchingKorem.id, nama: matchingKorem.nama });
-          // For Kota Semarang, directly set the Kodim as well
           setSelectedKodimId("Kodim 0733/Kota Semarang");
           handleLocationChange(matchingKorem.id, "Kodim 0733/Kota Semarang");
           return;
@@ -136,8 +135,6 @@ const TambahAsetPage = () => {
       }
 
       let matchingKorem;
-      // DATA MISMATCH FIX: Map says "Berdiri Sendiri", DB says "Berdiri Sendiri" but with empty kodim array
-      // Special case for Kota Semarang which is "Berdiri Sendiri"
       if (koremName.trim() === "Berdiri Sendiri") {
         matchingKorem = koremList.find(
           (korem) => korem.nama === "Berdiri Sendiri"
@@ -154,14 +151,12 @@ const TambahAsetPage = () => {
         setSelectedKodimId("");
         setSelectedKodim(null);
         setIsLocationSelected(true);
-        // Use the matched name from DB for the toast
         toast.success(`KOREM ${matchingKorem.nama} dipilih. Silakan pilih KODIM.`);
       } else {
         toast.error(`Data KOREM "${koremName}" yang sesuai tidak ditemukan.`);
         console.error("Could not find Korem with name:", koremName);
       }
     } else if (type === "KODIM") {
-      // Special handling for Kota Semarang which is "Berdiri Sendiri"
       if (koremName === "Berdiri Sendiri" || koremName === "Kodim 0733/Kota Semarang") {
         const matchingKorem = koremList.find(
           (korem) => korem.nama === "Kodim 0733/Kota Semarang" || korem.id === "5"
@@ -170,7 +165,6 @@ const TambahAsetPage = () => {
         if (matchingKorem) {
           setSelectedKoremId(matchingKorem.id);
           setSelectedKorem({ id: matchingKorem.id, nama: matchingKorem.nama });
-          // Special case: Kota Semarang
           if (kodimName.includes("Semarang") || kodimName === "Kodim 0733/Semarang (BS)") {
             setSelectedKodimId("Kodim 0733/Kota Semarang");
             handleLocationChange(matchingKorem.id, "Kodim 0733/Kota Semarang");
@@ -178,9 +172,6 @@ const TambahAsetPage = () => {
             setSelectedKodimId(kodimName);
             handleLocationChange(matchingKorem.id, kodimName);
           }
-        } else {
-          setSelectedKodimId(kodimName);
-          toast.success(`KODIM ${kodimName} dipilih. Silakan gambar area aset.`);
         }
       } else {
         const matchingKorem = koremList.find(
@@ -206,11 +197,24 @@ const TambahAsetPage = () => {
       return;
     }
     setDrawnAsset(data);
+    setImportedGeometry(null);
     setIsFormEnabled(true);
     setIsLocationSelected(true);
     toast.success(
       `Polygon berhasil digambar! Luas: ${data.area.toFixed(2)} m²`
     );
+  };
+
+  const handleKmlImport = (geometry) => {
+    if (!geometry) return;
+    const feature = turf.feature(geometry);
+    const area = turf.area(feature);
+
+    setImportedGeometry(geometry);
+    setDrawnAsset({ geometry, area });
+    setIsFormEnabled(true);
+    setIsLocationSelected(true);
+    setGeoJsonKey(prevKey => prevKey + 1); // Inkrementasi key
   };
 
   const handleSaveAsset = async (assetData, buktiPemilikanFile, assetPhotos) => {
@@ -220,7 +224,6 @@ const TambahAsetPage = () => {
     let buktiPemilikanFilename = assetData.bukti_pemilikan_filename || "";
     let assetPhotoUrls = assetData.foto_aset || [];
 
-    // 1. Upload Bukti Pemilikan (if new file is provided)
     if (buktiPemilikanFile) {
       try {
         toast.loading("Mengupload bukti pemilikan...", { id: toastId });
@@ -234,7 +237,6 @@ const TambahAsetPage = () => {
 
         buktiPemilikanUrl = uploadRes.data.url;
         buktiPemilikanFilename = uploadRes.data.filename;
-        console.log("DEBUG: URL Bukti Kepemilikan setelah upload:", buktiPemilikanUrl);
         toast.loading(`Bukti pemilikan berhasil diupload.`, { id: toastId });
       } catch (err) {
         toast.error("Gagal mengupload bukti pemilikan.", { id: toastId });
@@ -243,7 +245,6 @@ const TambahAsetPage = () => {
       }
     }
 
-    // 2. Upload Foto Aset (if new files are provided)
     if (assetPhotos && assetPhotos.length > 0) {
       try {
         toast.loading(`Mengupload ${assetPhotos.length} foto aset...`, { id: toastId });
@@ -259,7 +260,6 @@ const TambahAsetPage = () => {
         
         const newPhotoUrls = photosUploadRes.data.files.map(file => file.url);
         assetPhotoUrls = [...new Set([...assetPhotoUrls, ...newPhotoUrls])];
-        console.log("DEBUG: URL Foto Aset setelah upload:", assetPhotoUrls);
         
         toast.loading("Foto aset berhasil diupload.", { id: toastId });
       } catch (err) {
@@ -269,7 +269,6 @@ const TambahAsetPage = () => {
       }
     }
 
-    // 3. Prepare final payload
     const assetPayload = {
       ...assetData,
       id: `T${Date.now()}`,
@@ -282,9 +281,7 @@ const TambahAsetPage = () => {
       foto_aset: assetPhotoUrls,
     };
 
-    // 4. Save asset data to db.json
     try {
-      console.log("DEBUG: Final payload TEPAT SEBELUM disimpan:", assetPayload);
       toast.loading("Menyimpan data aset ke database...", { id: toastId });
       if (!assetPayload.lokasi) {
         toast.error("Data lokasi dari gambar tidak tersedia.", { id: toastId });
@@ -344,6 +341,8 @@ const TambahAsetPage = () => {
                       onLocationSelect={handleAreaSelect}
                       selectionSource={selectionSource}
                       koremList={koremList}
+                      importedGeometry={importedGeometry} // Pass prop ke peta
+                      geoJsonKey={geoJsonKey} // Pass key ke peta
                     />
                   </div>
                 </Col>
@@ -353,6 +352,7 @@ const TambahAsetPage = () => {
                     onCancel={handleCancel}
                     koremList={koremList}
                     onLocationChange={handleLocationChange}
+                    onKmlImport={handleKmlImport} // Pass handler ke form
                     initialGeometry={drawnAsset ? drawnAsset.geometry : null}
                     initialArea={drawnAsset ? drawnAsset.area : null}
                     isEnabled={isFormEnabled}

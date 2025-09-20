@@ -15,7 +15,7 @@ import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
 import * as turf from "@turf/turf";
 import axios from "axios";
-import { normalizeKodimName, denormalizeKodimName } from "../utils/kodimUtils";
+import { normalizeKodimName } from "../utils/kodimUtils";
 
 // Fix for broken icons in Leaflet with Webpack
 delete L.Icon.Default.prototype._getIconUrl;
@@ -61,7 +61,7 @@ const MapSearch = () => {
       showPopup: false,
       autoClose: true,
       retainZoomLevel: false,
-      animateZoom: false, // Disable animation
+      animateZoom: false,
       keepResult: true,
     });
 
@@ -75,65 +75,51 @@ const MapSearch = () => {
   return null;
 };
 
-// Define MapController inside the same file or import it
 const MapController = ({
   selectedKorem,
   selectedKodim,
   koremBoundaries,
   kodimBoundaries,
   resetSelectedLayer,
+  importedGeometry,
 }) => {
   const map = useMap();
 
   useEffect(() => {
     if (!koremBoundaries) return;
 
-    // Add delay to ensure map is fully initialized
     const timer = setTimeout(() => {
-      console.log(
-        "PetaGambarAset MapController useEffect - selectedKodim:",
-        selectedKodim?.nama
-      );
+      if (importedGeometry) {
+        try {
+          const layer = L.geoJSON(importedGeometry);
+          map.fitBounds(layer.getBounds(), { padding: [50, 50], animate: false });
+        } catch (e) {
+          console.error("Error fitting bounds to imported geometry:", e);
+        }
+        return;
+      }
 
       if (selectedKodim && kodimBoundaries) {
         const kodimFeature = kodimBoundaries.features.find((f) => {
           const featureName = normalizeKodimName(f.properties.listkodim_Kodim);
           const searchName = selectedKodim.nama;
-
-          console.log(
-            `  MapController: Comparing GeoJSON Kodim: ${f.properties.listkodim_Kodim} (Normalized: ${featureName}) with selectedKodim: ${searchName}`
-          );
-
-          // Special handling for Kota Semarang
           if (searchName === "Kodim 0733/Kota Semarang") {
             return f.properties.listkodim_Korem === "Berdiri Sendiri";
           }
-
           return featureName === searchName;
         });
         if (kodimFeature) {
-          console.log(
-            "  MapController: Found matching kodimFeature:",
-            kodimFeature.properties.listkodim_Kodim
-          );
           try {
             const layer = L.geoJSON(kodimFeature);
-            map.fitBounds(layer.getBounds(), { animate: false }); // Remove animation
+            map.fitBounds(layer.getBounds(), { animate: false });
           } catch (error) {
             console.error("Error fitting bounds for kodim:", error);
           }
-        } else {
-          console.log(
-            "  MapController: No matching kodimFeature found for selectedKodim:",
-            selectedKodim.nama
-          );
         }
-      } else if (selectedKorem && koremBoundaries) {
-        console.log(
-          "PetaGambarAset MapController useEffect - selectedKorem:",
-          selectedKorem.nama
-        );
-        // Special handling for "Kodim 0733/Kota Semarang"
+        return;
+      }
+
+      if (selectedKorem && koremBoundaries) {
         const koremNameToSearch =
           selectedKorem.nama === "Kodim 0733/Kota Semarang"
             ? "Berdiri Sendiri"
@@ -147,27 +133,24 @@ const MapController = ({
             const featureGroup = L.featureGroup(
               koremFeatures.map((f) => L.geoJSON(f))
             );
-            map.fitBounds(featureGroup.getBounds(), { animate: false }); // Remove animation
+            map.fitBounds(featureGroup.getBounds(), { animate: false });
           } catch (error) {
             console.error("Error fitting bounds for korem:", error);
           }
         }
-      } else {
-        // If no korem/kodim is selected, fit to all korems
-        console.log(
-          "PetaGambarAset MapController useEffect - Fitting to all korems."
-        );
-        try {
-          const allKoremLayer = L.geoJSON(koremBoundaries);
-          map.fitBounds(allKoremLayer.getBounds(), { animate: false }); // Remove animation
-        } catch (error) {
-          console.error("Error fitting bounds for all korems:", error);
-        }
+        return;
       }
-    }, 300); // Add 300ms delay
+
+      try {
+        const allKoremLayer = L.geoJSON(koremBoundaries);
+        map.fitBounds(allKoremLayer.getBounds(), { animate: false });
+      } catch (error) {
+        console.error("Error fitting bounds for all korems:", error);
+      }
+    }, 300);
 
     return () => clearTimeout(timer);
-  }, [selectedKorem, selectedKodim, koremBoundaries, kodimBoundaries, map]);
+  }, [importedGeometry, selectedKorem, selectedKodim, koremBoundaries, kodimBoundaries, map]);
 
   return null;
 };
@@ -178,6 +161,8 @@ const PetaGambarAset = ({
   selectedKodim,
   isLocationSelected,
   onLocationSelect,
+  importedGeometry,
+  geoJsonKey, // Terima key prop
 }) => {
   const featureGroupRef = useRef(null);
   const [koremBoundaries, setKoremBoundaries] = useState(null);
@@ -185,42 +170,27 @@ const PetaGambarAset = ({
   const selectedLayerRef = useRef(null);
   const [mapReady, setMapReady] = useState(false);
 
-  const mapCenter = [-7.5, 110.0]; // Center of Central Java
+  const mapCenter = [-7.5, 110.0];
   const initialZoom = 8;
 
-  // Inject CSS untuk mengatur z-index kontrol map
   useEffect(() => {
     const style = document.createElement("style");
     style.textContent = `
-      .leaflet-control-zoom,
-      .leaflet-control-layers,
-      .leaflet-control-geosearch,
-      .leaflet-draw,
-      .leaflet-draw-toolbar,
-      .leaflet-control-attribution,
-      .leaflet-control {
+      .leaflet-control-zoom, .leaflet-control-layers, .leaflet-control-geosearch, 
+      .leaflet-draw, .leaflet-draw-toolbar, .leaflet-control-attribution, .leaflet-control {
         z-index: 500 !important;
       }
-      
-      .leaflet-control-layers-expanded,
-      .leaflet-geosearch .results {
+      .leaflet-control-layers-expanded, .leaflet-geosearch .results {
         z-index: 501 !important;
       }
-      
-      .leaflet-popup {
-        z-index: 1002 !important;
-      }
+      .leaflet-popup { z-index: 1002 !important; }
     `;
-
     document.head.appendChild(style);
-
-    // Cleanup function
     return () => {
       document.head.removeChild(style);
     };
   }, []);
 
-  // Load KOREM/KODIM boundaries
   useEffect(() => {
     const loadBoundaries = async () => {
       try {
@@ -228,29 +198,20 @@ const PetaGambarAset = ({
           axios.get("/data/korem.geojson"),
           axios.get("/data/Kodim.geojson"),
         ]);
-
         setKoremBoundaries(koremRes.data);
         setKodimBoundaries(kodimRes.data);
-
-        // Set map as ready after boundaries are loaded
         setTimeout(() => setMapReady(true), 100);
       } catch (error) {
         console.error("Error loading boundaries:", error);
-        // Still set map as ready even if boundaries fail to load
         setTimeout(() => setMapReady(true), 100);
       }
     };
-
     loadBoundaries();
   }, []);
 
-  // Reset selected layer style
   const resetSelectedLayer = useCallback(() => {
     if (selectedLayerRef.current) {
-      if (
-        selectedLayerRef.current.feature &&
-        selectedLayerRef.current.feature.properties
-      ) {
+      if (selectedLayerRef.current.feature && selectedLayerRef.current.feature.properties) {
         const properties = selectedLayerRef.current.feature.properties;
         if (properties.listkodim_Kodim) {
           selectedLayerRef.current.setStyle(kodimStyle);
@@ -262,95 +223,43 @@ const PetaGambarAset = ({
     }
   }, []);
 
-  // Handle KOREM click
   const onKoremEachFeature = (feature, layer) => {
     const koremName = feature.properties.listkodim_Korem;
-
-    // Special handling for Kota Semarang
-    const displayKoremName =
-      koremName === "Berdiri Sendiri" ? "Kodim 0733/Kota Semarang" : koremName;
-
+    const displayKoremName = koremName === "Berdiri Sendiri" ? "Kodim 0733/Kota Semarang" : koremName;
     if (displayKoremName) {
       layer.bindPopup(`<b>KOREM:</b><br/>${displayKoremName}`);
     }
-
     layer.on({
       click: () => {
-        // Special handling for Kota Semarang - directly select it without intermediate step
         if (koremName === "Berdiri Sendiri") {
-          onLocationSelect &&
-            onLocationSelect(
-              "KODIM",
-              "Kodim 0733/Kota Semarang",
-              "Kodim 0733/Kota Semarang"
-            );
+          onLocationSelect && onLocationSelect("KODIM", "Kodim 0733/Kota Semarang", "Kodim 0733/Kota Semarang");
         } else {
-          // For other Korems, use the normal flow
-          const finalKoremName =
-            koremName === "Berdiri Sendiri"
-              ? "Kodim 0733/Kota Semarang"
-              : koremName;
+          const finalKoremName = koremName === "Berdiri Sendiri" ? "Kodim 0733/Kota Semarang" : koremName;
           onLocationSelect && onLocationSelect("KOREM", finalKoremName, null);
         }
       },
     });
   };
 
-  // Handle KODIM click
   const onKodimEachFeature = (feature, layer) => {
     const kodimName = normalizeKodimName(feature.properties.listkodim_Kodim);
     const koremName = feature.properties.listkodim_Korem;
-
-    console.log(
-      "onKodimEachFeature clicked - Original Kodim:",
-      feature.properties.listkodim_Kodim,
-      "Normalized Kodim:",
-      kodimName
-    );
-
-    // Special handling for Kota Semarang
-    const displayKodimName = kodimName.includes("Semarang")
-      ? "Kodim 0733/Kota Semarang"
-      : kodimName;
-    const displayKoremName =
-      koremName === "Berdiri Sendiri" ? "Kodim 0733/Kota Semarang" : koremName;
-
+    const displayKodimName = kodimName.includes("Semarang") ? "Kodim 0733/Kota Semarang" : kodimName;
+    const displayKoremName = koremName === "Berdiri Sendiri" ? "Kodim 0733/Kota Semarang" : koremName;
     if (displayKodimName && displayKoremName) {
-      layer.bindPopup(
-        `<b>KODIM:</b> ${displayKodimName}<br/><b>KOREM:</b> ${displayKoremName}`
-      );
+      layer.bindPopup(`<b>KODIM:</b> ${displayKodimName}<br/><b>KOREM:</b> ${displayKoremName}`);
     }
-
     layer.on({
       click: () => {
         resetSelectedLayer();
         layer.setStyle(selectedStyle);
         selectedLayerRef.current = layer;
-
-        // Special handling for Kota Semarang - directly process it without intermediate step
-        if (
-          kodimName.includes("Semarang") ||
-          koremName === "Berdiri Sendiri" ||
-          kodimName === "Kodim 0733/Semarang (BS)"
-        ) {
-          onLocationSelect &&
-            onLocationSelect(
-              "KODIM",
-              "Kodim 0733/Kota Semarang",
-              "Kodim 0733/Kota Semarang"
-            );
+        if (kodimName.includes("Semarang") || koremName === "Berdiri Sendiri" || kodimName === "Kodim 0733/Semarang (BS)") {
+          onLocationSelect && onLocationSelect("KODIM", "Kodim 0733/Kota Semarang", "Kodim 0733/Kota Semarang");
         } else {
-          // For other Kodims, use the normal flow
-          const finalKoremName =
-            koremName === "Berdiri Sendiri"
-              ? "Kodim 0733/Kota Semarang"
-              : koremName;
-          const finalKodimName = kodimName.includes("Semarang")
-            ? "Kodim 0733/Kota Semarang"
-            : kodimName;
-
-          onLocationSelect &&
-            onLocationSelect("KODIM", finalKoremName, finalKodimName);
+          const finalKoremName = koremName === "Berdiri Sendiri" ? "Kodim 0733/Kota Semarang" : koremName;
+          const finalKodimName = kodimName.includes("Semarang") ? "Kodim 0733/Kota Semarang" : kodimName;
+          onLocationSelect && onLocationSelect("KODIM", finalKoremName, finalKodimName);
         }
       },
     });
@@ -361,14 +270,9 @@ const PetaGambarAset = ({
     if (layerType === "polygon") {
       const geojson = layer.toGeoJSON();
       const area = turf.area(geojson);
-
       featureGroupRef.current.clearLayers();
       featureGroupRef.current.addLayer(layer);
-
-      onPolygonCreated({
-        geometry: geojson.geometry,
-        area: area,
-      });
+      onPolygonCreated({ geometry: geojson.geometry, area: area });
     }
   };
 
@@ -378,11 +282,7 @@ const PetaGambarAset = ({
 
   const handleBackToKoremView = () => {
     if (selectedKorem) {
-      // Special handling for Kota Semarang
-      const koremName =
-        selectedKorem.nama === "Kodim 0733/Kota Semarang"
-          ? "Berdiri Sendiri"
-          : selectedKorem.nama;
+      const koremName = selectedKorem.nama === "Kodim 0733/Kota Semarang" ? "Berdiri Sendiri" : selectedKorem.nama;
       onLocationSelect && onLocationSelect("KOREM", koremName, null);
     }
   };
@@ -399,49 +299,23 @@ const PetaGambarAset = ({
     cursor: "pointer",
   };
 
-  const filteredKodimData =
-    selectedKorem && kodimBoundaries
-      ? {
-          ...kodimBoundaries,
-          features: kodimBoundaries.features.filter((feature) => {
-            const featureKoremName = feature.properties.listkodim_Korem;
-            const featureKodimName = normalizeKodimName(
-              feature.properties.listkodim_Kodim
-            );
-
-            console.log(
-              `filteredKodimData: Processing GeoJSON Kodim: ${feature.properties.listkodim_Kodim} (Normalized: ${featureKodimName})`
-            );
-
-            // Special handling for "Kodim 0733/Kota Semarang"
-            // In GeoJSON, "Berdiri Sendiri" is represented as "Berdiri Sendiri" for the korem name
-            const isKoremMatch =
-              selectedKorem.nama === "Kodim 0733/Kota Semarang"
-                ? featureKoremName === "Berdiri Sendiri"
-                : featureKoremName === selectedKorem.nama;
-
-            if (!isKoremMatch) {
-              return false;
-            }
-
-            if (selectedKodim && selectedKodim.nama) {
-              const searchName = selectedKodim.nama;
-              console.log(
-                `  filteredKodimData: Comparing normalized featureKodimName (${featureKodimName}) with selectedKodim.nama (${searchName})`
-              );
-
-              // Special handling for Kota Semarang
-              if (searchName === "Kodim 0733/Kota Semarang") {
-                return featureKodimName.includes("Semarang");
-              }
-
-              return featureKodimName === searchName;
-            }
-
-            return true;
-          }),
+  const filteredKodimData = selectedKorem && kodimBoundaries ? {
+    ...kodimBoundaries,
+    features: kodimBoundaries.features.filter((feature) => {
+      const featureKoremName = feature.properties.listkodim_Korem;
+      const featureKodimName = normalizeKodimName(feature.properties.listkodim_Kodim);
+      const isKoremMatch = selectedKorem.nama === "Kodim 0733/Kota Semarang" ? featureKoremName === "Berdiri Sendiri" : featureKoremName === selectedKorem.nama;
+      if (!isKoremMatch) return false;
+      if (selectedKodim && selectedKodim.nama) {
+        const searchName = selectedKodim.nama;
+        if (searchName === "Kodim 0733/Kota Semarang") {
+          return featureKodimName.includes("Semarang");
         }
-      : null;
+        return featureKodimName === searchName;
+      }
+      return true;
+    }),
+  } : null;
 
   return (
     <div style={{ position: "relative", height: "100%", width: "100%" }}>
@@ -450,9 +324,9 @@ const PetaGambarAset = ({
         zoom={initialZoom}
         style={{ height: "100%", width: "100%" }}
         maxZoom={22}
-        zoomAnimation={false} // Disable zoom animation
-        fadeAnimation={false} // Disable fade animation
-        markerZoomAnimation={false} // Disable marker zoom animation
+        zoomAnimation={false}
+        fadeAnimation={false}
+        markerZoomAnimation={false}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -460,7 +334,6 @@ const PetaGambarAset = ({
         />
         <MapSearch />
 
-        {/* This component now controls map view changes */}
         {mapReady && (
           <MapController
             selectedKorem={selectedKorem}
@@ -468,7 +341,12 @@ const PetaGambarAset = ({
             koremBoundaries={koremBoundaries}
             kodimBoundaries={kodimBoundaries}
             resetSelectedLayer={resetSelectedLayer}
+            importedGeometry={importedGeometry}
           />
+        )}
+
+        {importedGeometry && (
+          <GeoJSON key={geoJsonKey} data={importedGeometry} style={{ color: "#00FFFF", weight: 4 }} />
         )}
 
         <LayersControl position="topright">
@@ -476,18 +354,21 @@ const PetaGambarAset = ({
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              maxZoom={21}
             />
           </LayersControl.BaseLayer>
           <LayersControl.BaseLayer name="Satelit">
             <TileLayer
               url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
               attribution="Tiles &copy; Esri"
+              maxZoom={21}
             />
           </LayersControl.BaseLayer>
           <LayersControl.BaseLayer name="Topografi">
             <TileLayer
               url="https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png"
               attribution='Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+              maxZoom={19}
             />
           </LayersControl.BaseLayer>
 
@@ -513,7 +394,7 @@ const PetaGambarAset = ({
           )}
         </LayersControl>
         <FeatureGroup ref={featureGroupRef}>
-          {isLocationSelected && (
+          {isLocationSelected && !importedGeometry && (
             <EditControl
               position="topleft"
               onCreated={handleCreated}
