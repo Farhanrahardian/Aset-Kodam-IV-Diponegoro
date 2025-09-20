@@ -7,6 +7,7 @@ import {
   LayersControl,
   Marker,
   useMap,
+  useMapEvents,
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -109,242 +110,150 @@ const MapController = ({
   mode,
 }) => {
   const map = useMap();
-  const [isReady, setIsReady] = useState(false);
-
-  // Initialize map readiness
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsReady(true);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, []);
 
   useEffect(() => {
-    console.log("MapController useEffect triggered");
-    console.log("View:", view);
-    console.log("KoremData:", koremData);
-    console.log("Assets:", assets);
+    if (!map) return;
 
-    if (!map || !isReady) return;
-
-    // Add delay to ensure map is fully initialized
-    const timer = setTimeout(() => {
-      try {
-        // Always clear asset polygons and labels from previous renders
-        map.eachLayer((layer) => {
-          if (
-            layer.isAssetPolygon ||
-            (layer instanceof L.Marker &&
-              layer.options.icon instanceof L.DivIcon)
-          ) {
-            map.removeLayer(layer);
-          }
-        });
-
-        // MODE 1: Render a single asset polygon and zoom (for Detail Modal/Offcanvas)
-        if (mode === "detail" && assets && assets.length > 0) {
-          const asset = assets[0];
-          renderAssetAsPolygon(map, asset);
-          fitBoundsToAsset(map, asset);
-          // Exit early, do not execute the view logic below
-          return;
-        }
-
-        // MODE 2: Main map view logic
-        if (view.type === "kodim" && view.kodim) {
-          let feature = null;
-          const normalizedViewKodim = normalizeKodimName(
-            view.kodim.listkodim_Kodim
-          );
-
-          if (normalizedViewKodim === "Kodim 0733/Kota Semarang") {
-            feature = kodimData?.features.find(
-              (f) => f.properties.listkodim_Kodim === "Kodim 0733/Semarang (BS)"
-            );
-          } else {
-            feature = kodimData?.features.find(
-              (f) =>
-                normalizeKodimName(f.properties.listkodim_Kodim) ===
-                normalizedViewKodim
-            );
-          }
-
-          if (feature) {
-            map.fitBounds(L.geoJSON(feature).getBounds(), { animate: false });
-          }
-        } else if (view.type === "korem" && view.korem) {
-          const feature = koremData?.features.find(
-            (f) => f.properties.listkodim_Korem === view.korem.listkodim_Korem
-          );
-          if (feature) {
-            map.fitBounds(L.geoJSON(feature).getBounds(), { animate: false });
-          }
-        } else {
-          // This handles 'nasional' view
-          if (koremData && koremData.features.length > 0) {
-            map.fitBounds(L.geoJSON(koremData).getBounds(), { animate: false });
-          }
-        }
-
-        // Add labels for the current view
-        if (view.type === "nasional" && koremData) {
-          console.log("Adding korem labels for nasional view");
-          koremData.features.forEach((feature) => {
-            let { listkodim_Korem: nama, asset_count } = feature.properties;
-            const featureName = (nama || "").toLowerCase();
-            const isLabelHidden =
-              featureName.includes("hutan") ||
-              featureName.includes("waduk") ||
-              featureName.includes("wadung kedungombo");
-
-            if (!isLabelHidden && feature.geometry) {
-              if (nama === "Kodim 0733/Kota Semarang") {
-                nama = "Kodim 0733/Kota Semarang";
-              }
-
-              const point = turf.pointOnFeature(feature);
-              const coords = point.geometry.coordinates;
-              const leafletCoords = [coords[1], coords[0]];
-
-              console.log(
-                `Creating label for ${nama} with ${asset_count} assets`
-              );
-              const label = L.marker(leafletCoords, {
-                icon: L.divIcon({
-                  className: "korem-label",
-                  html: `<div><strong>${nama}</strong><br><span>${asset_count} Aset</span></div>`,
-                  iconSize: [150, 40],
-                  iconAnchor: [75, 20],
-                }),
-              });
-
-              label.on("click", () => {
-                if (
-                  feature.properties.listkodim_Korem ===
-                  "Kodim 0733/Kota Semarang"
-                ) {
-                  const kodimFeature = kodimData.features.find(
-                    (f) =>
-                      f.properties.listkodim_Kodim ===
-                      "Kodim 0733/Semarang (BS)"
-                  );
-                  if (kodimFeature) {
-                    const kodimProperties = {
-                      ...kodimFeature.properties,
-                      listkodim_Kodim: "Kodim 0733/Kota Semarang",
-                    };
-                    setView({
-                      type: "kodim",
-                      korem: feature.properties,
-                      kodim: kodimProperties,
-                    });
-                    if (onMapKodimSelect) onMapKodimSelect(kodimProperties);
-                  }
-                } else {
-                  setView({
-                    type: "korem",
-                    korem: feature.properties,
-                    kodim: null,
-                  });
-                  if (onMapKoremSelect) onMapKoremSelect(feature.properties);
-                }
-              });
-
-              label.addTo(map);
-            }
-          });
-        }
-
-        // Add labels for Kodim view
-        if (view.type === "korem" && kodimData && view.korem) {
-          // Exception for standalone Kodim Semarang
-          if (view.korem.listkodim_Korem === "Kodim 0733/Kota Semarang") {
-            return;
-          }
-
-          console.log("Adding kodim labels for korem view");
-
-          const koremName = view.korem.listkodim_Korem;
-          const kodimsInKorem = kodimData.features.filter((f) => {
-            if (koremName === "Kodim 0733/Kota Semarang") {
-              return (
-                f.properties.listkodim_Kodim === "Kodim 0733/Semarang (BS)"
-              );
-            }
-            return f.properties.listkodim_Korem === koremName;
-          });
-
-          kodimsInKorem.forEach((feature) => {
-            let { listkodim_Kodim: nama, asset_count } = feature.properties;
-
-            if (feature.geometry) {
-              const point = turf.pointOnFeature(feature);
-              const coords = point.geometry.coordinates;
-              const leafletCoords = [coords[1], coords[0]];
-
-              const label = L.marker(leafletCoords, {
-                icon: L.divIcon({
-                  className: "korem-label", // Can reuse the same style
-                  html: `<div><strong>${normalizeKodimName(nama).replace(
-                    /^Kodim\s/i,
-                    ""
-                  )}</strong><br><span>${asset_count || 0} Aset</span></div>`,
-                  iconSize: [150, 40],
-                  iconAnchor: [75, 20],
-                }),
-              });
-
-              label.on("click", () => {
-                let normalizedKodimName = normalizeKodimName(
-                  feature.properties.listkodim_Kodim
-                );
-                if (
-                  feature.properties.listkodim_Kodim ===
-                  "Kodim 0733/Semarang (BS)"
-                ) {
-                  normalizedKodimName = "Kodim 0733/Kota Semarang";
-                }
-                const normalizedKodim = {
-                  ...feature.properties,
-                  listkodim_Kodim: normalizedKodimName,
-                };
-
-                setView({
-                  type: "kodim",
-                  korem: view.korem,
-                  kodim: normalizedKodim,
-                });
-                if (onMapKodimSelect) {
-                  onMapKodimSelect(normalizedKodim);
-                }
-              });
-
-              label.addTo(map);
-            }
-          });
-        }
-      } catch (error) {
-        console.error("Error in MapController:", error);
+    // Always clear asset polygons and labels from previous renders
+    map.eachLayer((layer) => {
+      if (
+        layer.isAssetPolygon ||
+        (layer instanceof L.Marker && layer.options.icon instanceof L.DivIcon)
+      ) {
+        map.removeLayer(layer);
       }
-    }, 500); // Add 500ms delay
+    });
 
-    return () => clearTimeout(timer);
-  }, [
-    map,
-    view,
-    koremData,
-    kodimData,
-    assets,
-    setView,
-    onMapKoremSelect,
-    onMapKodimSelect,
-    mode,
-    isReady,
-  ]);
+    // MODE 1: Render a single asset polygon and zoom (for Detail Modal/Offcanvas)
+    if (mode === "detail" && assets && assets.length > 0) {
+      const asset = assets[0];
+      renderAssetAsPolygon(map, asset);
+      fitBoundsToAsset(map, asset);
+      return; // Exit early
+    }
+
+    // MODE 2: Main map view logic
+    if (view.type === "kodim" && view.kodim) {
+      let feature = null;
+      const normalizedViewKodim = normalizeKodimName(view.kodim.listkodim_Kodim);
+      if (normalizedViewKodim === "Kodim 0733/Kota Semarang") {
+        feature = kodimData?.features.find(
+          (f) => f.properties.listkodim_Kodim === "Kodim 0733/Semarang (BS)"
+        );
+      } else {
+        feature = kodimData?.features.find(
+          (f) => normalizeKodimName(f.properties.listkodim_Kodim) === normalizedViewKodim
+        );
+      }
+      if (feature) map.fitBounds(L.geoJSON(feature).getBounds());
+
+    } else if (view.type === "korem" && view.korem) {
+      const feature = koremData?.features.find(
+        (f) => f.properties.listkodim_Korem === view.korem.listkodim_Korem
+      );
+      if (feature) map.fitBounds(L.geoJSON(feature).getBounds());
+
+    } else { // Nasional view
+      if (koremData && koremData.features.length > 0) {
+        map.fitBounds(L.geoJSON(koremData).getBounds());
+      }
+    }
+
+    // Add labels for the current view
+    if (view.type === "nasional" && koremData) {
+      koremData.features.forEach((feature) => {
+        let { listkodim_Korem: nama, asset_count } = feature.properties;
+        const featureName = (nama || "").toLowerCase();
+        const isLabelHidden = featureName.includes("hutan") || featureName.includes("waduk") || featureName.includes("wadung kedungombo");
+
+        if (!isLabelHidden && feature.geometry) {
+          if (nama === "Kodim 0733/Kota Semarang") nama = "Kodim 0733/Kota Semarang";
+          const point = turf.pointOnFeature(feature);
+          const coords = point.geometry.coordinates;
+          const leafletCoords = [coords[1], coords[0]];
+
+          const label = L.marker(leafletCoords, {
+            icon: L.divIcon({
+              className: "korem-label",
+              html: `<div><strong>${nama}</strong><br><span>${asset_count} Aset</span></div>`,
+              iconSize: [150, 40],
+              iconAnchor: [75, 20],
+            }),
+          });
+
+          label.on("click", () => {
+            if (feature.properties.listkodim_Korem === "Kodim 0733/Kota Semarang") {
+              const kodimFeature = kodimData.features.find((f) => f.properties.listkodim_Kodim === "Kodim 0733/Semarang (BS)");
+              if (kodimFeature) {
+                const kodimProperties = { ...kodimFeature.properties, listkodim_Kodim: "Kodim 0733/Kota Semarang" };
+                setView({ type: "kodim", korem: feature.properties, kodim: kodimProperties });
+                if (onMapKodimSelect) onMapKodimSelect(kodimProperties);
+              }
+            } else {
+              setView({ type: "korem", korem: feature.properties, kodim: null });
+              if (onMapKoremSelect) onMapKoremSelect(feature.properties);
+            }
+          });
+          label.addTo(map);
+        }
+      });
+    }
+
+    if (view.type === "korem" && kodimData && view.korem) {
+      if (view.korem.listkodim_Korem === "Kodim 0733/Kota Semarang") return;
+
+      const koremName = view.korem.listkodim_Korem;
+      const kodimsInKorem = kodimData.features.filter((f) => {
+        if (koremName === "Kodim 0733/Kota Semarang") {
+          return f.properties.listkodim_Kodim === "Kodim 0733/Semarang (BS)";
+        }
+        return f.properties.listkodim_Korem === koremName;
+      });
+
+      kodimsInKorem.forEach((feature) => {
+        let { listkodim_Kodim: nama, asset_count } = feature.properties;
+        if (feature.geometry) {
+          const point = turf.pointOnFeature(feature);
+          const coords = point.geometry.coordinates;
+          const leafletCoords = [coords[1], coords[0]];
+          const label = L.marker(leafletCoords, {
+            icon: L.divIcon({
+              className: "korem-label",
+              html: `<div><strong>${normalizeKodimName(nama).replace(/^Kodim\s/i, "")}</strong><br><span>${asset_count || 0} Aset</span></div>`,
+              iconSize: [150, 40],
+              iconAnchor: [75, 20],
+            }),
+          });
+
+          label.on("click", () => {
+            let normalizedKodimName = normalizeKodimName(feature.properties.listkodim_Kodim);
+            if (feature.properties.listkodim_Kodim === "Kodim 0733/Semarang (BS)") {
+              normalizedKodimName = "Kodim 0733/Kota Semarang";
+            }
+            const normalizedKodim = { ...feature.properties, listkodim_Kodim: normalizedKodimName };
+            setView({ type: "kodim", korem: view.korem, kodim: normalizedKodim });
+            if (onMapKodimSelect) onMapKodimSelect(normalizedKodim);
+          });
+          label.addTo(map);
+        }
+      });
+    }
+
+  }, [map, view, koremData, kodimData, assets, setView, onMapKoremSelect, onMapKodimSelect, mode]);
 
   return null;
 };
+
+// --- MAP ZOOM TRACKER ---
+const MapZoomTracker = ({ setZoomLevel }) => {
+  const map = useMapEvents({
+    zoomend: () => {
+      setZoomLevel(map.getZoom());
+    },
+  });
+  return null;
+};
+
 
 // --- MAIN COMPONENT ---
 const PetaAset = React.memo(
@@ -352,8 +261,10 @@ const PetaAset = React.memo(
     assets = [],
     onAssetClick,
     asetPilihan,
-    koremData,
-    kodimData,
+    koremData, // Detailed data
+    kodimData, // Detailed data
+    koremDataSimplified, // Simplified data
+    kodimDataSimplified, // Simplified data
     koremFilter, // From parent filter
     kodimFilter, // From parent filter
     onMapKoremSelect, // Callback for when a korem is selected on map
@@ -754,9 +665,6 @@ const PetaAset = React.memo(
           center={[-7.5, 110.0]}
           zoom={8}
           style={{ height: "100%", width: "100%" }}
-          zoomAnimation={false} // Disable zoom animation
-          fadeAnimation={false} // Disable fade animation
-          markerZoomAnimation={false} // Disable marker zoom animation
         >
           <MapController
             view={view}

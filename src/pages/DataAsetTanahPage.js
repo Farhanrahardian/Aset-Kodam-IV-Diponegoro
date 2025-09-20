@@ -745,8 +745,12 @@ const DataAsetTanahPage = () => {
   // NEW: State for holding actual GeoJSON content
   const [koremGeoJSON, setKoremGeoJSON] = useState(null);
   const [kodimGeoJSON, setKodimGeoJSON] = useState(null);
+  const [koremGeoJSONSimplified, setKoremGeoJSONSimplified] = useState(null);
+  const [kodimGeoJSONSimplified, setKodimGeoJSONSimplified] = useState(null);
   const [koremDataForMap, setKoremDataForMap] = useState(null);
   const [kodimDataForMap, setKodimDataForMap] = useState(null);
+  const [koremDataForMapSimplified, setKoremDataForMapSimplified] = useState(null);
+  const [kodimDataForMapSimplified, setKodimDataForMapSimplified] = useState(null);
 
   const handleMarkerClick = (asset) => {
     setAssetForOffcanvas(asset);
@@ -804,17 +808,21 @@ const DataAsetTanahPage = () => {
     setLoading(true);
     try {
       // Use Promise.all to fetch all data concurrently
-      const [assetsRes, koremRes, koremGeoJSONRes, kodimGeoJSONRes] = await Promise.all([
+      const [assetsRes, koremRes, koremGeoJSONRes, kodimGeoJSONRes, koremGeoJSONSimplifiedRes, kodimGeoJSONSimplifiedRes] = await Promise.all([
         axios.get(`${API_URL}/assets`),
         axios.get(`${API_URL}/korem`),
         axios.get(`/data/korem.geojson`),
-        axios.get(`/data/Kodim.geojson`)
+        axios.get(`/data/Kodim.geojson`),
+        axios.get(`/data/korem_simplified.geojson`),
+        axios.get(`/data/Kodim_simplified.geojson`)
       ]);
 
       setAssets(assetsRes.data);
       setKoremList(koremRes.data);
       setKoremGeoJSON(koremGeoJSONRes.data);
       setKodimGeoJSON(kodimGeoJSONRes.data);
+      setKoremGeoJSONSimplified(koremGeoJSONSimplifiedRes.data);
+      setKodimGeoJSONSimplified(kodimGeoJSONSimplifiedRes.data);
 
       const allKodims = koremRes.data.flatMap((korem) => {
         // Handle special case for "Berdiri Sendiri" Korem
@@ -924,6 +932,58 @@ const DataAsetTanahPage = () => {
         setKodimDataForMap({ ...kodimGeoJSON, features: kodimFeatures });
     }
   }, [assets, kodimGeoJSON]);
+
+  // Effect to calculate asset counts per simplified korem
+  useEffect(() => {
+    if (assets.length > 0 && koremGeoJSONSimplified?.features) {
+      const koremFeatures = JSON.parse(JSON.stringify(koremGeoJSONSimplified.features));
+      koremFeatures.forEach(f => { f.properties.asset_count = 0; });
+      assets.forEach(asset => {
+        const geometry = parseLocation(asset.lokasi);
+        const centroid = getCentroid(geometry);
+        if (centroid) {
+          const point = turf.point([centroid[1], centroid[0]]);
+          for (const koremFeature of koremFeatures) {
+            if (koremFeature.geometry && turf.booleanPointInPolygon(point, koremFeature.geometry)) {
+              koremFeature.properties.asset_count++;
+              break; 
+            }
+          }
+        }
+      });
+      setKoremDataForMapSimplified({ ...koremGeoJSONSimplified, features: koremFeatures });
+    } else if (koremGeoJSONSimplified?.features) {
+        const koremFeatures = JSON.parse(JSON.stringify(koremGeoJSONSimplified.features));
+        koremFeatures.forEach(f => { f.properties.asset_count = 0; });
+        setKoremDataForMapSimplified({ ...koremGeoJSONSimplified, features: koremFeatures });
+    }
+  }, [assets, koremGeoJSONSimplified]);
+
+  // Effect to calculate asset counts per simplified kodim
+  useEffect(() => {
+    if (assets.length > 0 && kodimGeoJSONSimplified?.features) {
+        const kodimFeatures = JSON.parse(JSON.stringify(kodimGeoJSONSimplified.features));
+        kodimFeatures.forEach(f => { f.properties.asset_count = 0; });
+        assets.forEach(asset => {
+            const geometry = parseLocation(asset.lokasi);
+            const centroid = getCentroid(geometry);
+            if (centroid) {
+                const point = turf.point([centroid[1], centroid[0]]);
+                for (const kodimFeature of kodimFeatures) {
+                    if (kodimFeature.geometry && turf.booleanPointInPolygon(point, kodimFeature.geometry)) {
+                        kodimFeature.properties.asset_count++;
+                        break; 
+                    }
+                }
+            }
+        });
+        setKodimDataForMapSimplified({ ...kodimGeoJSONSimplified, features: kodimFeatures });
+    } else if (kodimGeoJSONSimplified?.features) {
+        const kodimFeatures = JSON.parse(JSON.stringify(kodimGeoJSONSimplified.features));
+        kodimFeatures.forEach(f => { f.properties.asset_count = 0; });
+        setKodimDataForMapSimplified({ ...kodimGeoJSONSimplified, features: kodimFeatures });
+    }
+  }, [assets, kodimGeoJSONSimplified]);
 
   useEffect(() => {
     console.log("Filter effect triggered");
@@ -1185,6 +1245,8 @@ const DataAsetTanahPage = () => {
                 markerColorMode="certificate"
                 koremData={koremDataForMap}
                 kodimData={kodimDataForMap}
+                koremDataSimplified={koremDataForMapSimplified}
+                kodimDataSimplified={kodimDataForMapSimplified}
                 koremFilter={selectedKorem} // Pass filter state
                 kodimFilter={selectedKodim} // Pass filter state
                 onMapKoremSelect={handleMapKoremSelect}
