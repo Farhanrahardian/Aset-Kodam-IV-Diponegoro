@@ -26,13 +26,21 @@ L.Icon.Default.mergeOptions({
 });
 
 // Define styles outside the component to prevent re-creation on re-renders
-const koremStyle = {
-  fillColor: "#2E7D32",
-  weight: 2,
-  opacity: 1,
-  color: "white",
-  fillOpacity: 0.3,
+// Helper function to generate a color from a string
+const stringToColor = (str) => {
+  if (!str) return "#000000"; // Default color for null or empty strings
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  let color = '#';
+  for (let i = 0; i < 3; i++) {
+    const value = (hash >> (i * 8)) & 0xFF;
+    color += ('00' + value.toString(16)).substr(-2);
+  }
+  return color;
 };
+
 const kodimStyle = {
   fillColor: "#f59e0b",
   weight: 2,
@@ -216,7 +224,15 @@ const PetaGambarAset = ({
         if (properties.listkodim_Kodim) {
           selectedLayerRef.current.setStyle(kodimStyle);
         } else if (properties.listkodim_Korem) {
-          selectedLayerRef.current.setStyle(koremStyle);
+          const koremName = properties.listkodim_Korem;
+          const color = stringToColor(koremName);
+          selectedLayerRef.current.setStyle({
+            fillColor: color,
+            weight: 2,
+            opacity: 1,
+            color: "white",
+            fillOpacity: 0.5,
+          });
         }
       }
       selectedLayerRef.current = null;
@@ -376,7 +392,17 @@ const PetaGambarAset = ({
             <LayersControl.Overlay checked name="Area KOREM">
               <GeoJSON
                 data={koremBoundaries}
-                style={koremStyle}
+                style={(feature) => {
+                  const koremName = feature.properties.listkodim_Korem;
+                  const color = stringToColor(koremName);
+                  return {
+                    fillColor: color,
+                    weight: 2,
+                    opacity: 1,
+                    color: "white",
+                    fillOpacity: 0.5, // Increased opacity to make colors more visible
+                  };
+                }}
                 onEachFeature={onKoremEachFeature}
               />
             </LayersControl.Overlay>

@@ -18,6 +18,12 @@ const isPdfFile = (filename) => {
   return filename.toLowerCase().endsWith(".pdf");
 };
 
+const isVideoFile = (filename) => {
+  if (!filename) return false;
+  const videoExtensions = [".mp4", ".mov", ".webm", ".avi"];
+  return videoExtensions.some((ext) => filename.toLowerCase().endsWith(ext));
+};
+
 const FormAset = forwardRef(({
   onSave,
   onCancel,
@@ -520,6 +526,7 @@ const FormAset = forwardRef(({
                       </Form.Group>
                     </Col>
                   </Row>
+
                   <Form.Group className="mb-3">
                     <Form.Label>Keterangan</Form.Label>
                     <Form.Control
@@ -531,6 +538,7 @@ const FormAset = forwardRef(({
                       placeholder="Masukkan keterangan tambahan jika ada"
                     />
                   </Form.Group>
+
                 </Card.Body>
               </Card>
 
@@ -570,6 +578,8 @@ const FormAset = forwardRef(({
                       </Form.Group>
                     </Col>
                   </Row>
+
+
 
                   <Form.Group className="mb-3">
                     <Form.Label>Status Sertifikat *</Form.Label>
@@ -657,27 +667,45 @@ const FormAset = forwardRef(({
                       <div className="mb-2 p-2 border rounded">
                         <p><strong>Foto saat ini:</strong></p>
                         <div className="d-flex flex-wrap gap-2">
-                          {formData.foto_aset.map((photoUrl, index) => (
-                            <Card key={index} className="position-relative" style={{ width: '100px', height: '100px' }}>
-                              <Card.Img 
-                                src={photoUrl.startsWith('http') ? photoUrl : `http://localhost:3001${photoUrl}`} 
-                                alt={`Foto Aset ${index + 1}`} 
-                                style={{ objectFit: 'cover', width: '100%', height: '100%' }} 
-                              />
-                              <Button 
-                                variant="danger" 
-                                size="sm" 
-                                className="position-absolute top-0 end-0 m-1"
-                                onClick={() => {
-                                  const newPhotos = formData.foto_aset.filter(url => url !== photoUrl);
-                                  setFormData(prev => ({...prev, foto_aset: newPhotos}));
-                                  toast.success('Foto akan dihapus setelah disimpan.');
-                                }}
-                              >
-                                X
-                              </Button>
-                            </Card>
-                          ))}
+                          {formData.foto_aset.map((mediaUrl, index) => {
+                            const fullUrl = mediaUrl.startsWith('http') ? mediaUrl : `http://localhost:3001${mediaUrl}`;
+                            const isVideo = isVideoFile(fullUrl);
+
+                            return (
+                              <Card key={index} className="position-relative" style={{ width: '100px', height: '100px' }}>
+                                {isVideo ? (
+                                  <video
+                                    src={fullUrl}
+                                    muted
+                                    style={{ objectFit: 'cover', width: '100%', height: '100%', cursor: 'pointer' }}
+                                    onClick={() => window.open(fullUrl, '_blank')}
+                                    title="Klik untuk lihat video"
+                                  />
+                                ) : (
+                                  <Card.Img 
+                                    src={fullUrl} 
+                                    alt={`Media Aset ${index + 1}`} 
+                                    style={{ objectFit: 'cover', width: '100%', height: '100%', cursor: 'pointer' }} 
+                                    onClick={() => window.open(fullUrl, '_blank')}
+                                    title="Klik untuk lihat gambar"
+                                  />
+                                )}
+                                <Button 
+                                  variant="danger" 
+                                  size="sm" 
+                                  className="position-absolute top-0 end-0 m-1"
+                                  style={{ zIndex: 1 }}
+                                  onClick={() => {
+                                    const newMedia = formData.foto_aset.filter(url => url !== mediaUrl);
+                                    setFormData(prev => ({...prev, foto_aset: newMedia}));
+                                    toast.success('Media akan dihapus setelah disimpan.');
+                                  }}
+                                >
+                                  X
+                                </Button>
+                              </Card>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -686,10 +714,10 @@ const FormAset = forwardRef(({
                       name="asset_photos"
                       onChange={handleAssetPhotosChange}
                       multiple
-                      accept=".jpg,.jpeg,.png"
+                      accept=".jpg,.jpeg,.png,.mp4,.mov,.webm"
                     />
                     <Form.Text className="text-muted">
-                      {isEditMode ? 'Upload file baru untuk menambah foto.' : 'Format: JPG, JPEG, PNG. Bisa pilih beberapa file sekaligus'}
+                      {isEditMode ? 'Upload file baru untuk menambah media.' : 'Format: JPG, PNG, MP4, MOV, WEBM. Bisa pilih beberapa file sekaligus'}
                     </Form.Text>
                   </Form.Group>
 

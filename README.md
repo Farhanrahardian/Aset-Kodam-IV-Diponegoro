@@ -1,7 +1,7 @@
 
 # Aplikasi Dashboard Aset Tanah Kodam IV/Diponegoro
 
-Ini adalah aplikasi web prototipe yang dibangun untuk memvisualisasikan dan mengelola data aset tanah milik Kodam IV/Diponegoro di wilayah Jawa Tengah dan D.I. Yogyakarta.
+Ini adalah aplikasi web prototipe yang dibangun untuk memvisualisasikan dan mengelola data aset BMN milik Kodam IV/Diponegoro di wilayah Jawa Tengah dan D.I. Yogyakarta.
 
 ---
 
@@ -13,7 +13,7 @@ Aplikasi telah dirombak secara signifikan untuk menyertakan fungsionalitas backe
 
 - **Sistem Login:** Aplikasi kini dilindungi oleh halaman login. Hanya pengguna terotentikasi (admin) yang dapat mengelola data aset.
 - **Manajemen Aset (CRUD):** Admin dapat menambah, mengedit, dan menghapus data aset.
-- **Tambah Aset dengan Menggambar:** Admin dapat menambahkan aset baru dengan menggambar poligon langsung di peta, memberikan cara yang intuitif untuk mendefinisikan lokasi aset.
+- **Tambah Aset dengan Menggambar:** Admin dapat menambahkan aset BMN baru dengan menggambar poligon langsung di peta, memberikan cara yang intuitif untuk mendefinisikan lokasi aset.
 - **Visualisasi Aset Poligon:** Aset yang ada ditampilkan di peta sebagai area poligon, bukan lagi sebagai titik penanda (marker).
 - **Backend API (Simulasi):** Aplikasi sekarang berjalan dengan backend API sementara menggunakan `json-server`, yang membuat aplikasi berperilaku seperti aplikasi dunia nyata.
 

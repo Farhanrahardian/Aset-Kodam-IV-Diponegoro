@@ -30,7 +30,7 @@ const Sidebar = ({ show }) => {
           Dashboard
         </NavLink>
         <NavLink to="/tambah-aset" className="nav-link" style={navLinkStyle}>
-          Tambah Aset
+          Tambah Aset BMN
         </NavLink>
         <NavLink
           to="/tambah-aset-yardip"
@@ -39,12 +39,8 @@ const Sidebar = ({ show }) => {
         >
           Tambah Aset Yardip
         </NavLink>
-        <NavLink
-          to="/data-aset-tanah"
-          className="nav-link"
-          style={navLinkStyle}
-        >
-          Data Aset Tanah
+        <NavLink to="/data-aset-tanah" className="nav-link" style={navLinkStyle}>
+          Data Aset BMN
         </NavLink>
         <NavLink
           to="/data-aset-yardip"
@@ -54,7 +50,7 @@ const Sidebar = ({ show }) => {
           Data Aset Yardip
         </NavLink>
         <NavLink to="/laporan" className="nav-link" style={navLinkStyle}>
-          Cetak Laporan Aset Tanah
+          Cetak Laporan Aset BMN
         </NavLink>
         {/* Tambahan menu baru */}
         <NavLink to="/laporan-yardip" className="nav-link" style={navLinkStyle}>

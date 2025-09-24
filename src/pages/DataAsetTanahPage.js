@@ -64,12 +64,10 @@ const isPdfFile = (filename) => {
 
 const getStatusBadgeClass = (status) => {
   switch (status) {
-    case "Dimiliki/Dikuasai":
+    case "Aman":
       return "bg-success";
-    case "Tidak Dimiliki/Tidak Dikuasai":
+    case "Sengketa":
       return "bg-danger";
-    case "Lain-lain":
-      return "bg-warning text-dark";
     default:
       return "bg-light text-dark";
   }
@@ -154,7 +152,7 @@ const TabelAset = ({ assets, onEdit, onDelete, onViewDetail, koremList, allKodim
                 {asset.pemilikan_sertifikat === "Ya" ? (
                   <span className="badge bg-success">Ya</span>
                 ) : (
-                  <span className="badge bg-warning text-dark">Tidak</span>
+                  <span className="badge bg-danger">Tidak</span>
                 )}
               </td>
               <td>
@@ -1230,7 +1228,7 @@ const DataAsetTanahPage = () => {
 
   return (
     <Container fluid className="mt-4">
-      <h3>Data Aset Tanah</h3>
+      <h3>Data Aset BMN</h3>
       {error && <Alert variant="danger">{error}</Alert>}
 
       <Row>
@@ -1282,8 +1280,8 @@ const DataAsetTanahPage = () => {
                   <div className="text-center py-5">
                     <div className="text-muted">
                       <i className="fas fa-folder-open fa-3x mb-3"></i>
-                      <h5>Belum Ada Data Aset Tanah</h5>
-                      <p>Silakan tambah aset tanah baru di halaman Tambah Aset Tanah.</p>
+                      <h5>Belum Ada Data Aset BMN</h5>
+                      <p>Silakan tambah aset BMN baru di halaman Tambah Aset BMN.</p>
                     </div>
                   </div>
                 ) : (

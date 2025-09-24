@@ -176,7 +176,7 @@ const LaporanPage = () => {
 
       // Buat workbook baru
       const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet("Laporan Aset Tanah");
+      const worksheet = workbook.addWorksheet("Laporan Aset BMN");
 
       // Set column widths
       worksheet.columns = [
@@ -562,8 +562,7 @@ const LaporanPage = () => {
       <div className="mb-4">
         <h2 className="text-dark">
           <i className="fas fa-file-excel me-2"></i>
-          Cetak Laporan Data Aset Tanah
-        </h2>
+                      Cetak Laporan Data Aset BMN        </h2>
       </div>
 
       {error && (

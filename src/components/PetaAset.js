@@ -17,9 +17,23 @@ import { normalizeKodimName } from "../utils/kodimUtils";
 
 // --- STYLING ---
 const defaultStyle = { color: "blue", weight: 2, fillOpacity: 0.1 };
-const koremStyle = { color: "#0033A0", weight: 3, fillOpacity: 0.1 };
 const kodimStyle = { color: "#2E7D32", weight: 2, fillOpacity: 0.2 };
 const selectedStyle = { color: "#FFC107", weight: 4, fillOpacity: 0.3 };
+
+// Helper function to generate a color from a string
+const stringToColor = (str) => {
+  if (!str) return "#000000"; // Default color for null or empty strings
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  let color = '#';
+  for (let i = 0; i < 3; i++) {
+    const value = (hash >> (i * 8)) & 0xFF;
+    color += ('00' + value.toString(16)).substr(-2);
+  }
+  return color;
+};
 
 // --- ICONS ---
 const createIcon = (color) =>
@@ -551,10 +565,7 @@ const PetaAset = React.memo(
     };
 
     const getStyle = (feature) => {
-      // The feature being rendered is always the one we want to see,
-      // so we can use a simpler style logic.
       if (feature.properties.listkodim_Kodim) return kodimStyle;
-      if (feature.properties.listkodim_Korem) return koremStyle;
       return defaultStyle;
     };
 
@@ -746,7 +757,16 @@ const PetaAset = React.memo(
             <GeoJSON
               key={"korem-" + view.korem?.listkodim_Korem}
               data={koremsToShow}
-              style={getStyle}
+              style={(feature) => {
+                const koremName = feature.properties.listkodim_Korem;
+                const color = stringToColor(koremName);
+                return {
+                  fillColor: color,
+                  color: "#FFFFFF",
+                  weight: 2,
+                  fillOpacity: 0.5,
+                };
+              }}
               onEachFeature={onEachKorem}
             />
           )}

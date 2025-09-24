@@ -313,7 +313,7 @@ const TambahAsetPage = () => {
         <Col>
           <Card>
             <Card.Header>
-              <h4 className="mb-0">Tambah Aset Tanah Baru</h4>
+              <h4 className="mb-0">Tambah Aset BMN Baru</h4>
             </Card.Header>
             <Card.Body>
               <Row>

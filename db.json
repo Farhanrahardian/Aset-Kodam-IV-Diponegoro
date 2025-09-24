@@ -9,112 +9,6 @@
   ],
   "assets": [
     {
-      "nama": "1212",
-      "korem_id": "5",
-      "kodim": "Kodim 0733/Kota Semarang",
-      "luas": 9025813.201040884,
-      "kib_kode_barang": "1.21.21.212.121.1",
-      "nomor_registrasi": "1652",
-      "alamat": "Kota Semarang mugassari",
-      "peruntukan": "Kantor Badan Pemerintahan",
-      "status": "Dimiliki/Dikuasai",
-      "asal_milik": "Adera",
-      "pemilikan_sertifikat": "Ya",
-      "keterangan_bukti_pemilikan": "Sertifikar A32",
-      "sertifikat_bidang": "3",
-      "sertifikat_luas": 9025813.2,
-      "belum_sertifikat_bidang": "",
-      "belum_sertifikat_luas": "",
-      "keterangan": "manusia",
-      "atas_nama_pemilik_sertifikat": "pemerinta RI",
-      "lokasi": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              110.47946,
-              -7.035632
-            ],
-            [
-              110.444218,
-              -6.994185
-            ],
-            [
-              110.444905,
-              -7.032659
-            ],
-            [
-              110.48267,
-              -7.006443
-            ],
-            [
-              110.47946,
-              -7.035632
-            ]
-          ]
-        ]
-      },
-      "id": "T1758029611878",
-      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1758113841497.png",
-      "bukti_pemilikan_filename": "bukti_pemilikan-1758113841497.png",
-      "foto_aset": [
-        "/uploads/asset_photos-1758113841507.png",
-        "/uploads/asset_photos-1758113864330.png",
-        "/uploads/asset_photos-1758113864332.png"
-      ]
-    },
-    {
-      "nama": "112121",
-      "korem_id": "3",
-      "kodim": "Kodim 0716/Demak",
-      "luas": 63439202.45886693,
-      "kib_kode_barang": "1.21.21.212.121",
-      "nomor_registrasi": "12",
-      "alamat": "Demak Kenapa",
-      "peruntukan": "Rs Halimawan",
-      "status": "Tidak Dimiliki/Tidak Dikuasai",
-      "asal_milik": "Penjajahan",
-      "pemilikan_sertifikat": "Tidak",
-      "keterangan_bukti_pemilikan": "",
-      "sertifikat_bidang": "",
-      "sertifikat_luas": "",
-      "belum_sertifikat_bidang": "10",
-      "belum_sertifikat_luas": 63439202.46,
-      "keterangan": "masuk dalam kategori",
-      "atas_nama_pemilik_sertifikat": "",
-      "lokasi": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              110.589409,
-              -6.936691
-            ],
-            [
-              110.574501,
-              -6.969624
-            ],
-            [
-              110.613785,
-              -6.956086
-            ],
-            [
-              110.618591,
-              -6.929137
-            ],
-            [
-              110.589409,
-              -6.936691
-            ]
-          ]
-        ]
-      },
-      "id": "T1758103468910",
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": "",
-      "foto_aset": []
-    },
-    {
       "nama": "2312",
       "korem_id": "3",
       "kodim": "Kodim 0719/Jepara",
@@ -123,7 +17,7 @@
       "nomor_registrasi": "3124",
       "alamat": "Jepara nan jaya",
       "peruntukan": "kantor pusat",
-      "status": "Dimiliki/Dikuasai",
+      "status": "Aman",
       "asal_milik": "ananda",
       "pemilikan_sertifikat": "Ya",
       "keterangan_bukti_pemilikan": "gambar dummy",
@@ -131,7 +25,7 @@
       "sertifikat_luas": 24209669.19,
       "belum_sertifikat_bidang": "",
       "belum_sertifikat_luas": "",
-      "keterangan": "tanpa ada kerusakan",
+      "keterangan": "",
       "atas_nama_pemilik_sertifikat": "Pejabat Negara",
       "lokasi": {
         "type": "Polygon",
@@ -176,7 +70,7 @@
       "nomor_registrasi": "16522",
       "alamat": "Jatinangor",
       "peruntukan": "Badan Penyelenggara",
-      "status": "Dimiliki/Dikuasai",
+      "status": "Sengketa",
       "asal_milik": "Adera 12112",
       "pemilikan_sertifikat": "Ya",
       "keterangan_bukti_pemilikan": "Sertifikar PDF",
@@ -186,7 +80,37 @@
       "belum_sertifikat_luas": "",
       "keterangan": "Ada Masukan",
       "atas_nama_pemilik_sertifikat": "yazna",
-      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.556248,-7.643439],[110.665345,-7.653638],[110.637213,-7.691712],[110.565854,-7.695791],[110.550759,-7.672676],[110.556248,-7.643439]]]}",
+      "lokasi": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              110.556248,
+              -7.643439
+            ],
+            [
+              110.665345,
+              -7.653638
+            ],
+            [
+              110.637213,
+              -7.691712
+            ],
+            [
+              110.565854,
+              -7.695791
+            ],
+            [
+              110.550759,
+              -7.672676
+            ],
+            [
+              110.556248,
+              -7.643439
+            ]
+          ]
+        ]
+      },
       "id": "T1758152012953",
       "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1758152012910.pdf",
       "bukti_pemilikan_filename": "bukti_pemilikan-1758152012910.pdf",
@@ -205,7 +129,7 @@
       "nomor_registrasi": "22",
       "alamat": "22",
       "peruntukan": "2",
-      "status": "Dimiliki/Dikuasai",
+      "status": "Sengketa",
       "asal_milik": "2",
       "pemilikan_sertifikat": "Ya",
       "keterangan_bukti_pemilikan": "22",
@@ -213,9 +137,43 @@
       "sertifikat_luas": 382835210.32,
       "belum_sertifikat_bidang": "",
       "belum_sertifikat_luas": "",
-      "keterangan": "22",
+      "keterangan": "",
       "atas_nama_pemilik_sertifikat": "22",
-      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[108.806356,-7.344442],[108.877715,-7.504987],[108.781681,-7.518554],[108.652685,-7.406998],[108.715813,-7.257322],[108.781683,-7.300874],[108.806356,-7.344442]]]}",
+      "lokasi": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              108.806356,
+              -7.344442
+            ],
+            [
+              108.877715,
+              -7.504987
+            ],
+            [
+              108.781681,
+              -7.518554
+            ],
+            [
+              108.652685,
+              -7.406998
+            ],
+            [
+              108.715813,
+              -7.257322
+            ],
+            [
+              108.781683,
+              -7.300874
+            ],
+            [
+              108.806356,
+              -7.344442
+            ]
+          ]
+        ]
+      },
       "id": "T1758156118481",
       "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1758156118454.png",
       "bukti_pemilikan_filename": "bukti_pemilikan-1758156118454.png",
@@ -232,7 +190,7 @@
       "nomor_registrasi": "165211",
       "alamat": "Diponegoro",
       "peruntukan": "Desa",
-      "status": "Dimiliki/Dikuasai",
+      "status": "Digunakan",
       "asal_milik": "Suharto",
       "pemilikan_sertifikat": "Ya",
       "keterangan_bukti_pemilikan": "Sertifikar B21",
@@ -279,6 +237,53 @@
         "/uploads/asset_photos-1758261601385.png",
         "/uploads/asset_photos-1758261601397.png"
       ]
+    },
+    {
+      "nama": "1",
+      "korem_id": "1",
+      "kodim": "Kodim 0701/Banyumas",
+      "luas": 5227478.823092683,
+      "kib_kode_barang": "1",
+      "nomor_registrasi": "11",
+      "alamat": "1",
+      "peruntukan": "1",
+      "status": "Aman",
+      "asal_milik": "1",
+      "pemilikan_sertifikat": "Ya",
+      "keterangan_bukti_pemilikan": "1",
+      "sertifikat_bidang": "1",
+      "sertifikat_luas": 5227478.82,
+      "belum_sertifikat_bidang": "",
+      "belum_sertifikat_luas": "",
+      "keterangan": "",
+      "atas_nama_pemilik_sertifikat": "1",
+      "lokasi": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              108.961678,
+              -7.383832
+            ],
+            [
+              108.976093,
+              -7.415178
+            ],
+            [
+              108.98982,
+              -7.385876
+            ],
+            [
+              108.961678,
+              -7.383832
+            ]
+          ]
+        ]
+      },
+      "id": "T1758708309931",
+      "bukti_pemilikan_url": "",
+      "bukti_pemilikan_filename": "",
+      "foto_aset": []
     }
   ],
   "yardip_assets": [

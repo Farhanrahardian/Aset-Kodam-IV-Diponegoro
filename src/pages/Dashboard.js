@@ -739,14 +739,7 @@ const Dashboard = () => {
             <Card.Header className="bg-primary text-white border-0">
               <div className="d-flex justify-content-between align-items-center">
                 <div>
-                  <h5 className="mb-1">
-                    Data Aset Tanah KODAM
-                    {selectedKoremName && (
-                      <span className="badge bg-light text-primary ms-2">
-                        {selectedKoremName}
-                      </span>
-                    )}
-                  </h5>
+                  <Card.Title>Data Aset BMN KODAM</Card.Title>
                 </div>
                 <Button
                   variant="light"
@@ -905,7 +898,7 @@ const Dashboard = () => {
                   onClick={handleNavigateToTanah}
                   className="btn-chart-action"
                 >
-                  Lihat Semua Data Aset Tanah
+                  Lihat Semua Data Aset BMN
                 </Button>
               </div>
             </Card.Body>

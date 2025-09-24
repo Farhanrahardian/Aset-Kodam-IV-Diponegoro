@@ -6,7 +6,7 @@ const RingkasanAset = ({ assets, onEdit, onDelete }) => {
 
   return (
     <div>
-      <h4 className="mb-3">Data Aset Tanah</h4>
+      <h4 className="mb-3">Data Aset BMN</h4>
       {assets.length > 0 ? (
         assets.map((item) => (
           <Card key={item.id} className="mb-3 shadow-sm">
