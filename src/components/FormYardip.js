@@ -33,6 +33,7 @@ const FormYardip = ({
   onLocationChange = () => {},
   hasDrawnArea = false,
   onAreaChange = () => {},
+  onCoordinateChange = () => {},
 }) => {
   const [formData, setFormData] = useState({
     pengelola: "",
@@ -53,6 +54,14 @@ const FormYardip = ({
   const [manualArea, setManualArea] = useState("");
   const [isManualAreaMode, setIsManualAreaMode] = useState(false);
   const [originalDrawnArea, setOriginalDrawnArea] = useState(null);
+
+  // Manual coordinate states
+  const [manualCoordinates, setManualCoordinates] = useState({
+    latitude: "",
+    longitude: "",
+  });
+  const [coordinateError, setCoordinateError] = useState("");
+  const [isCoordinateValid, setIsCoordinateValid] = useState(false);
 
   const [errors, setErrors] = useState({});
 
@@ -78,13 +87,68 @@ const FormYardip = ({
 
   // Debounced area change function
   const debouncedAreaChange = useMemo(
-    () => debounce((numValue) => {
-      if (originalDrawnArea && Math.abs(numValue - originalDrawnArea) > 0.01) {
-        onAreaChange(numValue);
-      }
-    }, 300),
+    () =>
+      debounce((numValue) => {
+        if (
+          originalDrawnArea &&
+          Math.abs(numValue - originalDrawnArea) > 0.01
+        ) {
+          onAreaChange(numValue);
+        }
+      }, 300),
     [originalDrawnArea, onAreaChange]
   );
+
+  // Debounced coordinate change function - Fixed with better validation
+  const debouncedCoordinateChange = useMemo(
+    () =>
+      debounce((lat, lng) => {
+        if (isValidCoordinate(lat, lng)) {
+          console.log("📍 Sending coordinate to parent:", {
+            lat: parseFloat(lat),
+            lng: parseFloat(lng),
+          });
+          onCoordinateChange({ lat: parseFloat(lat), lng: parseFloat(lng) });
+        }
+      }, 800), // Increased delay to reduce conflicts
+    [onCoordinateChange]
+  );
+
+  // Validate coordinate function
+  const isValidCoordinate = (lat, lng) => {
+    const latitude = parseFloat(lat);
+    const longitude = parseFloat(lng);
+
+    return (
+      !isNaN(latitude) &&
+      !isNaN(longitude) &&
+      latitude >= -90 &&
+      latitude <= 90 &&
+      longitude >= -180 &&
+      longitude <= 180
+    );
+  };
+
+  // Check if coordinates are in Indonesia region
+  const isInIndonesiaRegion = (lat, lng) => {
+    const latitude = parseFloat(lat);
+    const longitude = parseFloat(lng);
+
+    // Indonesia rough boundaries
+    const indonesiaBounds = {
+      north: 6,
+      south: -11,
+      west: 95,
+      east: 141,
+    };
+
+    return (
+      latitude <= indonesiaBounds.north &&
+      latitude >= indonesiaBounds.south &&
+      longitude >= indonesiaBounds.west &&
+      longitude <= indonesiaBounds.east
+    );
+  };
 
   // Initialize form data
   useEffect(() => {
@@ -111,6 +175,35 @@ const FormYardip = ({
         setManualArea(Number(assetToEdit.area).toFixed(2));
         setOriginalDrawnArea(Number(assetToEdit.area));
       }
+
+      // Set coordinates if editing and has location data
+      if (assetToEdit.lokasi) {
+        try {
+          // Try to extract center point from polygon geometry
+          const locationData =
+            typeof assetToEdit.lokasi === "string"
+              ? JSON.parse(assetToEdit.lokasi)
+              : assetToEdit.lokasi;
+
+          if (locationData && locationData.coordinates) {
+            // Calculate centroid of polygon
+            const coords = locationData.coordinates[0];
+            if (coords && coords.length > 0) {
+              const latSum = coords.reduce((sum, coord) => sum + coord[1], 0);
+              const lngSum = coords.reduce((sum, coord) => sum + coord[0], 0);
+              const centerLat = (latSum / coords.length).toFixed(6);
+              const centerLng = (lngSum / coords.length).toFixed(6);
+
+              setManualCoordinates({
+                latitude: centerLat,
+                longitude: centerLng,
+              });
+            }
+          }
+        } catch (error) {
+          console.error("Error extracting coordinates from asset:", error);
+        }
+      }
     } else {
       setFormData({
         pengelola: "",
@@ -135,68 +228,167 @@ const FormYardip = ({
     }
   }, [initialArea]);
 
-  // Cleanup debounced function on unmount
+  // Update coordinate validation when coordinates change - Fixed logic
+  useEffect(() => {
+    const { latitude, longitude } = manualCoordinates;
+
+    // Both empty - clear errors
+    if (latitude.trim() === "" && longitude.trim() === "") {
+      setCoordinateError("");
+      setIsCoordinateValid(false);
+      return;
+    }
+
+    // One empty - error
+    if (latitude.trim() === "" || longitude.trim() === "") {
+      setCoordinateError("Harap isi kedua koordinat (latitude dan longitude)");
+      setIsCoordinateValid(false);
+      return;
+    }
+
+    // Invalid format - error
+    if (!isValidCoordinate(latitude, longitude)) {
+      setCoordinateError(
+        "Koordinat tidak valid. Latitude: -90 to 90, Longitude: -180 to 180"
+      );
+      setIsCoordinateValid(false);
+      return;
+    }
+
+    // Valid but outside Indonesia - warning but still valid
+    if (!isInIndonesiaRegion(latitude, longitude)) {
+      setCoordinateError(
+        "Peringatan: Koordinat berada di luar wilayah Indonesia"
+      );
+      setIsCoordinateValid(true); // Still valid, just a warning
+    } else {
+      setCoordinateError("");
+      setIsCoordinateValid(true);
+    }
+
+    // Trigger coordinate change if valid - Fixed to only trigger when both valid
+    if (isValidCoordinate(latitude, longitude)) {
+      debouncedCoordinateChange(latitude, longitude);
+    }
+  }, [manualCoordinates, debouncedCoordinateChange]);
+
+  // Cleanup debounced functions on unmount
   useEffect(() => {
     return () => {
       if (debouncedAreaChange?.cancel) {
         debouncedAreaChange.cancel();
       }
+      if (debouncedCoordinateChange?.cancel) {
+        debouncedCoordinateChange.cancel();
+      }
     };
-  }, [debouncedAreaChange]);
+  }, [debouncedAreaChange, debouncedCoordinateChange]);
 
-  // Handle province change - menggunakan useCallback
-  const handleProvinceChange = useCallback((e) => {
-    const province = e.target.value;
-    setSelectedProvince(province);
-    setSelectedCity(""); // Reset city when province changes
-    onLocationChange(province, ""); // Notify parent component
-  }, [onLocationChange]);
+  // Handle province change
+  const handleProvinceChange = useCallback(
+    (e) => {
+      const province = e.target.value;
+      setSelectedProvince(province);
+      setSelectedCity(""); // Reset city when province changes
+      onLocationChange(province, ""); // Notify parent component
+    },
+    [onLocationChange]
+  );
 
-  // Handle city change - menggunakan useCallback
-  const handleCityChange = useCallback((e) => {
-    const city = e.target.value;
-    setSelectedCity(city);
-    onLocationChange(selectedProvince, city); // Notify parent component
-  }, [selectedProvince, onLocationChange]);
+  // Handle city change
+  const handleCityChange = useCallback(
+    (e) => {
+      const city = e.target.value;
+      setSelectedCity(city);
+      onLocationChange(selectedProvince, city); // Notify parent component
+    },
+    [selectedProvince, onLocationChange]
+  );
 
-  // Handle input change - menggunakan useCallback
-  const handleChange = useCallback((e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  // Handle input change
+  const handleChange = useCallback(
+    (e) => {
+      const { name, value } = e.target;
+      setFormData((prev) => ({ ...prev, [name]: value }));
 
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors((prev) => ({
+      // Clear error when user starts typing
+      if (errors[name]) {
+        setErrors((prev) => ({
+          ...prev,
+          [name]: "",
+        }));
+      }
+    },
+    [errors]
+  );
+
+  // Handle manual area change
+  const handleManualAreaChange = useCallback(
+    (e) => {
+      const value = e.target.value;
+      setManualArea(value);
+
+      // Clear area error if exists
+      if (errors.manualArea) {
+        setErrors((prev) => ({
+          ...prev,
+          manualArea: "",
+        }));
+      }
+
+      // If value is valid number and different from original, enable manual mode
+      const numValue = parseFloat(value);
+      if (!isNaN(numValue) && numValue > 0 && originalDrawnArea) {
+        setIsManualAreaMode(Math.abs(numValue - originalDrawnArea) > 0.01);
+
+        // Use debounced function to notify parent component
+        debouncedAreaChange(numValue);
+      }
+    },
+    [errors.manualArea, originalDrawnArea, debouncedAreaChange]
+  );
+
+  // Handle manual coordinate change - Fixed to prevent infinite loops
+  const handleCoordinateChange = useCallback(
+    (e) => {
+      const { name, value } = e.target;
+      setManualCoordinates((prev) => ({
         ...prev,
-        [name]: "",
+        [name]: value,
       }));
+
+      // Clear coordinate error when user starts typing
+      if (coordinateError) {
+        setCoordinateError("");
+      }
+    },
+    [coordinateError]
+  );
+
+  // Handle coordinate zoom button - Fixed to prevent conflicts
+  const handleZoomToCoordinate = useCallback(() => {
+    const { latitude, longitude } = manualCoordinates;
+    if (isValidCoordinate(latitude, longitude)) {
+      console.log("🎯 Manual zoom button clicked:", {
+        lat: parseFloat(latitude),
+        lng: parseFloat(longitude),
+      });
+      // Send immediately without debounce for manual button click
+      onCoordinateChange({
+        lat: parseFloat(latitude),
+        lng: parseFloat(longitude),
+      });
     }
-  }, [errors]);
+  }, [manualCoordinates, onCoordinateChange]);
 
-  // Handle manual area change - diperbaiki dengan debouncing
-  const handleManualAreaChange = useCallback((e) => {
-    const value = e.target.value;
-    setManualArea(value);
+  // Clear coordinates
+  const clearCoordinates = useCallback(() => {
+    setManualCoordinates({ latitude: "", longitude: "" });
+    setCoordinateError("");
+    setIsCoordinateValid(false);
+  }, []);
 
-    // Clear area error if exists
-    if (errors.manualArea) {
-      setErrors((prev) => ({
-        ...prev,
-        manualArea: "",
-      }));
-    }
-
-    // If value is valid number and different from original, enable manual mode
-    const numValue = parseFloat(value);
-    if (!isNaN(numValue) && numValue > 0 && originalDrawnArea) {
-      setIsManualAreaMode(Math.abs(numValue - originalDrawnArea) > 0.01);
-
-      // Use debounced function to notify parent component
-      debouncedAreaChange(numValue);
-    }
-  }, [errors.manualArea, originalDrawnArea, debouncedAreaChange]);
-
-  // Reset to original drawn area - menggunakan useCallback
+  // Reset to original drawn area
   const resetToDrawnArea = useCallback(() => {
     if (originalDrawnArea) {
       setManualArea(originalDrawnArea.toFixed(2));
@@ -205,7 +397,7 @@ const FormYardip = ({
     }
   }, [originalDrawnArea, onAreaChange]);
 
-  // Form validation - menggunakan useCallback
+  // Form validation
   const validateForm = useCallback(() => {
     const newErrors = {};
 
@@ -241,53 +433,65 @@ const FormYardip = ({
     return Object.keys(newErrors).length === 0;
   }, [selectedProvince, selectedCity, formData, manualArea]);
 
-  // Submit - fixed: using getCurrentArea as value, not function
-  const handleSubmit = useCallback((e) => {
-    e.preventDefault();
+  // Submit
+  const handleSubmit = useCallback(
+    (e) => {
+      e.preventDefault();
 
-    if (!selectedProvince || !selectedCity) {
-      alert("Silakan pilih provinsi dan kota terlebih dahulu");
-      return;
-    }
+      if (!selectedProvince || !selectedCity) {
+        alert("Silakan pilih provinsi dan kota terlebih dahulu");
+        return;
+      }
 
-    if (!hasDrawnArea && !assetToEdit) {
-      alert("Silakan gambar lokasi aset di peta terlebih dahulu");
-      return;
-    }
+      if (!hasDrawnArea && !assetToEdit) {
+        alert("Silakan gambar lokasi aset di peta terlebih dahulu");
+        return;
+      }
 
-    if (validateForm()) {
-      // Prepare data untuk yardip dengan struktur yang sesuai dengan db.json
-      const yardipData = {
-        ...formData,
-        type: "yardip", // Identifier untuk jenis aset
-        lokasi: initialGeometry || (assetToEdit ? assetToEdit.lokasi : null),
-        area: getCurrentArea, // Fixed: Use getCurrentArea as value (useMemo result)
-        isManualArea: isManualAreaMode,
-        originalDrawnArea: originalDrawnArea,
-        // Tambahkan timestamp untuk tracking
-        created_at: assetToEdit
-          ? assetToEdit.created_at
-          : new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
+      if (validateForm()) {
+        // Prepare data untuk yardip dengan struktur yang sesuai dengan db.json
+        const yardipData = {
+          ...formData,
+          type: "yardip", // Identifier untuk jenis aset
+          lokasi: initialGeometry || (assetToEdit ? assetToEdit.lokasi : null),
+          area: getCurrentArea, // Fixed: Use getCurrentArea as value (useMemo result)
+          isManualArea: isManualAreaMode,
+          originalDrawnArea: originalDrawnArea,
+          // Add coordinate data if available
+          manualCoordinates: isCoordinateValid
+            ? {
+                latitude: parseFloat(manualCoordinates.latitude),
+                longitude: parseFloat(manualCoordinates.longitude),
+              }
+            : null,
+          // Tambahkan timestamp untuk tracking
+          created_at: assetToEdit
+            ? assetToEdit.created_at
+            : new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
 
-      onSave(yardipData);
-    }
-  }, [
-    selectedProvince,
-    selectedCity,
-    hasDrawnArea,
-    assetToEdit,
-    validateForm,
-    formData,
-    initialGeometry,
-    getCurrentArea, // Fixed: This is now correctly the useMemo value
-    isManualAreaMode,
-    originalDrawnArea,
-    onSave,
-  ]);
+        onSave(yardipData);
+      }
+    },
+    [
+      selectedProvince,
+      selectedCity,
+      hasDrawnArea,
+      assetToEdit,
+      validateForm,
+      formData,
+      initialGeometry,
+      getCurrentArea, // Fixed: This is now correctly the useMemo value
+      isManualAreaMode,
+      originalDrawnArea,
+      isCoordinateValid,
+      manualCoordinates,
+      onSave,
+    ]
+  );
 
-  // Handle reset - menggunakan useCallback
+  // Handle reset
   const handleReset = useCallback(() => {
     setFormData({
       pengelola: "",
@@ -302,10 +506,13 @@ const FormYardip = ({
     setManualArea("");
     setIsManualAreaMode(false);
     setOriginalDrawnArea(null);
+    setManualCoordinates({ latitude: "", longitude: "" });
+    setCoordinateError("");
+    setIsCoordinateValid(false);
     setErrors({});
   }, []);
 
-  // Get selected city name - menggunakan useMemo
+  // Get selected city name
   const selectedCityName = useMemo(() => {
     if (!selectedProvince || !selectedCity || !kotaData[selectedProvince]) {
       return null;
@@ -352,6 +559,10 @@ const FormYardip = ({
               <br />- Selected Province: {selectedProvince}
               <br />- Selected City: {selectedCity}
               <br />- Has Drawn Area: {hasDrawnArea ? "Yes" : "No"}
+              <br />- Manual Coordinates: {manualCoordinates.latitude ||
+                "N/A"}, {manualCoordinates.longitude || "N/A"}
+              <br />- Coordinate Valid: {isCoordinateValid ? "Yes" : "No"}
+              <br />- Coordinate Error: {coordinateError || "None"}
               {initialGeometry && (
                 <>
                   <br />- Geometry Type: {initialGeometry.type || "Unknown"}
@@ -448,12 +659,126 @@ const FormYardip = ({
                     <div className="me-3"></div>
                     <div>
                       <strong>Lokasi Terpilih!</strong> Peta telah auto-zoom ke
-                      area {selectedCityName}. Sekarang Anda dapat
-                      menggambar lokasi aset di peta.
+                      area {selectedCityName}. Sekarang Anda dapat menggambar
+                      lokasi aset di peta atau menggunakan koordinat manual.
                     </div>
                   </div>
                 </Alert>
               )}
+            </Card.Body>
+          </Card>
+
+          {/* Manual Coordinate Input Section - Fixed */}
+          <Card className="mb-3">
+            <Card.Header>
+              <div className="d-flex justify-content-between align-items-center">
+                <strong>Input Koordinat Manual (Opsional)</strong>
+                {(manualCoordinates.latitude ||
+                  manualCoordinates.longitude) && (
+                  <Button
+                    variant="outline-secondary"
+                    size="sm"
+                    onClick={clearCoordinates}
+                  >
+                    Clear
+                  </Button>
+                )}
+              </div>
+            </Card.Header>
+            <Card.Body>
+              <Row>
+                <Col md={5}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Garis Lintang</Form.Label>
+                    <InputGroup>
+                      <Form.Control
+                        type="number"
+                        step="0.000001"
+                        name="latitude"
+                        value={manualCoordinates.latitude}
+                        onChange={handleCoordinateChange}
+                        placeholder="-7.250445 (contoh)"
+                        isInvalid={
+                          !!coordinateError && manualCoordinates.latitude
+                        }
+                      />
+                      <InputGroup.Text>°</InputGroup.Text>
+                    </InputGroup>
+                    <Form.Text className="text-muted">
+                      Rentang: -90 sampai 90 derajat
+                    </Form.Text>
+                  </Form.Group>
+                </Col>
+
+                <Col md={5}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Garis Bujur</Form.Label>
+                    <InputGroup>
+                      <Form.Control
+                        type="number"
+                        step="0.000001"
+                        name="longitude"
+                        value={manualCoordinates.longitude}
+                        onChange={handleCoordinateChange}
+                        placeholder="110.374832 (contoh)"
+                        isInvalid={
+                          !!coordinateError && manualCoordinates.longitude
+                        }
+                      />
+                      <InputGroup.Text>°</InputGroup.Text>
+                    </InputGroup>
+                    <Form.Text className="text-muted">
+                      Rentang: -180 sampai 180 derajat
+                    </Form.Text>
+                  </Form.Group>
+                </Col>
+
+                <Col md={2}>
+                  <Form.Label>&nbsp;</Form.Label>
+                  <div className="d-grid">
+                    <Button
+                      variant="primary"
+                      onClick={handleZoomToCoordinate}
+                      disabled={!isCoordinateValid}
+                      size="sm"
+                    >
+                      Zoom ke Koordinat
+                    </Button>
+                  </div>
+                </Col>
+              </Row>
+
+              {coordinateError && (
+                <Alert
+                  variant={
+                    coordinateError.includes("Peringatan")
+                      ? "warning"
+                      : "danger"
+                  }
+                  className="mb-0 mt-2 py-2"
+                >
+                  <small>{coordinateError}</small>
+                </Alert>
+              )}
+
+              {isCoordinateValid && !coordinateError && (
+                <Alert variant="success" className="mb-0 mt-2 py-2">
+                  <div className="d-flex align-items-center justify-content-between">
+                    <small>
+                      Koordinat valid: {manualCoordinates.latitude},{" "}
+                      {manualCoordinates.longitude}
+                    </small>
+                  </div>
+                </Alert>
+              )}
+
+              <div className="mt-3">
+                <small className="text-info">
+                  <strong>Tips:</strong> Gunakan koordinat untuk zoom langsung
+                  ke lokasi spesifik di peta. Fitur ini berguna untuk navigasi
+                  cepat ke area tertentu sebelum menggambar polygon aset.
+                </small>
+              </div>
             </Card.Body>
           </Card>
 
@@ -617,7 +942,7 @@ const FormYardip = ({
                   </Col>
                 </Row>
 
-                {/* Enhanced Area Section - diperbaiki dengan no max limit */}
+                {/* Enhanced Area Section */}
                 {(originalDrawnArea || assetToEdit) && (
                   <Card className="border-info">
                     <Card.Header className="bg-light">

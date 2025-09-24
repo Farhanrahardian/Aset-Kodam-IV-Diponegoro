@@ -345,14 +345,15 @@ const kotaData = {
 const TambahAsetYardipPage = () => {
   const navigate = useNavigate();
 
-  // Consolidated map state untuk mengurangi re-renders
+  // Simplified and consolidated map state
   const [mapState, setMapState] = useState({
     isDrawing: false,
     newAssetData: null,
     manualAreaAdjustment: null,
     isLocationSelected: false,
     cityBounds: null,
-    mapKey: Date.now(), // Key untuk force re-render map jika perlu
+    mapKey: Date.now(),
+    coordinateZoom: null, // Fixed: For coordinate zoom functionality
   });
 
   const [error, setError] = useState(null);
@@ -361,7 +362,7 @@ const TambahAsetYardipPage = () => {
   const [selectedProvince, setSelectedProvince] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
 
-  // Handle location change dari form - menggunakan useCallback
+  // Handle location change dari form
   const handleLocationChange = useCallback((province, city) => {
     console.log("Location change:", province, city);
 
@@ -377,11 +378,12 @@ const TambahAsetYardipPage = () => {
           ...prev,
           cityBounds: selectedCityData.bounds,
           isLocationSelected: true,
-          // Reset drawing state when location changes
+          // Reset other states when location changes
           isDrawing: false,
           newAssetData: null,
           manualAreaAdjustment: null,
-          mapKey: Date.now(), // Force map re-render
+          coordinateZoom: null,
+          mapKey: Date.now(),
         }));
 
         toast.success(
@@ -397,12 +399,13 @@ const TambahAsetYardipPage = () => {
         isDrawing: false,
         newAssetData: null,
         manualAreaAdjustment: null,
+        coordinateZoom: null,
         mapKey: Date.now(),
       }));
     }
   }, []);
 
-  // Handle manual area change dari form - menggunakan useCallback
+  // Handle manual area change dari form
   const handleAreaChange = useCallback((newArea) => {
     console.log("Manual area change received:", newArea);
 
@@ -421,7 +424,27 @@ const TambahAsetYardipPage = () => {
     toast.success(`Luas area diubah menjadi ${newArea.toFixed(2)} m²`);
   }, []);
 
-  // Handle drawing created - menggunakan useCallback
+  // Fixed: Handle coordinate change dari form
+  const handleCoordinateChange = useCallback((coordinate) => {
+    console.log("🎯 Coordinate change received in main page:", coordinate);
+
+    if (coordinate && coordinate.lat && coordinate.lng) {
+      setMapState((prev) => ({
+        ...prev,
+        coordinateZoom: coordinate,
+        // Don't change mapKey here to avoid map recreation conflicts
+      }));
+
+      toast.success(
+        `Zoom ke koordinat: ${coordinate.lat.toFixed(
+          6
+        )}, ${coordinate.lng.toFixed(6)}`,
+        { duration: 3000 }
+      );
+    }
+  }, []);
+
+  // Handle drawing created
   const handleDrawingCreated = useCallback((data) => {
     console.log("Drawing created data:", data);
 
@@ -430,6 +453,7 @@ const TambahAsetYardipPage = () => {
       newAssetData: data,
       isDrawing: false,
       manualAreaAdjustment: null, // Reset manual adjustment when new drawing is created
+      coordinateZoom: null, // Clear coordinate zoom when drawing
     }));
 
     toast.success(
@@ -437,15 +461,16 @@ const TambahAsetYardipPage = () => {
     );
   }, []);
 
-  // Toggle drawing mode - menggunakan useCallback
+  // Toggle drawing mode
   const toggleDrawing = useCallback(() => {
     setMapState((prev) => ({
       ...prev,
       isDrawing: !prev.isDrawing,
+      coordinateZoom: null, // Clear coordinate zoom when starting to draw
     }));
   }, []);
 
-  // Reset form - menggunakan useCallback
+  // Reset form
   const resetForm = useCallback(() => {
     setMapState({
       isDrawing: false,
@@ -453,13 +478,14 @@ const TambahAsetYardipPage = () => {
       manualAreaAdjustment: null,
       isLocationSelected: mapState.isLocationSelected,
       cityBounds: mapState.cityBounds,
+      coordinateZoom: null,
       mapKey: Date.now(),
     });
     setError(null);
     toast.success("Gambar peta telah direset!");
   }, [mapState.isLocationSelected, mapState.cityBounds]);
 
-  // Handle save asset - menggunakan useCallback
+  // Handle save asset
   const handleSaveAsset = useCallback(
     async (assetData) => {
       if (!mapState.newAssetData) {
@@ -538,18 +564,18 @@ const TambahAsetYardipPage = () => {
     ]
   );
 
-  // Handle cancel - menggunakan useCallback
+  // Handle cancel
   const handleCancel = useCallback(() => {
     navigate(-1);
   }, [navigate]);
 
-  // Get selected city data - menggunakan useMemo
+  // Get selected city data
   const selectedCityData = useMemo(() => {
     if (!selectedProvince || !selectedCity) return null;
     return kotaData[selectedProvince]?.find((c) => c.id === selectedCity);
   }, [selectedProvince, selectedCity]);
 
-  // Get current effective area - menggunakan useMemo
+  // Get current effective area
   const currentEffectiveArea = useMemo(() => {
     return mapState.manualAreaAdjustment || mapState.newAssetData?.area || 0;
   }, [mapState.manualAreaAdjustment, mapState.newAssetData?.area]);
@@ -603,9 +629,26 @@ const TambahAsetYardipPage = () => {
                     ? "Jawa Tengah"
                     : "DI Yogyakarta"}{" "}
                   • Peta telah auto-zoom ke area target • Siap untuk menggambar
-                  aset
+                  aset atau menggunakan koordinat manual
                 </small>
               </div>
+            </div>
+          </div>
+        </Alert>
+      )}
+
+      {/* Fixed: Coordinate Zoom Alert */}
+      {mapState.coordinateZoom && (
+        <Alert variant="info" className="mb-3 border-0 shadow-sm">
+          <div className="d-flex align-items-center">
+            <div>
+              <div className="fw-bold">Zoom ke Koordinat Manual</div>
+              <small className="text-info">
+                Koordinat: {mapState.coordinateZoom.lat.toFixed(6)},{" "}
+                {mapState.coordinateZoom.lng.toFixed(6)} • Peta telah auto-zoom
+                ke lokasi yang dimasukkan • Marker merah menunjukkan lokasi
+                koordinat
+              </small>
             </div>
           </div>
         </Alert>
@@ -651,6 +694,10 @@ const TambahAsetYardipPage = () => {
                   <br />- Selected Province: {selectedProvince}
                   <br />- Selected City: {selectedCity}
                   <br />- Map Key: {mapState.mapKey}
+                  <br />- Coordinate Zoom:{" "}
+                  {mapState.coordinateZoom
+                    ? `${mapState.coordinateZoom.lat}, ${mapState.coordinateZoom.lng}`
+                    : "None"}
                 </div>
                 <div className="col-md-6">
                   <strong>Map & Area State:</strong>
@@ -738,7 +785,7 @@ const TambahAsetYardipPage = () => {
                   <small>
                     <i className="bi bi-info-circle me-1"></i>
                     Pilih lokasi di form terlebih dahulu untuk mengaktifkan
-                    fitur menggambar di peta.
+                    fitur menggambar di peta atau input koordinat manual.
                   </small>
                 </Alert>
               )}
@@ -776,6 +823,7 @@ const TambahAsetYardipPage = () => {
                   selectedCity={selectedCityData?.name}
                   manualAreaAdjustment={mapState.manualAreaAdjustment}
                   originalGeometry={mapState.newAssetData?.geometry}
+                  coordinateZoom={mapState.coordinateZoom} // Fixed: Pass coordinate zoom to map
                 />
               </MapErrorBoundary>
             ) : (
@@ -787,8 +835,8 @@ const TambahAsetYardipPage = () => {
                   <i className="bi bi-geo-alt display-4 text-muted mb-3"></i>
                   <h5 className="text-muted">Pilih Lokasi Terlebih Dahulu</h5>
                   <p className="text-muted">
-                    Gunakan form yang di sediakan untuk memilih provinsi dan
-                    kota
+                    Gunakan form yang disediakan untuk memilih provinsi dan
+                    kota, atau masukkan koordinat manual
                   </p>
                 </div>
               </div>
@@ -816,6 +864,7 @@ const TambahAsetYardipPage = () => {
               onLocationChange={handleLocationChange} // Pass location change handler
               hasDrawnArea={!!mapState.newAssetData} // Pass info about drawn area
               onAreaChange={handleAreaChange} // Pass area change handler
+              onCoordinateChange={handleCoordinateChange} // Fixed: Pass coordinate change handler
             />
           </div>
         </Col>

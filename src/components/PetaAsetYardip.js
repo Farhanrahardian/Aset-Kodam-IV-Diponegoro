@@ -44,6 +44,26 @@ const createCustomIcon = (color = "#3388ff", status = "") => {
   });
 };
 
+// Create red marker for coordinate points
+const createCoordinateMarkerIcon = () => {
+  const svgIcon = `
+    <svg width="25" height="41" viewBox="0 0 25 41" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12.5 0C5.6 0 0 5.6 0 12.5c0 10.6 12.5 28.5 12.5 28.5S25 23.1 25 12.5C25 5.6 19.4 0 12.5 0z" 
+            fill="#dc3545" stroke="#fff" stroke-width="2"/>
+      <circle cx="12.5" cy="12.5" r="6" fill="#fff"/>
+      <circle cx="12.5" cy="12.5" r="3" fill="#dc3545"/>
+    </svg>
+  `;
+
+  return L.divIcon({
+    html: svgIcon,
+    className: "coordinate-marker",
+    iconSize: [25, 41],
+    iconAnchor: [12.5, 41],
+    popupAnchor: [0, -41],
+  });
+};
+
 // Get marker color based on status
 const getMarkerColor = (status) => {
   switch (status) {
@@ -104,17 +124,19 @@ const PetaAsetYardip = ({
   onAssetClick,
   zoomToAsset = null,
   markerColorMode = "status",
-  displayMode = "polygon", // NEW: "polygon" or "marker" - default polygon for backward compatibility
+  displayMode = "polygon",
+  coordinateZoom = null, // New prop for coordinate zoom
 }) => {
   const mapRef = useRef(null);
   const featureGroupRef = useRef(null);
   const adjustedPolygonRef = useRef(null);
+  const coordinateMarkerRef = useRef(null); // Reference for coordinate marker
   const [adjustedGeometry, setAdjustedGeometry] = useState(null);
 
   const mapCenter = [-7.5, 110.0]; // Center of Central Java
   const initialZoom = 8;
 
-  // Inject CSS to control z-index of map controls - positioning search behind sidebar
+  // Inject CSS to control z-index of map controls
   useEffect(() => {
     const style = document.createElement("style");
     style.textContent = `
@@ -136,25 +158,64 @@ const PetaAsetYardip = ({
       .leaflet-popup {
         z-index: 1002 !important;
       }
+      
+      .coordinate-marker {
+        z-index: 1000 !important;
+      }
     `;
 
     document.head.appendChild(style);
 
-    // Cleanup function
     return () => {
       document.head.removeChild(style);
     };
   }, []);
 
+  // Handle coordinate zoom - New effect for coordinate zoom functionality
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (
+        mapRef.current &&
+        coordinateZoom &&
+        coordinateZoom.lat &&
+        coordinateZoom.lng
+      ) {
+        console.log("Zooming to coordinate:", coordinateZoom);
+
+        try {
+          const { lat, lng } = coordinateZoom;
+
+          // Zoom to coordinate with smooth animation
+          mapRef.current.setView([lat, lng], 16, {
+            animate: true,
+            duration: 1.5,
+            easeLinearity: 0.25,
+          });
+
+          console.log("✅ Successfully zoomed to coordinate:", lat, lng);
+        } catch (error) {
+          console.error("Error zooming to coordinate:", error);
+        }
+      }
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [coordinateZoom]);
+
   // Auto-zoom to selected area, city, assets, or specific asset
   useEffect(() => {
     const timer = setTimeout(() => {
       if (mapRef.current) {
+        // Priority 1: Coordinate zoom (highest priority)
+        if (coordinateZoom && coordinateZoom.lat && coordinateZoom.lng) {
+          return; // Skip other zoom operations if coordinate zoom is active
+        }
+
+        // Priority 2: Zoom to specific asset
         if (zoomToAsset && zoomToAsset.lokasi) {
           console.log("Auto-zooming to specific yardip asset:", zoomToAsset);
           try {
             if (displayMode === "marker") {
-              // For marker mode, zoom to asset center
               const center = getAssetCenter(zoomToAsset);
               if (center) {
                 mapRef.current.setView(center, 15, {
@@ -167,7 +228,6 @@ const PetaAsetYardip = ({
                 );
               }
             } else {
-              // For polygon mode, fit bounds to polygon
               const validatedLocation = validateAndParseLocation(
                 zoomToAsset.lokasi
               );
@@ -195,7 +255,9 @@ const PetaAsetYardip = ({
           } catch (error) {
             console.error("Error zooming to yardip asset:", error);
           }
-        } else if (
+        }
+        // Priority 3: City bounds zoom
+        else if (
           cityBounds &&
           Array.isArray(cityBounds) &&
           cityBounds.length === 2
@@ -228,7 +290,9 @@ const PetaAsetYardip = ({
               animate: true,
             });
           }
-        } else if (selectedKodim && selectedKodim.geometry) {
+        }
+        // Priority 4: Kodim/Korem zoom
+        else if (selectedKodim && selectedKodim.geometry) {
           const kodimLayer = L.geoJSON(selectedKodim.geometry);
           mapRef.current.fitBounds(kodimLayer.getBounds(), {
             padding: [20, 20],
@@ -240,9 +304,10 @@ const PetaAsetYardip = ({
             padding: [20, 20],
             animate: true,
           });
-        } else if (fitBounds && assets.length > 0) {
+        }
+        // Priority 5: Fit bounds to assets
+        else if (fitBounds && assets.length > 0) {
           if (displayMode === "marker") {
-            // For marker mode, fit bounds to all marker positions
             const validAssets = assets.filter((asset) => asset.lokasi);
             if (validAssets.length > 0) {
               const bounds = L.latLngBounds();
@@ -260,7 +325,6 @@ const PetaAsetYardip = ({
               }
             }
           } else {
-            // For polygon mode, fit bounds to all polygons
             const validAssets = assets.filter(
               (asset) => asset.lokasi && Array.isArray(asset.lokasi)
             );
@@ -300,6 +364,7 @@ const PetaAsetYardip = ({
     selectedCity,
     zoomToAsset,
     displayMode,
+    coordinateZoom, // Added to dependencies
   ]);
 
   // Function to get asset center point for markers
@@ -308,12 +373,11 @@ const PetaAsetYardip = ({
       const validatedLocation = validateAndParseLocation(asset.lokasi);
       if (!validatedLocation) return null;
 
-      // Create turf polygon and get centroid
       const polygon = turf.polygon(validatedLocation);
       const centroid = turf.centroid(polygon);
       const [lng, lat] = centroid.geometry.coordinates;
 
-      return [lat, lng]; // Leaflet expects [lat, lng]
+      return [lat, lng];
     } catch (error) {
       console.error("Error getting asset center:", error);
       return null;
@@ -366,13 +430,12 @@ const PetaAsetYardip = ({
     return null;
   };
 
-  // Handle manual area adjustment - adjust polygon to match new area
+  // Handle manual area adjustment
   useEffect(() => {
     if (manualAreaAdjustment && originalGeometry && featureGroupRef.current) {
       try {
         console.log("Adjusting polygon for manual area:", manualAreaAdjustment);
 
-        // Create the adjusted polygon
         const adjustedPolygon = adjustPolygonToArea(
           originalGeometry,
           manualAreaAdjustment
@@ -381,17 +444,15 @@ const PetaAsetYardip = ({
         if (adjustedPolygon) {
           setAdjustedGeometry(adjustedPolygon);
 
-          // Clear existing layers and add the adjusted polygon
           featureGroupRef.current.clearLayers();
 
-          // Create Leaflet layer for the adjusted polygon
           const adjustedLayer = L.geoJSON(adjustedPolygon, {
             style: {
-              color: "#ff6b35", // Orange color for manually adjusted
+              color: "#ff6b35",
               fillColor: "#ff6b35",
               fillOpacity: 0.5,
               weight: 3,
-              dashArray: "5,5", // Dashed style to indicate manual adjustment
+              dashArray: "5,5",
             },
           });
 
@@ -404,7 +465,6 @@ const PetaAsetYardip = ({
         console.error("Error adjusting polygon area:", error);
       }
     } else if (!manualAreaAdjustment && adjustedPolygonRef.current) {
-      // Remove adjusted polygon if no manual adjustment
       if (featureGroupRef.current && adjustedPolygonRef.current) {
         featureGroupRef.current.removeLayer(adjustedPolygonRef.current);
         adjustedPolygonRef.current = null;
@@ -418,13 +478,11 @@ const PetaAsetYardip = ({
     try {
       if (!geometry || !geometry.coordinates || !targetArea) return null;
 
-      // Create turf polygon
       const polygon = turf.polygon(geometry.coordinates);
       const currentArea = turf.area(polygon);
 
       if (currentArea <= 0) return null;
 
-      // Calculate scaling factor based on area ratio
       const areaRatio = targetArea / currentArea;
       const scaleFactor = Math.sqrt(areaRatio);
 
@@ -434,16 +492,13 @@ const PetaAsetYardip = ({
         scaleFactor: scaleFactor.toFixed(4),
       });
 
-      // Get centroid for scaling origin
       const centroid = turf.centroid(polygon);
       const centerCoords = centroid.geometry.coordinates;
 
-      // Scale the polygon from its centroid
       const scaledPolygon = turf.transformScale(polygon, scaleFactor, {
         origin: centerCoords,
       });
 
-      // Verify the new area
       const newArea = turf.area(scaledPolygon);
       console.log("Scaled polygon area:", newArea.toFixed(2));
 
@@ -477,17 +532,14 @@ const PetaAsetYardip = ({
         selectedCity,
       });
 
-      // Clear previous drawings and adjusted polygons
       if (featureGroupRef.current) {
         featureGroupRef.current.clearLayers();
         featureGroupRef.current.addLayer(layer);
       }
 
-      // Reset adjusted geometry state
       setAdjustedGeometry(null);
       adjustedPolygonRef.current = null;
 
-      // Call callback from parent
       if (typeof onDrawingCreated === "function") {
         onDrawingCreated({
           geometry: geojson.geometry,
@@ -535,7 +587,7 @@ const PetaAsetYardip = ({
           kelurahan: asset.kelurahan,
           keterangan: asset.keterangan,
           type: asset.type,
-          originalAsset: asset.originalAsset || asset, // Reference to original asset
+          originalAsset: asset.originalAsset || asset,
         },
         geometry: {
           type: "Polygon",
@@ -561,7 +613,7 @@ const PetaAsetYardip = ({
         switch (properties.status) {
           case "Dimiliki/Dikuasai":
             return {
-              fillColor: "#10b981", // Green
+              fillColor: "#10b981",
               color: "#059669",
               weight: 2,
               opacity: 1,
@@ -569,7 +621,7 @@ const PetaAsetYardip = ({
             };
           case "Tidak Dimiliki/Tidak Dikuasai":
             return {
-              fillColor: "#ef4444", // Red
+              fillColor: "#ef4444",
               color: "#dc2626",
               weight: 2,
               opacity: 1,
@@ -577,7 +629,7 @@ const PetaAsetYardip = ({
             };
           case "Lain-lain":
             return {
-              fillColor: "#f59e0b", // Yellow
+              fillColor: "#f59e0b",
               color: "#d97706",
               weight: 2,
               opacity: 1,
@@ -585,7 +637,7 @@ const PetaAsetYardip = ({
             };
           case "Dalam Proses":
             return {
-              fillColor: "#06b6d4", // Cyan
+              fillColor: "#06b6d4",
               color: "#0891b2",
               weight: 2,
               opacity: 1,
@@ -593,7 +645,7 @@ const PetaAsetYardip = ({
             };
           default:
             return {
-              fillColor: "#6b7280", // Gray
+              fillColor: "#6b7280",
               color: "#4b5563",
               weight: 2,
               opacity: 1,
@@ -601,7 +653,6 @@ const PetaAsetYardip = ({
             };
         }
       case "bidang":
-        // Color by bidang/field
         const bidangColors = {
           "Bidang A": { fillColor: "#8b5cf6", color: "#7c3aed" },
           "Bidang B": { fillColor: "#06b6d4", color: "#0891b2" },
@@ -621,7 +672,7 @@ const PetaAsetYardip = ({
         };
       default:
         return {
-          fillColor: "#e11d48", // Default pink
+          fillColor: "#e11d48",
           color: "#be123c",
           weight: 2,
           opacity: 1,
@@ -664,7 +715,6 @@ const PetaAsetYardip = ({
     dashArray: "8,4",
   };
 
-  // Style for manually adjusted polygon
   const adjustedPolygonStyle = {
     fillColor: "#ff6b35",
     weight: 3,
@@ -674,7 +724,7 @@ const PetaAsetYardip = ({
     dashArray: "5,5",
   };
 
-  // Popup content for assets with click handler (for polygons)
+  // Popup content for assets with click handler
   const onEachAssetFeature = (feature, layer) => {
     if (feature.properties) {
       const props = feature.properties;
@@ -711,7 +761,6 @@ const PetaAsetYardip = ({
       `;
       layer.bindPopup(popupContent);
 
-      // Add click handler for the layer itself
       layer.on("click", function (e) {
         console.log("Yardip Asset clicked:", originalAsset);
         if (onAssetClick && typeof onAssetClick === "function") {
@@ -741,34 +790,6 @@ const PetaAsetYardip = ({
     }
   };
 
-  // Create city bounds rectangle for visual reference
-  const createCityBoundsGeoJSON = () => {
-    if (!cityBounds || !Array.isArray(cityBounds) || cityBounds.length !== 2) {
-      return null;
-    }
-
-    const [southWest, northEast] = cityBounds;
-    return {
-      type: "Feature",
-      properties: {
-        name: selectedCity,
-        type: "city_bounds",
-      },
-      geometry: {
-        type: "Polygon",
-        coordinates: [
-          [
-            [southWest[1], southWest[0]], // SW
-            [northEast[1], southWest[0]], // SE
-            [northEast[1], northEast[0]], // NE
-            [southWest[1], northEast[0]], // NW
-            [southWest[1], southWest[0]], // Close polygon
-          ],
-        ],
-      },
-    };
-  };
-
   // Set up global click handler for popup buttons
   useEffect(() => {
     window.handleYardipAssetClick = (assetId) => {
@@ -783,7 +804,6 @@ const PetaAsetYardip = ({
     };
 
     return () => {
-      // Cleanup global handler
       if (window.handleYardipAssetClick) {
         delete window.handleYardipAssetClick;
       }
@@ -845,40 +865,27 @@ const PetaAsetYardip = ({
       )}
       {diyBoundary && <GeoJSON data={diyBoundary} style={boundaryStyle} />}
 
-      {/* City Bounds Highlight */}
-      {cityBounds && selectedCity && (
-        <GeoJSON
-          data={createCityBoundsGeoJSON()}
-          style={cityHighlightStyle}
-          onEachFeature={(feature, layer) => {
-            layer.bindPopup(
-              `
-              <div class="city-bounds-popup">
-                <h6 class="text-success mb-2">📍 Area Target Terpilih</h6>
-                <p class="mb-1"><strong>${selectedCity}</strong></p>
-                <small class="text-muted">
-                  Lokasi siap untuk penambahan aset Yardip baru.<br/>
-                  Gunakan tool menggambar untuk menandai area aset.
-                </small>
-              </div>
-            `,
-              {
-                className: "custom-popup",
-              }
-            );
-
-            setTimeout(() => {
-              if (layer && layer.openPopup) {
-                layer.openPopup();
-                setTimeout(() => {
-                  if (layer && layer.closePopup) {
-                    layer.closePopup();
-                  }
-                }, 3000);
-              }
-            }, 1000);
-          }}
-        />
+      {/* Coordinate Marker - NEW: Show red marker for coordinate zoom */}
+      {coordinateZoom && coordinateZoom.lat && coordinateZoom.lng && (
+        <Marker
+          position={[coordinateZoom.lat, coordinateZoom.lng]}
+          icon={createCoordinateMarkerIcon()}
+        >
+          <Popup>
+            <div className="coordinate-popup">
+              <h6 className="mb-2 text-danger">📍 Koordinat Manual</h6>
+              <small>
+                <strong>Latitude:</strong> {coordinateZoom.lat.toFixed(6)}
+                <br />
+                <strong>Longitude:</strong> {coordinateZoom.lng.toFixed(6)}
+                <br />
+                <span className="text-muted">
+                  Marker ini menunjukkan lokasi dari input koordinat manual
+                </span>
+              </small>
+            </div>
+          </Popup>
+        </Marker>
       )}
 
       {/* Manually Adjusted Polygon */}
