@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Container, Row, Col, Card, Button, Form } from "react-bootstrap";
 import {
   BarChart,
@@ -633,6 +633,21 @@ const Dashboard = () => {
         "Unknown"
       : null;
 
+  // Hitung tinggi chart berdasarkan viewport
+  const chartHeight = useMemo(() => {
+    // Estimasi tinggi elemen-elemen di luar chart
+    const headerHeight = 60; // tinggi header navbar
+    const heroSliderHeight = window.innerHeight < 600 ? 150 : window.innerHeight < 800 ? 200 : 250;
+    const marginBottom = 20;
+    const otherElements = headerHeight + heroSliderHeight + marginBottom;
+    
+    // Hitung sisa ruang untuk chart
+    const availableHeight = window.innerHeight - otherElements - 100; // -100 untuk padding dan margin lainnya
+    const heightPerChart = Math.max(200, Math.floor(availableHeight / 2)); // bagi dua untuk dua chart
+    
+    return heightPerChart;
+  }, []);
+
   return (
     <Container fluid className="dashboard-container p-4">
       {/* Hero Slider */}
@@ -664,73 +679,7 @@ const Dashboard = () => {
         </Col>
       </Row>
 
-      {/* Summary Cards - Always show grand totals */}
-      <Row className="mb-4">
-        <Col md={3}>
-          <Card className="text-center border-0 shadow-sm">
-            <Card.Body>
-              <div className="d-flex align-items-center justify-content-center">
-                <div className="me-3">
-                  <i className="fas fa-map-marked-alt fa-2x text-primary"></i>
-                </div>
-                <div>
-                  <h4 className="mb-0 text-primary">{grandTotalAsetTanah}</h4>
-                  <small className="text-muted">Total Aset Tanah</small>
-                </div>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col md={3}>
-          <Card className="text-center border-0 shadow-sm">
-            <Card.Body>
-              <div className="d-flex align-items-center justify-content-center">
-                <div className="me-3">
-                  <i className="fas fa-certificate fa-2x text-success"></i>
-                </div>
-                <div>
-                  <h4 className="mb-0 text-success">
-                    {grandTotalBersertifikat}
-                  </h4>
-                  <small className="text-muted">Bersertifikat</small>
-                </div>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col md={3}>
-          <Card className="text-center border-0 shadow-sm">
-            <Card.Body>
-              <div className="d-flex align-items-center justify-content-center">
-                <div className="me-3">
-                  <i className="fas fa-exclamation-triangle fa-2x text-warning"></i>
-                </div>
-                <div>
-                  <h4 className="mb-0 text-warning">
-                    {grandTotalTidakBersertifikat}
-                  </h4>
-                  <small className="text-muted">Tidak Bersertifikat</small>
-                </div>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col md={3}>
-          <Card className="text-center border-0 shadow-sm">
-            <Card.Body>
-              <div className="d-flex align-items-center justify-content-center">
-                <div className="me-3">
-                  <i className="fas fa-building fa-2x text-info"></i>
-                </div>
-                <div>
-                  <h4 className="mb-0 text-info">{totalAsetYardip}</h4>
-                  <small className="text-muted">Total Aset Yardip</small>
-                </div>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
+      
 
       {/* Chart Section */}
       <Row>
@@ -837,7 +786,7 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              <ResponsiveContainer width="100%" height={320}>
+              <ResponsiveContainer width="100%" height={chartHeight}>
                 <BarChart
                   data={asetTanahData}
                   margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
@@ -1077,7 +1026,7 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              <ResponsiveContainer width="100%" height={350}>
+              <ResponsiveContainer width="100%" height={chartHeight}>
                 <BarChart
                   data={asetYardipData}
                   margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
