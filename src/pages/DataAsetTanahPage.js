@@ -111,95 +111,108 @@ const TabelAset = ({ assets, onEdit, onDelete, onViewDetail, koremList, allKodim
   const renderLuas = (asset) => {
     const totalLuas = parseFloat(asset.luas) || 0;
     return totalLuas > 0 ? totalLuas.toLocaleString("id-ID") + " m²" : "-";
-  };
+  }
+
+  // Membuat header tabel terpisah
+  const tableHeader = (
+    <thead className="table-dark">
+      <tr>
+        <th style={{ width: "10%", minWidth: "120px" }}>NUP</th>
+        <th style={{ width: "12%", minWidth: "140px" }}>Wilayah Korem</th>
+        <th style={{ width: "12%", minWidth: "140px" }}>Wilayah Kodim</th>
+        <th style={{ width: "18%", minWidth: "200px" }}>Alamat</th>
+        <th style={{ width: "10%", minWidth: "120px" }}>Peruntukan</th>
+        <th style={{ width: "8%", minWidth: "100px" }}>Status</th>
+        <th style={{ width: "10%", minWidth: "120px" }}>Luas</th>
+        <th style={{ width: "8%", minWidth: "100px" }}>Sertifikat</th>
+        <th style={{ width: "8%", minWidth: "100px" }}>Aksi</th>
+      </tr>
+    </thead>
+  );
 
   return (
-    <Table striped bordered hover responsive>
-      <thead className="table-dark">
-        <tr>
-          <th style={{ width: "10%" }}>NUP</th>
-          <th style={{ width: "12%" }}>Wilayah Korem</th>
-          <th style={{ width: "12%" }}>Wilayah Kodim</th>
-          <th style={{ width: "18%" }}>Alamat</th>
-          <th style={{ width: "10%" }}>Peruntukan</th>
-          <th style={{ width: "8%" }}>Status</th>
-          <th style={{ width: "10%" }}>Luas</th>
-          <th style={{ width: "8%" }}>Sertifikat</th>
-          <th style={{ width: "8%" }}>Aksi</th>
-        </tr>
-      </thead>
-      <tbody>
-        {assets.map((asset) => {
-          const korem = koremList.find((k) => k.id == asset.korem_id);
-          const kodimName = getKodimName(asset);
+    <div style={{ overflowX: "auto" }}>
+      {/* Header tetap di atas */}
+      <table className="table table-striped table-bordered table-hover mb-0" style={{ minWidth: "1200px", width: "100%" }}>
+        {tableHeader}
+      </table>
+      {/* Body tabel yang bisa di-scroll */}
+      <div style={{ maxHeight: "50vh", overflowY: "auto" }}>
+        <table className="table table-striped table-bordered table-hover mb-0" style={{ minWidth: "1200px", width: "100%" }}>
+          <tbody>
+            {assets.map((asset) => {
+              const korem = koremList.find((k) => k.id == asset.korem_id);
+              const kodimName = getKodimName(asset);
 
-          return (
-            <tr key={asset.id}>
-              <td>{asset.nama || "-"}</td>
-              <td>{korem?.nama || "-"}</td>
-              <td>{kodimName}</td>
-              <td>
-                <div style={{ maxWidth: "150px", fontSize: "0.9em" }}>
-                  {asset.alamat
-                    ? asset.alamat.length > 40
-                      ? asset.alamat.substring(0, 40) + "..."
-                      : asset.alamat
-                    : "-"}
-                </div>
-              </td>
-              <td>{asset.peruntukan || asset.fungsi || "-"}</td>
-              <td>
-                <span className={`badge ${getStatusBadgeClass(asset.status)}`}>
-                  {asset.status || "-"}
-                </span>
-              </td>
-              <td>{renderLuas(asset)}</td>
-              <td>
-                {asset.pemilikan_sertifikat === "Ya" ? (
-                  <span className="badge bg-success">Ya</span>
-                ) : (
-                  <span className="badge bg-danger">Tidak</span>
-                )}
-              </td>
-              <td>
-                <div className="d-flex gap-1 flex-wrap">
-                  <Button
-                    variant="info"
-                    size="sm"
-                    onClick={() => onViewDetail(asset)}
-                    title="Lihat Detail"
-                  >
-                    Detail
-                  </Button>
+              return (
+                <tr key={asset.id}>
+                  <td style={{ width: "10%", minWidth: "120px" }}>{asset.nama || "-"}</td>
+                  <td style={{ width: "12%", minWidth: "140px" }}>{korem?.nama || "-"}</td>
+                  <td style={{ width: "12%", minWidth: "140px" }}>{kodimName}</td>
+                  <td style={{ width: "18%", minWidth: "200px" }}>
+                    <div style={{ maxWidth: "150px", fontSize: "0.9em" }}>
+                      {asset.alamat
+                        ? asset.alamat.length > 40
+                          ? asset.alamat.substring(0, 40) + "..."
+                          : asset.alamat
+                        : "-"}
+                    </div>
+                  </td>
+                  <td style={{ width: "10%", minWidth: "120px" }}>{asset.peruntukan || asset.fungsi || "-"}</td>
+                  <td style={{ width: "8%", minWidth: "100px" }}>
+                    <span className={`badge ${getStatusBadgeClass(asset.status)}`}>
+                      {asset.status || "-"}
+                    </span>
+                  </td>
+                  <td style={{ width: "10%", minWidth: "120px" }}>{renderLuas(asset)}</td>
+                  <td style={{ width: "8%", minWidth: "100px" }}>
+                    {asset.pemilikan_sertifikat === "Ya" ? (
+                      <span className="badge bg-success">Ya</span>
+                    ) : (
+                      <span className="badge bg-danger">Tidak</span>
+                    )}
+                  </td>
+                  <td style={{ width: "8%", minWidth: "100px" }}>
+                    <div className="d-flex gap-1 flex-wrap">
+                      <Button
+                        variant="info"
+                        size="sm"
+                        onClick={() => onViewDetail(asset)}
+                        title="Lihat Detail"
+                      >
+                        Detail
+                      </Button>
 
-                  {onEdit && (
-                    <Button
-                      variant="warning"
-                      size="sm"
-                      onClick={() => onEdit(asset)}
-                      title="Edit Aset"
-                    >
-                      Edit
-                    </Button>
-                  )}
+                      {onEdit && (
+                        <Button
+                          variant="warning"
+                          size="sm"
+                          onClick={() => onEdit(asset)}
+                          title="Edit Aset"
+                        >
+                          Edit
+                        </Button>
+                      )}
 
-                  {onDelete && (
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      onClick={() => onDelete(asset.id)}
-                      title="Hapus Aset"
-                    >
-                      Hapus
-                    </Button>
-                  )}
-                </div>
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </Table>
+                      {onDelete && (
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => onDelete(asset.id)}
+                          title="Hapus Aset"
+                        >
+                          Hapus
+                        </Button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 };
 
@@ -1416,7 +1429,7 @@ const DataAsetTanahPage = () => {
               <h5 className="mb-0">Daftar Aset Tanah</h5>
             </Card.Header>
             <Card.Body className="p-0">
-              <div style={{ maxHeight: "60vh", overflowY: "auto" }}>
+              <div className="position-relative">
                 {assets.length === 0 ? (
                   <div className="text-center py-5">
                     <div className="text-muted">
