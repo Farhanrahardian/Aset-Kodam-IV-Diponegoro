@@ -58,10 +58,8 @@ const FormAset = forwardRef(({
   }));
 
   const statusOptions = [
-    { value: "Digunakan", label: "Digunakan" },
-    { value: "Tidak Digunakan", label: "Tidak Digunakan" },
-    { value: "Rusak", label: "Rusak" },
-    { value: "Dihapuskan", label: "Dihapuskan" },
+    { value: "Aman", label: "Aman" },
+    { value: "Sengketa", label: "Sengketa" },
   ];
 
   const handleFileChange = (e) => {
