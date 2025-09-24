@@ -263,7 +263,9 @@ const TambahAsetPage = () => {
         
         toast.loading("Foto aset berhasil diupload.", { id: toastId });
       } catch (err) {
-        toast.error("Gagal mengupload foto aset.", { id: toastId });
+        // Menampilkan pesan error yang lebih spesifik
+        const errorMessage = err.response?.data?.error || "Gagal mengupload foto aset.";
+        toast.error(errorMessage, { id: toastId });
         console.error("Asset photos upload error:", err.response?.data || err.message);
         return;
       }

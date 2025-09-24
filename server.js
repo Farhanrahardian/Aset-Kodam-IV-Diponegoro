@@ -46,14 +46,52 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage: storage });
+// Konfigurasi Multer untuk foto aset (menerima gambar dan video dengan ukuran lebih besar)
+const uploadAssetPhotos = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB limit per file
+    files: 5 // maksimal 5 file
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('File foto aset harus berupa gambar atau video'), false);
+    }
+  }
+});
+
+// Konfigurasi Multer untuk bukti pemilikan (menerima gambar dan PDF dengan ukuran sedang)
+const uploadBuktiPemilikan = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit per file
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('File bukti pemilikan harus berupa gambar atau PDF'), false);
+    }
+  }
+});
+
+// Konfigurasi Multer umum (untuk endpoint lainnya)
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit per file
+    files: 5 // maksimal 5 file
+  }
+});
 
 // --- API Endpoints ---
 
 // Endpoint for single file upload (Bukti Pemilikan)
 app.post(
   "/upload/bukti-pemilikan",
-  upload.single("bukti_pemilikan"),
+  uploadBuktiPemilikan.single("bukti_pemilikan"),
   (req, res) => {
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded." });
@@ -69,7 +107,7 @@ app.post(
 // Endpoint for multiple file upload (Foto Aset)
 app.post(
   "/upload/asset-photos",
-  upload.array("asset_photos", 5),
+  uploadAssetPhotos.array("asset_photos", 5),
   (req, res) => {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: "No files uploaded." });
@@ -296,6 +334,22 @@ app.delete("/yardip_assets/:id", (req, res) => {
     message: "Yardip asset deleted successfully",
     deletedAsset: assetToDelete,
   });
+});
+
+// Middleware untuk menangani error dari upload file
+app.use((error, req, res, next) => {
+  if (error instanceof multer.MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ error: 'File terlalu besar. Maksimal 50MB per file untuk foto aset dan 10MB per file untuk bukti pemilikan.' });
+    }
+    if (error.code === 'LIMIT_FILE_COUNT') {
+      return res.status(400).json({ error: 'Terlalu banyak file yang diupload. Maksimal 5 file foto aset.' });
+    }
+    return res.status(400).json({ error: error.message });
+  } else if (error) {
+    return res.status(400).json({ error: error.message });
+  }
+  next();
 });
 
 app.listen(port, () => {

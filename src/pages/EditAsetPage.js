@@ -71,8 +71,10 @@ const EditAsetPage = () => {
         const existingPhotoUrls = updatedData.foto_aset || [];
         updatedData.foto_aset = [...existingPhotoUrls, ...newPhotoUrls];
       } catch (err) {
-        toast.error("Gagal mengupload foto aset baru.", { id: toastId });
-        console.error("Asset photos upload error:", err);
+        // Menampilkan pesan error yang lebih spesifik
+        const errorMessage = err.response?.data?.error || "Gagal mengupload foto aset baru.";
+        toast.error(errorMessage, { id: toastId });
+        console.error("Asset photos upload error:", err.response?.data || err.message);
         return;
       }
     }

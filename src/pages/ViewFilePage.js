@@ -9,6 +9,10 @@ const ViewFilePage = () => {
   const fullUrl = `http://localhost:3001/${filePath}`;
 
   const isPdf = filePath.toLowerCase().endsWith('.pdf');
+  const isVideo = filePath.toLowerCase().endsWith('.mp4') || 
+                  filePath.toLowerCase().endsWith('.mov') || 
+                  filePath.toLowerCase().endsWith('.webm') || 
+                  filePath.toLowerCase().endsWith('.avi');
 
   return (
     <Container fluid className="p-4">
@@ -25,6 +29,14 @@ const ViewFilePage = () => {
                   title="PDF Viewer"
                   style={{ width: '100%', height: '100%', border: 'none' }}
                 />
+              ) : isVideo ? (
+                <div style={{ width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }}>
+                  <video
+                    src={fullUrl}
+                    controls
+                    style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                  />
+                </div>
               ) : (
                 <div style={{ width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#f0f0f0' }}>
                   <img

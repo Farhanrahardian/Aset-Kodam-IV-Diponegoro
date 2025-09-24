@@ -62,6 +62,12 @@ const isPdfFile = (filename) => {
   return filename.toLowerCase().endsWith(".pdf");
 };
 
+const isVideoFile = (filename) => {
+  if (!filename) return false;
+  const videoExtensions = [".mp4", ".mov", ".webm", ".avi"];
+  return videoExtensions.some((ext) => filename.toLowerCase().endsWith(ext));
+};
+
 const getStatusBadgeClass = (status) => {
   switch (status) {
     case "Aman":
@@ -526,15 +532,26 @@ const DetailModalAset = ({ asset, show, onHide, koremList, allKodimList, koremGe
                           <div className="d-flex flex-wrap gap-2">
                             {asset.foto_aset.map((fotoUrl, index) => {
                               const fullUrl = fotoUrl.startsWith('http') ? fotoUrl : `${API_URL}${fotoUrl}`;
+                              const isVideo = isVideoFile(fullUrl);
                               return (
                                 <div key={index} style={{ width: '100px', height: '100px', border: '1px solid #ddd', borderRadius: '4px', overflow: 'hidden' }}>
-                                  <Image
-                                    src={fullUrl}
-                                    alt={`Foto Aset ${index + 1}`}
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
-                                    onClick={() => window.open(fullUrl, '_blank')}
-                                    fluid
-                                  />
+                                  {isVideo ? (
+                                    <video
+                                      src={fullUrl}
+                                      controls={false}
+                                      style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
+                                      onClick={() => window.open(fullUrl, '_blank')}
+                                      title="Klik untuk lihat video"
+                                    />
+                                  ) : (
+                                    <Image
+                                      src={fullUrl}
+                                      alt={`Foto Aset ${index + 1}`}
+                                      style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
+                                      onClick={() => window.open(fullUrl, '_blank')}
+                                      fluid
+                                    />
+                                  )}
                                 </div>
                               );
                             })}

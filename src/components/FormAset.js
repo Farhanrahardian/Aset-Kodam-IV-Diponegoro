@@ -72,6 +72,24 @@ const FormAset = forwardRef(({
   const handleAssetPhotosChange = (e) => {
     const files = Array.from(e.target.files);
     if (files.length > 0) {
+      // Dalam mode edit, kita perlu mempertimbangkan file yang sudah ada
+      if (isEditMode) {
+        // Hitung total file: file yang sudah ada + file baru
+        const existingPhotoCount = assetToEdit?.foto_aset ? assetToEdit.foto_aset.length : 0;
+        const newFileCount = files.length;
+        const totalFileCount = existingPhotoCount + newFileCount;
+        
+        if (totalFileCount > 5) {
+          toast.error(`Total file foto aset tidak boleh melebihi 5. Anda telah memiliki ${existingPhotoCount} file dan mencoba menambahkan ${newFileCount} file. Maksimal ${5 - existingPhotoCount} file dapat ditambahkan.`);
+          return;
+        }
+      } else {
+        // Dalam mode tambah baru
+        if (files.length > 5) {
+          toast.error("Maksimal hanya 5 file foto aset yang dapat diupload sekaligus.");
+          return;
+        }
+      }
       setAssetPhotos(files);
     }
   };
@@ -655,7 +673,7 @@ const FormAset = forwardRef(({
                       accept=".pdf,.jpg,.jpeg,.png"
                     />
                     <Form.Text className="text-muted">
-                      {isEditMode ? 'Upload file baru untuk mengganti yang lama.' : 'Format: PDF, JPG, JPEG, PNG (Maks. 5MB)'}
+                      {isEditMode ? 'Upload file baru untuk mengganti yang lama.' : 'Format: PDF, JPG, JPEG, PNG (Maks. 10MB per file)'}
                     </Form.Text>
                   </Form.Group>
 
@@ -674,7 +692,7 @@ const FormAset = forwardRef(({
                                 {isVideo ? (
                                   <video
                                     src={fullUrl}
-                                    muted
+                                    controls
                                     style={{ objectFit: 'cover', width: '100%', height: '100%', cursor: 'pointer' }}
                                     onClick={() => window.open(fullUrl, '_blank')}
                                     title="Klik untuk lihat video"
@@ -715,7 +733,7 @@ const FormAset = forwardRef(({
                       accept=".jpg,.jpeg,.png,.mp4,.mov,.webm"
                     />
                     <Form.Text className="text-muted">
-                      {isEditMode ? 'Upload file baru untuk menambah media.' : 'Format: JPG, PNG, MP4, MOV, WEBM. Bisa pilih beberapa file sekaligus'}
+                      {isEditMode ? 'Upload file baru untuk menambah media.' : 'Format: JPG, PNG, MP4, MOV, WEBM (Maks. 50MB per file, 5 file maksimal)'}
                     </Form.Text>
                   </Form.Group>
 

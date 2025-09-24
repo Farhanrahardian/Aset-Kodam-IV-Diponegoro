@@ -85,6 +85,13 @@ const isPdfFile = (filename) => {
   return filename.toLowerCase().endsWith(".pdf");
 };
 
+// Helper function untuk cek apakah file video
+const isVideoFile = (filename) => {
+  if (!filename) return false;
+  const videoExtensions = [".mp4", ".mov", ".webm", ".avi"];
+  return videoExtensions.some((ext) => filename.toLowerCase().endsWith(ext));
+};
+
 const DetailOffcanvasAset = ({
   show,
   handleClose,
@@ -480,24 +487,39 @@ const DetailOffcanvasAset = ({
               </Card.Header>
               <Card.Body>
                 <Row>
-                  {aset.foto_aset.map((foto, index) => (
-                    <Col key={index} md={4} className="mb-3">
-                      <Image
-                        src={`${API_URL}${foto}`}
-                        alt={`Foto Aset ${index + 1}`}
-                        fluid
-                        rounded
-                        style={{
-                          height: "100px",
-                          width: "100%",
-                          objectFit: "cover",
-                          cursor: "pointer",
-                          border: "1px solid #ddd",
-                        }}
-                        onClick={() => handleViewFile(`${API_URL}${foto}`)}
-                      />
-                    </Col>
-                  ))}
+                  {aset.foto_aset.map((foto, index) => {
+                    const fullUrl = foto.startsWith('http') ? foto : `${API_URL}${foto}`;
+                    const isVideo = isVideoFile(fullUrl);
+                    return (
+                      <Col key={index} md={4} className="mb-3">
+                        <Card 
+                          onClick={() => handleViewFile(fullUrl)}
+                          className="h-100"
+                          style={{ cursor: "pointer", border: "1px solid #ddd" }}
+                        >
+                          {isVideo ? (
+                            <video
+                              src={fullUrl}
+                              controls
+                              style={{ objectFit: 'cover', width: '100%', height: '100px' }}
+                              title="Klik untuk lihat video"
+                            />
+                          ) : (
+                            <Card.Img
+                              variant="top"
+                              src={fullUrl}
+                              alt={`Foto Aset ${index + 1}`}
+                              style={{
+                                height: "100px",
+                                width: "100%",
+                                objectFit: "cover",
+                              }}
+                            />
+                          )}
+                        </Card>
+                      </Col>
+                    );
+                  })}
                 </Row>
               </Card.Body>
             </Card>
