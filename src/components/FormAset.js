@@ -65,6 +65,12 @@ const FormAset = forwardRef(({
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Validasi ukuran file untuk bukti pemilikan (maksimal 10MB sesuai dengan backend)
+      const maxSize = 10 * 1024 * 1024; // 10MB dalam bytes
+      if (file.size > maxSize) {
+        toast.error(`File bukti pemilikan melebihi ukuran maksimal 10MB: ${file.name}`);
+        return;
+      }
       setBuktiPemilikanFile(file);
     }
   };
@@ -72,6 +78,16 @@ const FormAset = forwardRef(({
   const handleAssetPhotosChange = (e) => {
     const files = Array.from(e.target.files);
     if (files.length > 0) {
+      // Validasi ukuran file sebelum menambahkan ke state
+      const maxSize = 50 * 1024 * 1024; // 50MB dalam bytes
+      const oversizedFiles = files.filter(file => file.size > maxSize);
+      
+      if (oversizedFiles.length > 0) {
+        const fileNames = oversizedFiles.map(file => file.name).join(', ');
+        toast.error(`File berikut melebihi ukuran maksimal 50MB: ${fileNames}`);
+        return;
+      }
+      
       // Dalam mode edit, kita perlu mempertimbangkan file yang sudah ada
       if (isEditMode) {
         // Hitung total file: file yang sudah ada + file baru
@@ -733,7 +749,7 @@ const FormAset = forwardRef(({
                       accept=".jpg,.jpeg,.png,.mp4,.mov,.webm"
                     />
                     <Form.Text className="text-muted">
-                      {isEditMode ? 'Upload file baru untuk menambah media.' : 'Format: JPG, PNG, MP4, MOV, WEBM (Maks. 50MB per file, 5 file maksimal)'}
+                      {isEditMode ? 'Upload file baru untuk menambah media (maks. 50MB per file).' : 'Format: JPG, PNG, MP4, MOV, WEBM (Maks. 50MB per file, 5 file maksimal)'}
                     </Form.Text>
                   </Form.Group>
 

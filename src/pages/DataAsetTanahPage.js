@@ -319,10 +319,16 @@ const FilterPanelTop = ({ koremList, kodimList, allKodimList, selectedKorem, sel
 };
 
 const DetailModalAset = ({ asset, show, onHide, koremList, allKodimList, koremGeoJSON, kodimGeoJSON }) => {
-    // DetailModalAset implementation remains the same
+    // State untuk popup preview - HARUS DIDEKLARASIKAN DI AWAL SEBELUM LOGIKA APA PUN
+  const [showImagePreview, setShowImagePreview] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState('');
+  const [previewImageTitle, setPreviewImageTitle] = useState('');
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [previewAssetPhotos, setPreviewAssetPhotos] = useState([]);
+
+    // Re-use the location parsing logic from the main map to ensure consistency.
     if (!asset) return null;
 
-  // Re-use the location parsing logic from the main map to ensure consistency.
   const locationData = parseLocation(asset.lokasi);
   const hasValidLocation = locationData && getCentroid(locationData) !== null;
 
@@ -352,7 +358,49 @@ const DetailModalAset = ({ asset, show, onHide, koremList, allKodimList, koremGe
   const hasValidImage = imageUrl && isImageFile(filename);
   const hasPdf = imageUrl && isPdfFile(filename);
 
+  // Fungsi untuk menampilkan preview bukti pemilikan
+  const handleShowImagePreview = (url, title) => {
+    setPreviewImageUrl(url);
+    setPreviewImageTitle(title);
+    setPreviewAssetPhotos(asset?.foto_aset || []); // Tetap simpan foto aset untuk navigasi
+    setShowImagePreview(true);
+  };
+
+  // Fungsi untuk menavigasi foto aset
+  const handleNextPhoto = () => {
+    if (previewAssetPhotos && previewAssetPhotos.length > 0) {
+      setCurrentPhotoIndex((prevIndex) => {
+        const newIndex = prevIndex === previewAssetPhotos.length - 1 ? 0 : prevIndex + 1;
+        const newPhotoUrl = previewAssetPhotos[newIndex];
+        const fullUrl = newPhotoUrl.startsWith('http') ? newPhotoUrl : `${API_URL}${newPhotoUrl}`;
+        setPreviewImageUrl(fullUrl);
+        return newIndex;
+      });
+    }
+  };
+
+  const handlePrevPhoto = () => {
+    if (previewAssetPhotos && previewAssetPhotos.length > 0) {
+      setCurrentPhotoIndex((prevIndex) => {
+        const newIndex = prevIndex === 0 ? previewAssetPhotos.length - 1 : prevIndex - 1;
+        const newPhotoUrl = previewAssetPhotos[newIndex];
+        const fullUrl = newPhotoUrl.startsWith('http') ? newPhotoUrl : `${API_URL}${newPhotoUrl}`;
+        setPreviewImageUrl(fullUrl);
+        return newIndex;
+      });
+    }
+  };
+
+  const handleShowPhotoPreview = (url, title, index, allPhotos) => {
+    setPreviewImageUrl(url);
+    setPreviewImageTitle(title);
+    setCurrentPhotoIndex(index);
+    setPreviewAssetPhotos(allPhotos || []);
+    setShowImagePreview(true);
+  };
+
   return (
+    <>
     <Modal show={show} onHide={onHide} size="xl" centered>
       <Modal.Header closeButton>
         <Modal.Title>Detail Aset Tanah - {asset.nama || "Unknown"}</Modal.Title>
@@ -478,8 +526,8 @@ const DetailModalAset = ({ asset, show, onHide, koremList, allKodimList, koremGe
                                   overflow: "hidden",
                                   cursor: "pointer",
                                 }}
-                                onClick={() => window.open(imageUrl, "_blank")}
-                                title="Klik untuk lihat gambar penuh"
+                                onClick={() => handleShowImagePreview(imageUrl, "Preview Bukti Pemilikan")}
+                                title="Klik untuk preview gambar"
                               >
                                 <img
                                   src={imageUrl}
@@ -508,12 +556,10 @@ const DetailModalAset = ({ asset, show, onHide, koremList, allKodimList, koremGe
                                 <Button
                                   variant="link"
                                   size="sm"
-                                  onClick={() =>
-                                    window.open(imageUrl, "_blank")
-                                  }
+                                  onClick={() => handleShowImagePreview(imageUrl, "Preview Bukti Pemilikan")}
                                   className="p-0"
                                 >
-                                  Buka File
+                                  Lihat Preview
                                 </Button>
                               </small>
                             </div>
@@ -540,7 +586,7 @@ const DetailModalAset = ({ asset, show, onHide, koremList, allKodimList, koremGe
                                       src={fullUrl}
                                       controls={false}
                                       style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
-                                      onClick={() => window.open(fullUrl, '_blank')}
+                                      onClick={() => handleShowPhotoPreview(fullUrl, `Foto Aset ${index + 1}`, index, asset.foto_aset || [])}
                                       title="Klik untuk lihat video"
                                     />
                                   ) : (
@@ -548,7 +594,7 @@ const DetailModalAset = ({ asset, show, onHide, koremList, allKodimList, koremGe
                                       src={fullUrl}
                                       alt={`Foto Aset ${index + 1}`}
                                       style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
-                                      onClick={() => window.open(fullUrl, '_blank')}
+                                      onClick={() => handleShowPhotoPreview(fullUrl, `Foto Aset ${index + 1}`, index, asset.foto_aset || [])}
                                       fluid
                                     />
                                   )}
@@ -728,6 +774,84 @@ const DetailModalAset = ({ asset, show, onHide, koremList, allKodimList, koremGe
         </Button>
       </Modal.Footer>
     </Modal>
+    
+    {/* Modal untuk preview gambar */}
+    <Modal 
+      show={showImagePreview} 
+      onHide={() => setShowImagePreview(false)} 
+      size="lg"
+      centered
+      dialogClassName="modal-90w"
+    >
+      <Modal.Header closeButton>
+        <Modal.Title>{previewImageTitle}</Modal.Title>
+      </Modal.Header>
+      <Modal.Body className="text-center">
+        {isImageFile(previewImageUrl) ? (
+          <img 
+            src={previewImageUrl} 
+            alt="Preview" 
+            className="img-fluid" 
+            style={{ maxHeight: '70vh', objectFit: 'contain' }} 
+          />
+        ) : isVideoFile(previewImageUrl) ? (
+          <video 
+            src={previewImageUrl} 
+            controls
+            className="img-fluid" 
+            style={{ maxHeight: '70vh', objectFit: 'contain' }} 
+            onClick={(e) => e.stopPropagation()}
+          >
+            Browser Anda tidak mendukung elemen video.
+          </video>
+        ) : (
+          <div>
+            <p>Preview tidak tersedia untuk file ini.</p>
+            <Button 
+              variant="primary" 
+              onClick={() => window.open(previewImageUrl, '_blank')}
+            >
+              Buka File
+            </Button>
+          </div>
+        )}
+        
+        {/* Navigasi untuk foto aset jika ada */}
+        {previewAssetPhotos && previewAssetPhotos.length > 1 && (
+          <div className="mt-3 d-flex justify-content-between align-items-center">
+            <Button 
+              variant="outline-primary" 
+              onClick={handlePrevPhoto}
+              disabled={previewAssetPhotos.length <= 1}
+            >
+              &larr; Sebelumnya
+            </Button>
+            <span>
+              {currentPhotoIndex + 1} dari {previewAssetPhotos.length}
+            </span>
+            <Button 
+              variant="outline-primary" 
+              onClick={handleNextPhoto}
+              disabled={previewAssetPhotos.length <= 1}
+            >
+              Berikutnya &rarr;
+            </Button>
+          </div>
+        )}
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={() => setShowImagePreview(false)}>
+          Tutup
+        </Button>
+        <Button 
+          variant="primary" 
+          onClick={() => window.open(previewImageUrl, '_blank')}
+        >
+          Buka di Tab Baru
+        </Button>
+      </Modal.Footer>
+    </Modal>
+    </>
   );
 };
 

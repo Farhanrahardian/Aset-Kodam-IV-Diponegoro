@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import React from "react";
-import {
+import React, { useState, Fragment } from "react";
+import { 
   Offcanvas,
   Badge,
   Card,
@@ -8,6 +8,7 @@ import {
   Col,
   Button,
   Image,
+  Modal,
 } from "react-bootstrap";
 import {
   FaMapMarkerAlt,
@@ -99,12 +100,31 @@ const DetailOffcanvasAset = ({
   koremList = [],
   allKodimList = [],
 }) => {
+  const [previewMedia, setPreviewMedia] = useState(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [previewMediaTitle, setPreviewMediaTitle] = useState('');
+  
   const navigate = useNavigate();
 
   const handleViewFile = (url) => {
     if (!url) return;
     const relativePath = url.replace(`${API_URL}/`, '');
     navigate(`/view-file/${relativePath}`);
+  };
+
+  const handlePreviewMedia = (mediaUrl, title = 'Preview Media Aset') => {
+    const fullUrl = mediaUrl.startsWith('http') ? mediaUrl : `${API_URL}${mediaUrl}`;
+    setPreviewMedia({
+      url: fullUrl,
+      isVideo: isVideoFile(mediaUrl),
+    });
+    setPreviewMediaTitle(title);
+    setShowPreviewModal(true);
+  };
+
+  const handleClosePreview = () => {
+    setShowPreviewModal(false);
+    setPreviewMedia(null);
   };
 
   if (!aset) return null;
@@ -198,13 +218,14 @@ const DetailOffcanvasAset = ({
   const luasInfo = renderLuasInfo(aset);
 
   return (
-    <Offcanvas
-      show={show}
-      onHide={handleClose}
-      placement="end"
-      backdrop={true}
-      style={{ width: "600px" }}
-    >
+    <>
+      <Offcanvas
+        show={show}
+        onHide={handleClose}
+        placement="end"
+        backdrop={true}
+        style={{ width: "600px" }}
+      >
       <Offcanvas.Header
         closeButton
         className="bg-primary text-white border-bottom"
@@ -343,8 +364,8 @@ const DetailOffcanvasAset = ({
                                   overflow: "hidden",
                                   cursor: "pointer",
                                 }}
-                                onClick={() => handleViewFile(imageUrl)}
-                                title="Klik untuk lihat gambar penuh"
+                                onClick={() => handlePreviewMedia(imageUrl, "Preview Bukti Pemilikan")}
+                                title="Klik untuk preview gambar"
                               >
                                 <img
                                   src={imageUrl}
@@ -364,11 +385,11 @@ const DetailOffcanvasAset = ({
                               <Button
                                 variant="link"
                                 size="sm"
-                                onClick={() => handleViewFile(imageUrl)}
+                                onClick={() => handlePreviewMedia(imageUrl, "Preview Bukti Pemilikan")}
                                 className="p-0"
                                 style={{ fontSize: "0.7em" }}
                               >
-                                Buka File
+                                Lihat Preview
                               </Button>
                             </div>
                           </div>
@@ -468,11 +489,11 @@ const DetailOffcanvasAset = ({
                     cursor: "pointer",
                     border: "1px solid #ddd",
                   }}
-                  onClick={() => handleViewFile(imageUrl)}
+                  onClick={() => handlePreviewMedia(imageUrl, "Preview Bukti Pemilikan")}
                 />
                 <div className="mt-2">
                   <small className="text-muted">
-                    Klik gambar untuk melihat ukuran penuh
+                    Klik gambar untuk melihat preview
                   </small>
                 </div>
               </Card.Body>
@@ -493,16 +514,16 @@ const DetailOffcanvasAset = ({
                     return (
                       <Col key={index} md={4} className="mb-3">
                         <Card 
-                          onClick={() => handleViewFile(fullUrl)}
+                          onClick={() => handlePreviewMedia(foto)}
                           className="h-100"
                           style={{ cursor: "pointer", border: "1px solid #ddd" }}
                         >
                           {isVideo ? (
                             <video
                               src={fullUrl}
-                              controls
+                              controls={false}
                               style={{ objectFit: 'cover', width: '100%', height: '100px' }}
-                              title="Klik untuk lihat video"
+                              title="Klik untuk lihat preview"
                             />
                           ) : (
                             <Card.Img
@@ -589,6 +610,47 @@ const DetailOffcanvasAset = ({
         </div>
       </Offcanvas.Body>
     </Offcanvas>
+    
+    {/* Preview Modal for Media - Rendered conditionally */}
+    {showPreviewModal && (
+      <Modal 
+        show={showPreviewModal} 
+        onHide={handleClosePreview} 
+        size="xl" 
+        centered
+        backdrop="static"
+        keyboard={false}
+        dialogClassName="preview-modal"
+        enforceFocus={false} // Important to allow video controls to work
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>{previewMediaTitle}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="d-flex justify-content-center align-items-center" style={{ height: '80vh', background: '#000' }}>
+          {previewMedia && previewMedia.isVideo ? (
+            <video
+              src={previewMedia.url}
+              controls
+              style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+              autoPlay
+            />
+          ) : (
+            <img
+              src={previewMedia?.url}
+              alt="Preview Aset"
+              style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+              onClick={(e) => e.stopPropagation()}
+            />
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleClosePreview}>
+            Tutup
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    )}
+    </>
   );
 };
 
