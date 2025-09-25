@@ -674,8 +674,9 @@ const Dashboard = () => {
 
   const chartHeight = useMemo(() => {
     const headerHeight = 60;
-    // Kurangi atau hilangkan heroSliderHeight dari perhitungan
-    const heroSliderHeight = 100; // Nilai kecil atau 0
+    // Ubah bagian ini - perbesar angka-angkanya
+    const heroSliderHeight =
+      window.innerHeight < 600 ? 600 : window.innerHeight < 800 ? 700 : 800;
     const marginBottom = 20;
     const otherElements = headerHeight + heroSliderHeight + marginBottom;
 
@@ -691,10 +692,7 @@ const Dashboard = () => {
       <Row className="mb-4">
         <Col>
           <div className="hero-slider">
-            <div
-              className="slider-container"
-              style={{ height: "min(800px, 80vh)" }}
-            >
+            <div className="slider-container">
               {slides.map((slide, index) => (
                 <div
                   key={index}
