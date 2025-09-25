@@ -198,10 +198,6 @@ if (assetIndex === -1) {
   db.assets[assetIndex] = finalAsset;
   writeDb(db);
 
-  // Update the asset in the array
-  db.assets[assetIndex] = { ...db.assets[assetIndex], ...updatedAsset };
-  writeDb(db);
-
   console.log("Asset updated successfully");
   res.json(db.assets[assetIndex]);
 });

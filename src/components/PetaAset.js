@@ -691,7 +691,7 @@ const PetaAset = React.memo(
 
     return (
       <div style={{ position: "relative", height: "100%", width: "100%" }}>
-        {view.type !== "nasional" && (
+        {view.type !== "nasional" && mode !== "detail" && (
           <button onClick={handleBackClick} style={buttonStyle}>
             Kembali
           </button>
@@ -726,6 +726,13 @@ const PetaAset = React.memo(
           center={[-7.5, 110.0]}
           zoom={8}
           style={{ height: "100%", width: "100%" }}
+          zoomControl={mode !== 'detail'}
+          scrollWheelZoom={mode !== 'detail'}
+          dragging={mode !== 'detail'}
+          doubleClickZoom={mode !== 'detail'}
+          boxZoom={mode !== 'detail'}
+          touchZoom={mode !== 'detail'}
+          keyboard={mode !== 'detail'}
         >
           <MapController
             view={view}
@@ -734,26 +741,31 @@ const PetaAset = React.memo(
             assets={assetsToShow}
             mode={mode}
           />
-          <LayersControl position="topright">
-            <LayersControl.BaseLayer checked name="Street Map">
-              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-            </LayersControl.BaseLayer>
-            <LayersControl.BaseLayer name="Satelit">
-              <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" />
-            </LayersControl.BaseLayer>
-          </LayersControl>
+          {mode !== 'detail' ? (
+            <LayersControl position="topright">
+              <LayersControl.BaseLayer checked name="Street Map">
+                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              </LayersControl.BaseLayer>
+              <LayersControl.BaseLayer name="Satelit">
+                <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" />
+              </LayersControl.BaseLayer>
+            </LayersControl>
+          ) : (
+            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          )}
 
-          <RegionLabels
+          {mode !== 'detail' && <RegionLabels
             view={view}
             koremData={koremData}
             kodimData={kodimData}
             setView={setView}
             onMapKoremSelect={onMapKoremSelect}
             onMapKodimSelect={onMapKodimSelect}
-          />
+          />}
+
 
           {/* Always render Korems, style will change based on view. Key forces style re-evaluation. */}
-          {koremsToShow && (
+          {mode !== "detail" && koremsToShow && (
             <GeoJSON
               key={"korem-" + view.korem?.listkodim_Korem}
               data={koremsToShow}
@@ -772,7 +784,7 @@ const PetaAset = React.memo(
           )}
 
           {/* Render Kodims when a Korem or Kodim is selected */}
-          {kodimsToShow && (
+          {mode !== "detail" && kodimsToShow && (
             <GeoJSON
               key={
                 "kodim-" +

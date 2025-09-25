@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 
 import FormAset from "./FormAset";
 import { parseLocation, getCentroid } from "../utils/locationUtils";
+import * as turf from "@turf/turf";
 
 // Fix for broken icons in Leaflet with Webpack
 delete L.Icon.Default.prototype._getIconUrl;
@@ -64,14 +65,33 @@ const EditAsetModal = ({ show, onHide, asset, koremList, onSave }) => {
     if (formAsetRef.current) {
       const { formData: latestFormData, buktiPemilikanFile, assetPhotos } = formAsetRef.current.getFormData();
       
+      console.log("Original form data from FormAset:", JSON.stringify(latestFormData.lokasi));
+
       let finalData = { ...latestFormData };
       if (geometry) {
-        const geoJsonCoords = geometry.coordinates[0].map(latLng => [latLng[1], latLng[0]]);
-        finalData.lokasi = {
+        console.log("Geometry state exists. Updating lokasi.");
+        const geoJsonForSave = {
           type: "Polygon",
-          coordinates: [geoJsonCoords],
+          coordinates: [geometry.coordinates[0].map(latLng => [latLng[1], latLng[0]])]
         };
+        const area = turf.area(geoJsonForSave);
+        const roundedArea = parseFloat(area.toFixed(2));
+
+        finalData.luas = roundedArea;
+
+        if (finalData.pemilikan_sertifikat === "Ya") {
+          finalData.sertifikat_luas = roundedArea;
+        } else {
+          finalData.belum_sertifikat_luas = roundedArea;
+        }
+
+        finalData.lokasi = geoJsonForSave;
+        console.log("Final lokasi to be saved:", JSON.stringify(finalData.lokasi));
+      } else {
+        console.log("Geometry state does not exist.");
       }
+      
+      console.log("Calling onSave with final data.");
       onSave(finalData, buktiPemilikanFile, assetPhotos);
     } else {
       toast.error("Tidak ada data untuk disimpan.");
@@ -79,9 +99,12 @@ const EditAsetModal = ({ show, onHide, asset, koremList, onSave }) => {
   };
 
   const onEdited = (e) => {
+    console.log("onEdited event fired!");
     const layers = e.layers;
     layers.eachLayer((layer) => {
+      console.log("Processing a layer in onEdited.");
       if (layer instanceof L.Polygon) {
+        console.log("Layer is a polygon. Updating geometry state.");
         const geoJSON = layer.toGeoJSON();
         const latLngs = geoJSON.geometry.coordinates[0].map(coord => [coord[1], coord[0]]);
         setGeometry({ type: "Polygon", coordinates: [latLngs] });
