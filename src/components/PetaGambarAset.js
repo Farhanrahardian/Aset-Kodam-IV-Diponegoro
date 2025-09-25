@@ -389,7 +389,7 @@ const PetaGambarAset = ({
             />
           </LayersControl.BaseLayer>
 
-          {!selectedKorem && koremBoundaries && mapReady && (
+          {!importedGeometry && !selectedKorem && koremBoundaries && mapReady && (
             <LayersControl.Overlay checked name="Area KOREM">
               <GeoJSON
                 data={koremBoundaries}
@@ -409,7 +409,7 @@ const PetaGambarAset = ({
             </LayersControl.Overlay>
           )}
 
-          {filteredKodimData && mapReady && (
+          {!importedGeometry && filteredKodimData && mapReady && (
             <LayersControl.Overlay checked name="Area KODIM">
               <GeoJSON
                 key={selectedKodim ? selectedKodim.nama : selectedKorem.id}

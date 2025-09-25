@@ -22,9 +22,6 @@ const writeDb = (data) => {
 // CORS configuration
 app.use(cors());
 
-// Middleware to parse JSON bodies
-app.use(express.json());
-
 // Serve static files from the 'public' directory, making /uploads accessible
 app.use(express.static("public"));
 
@@ -77,16 +74,8 @@ const uploadBuktiPemilikan = multer({
   }
 });
 
-// Konfigurasi Multer umum (untuk endpoint lainnya)
-const upload = multer({ 
-  storage: storage,
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit per file
-    files: 5 // maksimal 5 file
-  }
-});
-
-// --- API Endpoints ---
+// --- File Upload API Endpoints ---
+// IMPORTANT: These must be defined BEFORE the express.json() body parser.
 
 // Endpoint for single file upload (Bukti Pemilikan)
 app.post(
@@ -94,12 +83,12 @@ app.post(
   uploadBuktiPemilikan.single("bukti_pemilikan"),
   (req, res) => {
     if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded." });
+      return res.status(400).json({ message: "No file uploaded." });
     }
     res.json({
       message: "File uploaded successfully",
       filename: req.file.filename,
-      url: `/uploads/${req.file.filename}`, // URL path to access the file
+      url: `/uploads/${req.file.filename}`,
     });
   }
 );
@@ -110,7 +99,7 @@ app.post(
   uploadAssetPhotos.array("asset_photos", 5),
   (req, res) => {
     if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ error: "No files uploaded." });
+      return res.status(400).json({ message: "No files uploaded." });
     }
     const files = req.files.map((file) => ({
       filename: file.filename,
@@ -123,6 +112,12 @@ app.post(
   }
 );
 
+// --- Body-parser middleware ---
+// IMPORTANT: Must be AFTER file upload endpoints.
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+
 // --- JSON-Server equivalent routes ---
 
 // Get all from a resource (e.g., /assets, /korem, /yardip_assets)
@@ -133,7 +128,7 @@ app.get("/:resource", (req, res) => {
   if (data) {
     res.json(data);
   } else {
-    res.status(404).json({ error: `Resource '${resource}' not found` });
+    res.status(404).json({ message: `Resource '${resource}' not found` });
   }
 });
 
@@ -147,10 +142,10 @@ app.get("/:resource/:id", (req, res) => {
     if (item) {
       res.json(item);
     } else {
-      res.status(404).json({ error: "Item not found" });
+      res.status(404).json({ message: "Item not found" });
     }
   } else {
-    res.status(404).json({ error: `Resource '${resource}' not found` });
+    res.status(404).json({ message: `Resource '${resource}' not found` });
   }
 });
 
@@ -164,7 +159,7 @@ app.post("/:resource", (req, res) => {
     writeDb(db);
     res.status(201).json(newItem);
   } else {
-    res.status(404).json({ error: `Resource '${resource}' not found` });
+    res.status(404).json({ message: `Resource '${resource}' not found` });
   }
 });
 
@@ -172,71 +167,42 @@ app.post("/:resource", (req, res) => {
 app.put("/assets/:id", (req, res) => {
   const { id } = req.params;
   const updatedAsset = req.body;
-  console.log("PUT request for asset ID:", id);
-
   const db = readDb();
-
   if (!db.assets) {
-    return res.status(404).json({ error: "Resource 'assets' not found" });
+    return res.status(404).json({ message: "Resource 'assets' not found" });
   }
-
   const assetIndex = db.assets.findIndex(
     (asset) => String(asset.id) === String(id)
   );
-
-if (assetIndex === -1) {
-    return res.status(404).json({ error: "Asset not found" });
+  if (assetIndex === -1) {
+    return res.status(404).json({ message: "Asset not found" });
   }
-
-  console.log('--- UPDATE ASSET ---');
-  console.log('ID:', id);
-  console.log('Received Body (updatedAsset):', JSON.stringify(updatedAsset, null, 2));
-  const finalAsset = { ...db.assets[assetIndex], ...updatedAsset };
-  console.log('Final Asset to be Saved:', JSON.stringify(finalAsset, null, 2));
-
-  // Update the asset in the array
-  db.assets[assetIndex] = finalAsset;
+  db.assets[assetIndex] = { ...db.assets[assetIndex], ...updatedAsset };
   writeDb(db);
-
-  console.log("Asset updated successfully");
   res.json(db.assets[assetIndex]);
 });
 
 // Delete an asset by ID
 app.delete("/assets/:id", (req, res) => {
   const { id } = req.params;
-  console.log("DELETE request for asset ID:", id);
-
   const db = readDb();
-
   if (!db.assets) {
-    return res.status(404).json({ error: "Resource 'assets' not found" });
+    return res.status(404).json({ message: "Resource 'assets' not found" });
   }
-
   const assetIndex = db.assets.findIndex(
     (asset) => String(asset.id) === String(id)
   );
-
   if (assetIndex === -1) {
-    return res.status(404).json({ error: "Asset not found" });
+    return res.status(404).json({ message: "Asset not found" });
   }
-
   const assetToDelete = db.assets[assetIndex];
-  console.log("Found asset to delete:", assetToDelete.nama);
-
   // Delete associated files
   if (assetToDelete.bukti_pemilikan_filename) {
-    const filePath = path.join(
-      __dirname,
-      "public",
-      "uploads",
-      assetToDelete.bukti_pemilikan_filename
-    );
+    const filePath = path.join(__dirname, "public", "uploads", assetToDelete.bukti_pemilikan_filename);
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }
   }
-
   if (assetToDelete.foto_aset && Array.isArray(assetToDelete.foto_aset)) {
     assetToDelete.foto_aset.forEach((fotoUrl) => {
       const filename = path.basename(fotoUrl);
@@ -246,104 +212,63 @@ app.delete("/assets/:id", (req, res) => {
       }
     });
   }
-
-  // Remove the asset from the array
   db.assets.splice(assetIndex, 1);
   writeDb(db);
-
-  console.log("Asset deleted successfully from database");
-  res.status(200).json({
-    message: "Asset deleted successfully",
-    deletedAsset: assetToDelete,
-  });
+  res.status(200).json({ message: "Asset deleted successfully" });
 });
 
-// ===== YARDIP ASSETS ENDPOINTS (TAMBAHAN BARU) =====
+// ===== YARDIP ASSETS ENDPOINTS =====
 
 // UPDATE endpoint untuk yardip_assets
 app.put("/yardip_assets/:id", (req, res) => {
   const { id } = req.params;
   const updatedAsset = req.body;
-  console.log("PUT request for yardip asset ID:", id);
-
   const db = readDb();
-
   if (!db.yardip_assets) {
-    return res
-      .status(404)
-      .json({ error: "Resource 'yardip_assets' not found" });
+    return res.status(404).json({ message: "Resource 'yardip_assets' not found" });
   }
-
   const assetIndex = db.yardip_assets.findIndex(
     (asset) => String(asset.id) === String(id)
   );
-
   if (assetIndex === -1) {
-    return res.status(404).json({ error: "Yardip asset not found" });
+    return res.status(404).json({ message: "Yardip asset not found" });
   }
-
-  // Update the yardip asset in the array
-  db.yardip_assets[assetIndex] = {
-    ...db.yardip_assets[assetIndex],
-    ...updatedAsset,
-  };
+  db.yardip_assets[assetIndex] = { ...db.yardip_assets[assetIndex], ...updatedAsset };
   writeDb(db);
-
-  console.log(
-    "Yardip asset updated successfully:",
-    db.yardip_assets[assetIndex].pengelola
-  );
   res.json(db.yardip_assets[assetIndex]);
 });
 
 // DELETE endpoint untuk yardip_assets
 app.delete("/yardip_assets/:id", (req, res) => {
   const { id } = req.params;
-  console.log("DELETE request for yardip asset ID:", id);
-
   const db = readDb();
-
   if (!db.yardip_assets) {
-    return res
-      .status(404)
-      .json({ error: "Resource 'yardip_assets' not found" });
+    return res.status(404).json({ message: "Resource 'yardip_assets' not found" });
   }
-
   const assetIndex = db.yardip_assets.findIndex(
     (asset) => String(asset.id) === String(id)
   );
-
   if (assetIndex === -1) {
-    console.log("Yardip asset not found with ID:", id);
-    return res.status(404).json({ error: "Yardip asset not found" });
+    return res.status(404).json({ message: "Yardip asset not found" });
   }
-
-  const assetToDelete = db.yardip_assets[assetIndex];
-  console.log("Found yardip asset to delete:", assetToDelete.pengelola);
-
-  // Remove the yardip asset from the array
   db.yardip_assets.splice(assetIndex, 1);
   writeDb(db);
-
-  console.log("Yardip asset deleted successfully from database");
-  res.status(200).json({
-    message: "Yardip asset deleted successfully",
-    deletedAsset: assetToDelete,
-  });
+  res.status(200).json({ message: "Yardip asset deleted successfully" });
 });
 
-// Middleware untuk menangani error dari upload file
+// --- Final Error Handling Middleware ---
 app.use((error, req, res, next) => {
   if (error instanceof multer.MulterError) {
     if (error.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ error: 'File terlalu besar. Maksimal 50MB per file untuk foto aset dan 10MB per file untuk bukti pemilikan.' });
+      return res.status(400).json({ message: 'File terlalu besar. Maksimal 50MB untuk foto/video aset dan 10MB untuk bukti pemilikan.' });
     }
     if (error.code === 'LIMIT_FILE_COUNT') {
-      return res.status(400).json({ error: 'Terlalu banyak file yang diupload. Maksimal 5 file foto aset.' });
+      return res.status(400).json({ message: 'Terlalu banyak file yang diupload. Maksimal 5 file.' });
     }
-    return res.status(400).json({ error: error.message });
+    return res.status(400).json({ message: error.message });
   } else if (error) {
-    return res.status(400).json({ error: error.message });
+    // Handle non-multer errors
+    return res.status(500).json({ message: error.message || 'Terjadi kesalahan pada server.' });
   }
   next();
 });

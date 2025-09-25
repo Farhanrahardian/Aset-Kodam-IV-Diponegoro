@@ -124,7 +124,7 @@ const TabelAset = ({ assets, onEdit, onDelete, onViewDetail, koremList, allKodim
                         <th style={{ minWidth: "100px" }}>Status</th>
                         <th style={{ minWidth: "120px" }}>Luas</th>
                         <th style={{ minWidth: "100px" }}>Sertifikat</th>
-                        {userRole === 'admin' && <th style={{ minWidth: "100px" }}>Aksi</th>}
+                        <th style={{ minWidth: "100px" }}>Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -156,7 +156,6 @@ const TabelAset = ({ assets, onEdit, onDelete, onViewDetail, koremList, allKodim
                                         <span className="badge bg-danger">Tidak</span>
                                     )}
                                 </td>
-                                {userRole === 'admin' && (
                                   <td style={{ minWidth: "100px" }}>
                                       <div className="d-flex gap-1 flex-wrap">
                                           <Button
@@ -167,7 +166,7 @@ const TabelAset = ({ assets, onEdit, onDelete, onViewDetail, koremList, allKodim
                                           >
                                               Detail
                                           </Button>
-                                          {onEdit && (
+                                          {userRole === 'admin' && onEdit && (
                                               <Button
                                                   variant="warning"
                                                   size="sm"
@@ -177,7 +176,7 @@ const TabelAset = ({ assets, onEdit, onDelete, onViewDetail, koremList, allKodim
                                                   Edit
                                               </Button>
                                           )}
-                                          {onDelete && (
+                                          {userRole === 'admin' && onDelete && (
                                               <Button
                                                   variant="danger"
                                                   size="sm"
@@ -189,7 +188,6 @@ const TabelAset = ({ assets, onEdit, onDelete, onViewDetail, koremList, allKodim
                                           )}
                                       </div>
                                   </td>
-                                )}
                             </tr>
                         );
                     })}
@@ -203,12 +201,8 @@ const FilterPanelTop = ({ koremList, kodimList, allKodimList, selectedKorem, sel
     // FilterPanelTop implementation remains the same
     const statusOptions = [
     { value: "", label: "Semua Status" },
-    { value: "Dimiliki/Dikuasai", label: "Dimiliki/Dikuasai" },
-    {
-      value: "Tidak Dimiliki/Tidak Dikuasai",
-      label: "Tidak Dimiliki/Tidak Dikuasai",
-    },
-    { value: "Lain-lain", label: "Lain-lain" },
+    { value: "Aman", label: "Aman" },
+    { value: "Sengketa", label: "Sengketa" },
   ];
 
   // Handle special case for "Berdiri Sendiri" Korem
@@ -338,6 +332,7 @@ const DetailModalAset = ({ asset, show, onHide, koremList, allKodimList, koremGe
       alamat: asset.alamat || "",
       peruntukan: asset.peruntukan || asset.fungsi || "",
       keterangan: asset.keterangan || "",
+      pemilikan_sertifikat: asset.pemilikan_sertifikat || "Tidak", // Add this line
       type: "aset",
   } : null;
 
@@ -1302,18 +1297,27 @@ const DataAsetTanahPage = () => {
     const { id } = assetData;
     let updatedData = { ...assetData };
 
-    try {
-      if (buktiPemilikanFile) {
+    // 1. Upload Bukti Pemilikan
+    if (buktiPemilikanFile) {
+      try {
         toast.loading("Mengupload bukti pemilikan...", { id: toastId });
         const formData = new FormData();
         formData.append("bukti_pemilikan", buktiPemilikanFile);
         const uploadRes = await axios.post(`${API_URL}/upload/bukti-pemilikan`, formData);
         updatedData.bukti_pemilikan_url = uploadRes.data.url;
         updatedData.bukti_pemilikan_filename = uploadRes.data.filename;
+      } catch (err) {
+        const message = err.response?.data?.message || "Gagal mengupload bukti pemilikan.";
+        toast.error(message, { id: toastId });
+        console.error("Upload error (bukti pemilikan):", err.response?.data || err);
+        return; // Stop execution if upload fails
       }
+    }
 
-      if (assetPhotos && assetPhotos.length > 0) {
-        toast.loading(`Mengupload ${assetPhotos.length} foto aset...`, { id: toastId });
+    // 2. Upload Foto/Video Aset
+    if (assetPhotos && assetPhotos.length > 0) {
+      try {
+        toast.loading(`Mengupload ${assetPhotos.length} file aset...`, { id: toastId });
         const photosFormData = new FormData();
         assetPhotos.forEach(photo => {
           photosFormData.append("asset_photos", photo);
@@ -1321,8 +1325,16 @@ const DataAsetTanahPage = () => {
         const photosUploadRes = await axios.post(`${API_URL}/upload/asset-photos`, photosFormData);
         const newPhotoUrls = photosUploadRes.data.files.map(file => file.url);
         updatedData.foto_aset = [...(updatedData.foto_aset || []), ...newPhotoUrls];
+      } catch (err) {
+        const message = err.response?.data?.message || "Gagal mengupload file aset. File mungkin terlalu besar.";
+        toast.error(message, { id: toastId });
+        console.error("Upload error (asset photos/videos):", err.response?.data || err);
+        return; // Stop execution if upload fails
       }
+    }
 
+    // 3. Update Asset Data in DB
+    try {
       toast.loading("Menyimpan data ke database...", { id: toastId });
       await axios.put(`${API_URL}/assets/${id}`, updatedData);
       
@@ -1330,8 +1342,8 @@ const DataAsetTanahPage = () => {
       handleCloseEditModal();
       fetchData(); // Refresh data
     } catch (err) {
-      toast.error("Gagal menyimpan perubahan.", { id: toastId });
-      console.error("Gagal menyimpan aset", err);
+      toast.error("Gagal menyimpan data aset ke database.", { id: toastId });
+      console.error("DB save error:", err.response?.data || err);
     }
   };
 

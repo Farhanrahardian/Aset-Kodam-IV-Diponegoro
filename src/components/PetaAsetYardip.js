@@ -1,999 +1,351 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import {
   MapContainer,
   TileLayer,
-  FeatureGroup,
   GeoJSON,
   Marker,
   Popup,
+  LayersControl,
   useMap,
+  Polygon,
 } from "react-leaflet";
-import { GeoSearchControl, OpenStreetMapProvider } from "leaflet-geosearch";
-import "leaflet-geosearch/dist/geosearch.css";
-import { EditControl } from "react-leaflet-draw";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import "leaflet-draw/dist/leaflet.draw.css";
 import * as turf from "@turf/turf";
+import axios from "axios";
+import { parseLocation } from "../utils/locationUtils";
 
-// Fix for broken icons in Leaflet with Webpack
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: require("leaflet/dist/images/marker-icon-2x.png"),
-  iconUrl: require("leaflet/dist/images/marker-icon.png"),
-  shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
+// --- STYLING ---
+const provinceStyles = {
+  "Jawa Tengah": { fillColor: "#2E7D32", color: "black", weight: 1, fillOpacity: 0.5 },
+  "Daerah Istimewa Yogyakarta": { fillColor: "#FFC107", color: "black", weight: 1, fillOpacity: 0.5 },
+};
+const kabupatenStyle = { fillColor: "#0d6efd", color: "white", weight: 2, fillOpacity: 0.5 };
+const selectedStyle = { color: "#ffc107", weight: 4, fillOpacity: 0.3 };
+
+const createCustomIcon = (color) => new L.Icon({
+    iconUrl: `https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
+    shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+    iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41],
 });
 
-// Custom colored markers for different statuses
-const createCustomIcon = (color = "#3388ff", status = "") => {
-  const svgIcon = `
-    <svg width="25" height="41" viewBox="0 0 25 41" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12.5 0C5.6 0 0 5.6 0 12.5c0 10.6 12.5 28.5 12.5 28.5S25 23.1 25 12.5C25 5.6 19.4 0 12.5 0z" 
-            fill="${color}" stroke="#fff" stroke-width="1.5"/>
-      <circle cx="12.5" cy="12.5" r="6" fill="#fff"/>
-      <circle cx="12.5" cy="12.5" r="3" fill="${color}"/>
-    </svg>
-  `;
+const greenIcon = createCustomIcon("green");
+const redIcon = createCustomIcon("red");
+const yellowIcon = createCustomIcon("yellow");
 
-  return L.divIcon({
-    html: svgIcon,
-    className: `custom-marker-${status.replace(/[^a-zA-Z0-9]/g, "")}`,
-    iconSize: [25, 41],
-    iconAnchor: [12.5, 41],
-    popupAnchor: [0, -41],
-  });
-};
+// --- MAIN COMPONENT ---
+const PetaAsetYardip = ({ assets = [], onAssetClick, filter, onViewChange, provinsiData, kabupatenData }) => {
+  const [view, setView] = useState({ type: "nasional", provinsi: null, kabupaten: null, kabupatenFeature: null });
+  const geoJsonLayerRef = useRef(null);
 
-// Create red marker for coordinate points
-const createCoordinateMarkerIcon = () => {
-  const svgIcon = `
-    <svg width="25" height="41" viewBox="0 0 25 41" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12.5 0C5.6 0 0 5.6 0 12.5c0 10.6 12.5 28.5 12.5 28.5S25 23.1 25 12.5C25 5.6 19.4 0 12.5 0z" 
-            fill="#dc3545" stroke="#fff" stroke-width="2"/>
-      <circle cx="12.5" cy="12.5" r="6" fill="#fff"/>
-      <circle cx="12.5" cy="12.5" r="3" fill="#dc3545"/>
-    </svg>
-  `;
-
-  return L.divIcon({
-    html: svgIcon,
-    className: "coordinate-marker",
-    iconSize: [25, 41],
-    iconAnchor: [12.5, 41],
-    popupAnchor: [0, -41],
-  });
-};
-
-// Get marker color based on status
-const getMarkerColor = (status) => {
-  switch (status) {
-    case "Dimiliki/Dikuasai":
-      return "#10b981"; // Green
-    case "Tidak Dimiliki/Tidak Dikuasai":
-      return "#ef4444"; // Red
-    case "Lain-lain":
-      return "#f59e0b"; // Yellow/Orange
-    case "Dalam Proses":
-      return "#06b6d4"; // Cyan
-    default:
-      return "#6b7280"; // Gray
-  }
-};
-
-const MapSearch = () => {
-  const map = useMap();
-
-  useEffect(() => {
-    const provider = new OpenStreetMapProvider();
-
-    const searchControl = new GeoSearchControl({
-      provider: provider,
-      style: "bar",
-      showMarker: true,
-      showPopup: false,
-      autoClose: true,
-      retainZoomLevel: false,
-      animateZoom: true,
-      keepResult: true,
-    });
-
-    map.addControl(searchControl);
-
-    return () => {
-      map.removeControl(searchControl);
-    };
-  }, [map]);
-
-  return null;
-};
-
-const PetaAsetYardip = ({
-  onDrawingCreated,
-  onDrawingEdited,
-  assets = [],
-  isDrawing = false,
-  jatengBoundary,
-  diyBoundary,
-  selectedKorem,
-  selectedKodim,
-  fitBounds = false,
-  cityBounds = null,
-  selectedCity = null,
-  manualAreaAdjustment = null,
-  originalGeometry = null,
-  onAssetClick,
-  zoomToAsset = null,
-  markerColorMode = "status",
-  displayMode = "polygon",
-  coordinateZoom = null, // New prop for coordinate zoom
-}) => {
-  const mapRef = useRef(null);
-  const featureGroupRef = useRef(null);
-  const adjustedPolygonRef = useRef(null);
-  const coordinateMarkerRef = useRef(null); // Reference for coordinate marker
-  const [adjustedGeometry, setAdjustedGeometry] = useState(null);
-
-  const mapCenter = [-7.5, 110.0]; // Center of Central Java
-  const initialZoom = 8;
-
-  // Inject CSS to control z-index of map controls
+  // Inject CSS for labels
   useEffect(() => {
     const style = document.createElement("style");
     style.textContent = `
-      .leaflet-control-zoom,
-      .leaflet-control-layers,
-      .leaflet-control-geosearch,
-      .leaflet-draw,
-      .leaflet-draw-toolbar,
-      .leaflet-control-attribution,
-      .leaflet-control {
-        z-index: 500 !important;
+      .region-label {
+        pointer-events: none; /* Allow clicks to pass through */
       }
-      
-      .leaflet-control-layers-expanded,
-      .leaflet-geosearch .results {
-        z-index: 501 !important;
+      .region-label div {
+        pointer-events: auto; /* Make content clickable */
+        width: 150px;
+        text-align: center;
+        text-shadow: 1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white;
+        font-weight: bold;
       }
-      
-      .leaflet-popup {
-        z-index: 1002 !important;
-      }
-      
-      .coordinate-marker {
-        z-index: 1000 !important;
-      }
+      .region-label strong { font-size: 12px; }
+      .region-label span { font-size: 11px; background-color: rgba(255, 255, 255, 0.7); border-radius: 3px; padding: 1px 3px; }
     `;
-
     document.head.appendChild(style);
-
     return () => {
       document.head.removeChild(style);
     };
   }, []);
 
-  // Handle coordinate zoom - New effect for coordinate zoom functionality
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (
-        mapRef.current &&
-        coordinateZoom &&
-        coordinateZoom.lat &&
-        coordinateZoom.lng
-      ) {
-        console.log("Zooming to coordinate:", coordinateZoom);
-
-        try {
-          const { lat, lng } = coordinateZoom;
-
-          // Zoom to coordinate with smooth animation
-          mapRef.current.setView([lat, lng], 16, {
-            animate: true,
-            duration: 1.5,
-            easeLinearity: 0.25,
-          });
-
-          console.log("✅ Successfully zoomed to coordinate:", lat, lng);
-        } catch (error) {
-          console.error("Error zooming to coordinate:", error);
-        }
-      }
-    }, 200);
-
-    return () => clearTimeout(timer);
-  }, [coordinateZoom]);
-
-  // Auto-zoom to selected area, city, assets, or specific asset
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (mapRef.current) {
-        // Priority 1: Coordinate zoom (highest priority)
-        if (coordinateZoom && coordinateZoom.lat && coordinateZoom.lng) {
-          return; // Skip other zoom operations if coordinate zoom is active
-        }
-
-        // Priority 2: Zoom to specific asset
-        if (zoomToAsset && zoomToAsset.lokasi) {
-          console.log("Auto-zooming to specific yardip asset:", zoomToAsset);
-          try {
-            if (displayMode === "marker") {
-              const center = getAssetCenter(zoomToAsset);
-              if (center) {
-                mapRef.current.setView(center, 15, {
-                  animate: true,
-                  duration: 1.5,
-                });
-                console.log(
-                  "✅ Successfully zoomed to yardip asset marker:",
-                  zoomToAsset.id
-                );
-              }
-            } else {
-              const validatedLocation = validateAndParseLocation(
-                zoomToAsset.lokasi
-              );
-              if (validatedLocation) {
-                const geoJsonAsset = {
-                  type: "Feature",
-                  geometry: {
-                    type: "Polygon",
-                    coordinates: validatedLocation,
-                  },
-                };
-                const layer = L.geoJSON(geoJsonAsset);
-                mapRef.current.fitBounds(layer.getBounds(), {
-                  padding: [50, 50],
-                  maxZoom: 16,
-                  animate: true,
-                  duration: 1.5,
-                });
-                console.log(
-                  "✅ Successfully zoomed to yardip asset polygon:",
-                  zoomToAsset.id
-                );
-              }
-            }
-          } catch (error) {
-            console.error("Error zooming to yardip asset:", error);
-          }
-        }
-        // Priority 3: City bounds zoom
-        else if (
-          cityBounds &&
-          Array.isArray(cityBounds) &&
-          cityBounds.length === 2
-        ) {
-          console.log(
-            "Auto-zooming to city bounds:",
-            cityBounds,
-            "City:",
-            selectedCity
-          );
-
-          try {
-            const southWest = L.latLng(cityBounds[0][0], cityBounds[0][1]);
-            const northEast = L.latLng(cityBounds[1][0], cityBounds[1][1]);
-            const bounds = L.latLngBounds(southWest, northEast);
-
-            mapRef.current.fitBounds(bounds, {
-              padding: [30, 30],
-              maxZoom: 12,
-              animate: true,
-              duration: 1.5,
-            });
-
-            console.log("✅ Successfully zoomed to city:", selectedCity);
-          } catch (error) {
-            console.error("Error zooming to city bounds:", error);
-            const centerLat = (cityBounds[0][0] + cityBounds[1][0]) / 2;
-            const centerLng = (cityBounds[0][1] + cityBounds[1][1]) / 2;
-            mapRef.current.setView([centerLat, centerLng], 11, {
-              animate: true,
-            });
-          }
-        }
-        // Priority 4: Kodim/Korem zoom
-        else if (selectedKodim && selectedKodim.geometry) {
-          const kodimLayer = L.geoJSON(selectedKodim.geometry);
-          mapRef.current.fitBounds(kodimLayer.getBounds(), {
-            padding: [20, 20],
-            animate: true,
-          });
-        } else if (selectedKorem && selectedKorem.geometry) {
-          const koremLayer = L.geoJSON(selectedKorem.geometry);
-          mapRef.current.fitBounds(koremLayer.getBounds(), {
-            padding: [20, 20],
-            animate: true,
-          });
-        }
-        // Priority 5: Fit bounds to assets
-        else if (fitBounds && assets.length > 0) {
-          if (displayMode === "marker") {
-            const validAssets = assets.filter((asset) => asset.lokasi);
-            if (validAssets.length > 0) {
-              const bounds = L.latLngBounds();
-              validAssets.forEach((asset) => {
-                const center = getAssetCenter(asset);
-                if (center) {
-                  bounds.extend(center);
-                }
-              });
-              if (bounds.isValid()) {
-                mapRef.current.fitBounds(bounds, {
-                  padding: [20, 20],
-                  animate: true,
-                });
-              }
-            }
-          } else {
-            const validAssets = assets.filter(
-              (asset) => asset.lokasi && Array.isArray(asset.lokasi)
-            );
-            if (validAssets.length > 0) {
-              try {
-                const group = new L.FeatureGroup();
-                validAssets.forEach((asset) => {
-                  const geoJsonAsset = createGeoJSONFromAsset(asset);
-                  if (geoJsonAsset) {
-                    const layer = L.geoJSON(geoJsonAsset);
-                    group.addLayer(layer);
-                  }
-                });
-
-                if (group.getLayers().length > 0) {
-                  mapRef.current.fitBounds(group.getBounds(), {
-                    padding: [10, 10],
-                    animate: true,
-                  });
-                }
-              } catch (error) {
-                console.error("Error fitting bounds to yardip assets:", error);
-              }
-            }
-          }
-        }
-      }
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [
-    selectedKorem,
-    selectedKodim,
-    assets,
-    fitBounds,
-    cityBounds,
-    selectedCity,
-    zoomToAsset,
-    displayMode,
-    coordinateZoom, // Added to dependencies
-  ]);
-
-  // Function to get asset center point for markers
   const getAssetCenter = (asset) => {
     try {
-      const validatedLocation = validateAndParseLocation(asset.lokasi);
-      if (!validatedLocation) return null;
-
-      const polygon = turf.polygon(validatedLocation);
+      let lokasi = typeof asset.lokasi === 'string' ? JSON.parse(asset.lokasi) : asset.lokasi;
+      if (!lokasi) return null;
+      const polygon = turf.polygon(lokasi.type === 'Polygon' ? lokasi.coordinates : lokasi);
       const centroid = turf.centroid(polygon);
-      const [lng, lat] = centroid.geometry.coordinates;
-
-      return [lat, lng];
-    } catch (error) {
-      console.error("Error getting asset center:", error);
-      return null;
-    }
+      return [centroid.geometry.coordinates[1], centroid.geometry.coordinates[0]];
+    } catch (e) { return null; }
   };
 
-  // Function to validate and parse location data
-  const validateAndParseLocation = (locationData) => {
-    if (!locationData) return null;
+  // --- ASSET COUNT CALCULATION ---
+  const provinsiDataWithCount = useMemo(() => {
+    if (!provinsiData || !assets) return null;
+    const features = provinsiData.features.map(feature => {
+      const asset_count = assets.filter(asset => {
+        const center = getAssetCenter(asset);
+        if (!center) return false;
+        const point = turf.point([center[1], center[0]]);
+        return turf.booleanPointInPolygon(point, feature);
+      }).length;
+      return { ...feature, properties: { ...feature.properties, asset_count } };
+    });
+    return { ...provinsiData, features };
+  }, [provinsiData, assets]);
 
-    let lokasi = locationData;
+  const kabupatenDataWithCount = useMemo(() => {
+    if (!kabupatenData || !assets) return null;
+    const features = kabupatenData.features.map(feature => {
+      const asset_count = assets.filter(asset => {
+        const center = getAssetCenter(asset);
+        if (!center) return false;
+        const point = turf.point([center[1], center[0]]);
+        return turf.booleanPointInPolygon(point, feature);
+      }).length;
+      return { ...feature, properties: { ...feature.properties, asset_count } };
+    });
+    return { ...kabupatenData, features };
+  }, [kabupatenData, assets]);
 
-    if (typeof lokasi === "string") {
-      try {
-        lokasi = JSON.parse(lokasi);
-      } catch (e) {
-        console.error("Failed to parse location JSON:", e);
-        return null;
-      }
+  // --- SYNC WITH EXTERNAL FILTER ---
+  useEffect(() => {
+    if (!kabupatenData) return;
+    const { provinsi, kabupaten } = filter || {};
+    if (provinsi && kabupaten) {
+        const kabFeature = kabupatenData.features.find(f => f.properties.PROVINCE === provinsi && f.properties.Kabupaten === kabupaten);
+        if (kabFeature) {
+            setView({ type: 'kabupaten', provinsi, kabupaten, kabupatenFeature: kabFeature });
+        }
+    } else if (provinsi) {
+        setView({ type: 'provinsi', provinsi, kabupaten: null, kabupatenFeature: null });
+    } else {
+        setView({ type: 'nasional', provinsi: null, kabupaten: null, kabupatenFeature: null });
     }
+  }, [filter, kabupatenData]);
 
-    if (Array.isArray(lokasi)) {
-      if (
-        lokasi.length > 0 &&
-        Array.isArray(lokasi[0]) &&
-        typeof lokasi[0][0] === "number"
-      ) {
-        return [lokasi];
-      }
-      if (
-        lokasi.length > 0 &&
-        Array.isArray(lokasi[0]) &&
-        Array.isArray(lokasi[0][0])
-      ) {
-        return lokasi;
-      }
-    }
+  // --- ZOOM CONTROLLER COMPONENT ---
+  const ZoomController = ({ view, assets }) => {
+    const map = useMap();
 
-    if (lokasi.type === "Polygon" && lokasi.coordinates) {
-      return lokasi.coordinates;
-    }
+    useEffect(() => {
+      const zoomToFeature = () => {
+        let bounds = null;
 
-    if (lokasi.coordinates) {
-      if (Array.isArray(lokasi.coordinates)) {
-        return lokasi.coordinates;
-      }
-    }
+        // Try to get bounds from the main GeoJSON layer (province/district)
+        if (geoJsonLayerRef.current) {
+          try {
+            bounds = geoJsonLayerRef.current.getBounds();
+          } catch (e) {
+            console.error("Error creating bounds from geoJsonLayerRef", e);
+          }
+        }
 
-    console.warn("Unrecognized yardip location format:", lokasi);
+        // Extend bounds to include visible asset markers
+        if (assets && assets.length > 0) {
+          const assetPoints = assets.map(getAssetCenter).filter(Boolean);
+          if (assetPoints.length > 0) {
+            const assetsBounds = L.latLngBounds(assetPoints);
+            if (bounds && bounds.isValid()) {
+              bounds.extend(assetsBounds);
+            } else {
+              bounds = assetsBounds;
+            }
+          }
+        }
+
+        if (bounds && bounds.isValid()) {
+          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15, animate: false });
+        } else if (view.type === 'nasional') {
+          // Fallback to default view if no bounds are valid
+          map.setView([-1.5, 110.0], 8);
+        }
+      };
+
+      const timer = setTimeout(zoomToFeature, 0);
+
+      return () => clearTimeout(timer);
+    }, [map, view, assets]);
+
     return null;
   };
 
-  // Handle manual area adjustment
-  useEffect(() => {
-    if (manualAreaAdjustment && originalGeometry && featureGroupRef.current) {
-      try {
-        console.log("Adjusting polygon for manual area:", manualAreaAdjustment);
+  // --- EVENT HANDLERS ---
+  const handleBackClick = () => {
+    let newView;
+    if (view.type === "kabupaten") {
+      newView = { type: "provinsi", provinsi: view.provinsi, kabupaten: null };
+    } else if (view.type === "provinsi") {
+      newView = { type: "nasional", provinsi: null, kabupaten: null };
+    }
+    if (newView) {
+        setView({...newView, kabupatenFeature: null});
+        if (onViewChange) onViewChange(newView);
+    }
+  };
 
-        const adjustedPolygon = adjustPolygonToArea(
-          originalGeometry,
-          manualAreaAdjustment
-        );
+  const onEachProvinceFeature = (feature, layer) => {
+    const provinceName = feature.properties.PROVINCE;
+    layer.bindPopup(`<b>${provinceName}</b>`);
+    layer.on({ click: () => {
+        const newView = { type: "provinsi", provinsi: provinceName, kabupaten: null };
+        setView({...newView, kabupatenFeature: null});
+        if (onViewChange) onViewChange(newView);
+    }});
+  }
 
-        if (adjustedPolygon) {
-          setAdjustedGeometry(adjustedPolygon);
+  const onEachKabupatenFeature = (feature, layer) => {
+    const { PROVINCE, Kabupaten } = feature.properties;
+    layer.bindPopup(`<b>${Kabupaten}</b><br/>${PROVINCE}`);
+    layer.on({ click: () => {
+        const newView = { type: "kabupaten", provinsi: PROVINCE, kabupaten: Kabupaten };
+        setView({ ...newView, kabupatenFeature: feature });
+        if (onViewChange) onViewChange(newView);
+    }});
+  }
 
-          featureGroupRef.current.clearLayers();
+  // --- REGION LABELS COMPONENT ---
+  const RegionLabels = ({ view, provinsiData, kabupatenData }) => {
+    if (view.type === "kabupaten") return null; // No labels in the most zoomed-in view
 
-          const adjustedLayer = L.geoJSON(adjustedPolygon, {
-            style: {
-              color: "#ff6b35",
-              fillColor: "#ff6b35",
-              fillOpacity: 0.5,
-              weight: 3,
-              dashArray: "5,5",
-            },
-          });
+    let labels = [];
 
-          featureGroupRef.current.addLayer(adjustedLayer);
-          adjustedPolygonRef.current = adjustedLayer;
+    if (view.type === "nasional" && provinsiData) {
+      labels = provinsiData.features.map(feature => {
+        const { PROVINCE, asset_count } = feature.properties;
+        if (feature.geometry) {
+          const point = turf.pointOnFeature(feature);
+          const coords = point.geometry.coordinates;
 
-          console.log("✅ Polygon adjusted to area:", manualAreaAdjustment);
+          // Manual adjustment for Jawa Tengah label
+          if (PROVINCE === "Jawa Tengah") {
+            coords[1] = coords[1] - 0.1; // Move latitude down
+          }
+          if (PROVINCE === "Daerah Istimewa Yogyakarta") {
+            coords[1] = coords[1] + 0.05; // Move latitude up
+          }
+
+          return (
+            <Marker
+              key={`label-prov-${PROVINCE}`}
+              position={[coords[1], coords[0]]}
+              icon={L.divIcon({
+                className: "region-label",
+                html: `<div><strong>${PROVINCE}</strong><br/><span>${asset_count} Aset</span></div>`,
+                iconSize: [150, 40],
+                iconAnchor: [75, 20],
+              })}
+              eventHandlers={{ click: () => {
+                const newView = { type: "provinsi", provinsi: PROVINCE, kabupaten: null };
+                setView({...newView, kabupatenFeature: null});
+                if (onViewChange) onViewChange(newView);
+              } }}
+            />
+          );
         }
-      } catch (error) {
-        console.error("Error adjusting polygon area:", error);
-      }
-    } else if (!manualAreaAdjustment && adjustedPolygonRef.current) {
-      if (featureGroupRef.current && adjustedPolygonRef.current) {
-        featureGroupRef.current.removeLayer(adjustedPolygonRef.current);
-        adjustedPolygonRef.current = null;
-        setAdjustedGeometry(null);
-      }
+        return null;
+      }).filter(Boolean);
     }
-  }, [manualAreaAdjustment, originalGeometry]);
 
-  // Function to adjust polygon area using scaling method
-  const adjustPolygonToArea = (geometry, targetArea) => {
-    try {
-      if (!geometry || !geometry.coordinates || !targetArea) return null;
-
-      const polygon = turf.polygon(geometry.coordinates);
-      const currentArea = turf.area(polygon);
-
-      if (currentArea <= 0) return null;
-
-      const areaRatio = targetArea / currentArea;
-      const scaleFactor = Math.sqrt(areaRatio);
-
-      console.log("Area adjustment:", {
-        currentArea: currentArea.toFixed(2),
-        targetArea: targetArea.toFixed(2),
-        scaleFactor: scaleFactor.toFixed(4),
-      });
-
-      const centroid = turf.centroid(polygon);
-      const centerCoords = centroid.geometry.coordinates;
-
-      const scaledPolygon = turf.transformScale(polygon, scaleFactor, {
-        origin: centerCoords,
-      });
-
-      const newArea = turf.area(scaledPolygon);
-      console.log("Scaled polygon area:", newArea.toFixed(2));
-
-      return {
-        type: "Feature",
-        properties: {
-          originalArea: currentArea,
-          targetArea: targetArea,
-          actualArea: newArea,
-          scaleFactor: scaleFactor,
-          isManuallyAdjusted: true,
-        },
-        geometry: scaledPolygon.geometry,
-      };
-    } catch (error) {
-      console.error("Error in adjustPolygonToArea:", error);
-      return null;
-    }
-  };
-
-  const handleCreated = (e) => {
-    const { layerType, layer } = e;
-    if (layerType === "polygon") {
-      const geojson = layer.toGeoJSON();
-      const area = turf.area(geojson);
-
-      console.log("Drawing created:", {
-        layerType,
-        geojson,
-        area,
-        selectedCity,
-      });
-
-      if (featureGroupRef.current) {
-        featureGroupRef.current.clearLayers();
-        featureGroupRef.current.addLayer(layer);
-      }
-
-      setAdjustedGeometry(null);
-      adjustedPolygonRef.current = null;
-
-      if (typeof onDrawingCreated === "function") {
-        onDrawingCreated({
-          geometry: geojson.geometry,
-          area: area,
-        });
-      }
-    }
-  };
-
-  const handleEdited = (e) => {
-    const { layers } = e;
-    layers.eachLayer((layer) => {
-      const geojson = layer.toGeoJSON();
-      const area = turf.area(geojson);
-
-      if (typeof onDrawingEdited === "function") {
-        onDrawingEdited({
-          geometry: geojson.geometry,
-          area: area,
-        });
-      }
-    });
-  };
-
-  // Helper function to create GeoJSON from asset data
-  const createGeoJSONFromAsset = (asset) => {
-    if (!asset.lokasi) return null;
-
-    try {
-      const validatedLocation = validateAndParseLocation(asset.lokasi);
-      if (!validatedLocation) return null;
-
-      return {
-        type: "Feature",
-        properties: {
-          id: asset.id,
-          nama: asset.nama,
-          pengelola: asset.pengelola,
-          bidang: asset.bidang,
-          status: asset.status,
-          luas: asset.luas,
-          area: asset.area,
-          kabkota: asset.kabkota,
-          kecamatan: asset.kecamatan,
-          kelurahan: asset.kelurahan,
-          keterangan: asset.keterangan,
-          type: asset.type,
-          originalAsset: asset.originalAsset || asset,
-        },
-        geometry: {
-          type: "Polygon",
-          coordinates: validatedLocation,
-        },
-      };
-    } catch (error) {
-      console.error(
-        "Error creating GeoJSON for yardip asset:",
-        asset.id,
-        error
-      );
-      return null;
-    }
-  };
-
-  // Function to get asset style based on color mode
-  const getAssetStyle = (feature, markerColorMode) => {
-    const properties = feature.properties;
-
-    switch (markerColorMode) {
-      case "status":
-        switch (properties.status) {
-          case "Dimiliki/Dikuasai":
-            return {
-              fillColor: "#10b981",
-              color: "#059669",
-              weight: 2,
-              opacity: 1,
-              fillOpacity: 0.7,
-            };
-          case "Tidak Dimiliki/Tidak Dikuasai":
-            return {
-              fillColor: "#ef4444",
-              color: "#dc2626",
-              weight: 2,
-              opacity: 1,
-              fillOpacity: 0.7,
-            };
-          case "Lain-lain":
-            return {
-              fillColor: "#f59e0b",
-              color: "#d97706",
-              weight: 2,
-              opacity: 1,
-              fillOpacity: 0.7,
-            };
-          case "Dalam Proses":
-            return {
-              fillColor: "#06b6d4",
-              color: "#0891b2",
-              weight: 2,
-              opacity: 1,
-              fillOpacity: 0.7,
-            };
-          default:
-            return {
-              fillColor: "#6b7280",
-              color: "#4b5563",
-              weight: 2,
-              opacity: 1,
-              fillOpacity: 0.7,
-            };
+    if (view.type === "provinsi" && kabupatenData) {
+      const featuresInView = kabupatenData.features.filter(f => f.properties.PROVINCE === view.provinsi);
+      labels = featuresInView.map(feature => {
+        const { PROVINCE, Kabupaten, asset_count } = feature.properties;
+        if (feature.geometry) {
+          const point = turf.pointOnFeature(feature);
+          const coords = point.geometry.coordinates;
+          return (
+            <Marker
+              key={`label-kab-${Kabupaten}`}
+              position={[coords[1], coords[0]]}
+              icon={L.divIcon({
+                className: "region-label",
+                html: `<div><strong>${Kabupaten.replace("KABUPATEN ", "")}</strong><br/><span>${asset_count} Aset</span></div>`,
+                iconSize: [150, 40],
+                iconAnchor: [75, 20],
+              })}
+              eventHandlers={{ click: () => {
+                const newView = { type: "kabupaten", provinsi: PROVINCE, kabupaten: Kabupaten };
+                setView({ ...newView, kabupatenFeature: feature });
+                if (onViewChange) onViewChange(newView);
+              } }}
+            />
+          );
         }
-      case "bidang":
-        const bidangColors = {
-          "Bidang A": { fillColor: "#8b5cf6", color: "#7c3aed" },
-          "Bidang B": { fillColor: "#06b6d4", color: "#0891b2" },
-          "Bidang C": { fillColor: "#10b981", color: "#059669" },
-          "Bidang D": { fillColor: "#f59e0b", color: "#d97706" },
-          "Bidang E": { fillColor: "#ef4444", color: "#dc2626" },
-        };
-        const bidangStyle = bidangColors[properties.bidang] || {
-          fillColor: "#6b7280",
-          color: "#4b5563",
-        };
-        return {
-          ...bidangStyle,
-          weight: 2,
-          opacity: 1,
-          fillOpacity: 0.7,
-        };
-      default:
-        return {
-          fillColor: "#e11d48",
-          color: "#be123c",
-          weight: 2,
-          opacity: 1,
-          fillOpacity: 0.7,
-        };
+        return null;
+      }).filter(Boolean);
     }
+
+    return <>{labels}</>;
   };
 
-  // Styles for different elements
-  const koremStyle = {
-    fillColor: "#2E7D32",
-    weight: 2,
-    opacity: 1,
-    color: "white",
-    fillOpacity: 0.3,
+  const buttonStyle = {
+    position: "absolute", top: "10px", left: "50px", zIndex: 1000,
+    padding: "8px 12px", backgroundColor: "white", border: "2px solid rgba(0,0,0,0.2)",
+    borderRadius: "4px", cursor: "pointer",
   };
 
-  const kodimStyle = {
-    fillColor: "#f59e0b",
-    weight: 2,
-    opacity: 1,
-    color: "white",
-    fillOpacity: 0.5,
-  };
-
-  const boundaryStyle = {
-    fillColor: "#2563eb",
-    weight: 2,
-    opacity: 1,
-    color: "#1e40af",
-    fillOpacity: 0.1,
-  };
-
-  const cityHighlightStyle = {
-    fillColor: "#10b981",
-    weight: 3,
-    opacity: 0.9,
-    color: "#059669",
-    fillOpacity: 0.15,
-    dashArray: "8,4",
-  };
-
-  const adjustedPolygonStyle = {
-    fillColor: "#ff6b35",
-    weight: 3,
-    opacity: 1,
-    color: "#d63031",
-    fillOpacity: 0.4,
-    dashArray: "5,5",
-  };
-
-  // Popup content for assets with click handler
-  const onEachAssetFeature = (feature, layer) => {
-    if (feature.properties) {
-      const props = feature.properties;
-      const originalAsset = props.originalAsset || feature.properties;
-
-      const popupContent = `
-        <div class="yardip-asset-popup">
-          <h6 class="mb-2 text-success">${
-            props.pengelola || props.nama || "Unknown Asset"
-          }</h6>
-          <small>
-            <strong>ID:</strong> ${props.id}<br/>
-            <strong>Bidang:</strong> <span class="badge bg-info">${
-              props.bidang || "-"
-            }</span><br/>
-            <strong>Status:</strong> <span class="badge bg-success">${
-              props.status || "-"
-            }</span><br/>
-            <strong>Lokasi:</strong> ${props.kabkota || "-"}<br/>
-            <strong>Luas:</strong> ${
-              props.area
-                ? Number(props.area).toLocaleString("id-ID") + " m²"
-                : "-"
-            }<br/>
-            <div class="mt-2">
-              <button class="btn btn-sm btn-primary" onclick="window.handleYardipAssetClick && window.handleYardipAssetClick('${
-                props.id
-              }')">
-                Lihat Detail
-              </button>
-            </div>
-          </small>
-        </div>
-      `;
-      layer.bindPopup(popupContent);
-
-      layer.on("click", function (e) {
-        console.log("Yardip Asset clicked:", originalAsset);
-        if (onAssetClick && typeof onAssetClick === "function") {
-          onAssetClick(originalAsset);
-        }
-      });
-    }
-  };
-
-  // Popup content for adjusted polygon
-  const onEachAdjustedFeature = (feature, layer) => {
-    if (feature.properties && feature.properties.isManuallyAdjusted) {
-      const props = feature.properties;
-      const popupContent = `
-        <div class="adjusted-polygon-popup">
-          <h6 class="mb-2 text-warning">📐 Area Disesuaikan Manual</h6>
-          <small>
-            <strong>Area Asli:</strong> ${props.originalArea.toFixed(2)} m²<br/>
-            <strong>Area Target:</strong> ${props.targetArea.toFixed(2)} m²<br/>
-            <strong>Area Aktual:</strong> ${props.actualArea.toFixed(2)} m²<br/>
-            <strong>Faktor Skala:</strong> ${props.scaleFactor.toFixed(4)}<br/>
-            <span class="text-muted">Polygon telah disesuaikan dengan luas manual</span>
-          </small>
-        </div>
-      `;
-      layer.bindPopup(popupContent);
-    }
-  };
-
-  // Set up global click handler for popup buttons
-  useEffect(() => {
-    window.handleYardipAssetClick = (assetId) => {
-      console.log("Popup button clicked for yardip asset:", assetId);
-      const asset = assets.find(
-        (a) => a.originalAsset?.id == assetId || a.id == assetId
-      );
-      if (asset && onAssetClick && typeof onAssetClick === "function") {
-        const originalAsset = asset.originalAsset || asset;
-        onAssetClick(originalAsset);
-      }
-    };
-
-    return () => {
-      if (window.handleYardipAssetClick) {
-        delete window.handleYardipAssetClick;
-      }
-    };
-  }, [assets, onAssetClick]);
+  if (!provinsiDataWithCount || !kabupatenDataWithCount) return <div>Memuat data peta...</div>;
 
   return (
-    <MapContainer
-      center={mapCenter}
-      zoom={initialZoom}
-      style={{ height: "100%", width: "100%" }}
-      ref={mapRef}
-      whenCreated={(map) => {
-        mapRef.current = map;
-      }}
-    >
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      />
-      <MapSearch />
-
-      {/* Drawing Tools */}
-      <FeatureGroup ref={featureGroupRef}>
-        <EditControl
-          position="topright"
-          onCreated={handleCreated}
-          onEdited={handleEdited}
-          onDeleted={() => {}}
-          draw={{
-            rectangle: false,
-            circle: false,
-            circlemarker: false,
-            marker: false,
-            polyline: false,
-            polygon: isDrawing
-              ? {
-                  allowIntersection: false,
-                  showArea: true,
-                  shapeOptions: {
-                    color: "#ff0000",
-                    fillColor: "#ff0000",
-                    fillOpacity: 0.5,
-                    weight: 2,
-                  },
-                }
-              : false,
-          }}
-          edit={{
-            remove: isDrawing,
-            edit: isDrawing,
-          }}
-        />
-      </FeatureGroup>
-
-      {/* Provincial Boundaries */}
-      {jatengBoundary && (
-        <GeoJSON data={jatengBoundary} style={boundaryStyle} />
+    <div style={{ position: "relative", height: "100%", width: "100%" }}>
+      {view.type !== "nasional" && (
+        <button onClick={handleBackClick} style={buttonStyle}>Kembali</button>
       )}
-      {diyBoundary && <GeoJSON data={diyBoundary} style={boundaryStyle} />}
+      <MapContainer center={[-7.5, 110.0]} zoom={8} style={{ height: "100%", width: "100%" }}>
+        <ZoomController view={view} assets={assets} />
 
-      {/* Coordinate Marker - NEW: Show red marker for coordinate zoom */}
-      {coordinateZoom && coordinateZoom.lat && coordinateZoom.lng && (
-        <Marker
-          position={[coordinateZoom.lat, coordinateZoom.lng]}
-          icon={createCoordinateMarkerIcon()}
-        >
-          <Popup>
-            <div className="coordinate-popup">
-              <h6 className="mb-2 text-danger">📍 Koordinat Manual</h6>
-              <small>
-                <strong>Latitude:</strong> {coordinateZoom.lat.toFixed(6)}
-                <br />
-                <strong>Longitude:</strong> {coordinateZoom.lng.toFixed(6)}
-                <br />
-                <span className="text-muted">
-                  Marker ini menunjukkan lokasi dari input koordinat manual
-                </span>
-              </small>
-            </div>
-          </Popup>
-        </Marker>
-      )}
+        <LayersControl position="topright">
+          <LayersControl.BaseLayer checked name="Street Map">
+            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          </LayersControl.BaseLayer>
+          <LayersControl.BaseLayer name="Satelit">
+            <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" />
+          </LayersControl.BaseLayer>
+        </LayersControl>
 
-      {/* Manually Adjusted Polygon */}
-      {adjustedGeometry && (
-        <GeoJSON
-          key={`adjusted-${manualAreaAdjustment}`}
-          data={adjustedGeometry}
-          style={adjustedPolygonStyle}
-          onEachFeature={onEachAdjustedFeature}
-        />
-      )}
+        <RegionLabels view={view} provinsiData={provinsiDataWithCount} kabupatenData={kabupatenDataWithCount} />
 
-      {/* Conditional rendering based on displayMode */}
-      {displayMode === "marker"
-        ? // MARKER MODE: Show pin markers for assets
-          assets.length > 0 &&
-          assets.map((asset, idx) => {
+        {view.type === 'nasional' && (
+            <GeoJSON 
+                ref={geoJsonLayerRef}
+                key='provinsi-layer'
+                data={provinsiDataWithCount}
+                style={(feature) => provinceStyles[feature.properties.PROVINCE] || provinceStyles.default}
+                onEachFeature={onEachProvinceFeature}
+            />
+        )}
+
+        {view.type === 'provinsi' && (
+            <GeoJSON 
+                ref={geoJsonLayerRef}
+                key={'kabupaten-layer-' + view.provinsi}
+                data={{ type: "FeatureCollection", features: kabupatenDataWithCount.features.filter(f => f.properties.PROVINCE === view.provinsi) }}
+                style={kabupatenStyle}
+                onEachFeature={onEachKabupatenFeature}
+            />
+        )}
+
+        {view.type === 'kabupaten' && view.kabupatenFeature && (
+            <GeoJSON 
+                ref={geoJsonLayerRef}
+                key={'kabupaten-selected-' + view.kabupaten}
+                data={view.kabupatenFeature}
+                style={selectedStyle}
+            />
+        )}
+
+        {view.type === 'kabupaten' && assets.map(asset => {
             const center = getAssetCenter(asset);
             if (!center) return null;
-
-            const originalAsset = asset.originalAsset || asset;
-            const markerColor = getMarkerColor(originalAsset.status);
-            const customIcon = createCustomIcon(
-              markerColor,
-              originalAsset.status
-            );
-
+            let markerIcon = yellowIcon;
+            if (asset.status === "Dimiliki/Dikuasai") markerIcon = greenIcon;
+            else if (asset.status === "Tidak Dimiliki/Tidak Dikuasai") markerIcon = redIcon;
             return (
-              <Marker
-                key={`yardip-marker-${originalAsset.id || idx}`}
-                position={center}
-                icon={customIcon}
-                eventHandlers={{
-                  click: () => {
-                    console.log("Yardip Marker clicked:", originalAsset);
-                    if (onAssetClick && typeof onAssetClick === "function") {
-                      onAssetClick(originalAsset);
-                    }
-                  },
-                }}
-              >
-                <Popup>
-                  <div className="yardip-marker-popup">
-                    <h6 className="mb-2 text-success">
-                      {originalAsset.pengelola ||
-                        originalAsset.nama ||
-                        "Unknown Asset"}
-                    </h6>
-                    <small>
-                      <strong>Bidang:</strong>{" "}
-                      <span className="badge bg-info">
-                        {originalAsset.bidang || "-"}
-                      </span>
-                      <br />
-                      <strong>Status:</strong>{" "}
-                      <span
-                        className={`badge bg-${
-                          originalAsset.status === "Dimiliki/Dikuasai"
-                            ? "success"
-                            : originalAsset.status ===
-                              "Tidak Dimiliki/Tidak Dikuasai"
-                            ? "danger"
-                            : originalAsset.status === "Lain-lain"
-                            ? "warning"
-                            : originalAsset.status === "Dalam Proses"
-                            ? "info"
-                            : "secondary"
-                        }`}
-                      >
-                        {originalAsset.status || "-"}
-                      </span>
-                      <br />
-                      <strong>Lokasi:</strong> {originalAsset.kabkota || "-"}
-                      <br />
-                      <strong>Luas:</strong>{" "}
-                      {originalAsset.area
-                        ? Number(originalAsset.area).toLocaleString("id-ID") +
-                          " m²"
-                        : "-"}
-                      <br />
-                    </small>
-                  </div>
-                </Popup>
-              </Marker>
+                <Marker key={asset.id} position={center} icon={markerIcon} eventHandlers={{ click: () => onAssetClick && onAssetClick(asset) }}>
+                    <Popup>
+                        <b>{asset.pengelola || 'Aset'}</b><br/>
+                        Status: {asset.status || 'N/A'}<br/>
+                        Luas: {asset.area ? `${Number(asset.area).toLocaleString('id-ID')} m²` : 'N/A'}
+                    </Popup>
+                </Marker>
             );
-          })
-        : // POLYGON MODE: Show polygon shapes for assets (original behavior)
-          assets.length > 0 &&
-          assets.map((asset, idx) => {
-            const geoJsonAsset = createGeoJSONFromAsset(asset);
-            return geoJsonAsset ? (
-              <GeoJSON
-                key={`yardip-asset-${asset.id || idx}`}
-                data={geoJsonAsset}
-                style={(feature) => getAssetStyle(feature, markerColorMode)}
-                onEachFeature={onEachAssetFeature}
-              />
-            ) : null;
-          })}
+        })}
 
-      {/* Highlight Korem/Kodim */}
-      {selectedKodim && selectedKodim.geometry && (
-        <GeoJSON data={selectedKodim.geometry} style={kodimStyle} />
-      )}
-      {selectedKorem && selectedKorem.geometry && (
-        <GeoJSON data={selectedKorem.geometry} style={koremStyle} />
-      )}
-    </MapContainer>
+      </MapContainer>
+    </div>
   );
 };
 

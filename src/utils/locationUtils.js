@@ -24,25 +24,24 @@ export const parseLocation = (lokasiData) => {
     return null;
   }
 
-  // Data dari server seharusnya berupa string JSON. Jika sudah berupa objek, gunakan langsung.
+  let parsedData;
   if (typeof lokasiData === 'string') {
     try {
-      const parsed = JSON.parse(lokasiData);
-      // Lakukan validasi dasar bahwa hasilnya adalah objek dengan tipe Polygon
-      if (parsed && parsed.type === 'Polygon' && Array.isArray(parsed.coordinates)) {
-        return parsed;
-      }
-      return null;
+      parsedData = JSON.parse(lokasiData);
     } catch (e) {
       console.error("Gagal mem-parse data lokasi (JSON tidak valid):", lokasiData);
       return null;
     }
-  } else if (typeof lokasiData === 'object' && lokasiData !== null) {
-    // Jika data sudah berupa objek (misalnya dari state lokal), validasi dan gunakan
-    if (lokasiData && lokasiData.type === 'Polygon' && Array.isArray(lokasiData.coordinates)) {
-        return lokasiData;
-    }
-    return null;
+  } else {
+    parsedData = lokasiData;
+  }
+
+  if (parsedData && parsedData.type === 'Polygon' && Array.isArray(parsedData.coordinates)) {
+    // This is the new, correct format (a GeoJSON Polygon object)
+    return parsedData;
+  } else if (Array.isArray(parsedData)) {
+    // This handles the old format (an array of coordinates)
+    return { type: 'Polygon', coordinates: parsedData };
   }
   
   console.warn("Format lokasi tidak didukung:", lokasiData);

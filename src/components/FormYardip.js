@@ -1,71 +1,69 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import {
-  Form,
-  Button,
-  Row,
-  Col,
-  Card,
-  Alert,
-  InputGroup,
-} from "react-bootstrap";
+import React, { useState, useEffect, useCallback, useImperativeHandle, forwardRef } from "react";
+import { Form, Button, Row, Col, Card, Alert, ButtonGroup, ToggleButton } from "react-bootstrap";
+import toast from "react-hot-toast";
+import { kml } from "@tmcw/togeojson";
+import { DOMParser } from "xmldom";
 
-// Utility function untuk debounce
-const debounce = (func, wait) => {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-};
-
-const FormYardip = ({
+const FormYardip = forwardRef(({
   onSave,
   onCancel,
-  initialGeometry,
-  initialArea,
-  isEnabled = true,
-  assetToEdit = null,
-  kotaData = {},
-  onLocationChange = () => {},
-  hasDrawnArea = false,
-  onAreaChange = () => {},
-  onCoordinateChange = () => {},
-}) => {
-  const [formData, setFormData] = useState({
-    pengelola: "",
-    bidang: "",
-    kabkota: "",
-    kecamatan: "",
-    kelurahan: "",
-    peruntukan: "",
-    status: "",
-    keterangan: "",
-  });
-
-  // Location selection states
-  const [selectedProvince, setSelectedProvince] = useState("");
-  const [selectedCity, setSelectedCity] = useState("");
-
-  // Manual area state
-  const [manualArea, setManualArea] = useState("");
-  const [isManualAreaMode, setIsManualAreaMode] = useState(false);
-  const [originalDrawnArea, setOriginalDrawnArea] = useState(null);
-
-  // Manual coordinate states
-  const [manualCoordinates, setManualCoordinates] = useState({
-    latitude: "",
-    longitude: "",
-  });
-  const [coordinateError, setCoordinateError] = useState("");
-  const [isCoordinateValid, setIsCoordinateValid] = useState(false);
-
+  isEnabled = false, // Disabled by default
+  selectedProvinceName,
+  selectedKabupatenName,
+  initialArea = 0,
+  assetToEdit, // New prop for editing
+  isEditMode = false, // New prop to indicate edit mode
+  onKmlImport, // New prop for KML import
+  onCoordsImport, // New prop for Coords import
+  provinsiData, // New prop for province boundaries
+  kabupatenData, // New prop for district boundaries
+  onLocationChange, // New prop for form location changes
+  isPolygonCreated, // New prop to check if polygon exists
+}, ref) => {
+  const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
+  const [inputMethod, setInputMethod] = useState('draw');
+  const [coordsText, setCoordsText] = useState("");
+  const [coordsError, setCoordsError] = useState("");
+  const [kmlFileName, setKmlFileName] = useState("");
 
-  // Options data
+  useImperativeHandle(ref, () => ({
+    getFormData: () => ({ formData }),
+  }));
+
+  useEffect(() => {
+    if (isEditMode && assetToEdit) {
+      setFormData({
+        pengelola: assetToEdit.pengelola || "",
+        bidang: assetToEdit.bidang || "",
+        kabkota: assetToEdit.kabkota || "",
+        kecamatan: assetToEdit.kecamatan || "",
+        kelurahan: assetToEdit.kelurahan || "",
+        peruntukan: assetToEdit.peruntukan || "",
+        status: assetToEdit.status || "",
+        keterangan: assetToEdit.keterangan || "",
+        // Include other fields from the asset that are part of the form
+        provinsi: assetToEdit.provinsi || selectedProvinceName,
+        area: assetToEdit.area || initialArea,
+        id: assetToEdit.id, // Keep the ID for the update request
+      });
+    } else {
+      setFormData({
+        pengelola: "",
+        bidang: "",
+        kabkota: selectedKabupatenName || "",
+        kecamatan: "",
+        kelurahan: "",
+        peruntukan: "",
+        status: "",
+        keterangan: "",
+        provinsi: selectedProvinceName || "",
+        area: initialArea,
+      });
+    }
+  }, [assetToEdit, isEditMode, selectedProvinceName, selectedKabupatenName, initialArea]);
+
+
   const bidangOptions = [
     "Tanah",
     "Tanah Bangunan",
@@ -79,419 +77,41 @@ const FormYardip = ({
     "Lain-lain",
   ];
 
-  // Get current effective area - fixed: using useMemo correctly
-  const getCurrentArea = useMemo(() => {
-    const numValue = parseFloat(manualArea);
-    return !isNaN(numValue) && numValue > 0 ? numValue : originalDrawnArea || 0;
-  }, [manualArea, originalDrawnArea]);
-
-  // Debounced area change function
-  const debouncedAreaChange = useMemo(
-    () =>
-      debounce((numValue) => {
-        if (
-          originalDrawnArea &&
-          Math.abs(numValue - originalDrawnArea) > 0.01
-        ) {
-          onAreaChange(numValue);
-        }
-      }, 300),
-    [originalDrawnArea, onAreaChange]
-  );
-
-  // Debounced coordinate change function - Fixed with better validation
-  const debouncedCoordinateChange = useMemo(
-    () =>
-      debounce((lat, lng) => {
-        if (isValidCoordinate(lat, lng)) {
-          console.log("📍 Sending coordinate to parent:", {
-            lat: parseFloat(lat),
-            lng: parseFloat(lng),
-          });
-          onCoordinateChange({ lat: parseFloat(lat), lng: parseFloat(lng) });
-        }
-      }, 800), // Increased delay to reduce conflicts
-    [onCoordinateChange]
-  );
-
-  // Validate coordinate function
-  const isValidCoordinate = (lat, lng) => {
-    const latitude = parseFloat(lat);
-    const longitude = parseFloat(lng);
-
-    return (
-      !isNaN(latitude) &&
-      !isNaN(longitude) &&
-      latitude >= -90 &&
-      latitude <= 90 &&
-      longitude >= -180 &&
-      longitude <= 180
-    );
-  };
-
-  // Check if coordinates are in Indonesia region
-  const isInIndonesiaRegion = (lat, lng) => {
-    const latitude = parseFloat(lat);
-    const longitude = parseFloat(lng);
-
-    // Indonesia rough boundaries
-    const indonesiaBounds = {
-      north: 6,
-      south: -11,
-      west: 95,
-      east: 141,
-    };
-
-    return (
-      latitude <= indonesiaBounds.north &&
-      latitude >= indonesiaBounds.south &&
-      longitude >= indonesiaBounds.west &&
-      longitude <= indonesiaBounds.east
-    );
-  };
-
-  // Initialize form data
+  // Reset form when drawing is cleared or location changes
   useEffect(() => {
-    if (assetToEdit) {
-      setFormData({
-        pengelola: assetToEdit.pengelola || "",
-        bidang: assetToEdit.bidang || "",
-        kabkota: assetToEdit.kabkota || "",
-        kecamatan: assetToEdit.kecamatan || "",
-        kelurahan: assetToEdit.kelurahan || "",
-        peruntukan: assetToEdit.peruntukan || "",
-        status: assetToEdit.status || "",
-        keterangan: assetToEdit.keterangan || "",
-      });
-
-      // Set location from asset data if editing
-      if (assetToEdit.provinsi_id && assetToEdit.kota_id) {
-        setSelectedProvince(assetToEdit.provinsi_id);
-        setSelectedCity(assetToEdit.kota_id);
-      }
-
-      // Set area data if editing
-      if (assetToEdit.area) {
-        setManualArea(Number(assetToEdit.area).toFixed(2));
-        setOriginalDrawnArea(Number(assetToEdit.area));
-      }
-
-      // Set coordinates if editing and has location data
-      if (assetToEdit.lokasi) {
-        try {
-          // Try to extract center point from polygon geometry
-          const locationData =
-            typeof assetToEdit.lokasi === "string"
-              ? JSON.parse(assetToEdit.lokasi)
-              : assetToEdit.lokasi;
-
-          if (locationData && locationData.coordinates) {
-            // Calculate centroid of polygon
-            const coords = locationData.coordinates[0];
-            if (coords && coords.length > 0) {
-              const latSum = coords.reduce((sum, coord) => sum + coord[1], 0);
-              const lngSum = coords.reduce((sum, coord) => sum + coord[0], 0);
-              const centerLat = (latSum / coords.length).toFixed(6);
-              const centerLng = (lngSum / coords.length).toFixed(6);
-
-              setManualCoordinates({
-                latitude: centerLat,
-                longitude: centerLng,
-              });
-            }
-          }
-        } catch (error) {
-          console.error("Error extracting coordinates from asset:", error);
-        }
-      }
-    } else {
-      setFormData({
-        pengelola: "",
-        bidang: "",
-        kabkota: "",
-        kecamatan: "",
-        kelurahan: "",
-        peruntukan: "",
-        status: "",
-        keterangan: "",
-      });
+    if (!isEnabled && !isEditMode) {
+      handleReset();
     }
-  }, [assetToEdit]);
+  }, [isEnabled, isEditMode]);
 
-  // Update manual area when initial area changes (from drawing)
-  useEffect(() => {
-    if (initialArea && initialArea > 0) {
-      const areaValue = initialArea.toFixed(2);
-      setManualArea(areaValue);
-      setOriginalDrawnArea(initialArea);
-      setIsManualAreaMode(false); // Reset to drawn area mode when new drawing is created
+  const handleChange = useCallback((e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
-  }, [initialArea]);
+  }, [errors]);
 
-  // Update coordinate validation when coordinates change - Fixed logic
-  useEffect(() => {
-    const { latitude, longitude } = manualCoordinates;
-
-    // Both empty - clear errors
-    if (latitude.trim() === "" && longitude.trim() === "") {
-      setCoordinateError("");
-      setIsCoordinateValid(false);
-      return;
-    }
-
-    // One empty - error
-    if (latitude.trim() === "" || longitude.trim() === "") {
-      setCoordinateError("Harap isi kedua koordinat (latitude dan longitude)");
-      setIsCoordinateValid(false);
-      return;
-    }
-
-    // Invalid format - error
-    if (!isValidCoordinate(latitude, longitude)) {
-      setCoordinateError(
-        "Koordinat tidak valid. Latitude: -90 to 90, Longitude: -180 to 180"
-      );
-      setIsCoordinateValid(false);
-      return;
-    }
-
-    // Valid but outside Indonesia - warning but still valid
-    if (!isInIndonesiaRegion(latitude, longitude)) {
-      setCoordinateError(
-        "Peringatan: Koordinat berada di luar wilayah Indonesia"
-      );
-      setIsCoordinateValid(true); // Still valid, just a warning
-    } else {
-      setCoordinateError("");
-      setIsCoordinateValid(true);
-    }
-
-    // Trigger coordinate change if valid - Fixed to only trigger when both valid
-    if (isValidCoordinate(latitude, longitude)) {
-      debouncedCoordinateChange(latitude, longitude);
-    }
-  }, [manualCoordinates, debouncedCoordinateChange]);
-
-  // Cleanup debounced functions on unmount
-  useEffect(() => {
-    return () => {
-      if (debouncedAreaChange?.cancel) {
-        debouncedAreaChange.cancel();
-      }
-      if (debouncedCoordinateChange?.cancel) {
-        debouncedCoordinateChange.cancel();
-      }
-    };
-  }, [debouncedAreaChange, debouncedCoordinateChange]);
-
-  // Handle province change
-  const handleProvinceChange = useCallback(
-    (e) => {
-      const province = e.target.value;
-      setSelectedProvince(province);
-      setSelectedCity(""); // Reset city when province changes
-      onLocationChange(province, ""); // Notify parent component
-    },
-    [onLocationChange]
-  );
-
-  // Handle city change
-  const handleCityChange = useCallback(
-    (e) => {
-      const city = e.target.value;
-      setSelectedCity(city);
-      onLocationChange(selectedProvince, city); // Notify parent component
-    },
-    [selectedProvince, onLocationChange]
-  );
-
-  // Handle input change
-  const handleChange = useCallback(
-    (e) => {
-      const { name, value } = e.target;
-      setFormData((prev) => ({ ...prev, [name]: value }));
-
-      // Clear error when user starts typing
-      if (errors[name]) {
-        setErrors((prev) => ({
-          ...prev,
-          [name]: "",
-        }));
-      }
-    },
-    [errors]
-  );
-
-  // Handle manual area change
-  const handleManualAreaChange = useCallback(
-    (e) => {
-      const value = e.target.value;
-      setManualArea(value);
-
-      // Clear area error if exists
-      if (errors.manualArea) {
-        setErrors((prev) => ({
-          ...prev,
-          manualArea: "",
-        }));
-      }
-
-      // If value is valid number and different from original, enable manual mode
-      const numValue = parseFloat(value);
-      if (!isNaN(numValue) && numValue > 0 && originalDrawnArea) {
-        setIsManualAreaMode(Math.abs(numValue - originalDrawnArea) > 0.01);
-
-        // Use debounced function to notify parent component
-        debouncedAreaChange(numValue);
-      }
-    },
-    [errors.manualArea, originalDrawnArea, debouncedAreaChange]
-  );
-
-  // Handle manual coordinate change - Fixed to prevent infinite loops
-  const handleCoordinateChange = useCallback(
-    (e) => {
-      const { name, value } = e.target;
-      setManualCoordinates((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-
-      // Clear coordinate error when user starts typing
-      if (coordinateError) {
-        setCoordinateError("");
-      }
-    },
-    [coordinateError]
-  );
-
-  // Handle coordinate zoom button - Fixed to prevent conflicts
-  const handleZoomToCoordinate = useCallback(() => {
-    const { latitude, longitude } = manualCoordinates;
-    if (isValidCoordinate(latitude, longitude)) {
-      console.log("🎯 Manual zoom button clicked:", {
-        lat: parseFloat(latitude),
-        lng: parseFloat(longitude),
-      });
-      // Send immediately without debounce for manual button click
-      onCoordinateChange({
-        lat: parseFloat(latitude),
-        lng: parseFloat(longitude),
-      });
-    }
-  }, [manualCoordinates, onCoordinateChange]);
-
-  // Clear coordinates
-  const clearCoordinates = useCallback(() => {
-    setManualCoordinates({ latitude: "", longitude: "" });
-    setCoordinateError("");
-    setIsCoordinateValid(false);
-  }, []);
-
-  // Reset to original drawn area
-  const resetToDrawnArea = useCallback(() => {
-    if (originalDrawnArea) {
-      setManualArea(originalDrawnArea.toFixed(2));
-      setIsManualAreaMode(false);
-      onAreaChange(originalDrawnArea);
-    }
-  }, [originalDrawnArea, onAreaChange]);
-
-  // Form validation
   const validateForm = useCallback(() => {
     const newErrors = {};
-
-    // Location validation
-    if (!selectedProvince)
-      newErrors.selectedProvince = "Provinsi harus dipilih";
-    if (!selectedCity) newErrors.selectedCity = "Kota harus dipilih";
-
-    // Required fields validation
-    if (!formData.pengelola?.trim())
-      newErrors.pengelola = "Pengelola harus diisi";
+    if (!formData.pengelola?.trim()) newErrors.pengelola = "Pengelola harus diisi";
     if (!formData.bidang?.trim()) newErrors.bidang = "Bidang harus dipilih";
-    if (!formData.kabkota?.trim())
-      newErrors.kabkota = "Kabupaten/Kota harus diisi";
-    if (!formData.kecamatan?.trim())
-      newErrors.kecamatan = "Kecamatan harus diisi";
-    if (!formData.kelurahan?.trim())
-      newErrors.kelurahan = "Kelurahan/Desa harus diisi";
-    if (!formData.peruntukan?.trim())
-      newErrors.peruntukan = "Peruntukan harus diisi";
+    if (!formData.kabkota?.trim()) newErrors.kabkota = "Alamat Kabupaten/Kota harus diisi";
+    if (!formData.kecamatan?.trim()) newErrors.kecamatan = "Kecamatan harus diisi";
+    if (!formData.kelurahan?.trim()) newErrors.kelurahan = "Kelurahan/Desa harus diisi";
+    if (!formData.peruntukan?.trim()) newErrors.peruntukan = "Peruntukan harus diisi";
     if (!formData.status?.trim()) newErrors.status = "Status harus dipilih";
-
-    // Manual area validation - hanya cek valid number dan > 0
-    if (manualArea) {
-      const numValue = parseFloat(manualArea);
-      if (isNaN(numValue) || numValue <= 0) {
-        newErrors.manualArea =
-          "Luas harus berupa angka yang valid dan lebih dari 0";
-      }
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [selectedProvince, selectedCity, formData, manualArea]);
+  }, [formData]);
 
-  // Submit
-  const handleSubmit = useCallback(
-    (e) => {
-      e.preventDefault();
+  const handleSubmit = useCallback((e) => {
+    e.preventDefault();
+    if (validateForm()) {
+      onSave(formData);
+    }
+  }, [validateForm, formData, onSave]);
 
-      if (!selectedProvince || !selectedCity) {
-        alert("Silakan pilih provinsi dan kota terlebih dahulu");
-        return;
-      }
-
-      if (!hasDrawnArea && !assetToEdit) {
-        alert("Silakan gambar lokasi aset di peta terlebih dahulu");
-        return;
-      }
-
-      if (validateForm()) {
-        // Prepare data untuk yardip dengan struktur yang sesuai dengan db.json
-        const yardipData = {
-          ...formData,
-          type: "yardip", // Identifier untuk jenis aset
-          lokasi: initialGeometry || (assetToEdit ? assetToEdit.lokasi : null),
-          area: getCurrentArea, // Fixed: Use getCurrentArea as value (useMemo result)
-          isManualArea: isManualAreaMode,
-          originalDrawnArea: originalDrawnArea,
-          // Add coordinate data if available
-          manualCoordinates: isCoordinateValid
-            ? {
-                latitude: parseFloat(manualCoordinates.latitude),
-                longitude: parseFloat(manualCoordinates.longitude),
-              }
-            : null,
-          // Tambahkan timestamp untuk tracking
-          created_at: assetToEdit
-            ? assetToEdit.created_at
-            : new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-
-        onSave(yardipData);
-      }
-    },
-    [
-      selectedProvince,
-      selectedCity,
-      hasDrawnArea,
-      assetToEdit,
-      validateForm,
-      formData,
-      initialGeometry,
-      getCurrentArea, // Fixed: This is now correctly the useMemo value
-      isManualAreaMode,
-      originalDrawnArea,
-      isCoordinateValid,
-      manualCoordinates,
-      onSave,
-    ]
-  );
-
-  // Handle reset
   const handleReset = useCallback(() => {
     setFormData({
       pengelola: "",
@@ -503,337 +123,225 @@ const FormYardip = ({
       status: "",
       keterangan: "",
     });
-    setManualArea("");
-    setIsManualAreaMode(false);
-    setOriginalDrawnArea(null);
-    setManualCoordinates({ latitude: "", longitude: "" });
-    setCoordinateError("");
-    setIsCoordinateValid(false);
     setErrors({});
   }, []);
 
-  // Get selected city name
-  const selectedCityName = useMemo(() => {
-    if (!selectedProvince || !selectedCity || !kotaData[selectedProvince]) {
-      return null;
+  const handleKmlFileImport = (event) => {
+    const file = event.target.files[0];
+    if (!file) {
+      setKmlFileName("");
+      return;
     }
-    const cityData = kotaData[selectedProvince].find(
-      (c) => c.id === selectedCity
-    );
-    return cityData ? cityData.name : null;
-  }, [selectedProvince, selectedCity, kotaData]);
+    setKmlFileName(file.name);
 
-  // Helper function untuk format area dengan unit yang sesuai
-  const formatArea = useCallback((areaInM2) => {
-    if (areaInM2 < 1000) {
-      return `${areaInM2.toFixed(2)} m²`;
-    } else if (areaInM2 < 10000) {
-      return `${areaInM2.toFixed(2)} m² (${(areaInM2 / 1000).toFixed(
-        2
-      )} ribu m²)`;
-    } else if (areaInM2 < 1000000) {
-      return `${areaInM2.toFixed(2)} m² (${(areaInM2 / 10000).toFixed(2)} ha)`;
-    } else {
-      return `${areaInM2.toFixed(2)} m² (${(areaInM2 / 1000000).toFixed(
-        2
-      )} km²)`;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const kmlString = e.target.result;
+        const kmlDom = new DOMParser().parseFromString(kmlString, "text/xml");
+        const geojsonData = kml(kmlDom);
+
+        if (!geojsonData?.features?.length) {
+          toast.error("File KML tidak valid atau tidak berisi poligon.");
+          return;
+        }
+        const importedPolygon = geojsonData.features.find(f => f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon');
+        if (importedPolygon) {
+          // For MultiPolygon, just take the first polygon for simplicity
+          const geometry = importedPolygon.geometry.type === 'MultiPolygon' 
+            ? { type: 'Polygon', coordinates: importedPolygon.geometry.coordinates[0] }
+            : importedPolygon.geometry;
+          onKmlImport?.(geometry);
+          toast.success("Poligon dari KML berhasil diimpor!");
+        } else {
+          toast.error("Tidak ditemukan geometri poligon dalam file KML.");
+        }
+      } catch (error) {
+        toast.error("Gagal memproses file KML.");
+        console.error("KML parsing error:", error);
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = null; // Reset file input
+  };
+
+  const handleProcessCoords = () => {
+    setCoordsError("");
+    const lines = coordsText.trim().split('\n');
+    if (lines.length < 3) {
+      setCoordsError("Minimal dibutuhkan 3 titik koordinat untuk membuat poligon.");
+      return;
     }
-  }, []);
+
+    const coordinates = [];
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      // Support comma, space, or tab as separators
+      const parts = line.split(/[\s,;\t]+/);
+      if (parts.length !== 2) {
+        setCoordsError(`Format salah di baris ${i + 1}. Gunakan format: longitude,latitude`);
+        return;
+      }
+      const lon = parseFloat(parts[0].trim());
+      const lat = parseFloat(parts[1].trim());
+      if (isNaN(lon) || isNaN(lat) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+        setCoordsError(`Koordinat tidak valid di baris ${i + 1}.`);
+        return;
+      }
+      coordinates.push([lon, lat]);
+    }
+
+    // Close the ring if it's not already closed
+    if (coordinates.length > 0 && (coordinates[0][0] !== coordinates[coordinates.length - 1][0] || coordinates[0][1] !== coordinates[coordinates.length - 1][1])) {
+      coordinates.push(coordinates[0]);
+    }
+
+    const geojsonPolygon = { type: "Polygon", coordinates: [coordinates] };
+    onCoordsImport?.(geojsonPolygon);
+    toast.success("Koordinat berhasil diproses!");
+  };
 
   return (
     <Card>
-      <Card.Header>
-        <h5>
-          {assetToEdit ? "Edit Aset Yardip" : "Form Aset Yardip"}
-          {selectedCityName && (
-            <small className="text-muted ms-2">- {selectedCityName}</small>
-          )}
-        </h5>
-      </Card.Header>
       <Card.Body>
-        {/* Debug info untuk development */}
-        {process.env.NODE_ENV === "development" && (
-          <Alert variant="info" className="mb-3">
-            <small>
-              <strong>Debug Info:</strong>
-              <br />- Selected Province: {selectedProvince}
-              <br />- Selected City: {selectedCity}
-              <br />- Has Drawn Area: {hasDrawnArea ? "Yes" : "No"}
-              <br />- Manual Coordinates: {manualCoordinates.latitude ||
-                "N/A"}, {manualCoordinates.longitude || "N/A"}
-              <br />- Coordinate Valid: {isCoordinateValid ? "Yes" : "No"}
-              <br />- Coordinate Error: {coordinateError || "None"}
-              {initialGeometry && (
-                <>
-                  <br />- Geometry Type: {initialGeometry.type || "Unknown"}
-                  <br />- Original Drawn Area:{" "}
-                  {originalDrawnArea
-                    ? formatArea(originalDrawnArea)
-                    : "No area"}
-                  <br />- Manual Area: {manualArea || "No manual area"}
-                  <br />- Is Manual Mode: {isManualAreaMode ? "Yes" : "No"}
-                  <br />- Current Effective Area: {formatArea(getCurrentArea)}
-                </>
-              )}
-              <br />- Storage: yardip_assets collection
-              <br />- Asset to Edit:{" "}
-              {assetToEdit ? assetToEdit.id : "New Asset"}
-              <br />- Area Validation: No maximum limit (unlimited)
-            </small>
-          </Alert>
-        )}
-
         <Form onSubmit={handleSubmit}>
-          {/* Location Selection - Moved to form */}
-          <Card className="mb-3">
-            <Card.Header>
-              <strong>Pilih Lokasi Target</strong>
-            </Card.Header>
-            <Card.Body>
-              <Row>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Provinsi *</Form.Label>
-                    <Form.Select
-                      value={selectedProvince}
-                      onChange={handleProvinceChange}
-                      isInvalid={!!errors.selectedProvince}
-                      required
+          {(!isEnabled && !isEditMode) && (
+              <Alert variant="info">
+                  Pilih lokasi Provinsi dan Kabupaten/Kota di peta untuk memulai.
+              </Alert>
+          )}
+
+          <fieldset disabled={!isEnabled && !isEditMode}>
+            {!isEditMode && isEnabled && (
+              <Form.Group className="mb-3 border p-3 rounded bg-light">
+                <Form.Label className="fw-bold">Pilih Metode Input Poligon</Form.Label>
+                <div className="mt-2">
+                  <ButtonGroup>
+                    <ToggleButton
+                      key="draw"
+                      id="yardip-radio-draw"
+                      type="radio"
+                      variant="outline-primary"
+                      name="inputMethod"
+                      value="draw"
+                      checked={inputMethod === 'draw'}
+                      onChange={(e) => setInputMethod(e.currentTarget.value)}
                     >
-                      <option value="">-- Pilih Provinsi --</option>
-                      <option value="jateng">Jawa Tengah</option>
-                      <option value="diy">DI Yogyakarta</option>
-                    </Form.Select>
-                    <Form.Control.Feedback type="invalid">
-                      {errors.selectedProvince}
-                    </Form.Control.Feedback>
-                    {selectedProvince && (
-                      <Form.Text className="text-success">
-                        {selectedProvince === "jateng"
-                          ? "Jawa Tengah"
-                          : "DI Yogyakarta"}{" "}
-                        dipilih
-                      </Form.Text>
-                    )}
-                  </Form.Group>
-                </Col>
-
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Kota/Kabupaten *</Form.Label>
-                    <Form.Select
-                      value={selectedCity}
-                      onChange={handleCityChange}
-                      disabled={!selectedProvince}
-                      isInvalid={!!errors.selectedCity}
-                      required
+                      Gambar di Peta
+                    </ToggleButton>
+                    <ToggleButton
+                      key="kml"
+                      id="yardip-radio-kml"
+                      type="radio"
+                      variant="outline-primary"
+                      name="inputMethod"
+                      value="kml"
+                      checked={inputMethod === 'kml'}
+                      onChange={(e) => setInputMethod(e.currentTarget.value)}
                     >
-                      <option value="">-- Pilih Kota --</option>
-                      {selectedProvince &&
-                        kotaData[selectedProvince] &&
-                        kotaData[selectedProvince].map((city) => (
-                          <option key={city.id} value={city.id}>
-                            {city.name}
-                          </option>
-                        ))}
-                    </Form.Select>
-                    <Form.Control.Feedback type="invalid">
-                      {errors.selectedCity}
-                    </Form.Control.Feedback>
-                    {selectedCity && (
-                      <Form.Text className="text-success">
-                        {selectedCityName} dipilih
-                      </Form.Text>
-                    )}
-                  </Form.Group>
-                </Col>
-              </Row>
+                      Impor KML
+                    </ToggleButton>
+                    <ToggleButton
+                      key="coords"
+                      id="yardip-radio-coords"
+                      type="radio"
+                      variant="outline-primary"
+                      name="inputMethod"
+                      value="coords"
+                      checked={inputMethod === 'coords'}
+                      onChange={(e) => setInputMethod(e.currentTarget.value)}
+                    >
+                      Input Koordinat
+                    </ToggleButton>
+                  </ButtonGroup>
+                </div>
 
-              {selectedProvince && selectedCity && (
-                <Alert
-                  variant="success"
-                  className="mb-0 border-0"
-                  style={{ background: "rgba(25,135,84,0.1)" }}
-                >
-                  <div className="d-flex align-items-center">
-                    <div className="me-3"></div>
-                    <div>
-                      <strong>Lokasi Terpilih!</strong> Peta telah auto-zoom ke
-                      area {selectedCityName}. Sekarang Anda dapat menggambar
-                      lokasi aset di peta atau menggunakan koordinat manual.
-                    </div>
-                  </div>
-                </Alert>
-              )}
-            </Card.Body>
-          </Card>
-
-          {/* Manual Coordinate Input Section - Fixed */}
-          <Card className="mb-3">
-            <Card.Header>
-              <div className="d-flex justify-content-between align-items-center">
-                <strong>Input Koordinat Manual (Opsional)</strong>
-                {(manualCoordinates.latitude ||
-                  manualCoordinates.longitude) && (
-                  <Button
-                    variant="outline-secondary"
-                    size="sm"
-                    onClick={clearCoordinates}
-                  >
-                    Clear
-                  </Button>
+                {inputMethod === 'draw' && (
+                  <Alert variant='secondary' className='mt-3 mb-0'>Gunakan kontrol gambar di pojok kiri atas peta untuk menggambar area aset.</Alert>
                 )}
-              </div>
-            </Card.Header>
-            <Card.Body>
-              <Row>
-                <Col md={5}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Garis Lintang</Form.Label>
-                    <InputGroup>
-                      <Form.Control
-                        type="number"
-                        step="0.000001"
-                        name="latitude"
-                        value={manualCoordinates.latitude}
-                        onChange={handleCoordinateChange}
-                        placeholder="-7.250445 (contoh)"
-                        isInvalid={
-                          !!coordinateError && manualCoordinates.latitude
-                        }
-                      />
-                      <InputGroup.Text>°</InputGroup.Text>
-                    </InputGroup>
-                    <Form.Text className="text-muted">
-                      Rentang: -90 sampai 90 derajat
-                    </Form.Text>
+
+                {inputMethod === 'kml' && (
+                  <Form.Group className="mt-3 mb-0">
+                    <Form.Label>Upload File KML</Form.Label>
+                    <Form.Control type="file" accept=".kml" onChange={handleKmlFileImport} />
+                    {kmlFileName && <Form.Text className="text-success mt-1">File terpilih: <strong>{kmlFileName}</strong></Form.Text>}
                   </Form.Group>
-                </Col>
+                )}
 
-                <Col md={5}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Garis Bujur</Form.Label>
-                    <InputGroup>
-                      <Form.Control
-                        type="number"
-                        step="0.000001"
-                        name="longitude"
-                        value={manualCoordinates.longitude}
-                        onChange={handleCoordinateChange}
-                        placeholder="110.374832 (contoh)"
-                        isInvalid={
-                          !!coordinateError && manualCoordinates.longitude
-                        }
-                      />
-                      <InputGroup.Text>°</InputGroup.Text>
-                    </InputGroup>
-                    <Form.Text className="text-muted">
-                      Rentang: -180 sampai 180 derajat
-                    </Form.Text>
+                {inputMethod === 'coords' && (
+                  <Form.Group className="mt-3 mb-0">
+                    <Form.Label>Input Koordinat Manual (Format: longitude, latitude)</Form.Label>
+                    <Form.Control as="textarea" rows={4} value={coordsText} onChange={(e) => setCoordsText(e.target.value)} placeholder="Satu titik per baris. Contoh:\n110.4283,-6.9904\n110.4285,-6.9910\n110.4279,-6.9908" />
+                    {coordsError && <Alert variant="danger" className="mt-2 p-2">{coordsError}</Alert>}
+                    <Button variant="primary" size="sm" className="mt-2" onClick={handleProcessCoords}>Proses Koordinat</Button>
                   </Form.Group>
-                </Col>
+                )}
+              </Form.Group>
+            )}
 
-                <Col md={2}>
-                  <Form.Label>&nbsp;</Form.Label>
-                  <div className="d-grid">
-                    <Button
-                      variant="primary"
-                      onClick={handleZoomToCoordinate}
-                      disabled={!isCoordinateValid}
-                      size="sm"
-                    >
-                      Zoom ke Koordinat
-                    </Button>
-                  </div>
-                </Col>
-              </Row>
-
-              {coordinateError && (
-                <Alert
-                  variant={
-                    coordinateError.includes("Peringatan")
-                      ? "warning"
-                      : "danger"
-                  }
-                  className="mb-0 mt-2 py-2"
-                >
-                  <small>{coordinateError}</small>
-                </Alert>
-              )}
-
-              {isCoordinateValid && !coordinateError && (
-                <Alert variant="success" className="mb-0 mt-2 py-2">
-                  <div className="d-flex align-items-center justify-content-between">
-                    <small>
-                      Koordinat valid: {manualCoordinates.latitude},{" "}
-                      {manualCoordinates.longitude}
-                    </small>
-                  </div>
-                </Alert>
-              )}
-
-              <div className="mt-3">
-                <small className="text-info">
-                  <strong>Tips:</strong> Gunakan koordinat untuk zoom langsung
-                  ke lokasi spesifik di peta. Fitur ini berguna untuk navigasi
-                  cepat ke area tertentu sebelum menggambar polygon aset.
-                </small>
-              </div>
-            </Card.Body>
-          </Card>
-
-          {/* Drawing Status */}
-          {selectedProvince && selectedCity && (
             <Card className="mb-3">
               <Card.Header>
-                <strong>Status Gambar Peta</strong>
+                <strong>Lokasi Terpilih (dari Peta)</strong>
               </Card.Header>
               <Card.Body>
-                {!hasDrawnArea ? (
-                  <Alert variant="warning" className="mb-0">
-                    <div className="d-flex align-items-center">
-                      <div className="me-3"></div>
-                      <div>
-                        <strong>Belum Ada Gambar!</strong> Gunakan tombol
-                        "Gambar Lokasi Aset" di peta untuk menggambar area aset.
-                      </div>
-                    </div>
-                  </Alert>
-                ) : (
-                  <Alert variant="success" className="mb-0">
-                    <div className="d-flex align-items-center justify-content-between">
-                      <div className="d-flex align-items-center">
-                        <div className="me-3"></div>
-                        <div>
-                          <strong>Area Sudah Digambar!</strong>
-                          <br />
-                          <small>
-                            Luas dari gambar:{" "}
-                            {originalDrawnArea
-                              ? formatArea(originalDrawnArea)
-                              : "N/A"}
-                            {isManualAreaMode && (
-                              <span className="text-warning">
-                                → Diubah manual menjadi:{" "}
-                                {formatArea(getCurrentArea)}
-                              </span>
-                            )}
-                          </small>
-                        </div>
-                      </div>
-                    </div>
-                  </Alert>
-                )}
+                <Row>
+                    <Col md={6}>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Provinsi</Form.Label>
+                            <Form.Select 
+                                name="provinsi"
+                                value={selectedProvinceName || ""} 
+                                onChange={(e) => onLocationChange(e.target.value, "")} 
+                                disabled={isEditMode}
+                            >
+                                <option value="">-- Pilih Provinsi --</option>
+                                {provinsiData?.features.map(p => (
+                                    <option key={p.properties.PROVINCE} value={p.properties.PROVINCE}>
+                                        {p.properties.PROVINCE}
+                                    </option>
+                                ))}
+                            </Form.Select>
+                        </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Kabupaten/Kota</Form.Label>
+                            <Form.Select 
+                                name="kabupaten"
+                                value={selectedKabupatenName || ""} 
+                                onChange={(e) => onLocationChange(selectedProvinceName, e.target.value)}
+                                disabled={isEditMode || !selectedProvinceName}
+                            >
+                                <option value="">-- Pilih Kabupaten/Kota --</option>
+                                {selectedProvinceName && kabupatenData?.features
+                                    .filter(f => f.properties.PROVINCE === selectedProvinceName)
+                                    .map(f => (
+                                        <option key={f.properties.Kabupaten} value={f.properties.Kabupaten}>
+                                            {f.properties.Kabupaten}
+                                        </option>
+                                    ))}
+                            </Form.Select>
+                        </Form.Group>
+                    </Col>
+                </Row>
+                <Form.Group className="mb-3">
+                    <Form.Label>Luas Area (dari Peta)</Form.Label>
+                    <Form.Control type="text" value={`${(formData.area || 0).toFixed(2)} m²`} readOnly disabled />
+                </Form.Group>
               </Card.Body>
             </Card>
-          )}
 
-          <fieldset disabled={!isEnabled}>
-            {/* Basic Information */}
-            <Card className="mb-3">
-              <Card.Header>
-                <strong>Informasi Dasar</strong>
-              </Card.Header>
+            {!isPolygonCreated && !isEditMode && (
+              <Alert variant="warning" className="text-center">
+                Silakan buat poligon di peta terlebih dahulu (gambar, impor KML, atau input koordinat) untuk mengisi detail aset.
+              </Alert>
+            )}
+
+            <fieldset disabled={!isPolygonCreated}>
+              <Card className="mb-3">
+                <Card.Header>
+                  <strong>Informasi Dasar</strong>
+                </Card.Header>
               <Card.Body>
                 <Form.Group className="mb-3">
                   <Form.Label>Pengelola *</Form.Label>
@@ -842,34 +350,21 @@ const FormYardip = ({
                     name="pengelola"
                     value={formData.pengelola}
                     onChange={handleChange}
-                    placeholder="Masukkan nama pengelola"
                     isInvalid={!!errors.pengelola}
                     required
                   />
-                  <Form.Control.Feedback type="invalid">
-                    {errors.pengelola}
-                  </Form.Control.Feedback>
+                  <Form.Control.Feedback type="invalid">{errors.pengelola}</Form.Control.Feedback>
                 </Form.Group>
 
                 <Form.Group className="mb-3">
                   <Form.Label>Bidang *</Form.Label>
-                  <Form.Select
-                    name="bidang"
-                    value={formData.bidang}
-                    onChange={handleChange}
-                    isInvalid={!!errors.bidang}
-                    required
-                  >
+                  <Form.Select name="bidang" value={formData.bidang} onChange={handleChange} isInvalid={!!errors.bidang} required>
                     <option value="">-- Pilih Bidang --</option>
                     {bidangOptions.map((bidang) => (
-                      <option key={bidang} value={bidang}>
-                        {bidang}
-                      </option>
+                      <option key={bidang} value={bidang}>{bidang}</option>
                     ))}
                   </Form.Select>
-                  <Form.Control.Feedback type="invalid">
-                    {errors.bidang}
-                  </Form.Control.Feedback>
+                  <Form.Control.Feedback type="invalid">{errors.bidang}</Form.Control.Feedback>
                 </Form.Group>
 
                 <Form.Group className="mb-3">
@@ -879,18 +374,14 @@ const FormYardip = ({
                     name="peruntukan"
                     value={formData.peruntukan}
                     onChange={handleChange}
-                    placeholder="Masukkan peruntukan aset"
                     isInvalid={!!errors.peruntukan}
                     required
                   />
-                  <Form.Control.Feedback type="invalid">
-                    {errors.peruntukan}
-                  </Form.Control.Feedback>
+                  <Form.Control.Feedback type="invalid">{errors.peruntukan}</Form.Control.Feedback>
                 </Form.Group>
               </Card.Body>
             </Card>
 
-            {/* Location Information */}
             <Card className="mb-3">
               <Card.Header>
                 <strong>Informasi Lokasi Detail</strong>
@@ -899,137 +390,21 @@ const FormYardip = ({
                 <Form.Label>Alamat Lengkap *</Form.Label>
                 <Row className="mb-3">
                   <Col>
-                    <Form.Control
-                      type="text"
-                      placeholder="Kabupaten/Kota *"
-                      name="kabkota"
-                      value={formData.kabkota}
-                      onChange={handleChange}
-                      isInvalid={!!errors.kabkota}
-                      required
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {errors.kabkota}
-                    </Form.Control.Feedback>
+                    <Form.Control type="text" placeholder="Kabupaten/Kota *" name="kabkota" value={formData.kabkota} onChange={handleChange} isInvalid={!!errors.kabkota} required />
+                    <Form.Control.Feedback type="invalid">{errors.kabkota}</Form.Control.Feedback>
                   </Col>
                   <Col>
-                    <Form.Control
-                      type="text"
-                      placeholder="Kecamatan *"
-                      name="kecamatan"
-                      value={formData.kecamatan}
-                      onChange={handleChange}
-                      isInvalid={!!errors.kecamatan}
-                      required
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {errors.kecamatan}
-                    </Form.Control.Feedback>
+                    <Form.Control type="text" placeholder="Kecamatan *" name="kecamatan" value={formData.kecamatan} onChange={handleChange} isInvalid={!!errors.kecamatan} required />
+                    <Form.Control.Feedback type="invalid">{errors.kecamatan}</Form.Control.Feedback>
                   </Col>
                   <Col>
-                    <Form.Control
-                      type="text"
-                      placeholder="Kelurahan/Desa *"
-                      name="kelurahan"
-                      value={formData.kelurahan}
-                      onChange={handleChange}
-                      isInvalid={!!errors.kelurahan}
-                      required
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {errors.kelurahan}
-                    </Form.Control.Feedback>
+                    <Form.Control type="text" placeholder="Kelurahan/Desa *" name="kelurahan" value={formData.kelurahan} onChange={handleChange} isInvalid={!!errors.kelurahan} required />
+                    <Form.Control.Feedback type="invalid">{errors.kelurahan}</Form.Control.Feedback>
                   </Col>
                 </Row>
-
-                {/* Enhanced Area Section */}
-                {(originalDrawnArea || assetToEdit) && (
-                  <Card className="border-info">
-                    <Card.Header className="bg-light">
-                      <div className="d-flex justify-content-between align-items-center">
-                        <strong>Luas Area (Tanpa Batas Maksimum)</strong>
-                        {isManualAreaMode && (
-                          <Button
-                            variant="outline-secondary"
-                            size="sm"
-                            onClick={resetToDrawnArea}
-                          >
-                            Reset ke Gambar
-                          </Button>
-                        )}
-                      </div>
-                    </Card.Header>
-                    <Card.Body>
-                      <Form.Group className="mb-3">
-                        <Form.Label>
-                          Luas (m²)
-                          {originalDrawnArea && (
-                            <small className="text-muted">
-                              - Dari gambar: {formatArea(originalDrawnArea)}
-                            </small>
-                          )}
-                        </Form.Label>
-                        <InputGroup>
-                          <Form.Control
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={manualArea}
-                            onChange={handleManualAreaChange}
-                            placeholder="Masukkan luas area dalam m²"
-                            isInvalid={!!errors.manualArea}
-                          />
-                          <InputGroup.Text>m²</InputGroup.Text>
-                        </InputGroup>
-                        <Form.Control.Feedback type="invalid">
-                          {errors.manualArea}
-                        </Form.Control.Feedback>
-
-                        {isManualAreaMode ? (
-                          <Form.Text className="text-warning">
-                            Luas telah diubah manual dari{" "}
-                            {originalDrawnArea
-                              ? formatArea(originalDrawnArea)
-                              : "N/A"}{" "}
-                            menjadi {formatArea(getCurrentArea)}. Polygon di
-                            peta akan disesuaikan.
-                          </Form.Text>
-                        ) : originalDrawnArea ? (
-                          <Form.Text className="text-success">
-                            Menggunakan luas dari gambar peta:{" "}
-                            {formatArea(originalDrawnArea)}
-                          </Form.Text>
-                        ) : (
-                          <Form.Text className="text-muted">
-                            Masukkan luas area secara manual (tanpa batas
-                            maksimum)
-                          </Form.Text>
-                        )}
-
-                        {/* Area info helper */}
-                        {getCurrentArea > 0 && (
-                          <div className="mt-2">
-                            <small className="text-info">
-                              <strong>Area Info:</strong>{" "}
-                              {formatArea(getCurrentArea)}
-                              {getCurrentArea >= 1000000 && (
-                                <span className="text-warning">
-                                  {" "}
-                                  - Area sangat besar! Pastikan data sudah
-                                  benar.
-                                </span>
-                              )}
-                            </small>
-                          </div>
-                        )}
-                      </Form.Group>
-                    </Card.Body>
-                  </Card>
-                )}
               </Card.Body>
             </Card>
 
-            {/* Status and Additional Information */}
             <Card className="mb-3">
               <Card.Header>
                 <strong>Status dan Keterangan</strong>
@@ -1037,66 +412,38 @@ const FormYardip = ({
               <Card.Body>
                 <Form.Group className="mb-3">
                   <Form.Label>Status *</Form.Label>
-                  <Form.Select
-                    name="status"
-                    value={formData.status}
-                    onChange={handleChange}
-                    isInvalid={!!errors.status}
-                    required
-                  >
+                  <Form.Select name="status" value={formData.status} onChange={handleChange} isInvalid={!!errors.status} required>
                     <option value="">-- Pilih Status --</option>
                     {statusOptions.map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
+                      <option key={status} value={status}>{status}</option>
                     ))}
                   </Form.Select>
-                  <Form.Control.Feedback type="invalid">
-                    {errors.status}
-                  </Form.Control.Feedback>
+                  <Form.Control.Feedback type="invalid">{errors.status}</Form.Control.Feedback>
                 </Form.Group>
 
                 <Form.Group className="mb-3">
                   <Form.Label>Keterangan</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={3}
-                    name="keterangan"
-                    value={formData.keterangan}
-                    onChange={handleChange}
-                    placeholder="Masukkan keterangan tambahan (opsional)"
-                  />
+                  <Form.Control as="textarea" rows={3} name="keterangan" value={formData.keterangan} onChange={handleChange} />
                 </Form.Group>
               </Card.Body>
             </Card>
+            </fieldset>
 
-            {/* Form Actions */}
-            <Row>
-              <Col>
-                <div className="d-flex justify-content-between">
-                  <div>
-                    <Button
-                      variant="outline-secondary"
-                      onClick={handleReset}
-                      className="me-2"
-                    >
-                      Reset Form
-                    </Button>
-                    <Button variant="secondary" onClick={onCancel}>
-                      Batal
-                    </Button>
+            {!isEditMode && (
+              <Row>
+                <Col>
+                  <div className="d-flex justify-content-between">
+                    <Button variant="secondary" onClick={onCancel}>Batal</Button>
+                    <Button type="submit" variant="primary">{isEditMode ? "Simpan Perubahan" : "Simpan Aset"}</Button>
                   </div>
-                  <Button type="submit" variant="primary">
-                    {assetToEdit ? "Update" : "Simpan"} Aset
-                  </Button>
-                </div>
-              </Col>
-            </Row>
+                </Col>
+              </Row>
+            )}
           </fieldset>
         </Form>
       </Card.Body>
     </Card>
   );
-};
+});
 
 export default FormYardip;

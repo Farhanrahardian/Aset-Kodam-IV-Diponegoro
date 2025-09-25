@@ -1,18 +1,14 @@
 import React from "react";
-import { Offcanvas, Badge, Card, Row, Col, Button } from "react-bootstrap";
+import { Offcanvas, Badge, Card, Row, Col } from "react-bootstrap";
 import {
   FaBuilding,
   FaMapMarkerAlt,
-  FaRulerCombined,
-  FaTag,
   FaInfoCircle,
-  FaLayerGroup,
   FaGlobe,
-  FaIdCard,
-  FaUser,
-  FaCertificate,
 } from "react-icons/fa";
-import PetaAsetYardip from "./PetaAsetYardip";
+import { MapContainer, TileLayer, Polygon, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import { parseLocation } from '../utils/locationUtils';
 
 // Helper untuk mendapatkan warna badge berdasarkan status
 const getStatusBadgeVariant = (status) => {
@@ -21,84 +17,56 @@ const getStatusBadgeVariant = (status) => {
       return "success";
     case "Tidak Dimiliki/Tidak Dikuasai":
       return "danger";
-    case "Lain-lain":
-      return "warning";
-    case "Dalam Proses":
-      return "info";
-    case "Aktif":
-      return "success";
-    case "Sengketa":
-      return "danger";
-    case "Tidak Aktif":
-      return "secondary";
     default:
-      return "light";
+      return "warning";
   }
+};
+
+const getPolygonStyleByStatus = (status) => {
+  switch (status) {
+    case "Dimiliki/Dikuasai":
+      return { color: "#28a745", weight: 2, fillOpacity: 0.6 }; // Green
+    case "Tidak Dimiliki/Tidak Dikuasai":
+      return { color: "#dc3545", weight: 2, fillOpacity: 0.6 }; // Red
+    default:
+      return { color: "#ffc107", weight: 2, fillOpacity: 0.6 }; // Yellow for Lain-lain
+  }
+};
+
+// Map Controller for auto-zooming
+const DetailMapController = ({ geometry }) => {
+  const map = useMap();
+  React.useEffect(() => {
+    if (map && geometry) {
+      try {
+        const geoJsonForBounds = {
+          type: 'Polygon',
+          coordinates: [geometry.coordinates[0].map(latLng => [latLng[1], latLng[0]])]
+        };
+        const layer = L.geoJSON(geoJsonForBounds);
+        const bounds = layer.getBounds();
+        if (bounds.isValid()) {
+          map.fitBounds(bounds, { padding: [20, 20] });
+        }
+      } catch (e) {
+        console.error("Could not fit bounds for detail map", e);
+      }
+    }
+  }, [map, geometry]);
+  return null;
 };
 
 const DetailOffcanvasYardip = ({ show, handleClose, asetYardip }) => {
   if (!asetYardip) return null;
 
-  // Siapkan data untuk mini-map
-  const assetForMap = asetYardip.lokasi ? [{ ...asetYardip }] : [];
+  const locationData = parseLocation(asetYardip.lokasi);
+  const hasValidLocation = locationData && locationData.type === 'Polygon';
 
-  // Validasi dan sanitasi data lokasi
-  const validateLocationData = (asset) => {
-    if (!asset.lokasi) return null;
-
-    let lokasi = asset.lokasi;
-
-    if (typeof lokasi === "string") {
-      try {
-        lokasi = JSON.parse(lokasi);
-      } catch (e) {
-        return null;
-      }
-    }
-
-    if (Array.isArray(lokasi) && lokasi.length > 0) {
-      if (Array.isArray(lokasi[0])) {
-        return lokasi;
-      }
-    }
-
-    if (lokasi.type === "Polygon" && lokasi.coordinates) {
-      return lokasi.coordinates;
-    }
-
-    if (lokasi.coordinates) {
-      if (Array.isArray(lokasi.coordinates)) {
-        return lokasi.coordinates;
-      }
-    }
-
-    return null;
-  };
-
-  const validatedLocation = validateLocationData(asetYardip);
-  const hasValidLocation = validatedLocation !== null;
-
-  // Prepare asset for map display
-  const prepareAssetForMap = () => {
-    if (!hasValidLocation) return [];
-
-    return [
-      {
-        id: asetYardip.id || `temp-${Date.now()}`,
-        nama: asetYardip.pengelola || "Unknown",
-        kodim: asetYardip.bidang || "",
-        lokasi: validatedLocation,
-        luas: Number(asetYardip.area) || 0,
-        status: asetYardip.status || "",
-        kabkota: asetYardip.kabkota || "",
-        kecamatan: asetYardip.kecamatan || "",
-        kelurahan: asetYardip.kelurahan || "",
-        type: "yardip",
-      },
-    ];
-  };
-
-  const assetForMapDisplay = prepareAssetForMap();
+  let mapGeometry = null;
+  if (hasValidLocation) {
+    const latLngs = locationData.coordinates[0].map(coord => [coord[1], coord[0]]);
+    mapGeometry = { type: 'Polygon', coordinates: [latLngs] };
+  }
 
   return (
     <Offcanvas
@@ -120,18 +88,25 @@ const DetailOffcanvasYardip = ({ show, handleClose, asetYardip }) => {
 
       <Offcanvas.Body style={{ padding: 0 }}>
         {/* Mini Map Preview */}
-        {asetYardip.lokasi && (
-          <div style={{ height: "200px", width: "100%" }}>
-            <PetaAsetYardip
-              key={`detail-yardip-${asetYardip.id}-${
-                asetYardip.updated_at || Date.now()
-              }`}
-              assets={assetForMapDisplay}
-              fitBounds={true}
-              isDrawing={false}
-            />
-          </div>
-        )}
+        <div style={{ height: "250px", width: "100%" }}>
+          {hasValidLocation ? (
+            <MapContainer
+              key={asetYardip.id}
+              center={[-7.5, 110.0]}
+              zoom={8}
+              style={{ height: '100%', width: '100%' }}
+              scrollWheelZoom={false}
+            >
+              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              <Polygon positions={mapGeometry.coordinates[0]} pathOptions={getPolygonStyleByStatus(asetYardip.status)} />
+              <DetailMapController geometry={mapGeometry} />
+            </MapContainer>
+          ) : (
+            <div className="d-flex justify-content-center align-items-center h-100 bg-light">
+              <p className="text-muted">Lokasi poligon tidak tersedia.</p>
+            </div>
+          )}
+        </div>
 
         <div
           style={{
@@ -243,13 +218,12 @@ const DetailOffcanvasYardip = ({ show, handleClose, asetYardip }) => {
                         <strong>Koordinat:</strong>
                       </td>
                       <td>
-                        {hasValidLocation && validatedLocation ? (
+                        {hasValidLocation && locationData ? (
                           <div>
                             <small className="text-muted">
                               Polygon dengan{" "}
-                              {Array.isArray(validatedLocation)
-                                ? validatedLocation[0]?.length || 0
-                                : 0}{" "}
+                              {locationData.coordinates[0]?.length || 0}
+                              {" "}
                               titik
                             </small>
                             <details className="mt-1">
@@ -268,9 +242,8 @@ const DetailOffcanvasYardip = ({ show, handleClose, asetYardip }) => {
                                   fontSize: "0.7em",
                                 }}
                               >
-                                {Array.isArray(validatedLocation) &&
-                                validatedLocation[0] ? (
-                                  validatedLocation[0].map((coord, idx) => (
+                                {locationData.coordinates[0] ? (
+                                  locationData.coordinates[0].map((coord, idx) => (
                                     <div key={idx}>
                                       {idx + 1}: [
                                       {coord[0]?.toFixed(6) || "N/A"},{" "}
@@ -340,10 +313,8 @@ const DetailOffcanvasYardip = ({ show, handleClose, asetYardip }) => {
                       <strong>Jumlah Koordinat:</strong>
                       <br />
                       <span className="text-muted">
-                        {Array.isArray(validatedLocation) &&
-                        validatedLocation[0]
-                          ? validatedLocation[0].length
-                          : 0}{" "}
+                        {locationData.coordinates[0]?.length || 0}
+                        {" "}
                         titik
                       </span>
                     </div>

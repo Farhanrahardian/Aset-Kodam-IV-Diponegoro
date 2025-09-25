@@ -97,11 +97,12 @@ const renderAssetAsPolygon = (map, asset) => {
         coord[1],
         coord[0],
       ]);
-      const polygon = L.polygon(leafletCoords, {
-        color: "#FF5722",
+      const style = {
         weight: 3,
         fillOpacity: 0.5,
-      });
+        color: asset.pemilikan_sertifikat === "Ya" ? "#28a745" : "#dc3545", // Green for certified, Red for not
+      };
+      const polygon = L.polygon(leafletCoords, style);
       polygon.isAssetPolygon = true; // Tag layer for cleanup
       polygon.addTo(map);
       return polygon;
@@ -807,14 +808,10 @@ const PetaAset = React.memo(
               const centroid = getCentroid(locationData);
               if (!centroid) return null;
 
-              // Tentukan warna marker berdasarkan status aset
-              let markerIcon = greenIcon; // default
-              if (asset.status === "Dimiliki/Dikuasai") {
+              // Tentukan warna marker berdasarkan status sertifikat aset
+              let markerIcon = redIcon; // default to red
+              if (asset.pemilikan_sertifikat === "Ya") {
                 markerIcon = greenIcon;
-              } else if (asset.status === "Tidak Dimiliki/Tidak Dikuasai") {
-                markerIcon = redIcon;
-              } else if (asset.status === "Lain-lain") {
-                markerIcon = yellowIcon;
               }
 
               return (

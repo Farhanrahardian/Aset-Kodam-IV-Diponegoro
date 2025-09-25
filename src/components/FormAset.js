@@ -687,9 +687,14 @@ const FormAset = forwardRef(({
                       name="bukti_pemilikan_file"
                       onChange={handleFileChange}
                       accept=".pdf,.jpg,.jpeg,.png"
+                      disabled={isEditMode && !!formData.bukti_pemilikan_url}
                     />
                     <Form.Text className="text-muted">
-                      {isEditMode ? 'Upload file baru untuk mengganti yang lama.' : 'Format: PDF, JPG, JPEG, PNG (Maks. 10MB per file)'}
+                      {isEditMode 
+                        ? (formData.bukti_pemilikan_url 
+                            ? "Hapus bukti yang ada jika ingin menggantinya."
+                            : "Upload file baru untuk mengganti yang lama.") 
+                        : 'Format: PDF, JPG, JPEG, PNG (Maks. 10MB per file)'}
                     </Form.Text>
                   </Form.Group>
 
