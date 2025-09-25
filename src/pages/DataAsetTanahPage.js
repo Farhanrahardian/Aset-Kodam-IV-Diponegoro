@@ -80,7 +80,7 @@ const getStatusBadgeClass = (status) => {
 };
 
 
-const TabelAset = ({ assets, onEdit, onDelete, onViewDetail, koremList, allKodimList }) => {
+const TabelAset = ({ assets, onEdit, onDelete, onViewDetail, koremList, allKodimList, userRole }) => {
     // Fungsi getKodimName dan renderLuas tetap sama
     const getKodimName = (asset) => {
       const assetKodimIdentifier = String(asset.kodim || asset.kodim_id || "").trim();
@@ -124,7 +124,7 @@ const TabelAset = ({ assets, onEdit, onDelete, onViewDetail, koremList, allKodim
                         <th style={{ minWidth: "100px" }}>Status</th>
                         <th style={{ minWidth: "120px" }}>Luas</th>
                         <th style={{ minWidth: "100px" }}>Sertifikat</th>
-                        <th style={{ minWidth: "100px" }}>Aksi</th>
+                        {userRole === 'admin' && <th style={{ minWidth: "100px" }}>Aksi</th>}
                     </tr>
                 </thead>
                 <tbody>
@@ -156,38 +156,40 @@ const TabelAset = ({ assets, onEdit, onDelete, onViewDetail, koremList, allKodim
                                         <span className="badge bg-danger">Tidak</span>
                                     )}
                                 </td>
-                                <td style={{ minWidth: "100px" }}>
-                                    <div className="d-flex gap-1 flex-wrap">
-                                        <Button
-                                            variant="info"
-                                            size="sm"
-                                            onClick={() => onViewDetail(asset)}
-                                            title="Lihat Detail"
-                                        >
-                                            Detail
-                                        </Button>
-                                        {onEdit && (
-                                            <Button
-                                                variant="warning"
-                                                size="sm"
-                                                onClick={() => onEdit(asset)}
-                                                title="Edit Aset"
-                                            >
-                                                Edit
-                                            </Button>
-                                        )}
-                                        {onDelete && (
-                                            <Button
-                                                variant="danger"
-                                                size="sm"
-                                                onClick={() => onDelete(asset.id)}
-                                                title="Hapus Aset"
-                                            >
-                                                Hapus
-                                            </Button>
-                                        )}
-                                    </div>
-                                </td>
+                                {userRole === 'admin' && (
+                                  <td style={{ minWidth: "100px" }}>
+                                      <div className="d-flex gap-1 flex-wrap">
+                                          <Button
+                                              variant="info"
+                                              size="sm"
+                                              onClick={() => onViewDetail(asset)}
+                                              title="Lihat Detail"
+                                          >
+                                              Detail
+                                          </Button>
+                                          {onEdit && (
+                                              <Button
+                                                  variant="warning"
+                                                  size="sm"
+                                                  onClick={() => onEdit(asset)}
+                                                  title="Edit Aset"
+                                              >
+                                                  Edit
+                                              </Button>
+                                          )}
+                                          {onDelete && (
+                                              <Button
+                                                  variant="danger"
+                                                  size="sm"
+                                                  onClick={() => onDelete(asset.id)}
+                                                  title="Hapus Aset"
+                                              >
+                                                  Hapus
+                                              </Button>
+                                          )}
+                                      </div>
+                                  </td>
+                                )}
                             </tr>
                         );
                     })}
@@ -1427,6 +1429,7 @@ const DataAsetTanahPage = () => {
                     onViewDetail={handleViewDetail}
                     koremList={koremList}
                     allKodimList={allKodimList}
+                    userRole={user?.role}
                   />
                 )}
               </div>

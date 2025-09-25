@@ -275,7 +275,7 @@ const FilterPanelTop = ({
 };
 
 // Enhanced table component untuk yardip - FIXED HORIZONTAL SCROLL
-const TabelAsetYardip = ({ assets, onEdit, onDelete, onViewDetail }) => {
+const TabelAsetYardip = ({ assets, onEdit, onDelete, onViewDetail, userRole }) => {
   if (!assets || assets.length === 0) {
     return (
       <div className="text-center py-5">
@@ -338,7 +338,7 @@ const TabelAsetYardip = ({ assets, onEdit, onDelete, onViewDetail }) => {
           <th style={{ minWidth: "160px", width: "160px" }}>Kelurahan</th>
           <th style={{ minWidth: "120px", width: "120px" }}>Status</th>
           <th style={{ minWidth: "120px", width: "120px" }}>Luas</th>
-          <th style={{ minWidth: "180px", width: "180px" }}>Aksi</th>
+          {userRole === 'admin' && <th style={{ minWidth: "180px", width: "180px" }}>Aksi</th>}
         </tr>
       </thead>
       <tbody>
@@ -436,43 +436,45 @@ const TabelAsetYardip = ({ assets, onEdit, onDelete, onViewDetail }) => {
                 )}
               </div>
             </td>
-            <td style={{ minWidth: "180px", width: "180px" }}>
-              <div className="d-flex gap-1 flex-nowrap">
-                <Button
-                  variant="info"
-                  size="sm"
-                  onClick={() => onViewDetail(asset)}
-                  title="Lihat Detail"
-                  style={{ fontSize: "0.75rem", padding: "0.25rem 0.5rem" }}
-                >
-                  Detail
-                </Button>
-
-                {onEdit && (
+            {userRole === 'admin' && 
+              <td style={{ minWidth: "180px", width: "180px" }}>
+                <div className="d-flex gap-1 flex-nowrap">
                   <Button
-                    variant="warning"
+                    variant="info"
                     size="sm"
-                    onClick={() => onEdit(asset)}
-                    title="Edit Aset"
+                    onClick={() => onViewDetail(asset)}
+                    title="Lihat Detail"
                     style={{ fontSize: "0.75rem", padding: "0.25rem 0.5rem" }}
                   >
-                    Edit
+                    Detail
                   </Button>
-                )}
 
-                {onDelete && (
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => onDelete(asset.id)}
-                    title="Hapus Aset"
-                    style={{ fontSize: "0.75rem", padding: "0.25rem 0.5rem" }}
-                  >
-                    Hapus
-                  </Button>
-                )}
-              </div>
-            </td>
+                  {onEdit && (
+                    <Button
+                      variant="warning"
+                      size="sm"
+                      onClick={() => onEdit(asset)}
+                      title="Edit Aset"
+                      style={{ fontSize: "0.75rem", padding: "0.25rem 0.5rem" }}
+                    >
+                      Edit
+                    </Button>
+                  )}
+
+                  {onDelete && (
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => onDelete(asset.id)}
+                      title="Hapus Aset"
+                      style={{ fontSize: "0.75rem", padding: "0.25rem 0.5rem" }}
+                    >
+                      Hapus
+                    </Button>
+                  )}
+                </div>
+              </td>
+            }
           </tr>
         ))}
       </tbody>
@@ -1664,6 +1666,7 @@ const DataAsetYardipPage = () => {
                     onEdit={user ? handleEditAsset : null}
                     onDelete={user ? handleDeleteAsset : null}
                     onViewDetail={handleViewDetail}
+                    userRole={user?.role}
                   />
                 </div>
               )}
