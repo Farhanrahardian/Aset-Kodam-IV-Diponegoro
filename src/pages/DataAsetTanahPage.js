@@ -81,139 +81,120 @@ const getStatusBadgeClass = (status) => {
 
 
 const TabelAset = ({ assets, onEdit, onDelete, onViewDetail, koremList, allKodimList }) => {
-    // TabelAset implementation remains the same
-    if (!assets || assets.length === 0) {
-    return (
-      <div className="text-center py-5">
-        <p className="text-muted">Tidak ada data aset yang ditemukan.</p>
-      </div>
-    );
-  }
+    // Fungsi getKodimName dan renderLuas tetap sama
+    const getKodimName = (asset) => {
+      const assetKodimIdentifier = String(asset.kodim || asset.kodim_id || "").trim();
+      if (!assetKodimIdentifier) return "-";
 
-  const getKodimName = (asset) => {
-    const assetKodimIdentifier = String(asset.kodim || asset.kodim_id || "").trim();
-    if (!assetKodimIdentifier) return "-";
-    
-    // Normalisasi nama kodim untuk pencocokan
-    const normalizedAssetKodim = normalizeKodimName(assetKodimIdentifier);
-    
-    // Tangani kasus khusus untuk Kodim Kota Semarang
-    if (normalizedAssetKodim === "Kodim 0733/Kota Semarang" || assetKodimIdentifier === "Kodim 0733/Semarang (BS)") {
-      return "Kodim 0733/Kota Semarang";
+      const normalizedAssetKodim = normalizeKodimName(assetKodimIdentifier);
+
+      if (normalizedAssetKodim === "Kodim 0733/Kota Semarang" || assetKodimIdentifier === "Kodim 0733/Semarang (BS)") {
+        return "Kodim 0733/Kota Semarang";
+      }
+
+      const kodim = allKodimList.find(
+        (k) => k.id === assetKodimIdentifier || k.nama === assetKodimIdentifier || normalizeKodimName(k.nama) === normalizedAssetKodim
+      );
+      return kodim ? kodim.nama : asset.kodim_nama || assetKodimIdentifier || "-";
+    };
+
+    const renderLuas = (asset) => {
+      const totalLuas = parseFloat(asset.luas) || 0;
+      return totalLuas > 0 ? totalLuas.toLocaleString("id-ID") + " m²" : "-";
+    };
+
+    if (!assets || assets.length === 0) {
+        return (
+            <div className="text-center py-5">
+                <p className="text-muted">Tidak ada data aset yang ditemukan.</p>
+            </div>
+        );
     }
     
-    const kodim = allKodimList.find(
-      (k) => k.id === assetKodimIdentifier || k.nama === assetKodimIdentifier || normalizeKodimName(k.nama) === normalizedAssetKodim
+    return (
+        <div style={{ maxHeight: "50vh", overflow: "auto" }}>
+            <table className="table table-striped table-bordered table-hover mb-0" style={{ minWidth: "1200px", width: "100%" }}>
+                <thead className="table-dark" style={{ position: "sticky", top: 0, zIndex: 1 }}>
+                    <tr>
+                        <th style={{ minWidth: "120px" }}>NUP</th>
+                        <th style={{ minWidth: "140px" }}>Wilayah Korem</th>
+                        <th style={{ minWidth: "140px" }}>Wilayah Kodim</th>
+                        <th style={{ minWidth: "200px" }}>Alamat</th>
+                        <th style={{ minWidth: "120px" }}>Peruntukan</th>
+                        <th style={{ minWidth: "100px" }}>Status</th>
+                        <th style={{ minWidth: "120px" }}>Luas</th>
+                        <th style={{ minWidth: "100px" }}>Sertifikat</th>
+                        <th style={{ minWidth: "100px" }}>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {assets.map((asset) => {
+                        const korem = koremList.find((k) => k.id == asset.korem_id);
+                        const kodimName = getKodimName(asset);
+
+                        return (
+                            <tr key={asset.id}>
+                                <td style={{ minWidth: "120px" }}>{asset.nama || "-"}</td>
+                                <td style={{ minWidth: "140px" }}>{korem?.nama || "-"}</td>
+                                <td style={{ minWidth: "140px" }}>{kodimName}</td>
+                                <td style={{ minWidth: "200px" }}>
+                                    <div style={{ whiteSpace: "normal" }}>
+                                        {asset.alamat ? (asset.alamat.length > 40 ? `${asset.alamat.substring(0, 40)}...` : asset.alamat) : "-"}
+                                    </div>
+                                </td>
+                                <td style={{ minWidth: "120px" }}>{asset.peruntukan || asset.fungsi || "-"}</td>
+                                <td style={{ minWidth: "100px" }}>
+                                    <span className={`badge ${getStatusBadgeClass(asset.status)}`}>
+                                        {asset.status || "-"}
+                                    </span>
+                                </td>
+                                <td style={{ minWidth: "120px" }}>{renderLuas(asset)}</td>
+                                <td style={{ minWidth: "100px" }}>
+                                    {asset.pemilikan_sertifikat === "Ya" ? (
+                                        <span className="badge bg-success">Ya</span>
+                                    ) : (
+                                        <span className="badge bg-danger">Tidak</span>
+                                    )}
+                                </td>
+                                <td style={{ minWidth: "100px" }}>
+                                    <div className="d-flex gap-1 flex-wrap">
+                                        <Button
+                                            variant="info"
+                                            size="sm"
+                                            onClick={() => onViewDetail(asset)}
+                                            title="Lihat Detail"
+                                        >
+                                            Detail
+                                        </Button>
+                                        {onEdit && (
+                                            <Button
+                                                variant="warning"
+                                                size="sm"
+                                                onClick={() => onEdit(asset)}
+                                                title="Edit Aset"
+                                            >
+                                                Edit
+                                            </Button>
+                                        )}
+                                        {onDelete && (
+                                            <Button
+                                                variant="danger"
+                                                size="sm"
+                                                onClick={() => onDelete(asset.id)}
+                                                title="Hapus Aset"
+                                            >
+                                                Hapus
+                                            </Button>
+                                        )}
+                                    </div>
+                                </td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
+        </div>
     );
-    return kodim ? kodim.nama : asset.kodim_nama || assetKodimIdentifier || "-";
-  };
-
-  const renderLuas = (asset) => {
-    const totalLuas = parseFloat(asset.luas) || 0;
-    return totalLuas > 0 ? totalLuas.toLocaleString("id-ID") + " m²" : "-";
-  }
-
-  // Membuat header tabel terpisah
-  const tableHeader = (
-    <thead className="table-dark">
-      <tr>
-        <th style={{ width: "10%", minWidth: "120px" }}>NUP</th>
-        <th style={{ width: "12%", minWidth: "140px" }}>Wilayah Korem</th>
-        <th style={{ width: "12%", minWidth: "140px" }}>Wilayah Kodim</th>
-        <th style={{ width: "18%", minWidth: "200px" }}>Alamat</th>
-        <th style={{ width: "10%", minWidth: "120px" }}>Peruntukan</th>
-        <th style={{ width: "8%", minWidth: "100px" }}>Status</th>
-        <th style={{ width: "10%", minWidth: "120px" }}>Luas</th>
-        <th style={{ width: "8%", minWidth: "100px" }}>Sertifikat</th>
-        <th style={{ width: "8%", minWidth: "100px" }}>Aksi</th>
-      </tr>
-    </thead>
-  );
-
-  return (
-    <div style={{ overflowX: "auto" }}>
-      {/* Header tetap di atas */}
-      <table className="table table-striped table-bordered table-hover mb-0" style={{ minWidth: "1200px", width: "100%" }}>
-        {tableHeader}
-      </table>
-      {/* Body tabel yang bisa di-scroll */}
-      <div style={{ maxHeight: "50vh", overflowY: "auto" }}>
-        <table className="table table-striped table-bordered table-hover mb-0" style={{ minWidth: "1200px", width: "100%" }}>
-          <tbody>
-            {assets.map((asset) => {
-              const korem = koremList.find((k) => k.id == asset.korem_id);
-              const kodimName = getKodimName(asset);
-
-              return (
-                <tr key={asset.id}>
-                  <td style={{ width: "10%", minWidth: "120px" }}>{asset.nama || "-"}</td>
-                  <td style={{ width: "12%", minWidth: "140px" }}>{korem?.nama || "-"}</td>
-                  <td style={{ width: "12%", minWidth: "140px" }}>{kodimName}</td>
-                  <td style={{ width: "18%", minWidth: "200px" }}>
-                    <div style={{ maxWidth: "150px", fontSize: "0.9em" }}>
-                      {asset.alamat
-                        ? asset.alamat.length > 40
-                          ? asset.alamat.substring(0, 40) + "..."
-                          : asset.alamat
-                        : "-"}
-                    </div>
-                  </td>
-                  <td style={{ width: "10%", minWidth: "120px" }}>{asset.peruntukan || asset.fungsi || "-"}</td>
-                  <td style={{ width: "8%", minWidth: "100px" }}>
-                    <span className={`badge ${getStatusBadgeClass(asset.status)}`}>
-                      {asset.status || "-"}
-                    </span>
-                  </td>
-                  <td style={{ width: "10%", minWidth: "120px" }}>{renderLuas(asset)}</td>
-                  <td style={{ width: "8%", minWidth: "100px" }}>
-                    {asset.pemilikan_sertifikat === "Ya" ? (
-                      <span className="badge bg-success">Ya</span>
-                    ) : (
-                      <span className="badge bg-danger">Tidak</span>
-                    )}
-                  </td>
-                  <td style={{ width: "8%", minWidth: "100px" }}>
-                    <div className="d-flex gap-1 flex-wrap">
-                      <Button
-                        variant="info"
-                        size="sm"
-                        onClick={() => onViewDetail(asset)}
-                        title="Lihat Detail"
-                      >
-                        Detail
-                      </Button>
-
-                      {onEdit && (
-                        <Button
-                          variant="warning"
-                          size="sm"
-                          onClick={() => onEdit(asset)}
-                          title="Edit Aset"
-                        >
-                          Edit
-                        </Button>
-                      )}
-
-                      {onDelete && (
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => onDelete(asset.id)}
-                          title="Hapus Aset"
-                        >
-                          Hapus
-                        </Button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
 };
 
 const FilterPanelTop = ({ koremList, kodimList, allKodimList, selectedKorem, selectedKodim, statusFilter, onSelectKorem, onSelectKodim, onSelectStatus, onShowAll, totalAssets, filteredAssetsCount, assetsOnMapCount }) => {

@@ -26,7 +26,7 @@ const MainLayout = ({ children }) => {
   }, []);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+    <div className="overflow-hidden" style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
       <Navbar onToggleSidebar={toggleSidebar} />
       <div className="content-area">
         <Sidebar show={isSidebarOpen} />
