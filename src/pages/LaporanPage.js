@@ -562,7 +562,8 @@ const LaporanPage = () => {
       <div className="mb-4">
         <h2 className="text-dark">
           <i className="fas fa-file-excel me-2"></i>
-                      Cetak Laporan Data Aset BMN        </h2>
+          Cetak Laporan Data Aset BMN
+        </h2>
       </div>
 
       {error && (
@@ -628,7 +629,7 @@ const LaporanPage = () => {
               <Form.Group>
                 <Form.Label className="fw-bold">
                   <i className="fas fa-flag me-2"></i>
-                  Status Kepemilikan
+                  Status Aset
                 </Form.Label>
                 <Form.Select
                   value={statusFilter}
@@ -636,11 +637,8 @@ const LaporanPage = () => {
                   className="form-select-lg"
                 >
                   <option value="">Semua Status</option>
-                  <option value="Dimiliki/Dikuasai">Dimiliki/Dikuasai</option>
-                  <option value="Tidak Dimiliki/Tidak Dikuasai">
-                    Tidak Dimiliki/Tidak Dikuasai
-                  </option>
-                  <option value="Lain-lain">Lain-lain</option>
+                  <option value="Aman">Aman</option>
+                  <option value="Sengketa">Sengketa</option>
                 </Form.Select>
               </Form.Group>
             </Col>
@@ -717,9 +715,9 @@ const LaporanPage = () => {
             </div>
           ) : (
             <>
-              {/* Summary Cards */}
+              {/* Summary Cards - Updated to 3 cards only */}
               <Row className="mb-4">
-                <Col lg={3} md={6} className="mb-3">
+                <Col lg={4} md={4} className="mb-3">
                   <Card className="bg-primary text-white h-100">
                     <Card.Body className="text-center">
                       <i className="fas fa-database fa-2x mb-2"></i>
@@ -728,47 +726,31 @@ const LaporanPage = () => {
                     </Card.Body>
                   </Card>
                 </Col>
-                <Col lg={3} md={6} className="mb-3">
+                <Col lg={4} md={4} className="mb-3">
                   <Card className="bg-success text-white h-100">
                     <Card.Body className="text-center">
-                      <i className="fas fa-check-circle fa-2x mb-2"></i>
+                      <i className="fas fa-shield-alt fa-2x mb-2"></i>
                       <h3 className="mb-1">
                         {
-                          filteredAssets.filter(
-                            (a) => a.status === "Dimiliki/Dikuasai"
-                          ).length
+                          filteredAssets.filter((a) => a.status === "Aman")
+                            .length
                         }
                       </h3>
-                      <small>Dimiliki/Dikuasai</small>
+                      <small>Aman</small>
                     </Card.Body>
                   </Card>
                 </Col>
-                <Col lg={3} md={6} className="mb-3">
+                <Col lg={4} md={4} className="mb-3">
                   <Card className="bg-danger text-white h-100">
-                    <Card.Body className="text-center">
-                      <i className="fas fa-times-circle fa-2x mb-2"></i>
-                      <h3 className="mb-1">
-                        {
-                          filteredAssets.filter(
-                            (a) => a.status === "Tidak Dimiliki/Tidak Dikuasai"
-                          ).length
-                        }
-                      </h3>
-                      <small>Tidak Dimiliki/Tidak Dikuasai</small>
-                    </Card.Body>
-                  </Card>
-                </Col>
-                <Col lg={3} md={6} className="mb-3">
-                  <Card className="bg-warning text-dark h-100">
                     <Card.Body className="text-center">
                       <i className="fas fa-exclamation-triangle fa-2x mb-2"></i>
                       <h3 className="mb-1">
                         {
-                          filteredAssets.filter((a) => a.status === "Lain-lain")
+                          filteredAssets.filter((a) => a.status === "Sengketa")
                             .length
                         }
                       </h3>
-                      <small>Lain-lain</small>
+                      <small>Sengketa</small>
                     </Card.Body>
                   </Card>
                 </Col>
@@ -841,12 +823,11 @@ const LaporanPage = () => {
                                       <td>
                                         <span
                                           className={`badge ${
-                                            asset.status === "Dimiliki/Dikuasai"
+                                            asset.status === "Aman"
                                               ? "bg-success"
-                                              : asset.status ===
-                                                "Tidak Dimiliki/Tidak Dikuasai"
+                                              : asset.status === "Sengketa"
                                               ? "bg-danger"
-                                              : "bg-warning text-dark"
+                                              : "bg-secondary"
                                           }`}
                                         >
                                           {asset.status || "-"}
