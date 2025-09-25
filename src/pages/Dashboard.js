@@ -45,8 +45,9 @@ const Dashboard = () => {
   const [asetYardipData, setAsetYardipData] = useState([]);
   const [koremList, setKoremList] = useState([]);
   const [selectedKorem, setSelectedKorem] = useState(""); // Filter state for tanah
+  const [selectedKodim, setSelectedKodim] = useState(""); // NEW: Filter state for kodim
   const [selectedProvince, setSelectedProvince] = useState(""); // Filter state for yardip
-  const [selectedCity, setSelectedCity] = useState(""); // NEW: Filter state for city
+  const [selectedCity, setSelectedCity] = useState(""); // Filter state for city
   const [rawAssetsData, setRawAssetsData] = useState([]); // Store raw data for filtering
   const [rawYardipData, setRawYardipData] = useState([]); // Store raw yardip data
   const [loading, setLoading] = useState(false);
@@ -98,7 +99,7 @@ const Dashboard = () => {
 
   // Process data by Kodim (filtered view)
   const processDataByKodim = useCallback(
-    (assetsData, koremData, selectedKoremId) => {
+    (assetsData, koremData, selectedKoremId, selectedKodimName = null) => {
       const selectedKoremData = koremData.find(
         (k) => k.id.toString() === selectedKoremId.toString()
       );
@@ -133,9 +134,14 @@ const Dashboard = () => {
 
       // Count assets by kodim for selected korem
       assetsData
-        .filter(
-          (asset) => asset.korem_id.toString() === selectedKoremId.toString()
-        )
+        .filter((asset) => {
+          const matchesKorem =
+            asset.korem_id.toString() === selectedKoremId.toString();
+          const matchesKodim = selectedKodimName
+            ? asset.kodim === selectedKodimName
+            : true;
+          return matchesKorem && matchesKodim;
+        })
         .forEach((asset) => {
           const kodimName = asset.kodim;
           if (kodimStats[kodimName]) {
@@ -151,9 +157,16 @@ const Dashboard = () => {
           }
         });
 
-      return Object.values(kodimStats)
+      let result = Object.values(kodimStats)
         .filter((kodim) => kodim.total > 0)
         .sort((a, b) => b.total - a.total);
+
+      // If specific kodim selected, show only that kodim
+      if (selectedKodimName) {
+        result = result.filter((kodim) => kodim.name === selectedKodimName);
+      }
+
+      return result;
     },
     []
   );
@@ -462,10 +475,11 @@ const Dashboard = () => {
     }
   }, [processDataByKorem, processYardipByProvince]);
 
-  // Handle filter change for tanah (korem)
+  // Handle filter change for tanah (korem and kodim)
   const handleKoremFilterChange = useCallback(
     (koremId) => {
       setSelectedKorem(koremId);
+      setSelectedKodim(""); // Reset kodim when korem changes
 
       if (koremId) {
         // Show kodim data for selected korem
@@ -480,7 +494,26 @@ const Dashboard = () => {
     [rawAssetsData, koremList, processDataByKorem, processDataByKodim]
   );
 
-  // FIXED: Handle filter change for yardip (province and city)
+  // NEW: Handle kodim filter change
+  const handleKodimFilterChange = useCallback(
+    (kodimName) => {
+      setSelectedKodim(kodimName);
+
+      if (selectedKorem) {
+        // Show specific kodim data or all kodim in selected korem
+        const kodimData = processDataByKodim(
+          rawAssetsData,
+          koremList,
+          selectedKorem,
+          kodimName || null
+        );
+        setAsetTanahData(kodimData);
+      }
+    },
+    [selectedKorem, rawAssetsData, koremList, processDataByKodim]
+  );
+
+  // Handle filter change for yardip (province and city)
   const handleProvinceFilterChange = useCallback(
     (provinceKey) => {
       console.log("Province filter changed to:", provinceKey);
@@ -500,7 +533,7 @@ const Dashboard = () => {
     [rawYardipData, processYardipByProvince, processYardipByCity]
   );
 
-  // NEW: Handle city filter change
+  // Handle city filter change
   const handleCityFilterChange = useCallback(
     (cityKey) => {
       console.log("City filter changed to:", cityKey);
@@ -633,34 +666,51 @@ const Dashboard = () => {
         "Unknown"
       : null;
 
-  // Hitung tinggi chart berdasarkan viewport
+  // Get available kodim for selected korem
+  const availableKodim = selectedKorem
+    ? koremList.find((k) => k.id.toString() === selectedKorem.toString())
+        ?.kodim || []
+    : [];
+
   const chartHeight = useMemo(() => {
-    // Estimasi tinggi elemen-elemen di luar chart
-    const headerHeight = 60; // tinggi header navbar
-    const heroSliderHeight = window.innerHeight < 600 ? 150 : window.innerHeight < 800 ? 200 : 250;
+    const headerHeight = 60;
+    // Kurangi atau hilangkan heroSliderHeight dari perhitungan
+    const heroSliderHeight = 100; // Nilai kecil atau 0
     const marginBottom = 20;
     const otherElements = headerHeight + heroSliderHeight + marginBottom;
-    
-    // Hitung sisa ruang untuk chart
-    const availableHeight = window.innerHeight - otherElements - 100; // -100 untuk padding dan margin lainnya
-    const heightPerChart = Math.max(200, Math.floor(availableHeight / 2)); // bagi dua untuk dua chart
-    
+
+    const availableHeight = window.innerHeight - otherElements - 100;
+    const heightPerChart = Math.max(200, Math.floor(availableHeight / 2));
+
     return heightPerChart;
   }, []);
 
   return (
     <Container fluid className="dashboard-container p-4">
-      {/* Hero Slider */}
+      {/* Hero Slider with improved styling */}
       <Row className="mb-4">
         <Col>
           <div className="hero-slider">
-            <div className="slider-container">
+            <div
+              className="slider-container"
+              style={{ height: "min(800px, 80vh)" }}
+            >
               {slides.map((slide, index) => (
                 <div
                   key={index}
                   className={`slide ${index === currentSlide ? "active" : ""}`}
+                  style={{ height: "100%" }}
                 >
-                  <img src={slide.src} alt={slide.alt} />
+                  <img
+                    src={slide.src}
+                    alt={slide.alt}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      objectPosition: "center",
+                    }}
+                  />
                   <div className="slide-overlay"></div>
                 </div>
               ))}
@@ -679,31 +729,18 @@ const Dashboard = () => {
         </Col>
       </Row>
 
-      
-
       {/* Chart Section */}
       <Row>
         <Col md={6} className="mb-4">
           <Card className="chart-card h-100 border-0 shadow-sm">
             <Card.Header className="bg-primary text-white border-0">
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <Card.Title>Data Aset BMN KODAM</Card.Title>
-                </div>
-                <Button
-                  variant="light"
-                  size="sm"
-                  onClick={handleNavigateToTanah}
-                >
-                  Lihat Detail
-                </Button>
-              </div>
+              <Card.Title className="mb-0">Data Aset BMN KODAM</Card.Title>
             </Card.Header>
             <Card.Body>
-              {/* Filter Section */}
+              {/* Enhanced Filter Section with Kodim */}
               <div className="mb-3 p-3 bg-light rounded">
                 <Row className="align-items-center">
-                  <Col md={6}>
+                  <Col md={4}>
                     <Form.Label className="mb-1 fw-bold">
                       Filter by Korem:
                     </Form.Label>
@@ -722,21 +759,61 @@ const Dashboard = () => {
                       ))}
                     </Form.Select>
                   </Col>
-                  <Col md={6}>
+
+                  {/* NEW: Kodim Filter */}
+                  <Col md={4}>
+                    <Form.Label className="mb-1 fw-bold">
+                      Filter by Kodim:
+                    </Form.Label>
+                    <Form.Select
+                      size="sm"
+                      value={selectedKodim}
+                      onChange={(e) => handleKodimFilterChange(e.target.value)}
+                      disabled={!selectedKorem}
+                    >
+                      <option value="">
+                        {selectedKorem ? "Semua Kodim" : "Pilih Korem dulu"}
+                      </option>
+                      {selectedKorem &&
+                        availableKodim.map((kodimName) => (
+                          <option key={kodimName} value={kodimName}>
+                            {kodimName}
+                          </option>
+                        ))}
+                    </Form.Select>
+                  </Col>
+
+                  <Col md={4}>
                     <div className="text-end">
                       <small className="text-muted">
                         Menampilkan: <strong>{asetTanahData.length}</strong>{" "}
-                        {selectedKorem ? "Kodim" : "Korem"}
+                        {selectedKodim
+                          ? "Kodim (Spesifik)"
+                          : selectedKorem
+                          ? "Kodim"
+                          : "Korem"}
                       </small>
-                      {selectedKorem && (
+                      {(selectedKorem || selectedKodim) && (
                         <div>
                           <Button
                             variant="secondary"
                             size="sm"
-                            className="mt-1"
-                            onClick={() => handleKoremFilterChange("")}
+                            className="mt-1 me-1"
+                            onClick={() => handleKodimFilterChange("")}
+                            disabled={!selectedKodim}
                           >
-                            Reset
+                            Reset Kodim
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="mt-1"
+                            onClick={() => {
+                              handleKoremFilterChange("");
+                              setSelectedKodim("");
+                            }}
+                          >
+                            Reset Semua
                           </Button>
                         </div>
                       )}
@@ -857,33 +934,10 @@ const Dashboard = () => {
         <Col md={6} className="mb-4">
           <Card className="chart-card h-100 border-0 shadow-sm">
             <Card.Header className="bg-success text-white border-0">
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <h5 className="mb-1">
-                    Data Aset Yardip KODAM
-                    {selectedProvinceName && (
-                      <span className="badge bg-light text-success ms-2">
-                        {selectedProvinceName}
-                      </span>
-                    )}
-                    {selectedCityName && (
-                      <span className="badge bg-warning text-dark ms-2">
-                        {selectedCityName}
-                      </span>
-                    )}
-                  </h5>
-                </div>
-                <Button
-                  variant="light"
-                  size="sm"
-                  onClick={handleNavigateToYardip}
-                >
-                  Lihat Detail
-                </Button>
-              </div>
+              <Card.Title className="mb-0">Data Aset Yardip KODAM</Card.Title>
             </Card.Header>
             <Card.Body>
-              {/* FIXED: Enhanced Filter Section for Yardip with City Selection */}
+              {/* Filter Section for Yardip with City Selection */}
               <div className="mb-3 p-3 bg-light rounded">
                 <Row className="align-items-center">
                   <Col md={4}>
@@ -909,7 +963,7 @@ const Dashboard = () => {
                     </Form.Select>
                   </Col>
 
-                  {/* NEW: City Filter */}
+                  {/* City Filter */}
                   <Col md={4}>
                     <Form.Label className="mb-1 fw-bold">
                       Filter by Kota:
