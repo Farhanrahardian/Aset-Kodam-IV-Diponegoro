@@ -1,9 +1,12 @@
 import React from "react";
 import { Nav } from "react-bootstrap";
 import { NavLink } from "react-router-dom";
+import { useAuth } from "../../auth/AuthContext"; // Import useAuth
 import "./Sidebar.css"; // tambahkan CSS eksternal biar hover bisa jalan
 
 const Sidebar = ({ show }) => {
+  const { user } = useAuth(); // Dapatkan informasi user
+
   const navLinkStyle = ({ isActive }) => ({
     color: isActive ? "#ffffff" : "#adb5bd",
     backgroundColor: isActive ? "#4CAF50" : "transparent",
@@ -26,19 +29,27 @@ const Sidebar = ({ show }) => {
         >
           Menu
         </h5>
+        
         <NavLink to="/" className="nav-link" style={navLinkStyle}>
           Dashboard
         </NavLink>
-        <NavLink to="/tambah-aset" className="nav-link" style={navLinkStyle}>
-          Tambah Aset BMN
-        </NavLink>
-        <NavLink
-          to="/tambah-aset-yardip"
-          className="nav-link"
-          style={navLinkStyle}
-        >
-          Tambah Aset Yardip
-        </NavLink>
+
+        {/* Admin Only */}
+        {user && user.role === 'admin' && (
+          <>
+            <NavLink to="/tambah-aset" className="nav-link" style={navLinkStyle}>
+              Tambah Aset BMN
+            </NavLink>
+            <NavLink
+              to="/tambah-aset-yardip"
+              className="nav-link"
+              style={navLinkStyle}
+            >
+              Tambah Aset Yardip
+            </NavLink>
+          </>
+        )}
+
         <NavLink to="/data-aset-tanah" className="nav-link" style={navLinkStyle}>
           Data Aset BMN
         </NavLink>
@@ -49,16 +60,21 @@ const Sidebar = ({ show }) => {
         >
           Data Aset Yardip
         </NavLink>
-        <NavLink to="/laporan" className="nav-link" style={navLinkStyle}>
-          Cetak Laporan Aset BMN
-        </NavLink>
-        {/* Tambahan menu baru */}
-        <NavLink to="/laporan-yardip" className="nav-link" style={navLinkStyle}>
-          Cetak Laporan Aset Yardip
-        </NavLink>
-        <NavLink to="/settings" className="nav-link" style={navLinkStyle}>
-          Pengaturan
-        </NavLink>
+
+        {/* Admin Only */}
+        {user && user.role === 'admin' && (
+          <>
+            <NavLink to="/laporan" className="nav-link" style={navLinkStyle}>
+              Cetak Laporan Aset BMN
+            </NavLink>
+            <NavLink to="/laporan-yardip" className="nav-link" style={navLinkStyle}>
+              Cetak Laporan Aset Yardip
+            </NavLink>
+            <NavLink to="/settings" className="nav-link" style={navLinkStyle}>
+              Pengaturan
+            </NavLink>
+          </>
+        )}
       </Nav>
     </div>
   );

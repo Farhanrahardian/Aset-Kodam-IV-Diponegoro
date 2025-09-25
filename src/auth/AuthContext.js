@@ -24,7 +24,7 @@ export const AuthProvider = ({ children }) => {
       const foundUser = users.find(u => u.username === username && u.password === password);
 
       if (foundUser) {
-        const userData = { id: foundUser.id, username: foundUser.username, name: foundUser.name };
+        const userData = { id: foundUser.id, username: foundUser.username, name: foundUser.name, role: foundUser.role };
         setUser(userData);
         // Simpan data user di localStorage
         localStorage.setItem('user', JSON.stringify(userData));

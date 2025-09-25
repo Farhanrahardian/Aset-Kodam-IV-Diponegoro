@@ -47,35 +47,93 @@ function App() {
           <Route
             path="/*"
             element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route
-                      path="/data-aset-tanah"
-                      element={<DataAsetTanahPage />}
-                    />
-                    <Route
-                      path="/data-aset-yardip"
-                      element={<DataAsetYardipPage />}
-                    />
-                    <Route path="/tambah-aset" element={<TambahAsetPage />} />
-                    <Route path="/edit-aset/:id" element={<EditAsetPage />} />
-                    <Route
-                      path="/tambah-aset-yardip"
-                      element={<TambahAsetYardipPage />}
-                    />
-                    <Route path="/laporan" element={<LaporanPage />} />
-                    <Route
-                      path="/laporan-yardip"
-                      element={<LaporanYardipPage />}
-                    />{" "}
-                    {/* ✅ route baru untuk Cetak Laporan Aset Yardip */}
-                    <Route path="/view-file/*" element={<ViewFilePage />} />
-                    <Route path="/settings" element={<SettingsPage />} />
-                  </Routes>
-                </MainLayout>
-              </ProtectedRoute>
+              <MainLayout>
+                <Routes>
+                  {/* Rute untuk Admin dan Pengguna */}
+                  <Route
+                    path="/"
+                    element={
+                      <ProtectedRoute roles={["admin", "pengguna"]}>
+                        <Dashboard />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/data-aset-tanah"
+                    element={
+                      <ProtectedRoute roles={["admin", "pengguna"]}>
+                        <DataAsetTanahPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/data-aset-yardip"
+                    element={
+                      <ProtectedRoute roles={["admin", "pengguna"]}>
+                        <DataAsetYardipPage />
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Rute khusus Admin */}
+                  <Route
+                    path="/tambah-aset"
+                    element={
+                      <ProtectedRoute roles={["admin"]}>
+                        <TambahAsetPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/edit-aset/:id"
+                    element={
+                      <ProtectedRoute roles={["admin"]}>
+                        <EditAsetPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/tambah-aset-yardip"
+                    element={
+                      <ProtectedRoute roles={["admin"]}>
+                        <TambahAsetYardipPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/laporan"
+                    element={
+                      <ProtectedRoute roles={["admin"]}>
+                        <LaporanPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/laporan-yardip"
+                    element={
+                      <ProtectedRoute roles={["admin"]}>
+                        <LaporanYardipPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/view-file/*"
+                    element={
+                      <ProtectedRoute roles={["admin"]}>
+                        <ViewFilePage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/settings"
+                    element={
+                      <ProtectedRoute roles={["admin"]}>
+                        <SettingsPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                </Routes>
+              </MainLayout>
             }
           />
         </Routes>

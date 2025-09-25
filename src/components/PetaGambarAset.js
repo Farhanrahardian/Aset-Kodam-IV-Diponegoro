@@ -308,7 +308,8 @@ const PetaGambarAset = ({
     top: "10px",
     left: "50px",
     zIndex: 1000,
-    padding: "8px 12px",
+    padding: "6px 10px",
+    fontSize: "14px",
     backgroundColor: "white",
     border: "2px solid rgba(0,0,0,0.2)",
     borderRadius: "4px",
@@ -446,7 +447,7 @@ const PetaGambarAset = ({
       </MapContainer>
       {selectedKorem && !selectedKodim && (
         <button onClick={handleBackToKorem} style={buttonStyle}>
-          Kembali ke Semua Korem
+          Kembali
         </button>
       )}
       {selectedKodim && selectedKorem && (
@@ -459,10 +460,7 @@ const PetaGambarAset = ({
           }
           style={buttonStyle}
         >
-          {selectedKorem.nama === "Kodim 0733/Kota Semarang" ||
-          selectedKorem.nama === "Berdiri Sendiri"
-            ? "Kembali ke Semua Korem"
-            : "Kembali ke Semua Kodim"}
+          Kembali
         </button>
       )}
     </div>

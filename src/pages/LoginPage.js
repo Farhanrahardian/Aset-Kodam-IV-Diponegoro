@@ -33,7 +33,7 @@ const LoginPage = () => {
         <Col>
           <Card style={{ width: '24rem' }}>
             <Card.Body className="p-4">
-              <h3 className="text-center mb-4">Login Admin</h3>
+              <h3 className="text-center mb-4">Login</h3>
               <Form onSubmit={handleSubmit}>
                 <Form.Group className="mb-3" controlId="formBasicEmail">
                   <Form.Label>Username</Form.Label>
