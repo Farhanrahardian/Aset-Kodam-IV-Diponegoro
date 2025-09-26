@@ -150,21 +150,10 @@ const LaporanYardipPage = () => {
     return grouped;
   };
 
-  // Helper function untuk memformat bidang dengan line breaks
+  // Helper function untuk memformat bidang tanpa line breaks
   const formatBidangForExcel = (bidang) => {
     if (!bidang) return "-";
-
-    // Handle "Tanah Gudang Kantor" - pisah menjadi 3 baris
-    if (bidang.toLowerCase().includes("tanah gudang kantor")) {
-      return "Tanah\nGudang\nKantor";
-    }
-
-    // Handle "Tanah Bangunan" - pisah menjadi 2 baris
-    if (bidang.toLowerCase().includes("tanah bangunan")) {
-      return "Tanah\nBangunan";
-    }
-
-    return bidang;
+    return bidang; // Langsung return bidang tanpa modifikasi
   };
 
   // Helper function untuk create sheet dengan format standar
@@ -177,10 +166,10 @@ const LaporanYardipPage = () => {
   ) => {
     const worksheet = workbook.addWorksheet(sheetName);
 
-    // Set column widths
+    // Set column widths - Diperbesar untuk bidang yang panjang
     worksheet.columns = [
       { width: 8 }, // A - NO
-      { width: 15 }, // B - BIDANG
+      { width: 25 }, // B - BIDANG (diperbesar dari 15 ke 25 untuk "Tanah Gudang Kantor")
       { width: 20 }, // C - LOKASI
       { width: 15 }, // D - LUAS (M2)
       { width: 25 }, // E - PERUNTUKAN
@@ -333,7 +322,7 @@ const LaporanYardipPage = () => {
               cell.alignment = {
                 horizontal: "center",
                 vertical: "middle",
-                wrapText: true,
+                wrapText: false, // Ubah dari true ke false agar tidak wrap text
               };
             } else {
               cell.alignment = {
