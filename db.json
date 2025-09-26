@@ -68,6 +68,33 @@
         "/uploads/asset_photos-1758837449973.png",
         "/uploads/asset_photos-1758837449973.png"
       ]
+    },
+    {
+      "nama": "23",
+      "korem_id": "2",
+      "kodim": "Kodim 0732/Sleman",
+      "luas": 23836485.822004966,
+      "kib_kode_barang": "23",
+      "nomor_registrasi": "23",
+      "alamat": "23",
+      "peruntukan": "gudang",
+      "status": "Aman",
+      "asal_milik": "Adera",
+      "pemilikan_sertifikat": "Ya",
+      "keterangan_bukti_pemilikan": "23",
+      "sertifikat_bidang": "2",
+      "sertifikat_luas": 23836485.82,
+      "belum_sertifikat_bidang": "",
+      "belum_sertifikat_luas": "",
+      "keterangan": "23",
+      "atas_nama_pemilik_sertifikat": "12",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.312591,-7.717093],[110.38817,-7.741601],[110.393667,-7.691902],[110.312591,-7.717093]]]}",
+      "id": "T1758880939284",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1758880939181.jpeg",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1758880939181.jpeg",
+      "foto_aset": [
+        "/uploads/asset_photos-1758880939197.mp4"
+      ]
     }
   ],
   "yardip_assets": [

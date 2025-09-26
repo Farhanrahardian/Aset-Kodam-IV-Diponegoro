@@ -7,6 +7,8 @@ import {
   useMap,
   LayersControl,
 } from "react-leaflet";
+import { GeoSearchControl, OpenStreetMapProvider } from "leaflet-geosearch";
+import "leaflet-geosearch/dist/geosearch.css";
 import { EditControl } from "react-leaflet-draw";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -44,6 +46,33 @@ const kabupatenStyle = {
   fillOpacity: 0.5,
 };
 const selectedStyle = { color: "#ffc107", weight: 4, fillOpacity: 0.3 };
+
+const MapSearch = () => {
+  const map = useMap();
+
+  useEffect(() => {
+    const provider = new OpenStreetMapProvider();
+
+    const searchControl = new GeoSearchControl({
+      provider: provider,
+      style: "bar",
+      showMarker: true,
+      showPopup: false,
+      autoClose: true,
+      retainZoomLevel: false,
+      animateZoom: false,
+      keepResult: true,
+    });
+
+    map.addControl(searchControl);
+
+    return () => {
+      map.removeControl(searchControl);
+    };
+  }, [map]);
+
+  return null;
+};
 
 // --- MAIN COMPONENT ---
 const PetaGambarYardip = ({
@@ -340,6 +369,7 @@ const PetaGambarYardip = ({
         zoom={8}
         style={{ height: "100%", width: "100%" }}
       >
+        <MapSearch />
         <ZoomController
           view={view}
           newlyDrawnGeometry={newlyDrawnGeometry}

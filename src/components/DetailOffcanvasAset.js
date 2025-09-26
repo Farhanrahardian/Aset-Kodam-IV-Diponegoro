@@ -621,6 +621,7 @@ const DetailOffcanvasAset = ({
         backdrop="static"
         keyboard={false}
         dialogClassName="preview-modal"
+        backdropClassName="modal-backdrop-blur"
         enforceFocus={false} // Important to allow video controls to work
       >
         <Modal.Header closeButton>
