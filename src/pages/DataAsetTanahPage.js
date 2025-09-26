@@ -79,127 +79,170 @@ const getStatusBadgeClass = (status) => {
   }
 };
 
+const TabelAset = ({
+  assets,
+  onEdit,
+  onDelete,
+  onViewDetail,
+  koremList,
+  allKodimList,
+  userRole,
+}) => {
+  // Fungsi getKodimName dan renderLuas tetap sama
+  const getKodimName = (asset) => {
+    const assetKodimIdentifier = String(
+      asset.kodim || asset.kodim_id || ""
+    ).trim();
+    if (!assetKodimIdentifier) return "-";
 
-const TabelAset = ({ assets, onEdit, onDelete, onViewDetail, koremList, allKodimList, userRole }) => {
-    // Fungsi getKodimName dan renderLuas tetap sama
-    const getKodimName = (asset) => {
-      const assetKodimIdentifier = String(asset.kodim || asset.kodim_id || "").trim();
-      if (!assetKodimIdentifier) return "-";
+    const normalizedAssetKodim = normalizeKodimName(assetKodimIdentifier);
 
-      const normalizedAssetKodim = normalizeKodimName(assetKodimIdentifier);
-
-      if (normalizedAssetKodim === "Kodim 0733/Kota Semarang" || assetKodimIdentifier === "Kodim 0733/Semarang (BS)") {
-        return "Kodim 0733/Kota Semarang";
-      }
-
-      const kodim = allKodimList.find(
-        (k) => k.id === assetKodimIdentifier || k.nama === assetKodimIdentifier || normalizeKodimName(k.nama) === normalizedAssetKodim
-      );
-      return kodim ? kodim.nama : asset.kodim_nama || assetKodimIdentifier || "-";
-    };
-
-    const renderLuas = (asset) => {
-      const totalLuas = parseFloat(asset.luas) || 0;
-      return totalLuas > 0 ? totalLuas.toLocaleString("id-ID") + " m²" : "-";
-    };
-
-    if (!assets || assets.length === 0) {
-        return (
-            <div className="text-center py-5">
-                <p className="text-muted">Tidak ada data aset yang ditemukan.</p>
-            </div>
-        );
+    if (
+      normalizedAssetKodim === "Kodim 0733/Kota Semarang" ||
+      assetKodimIdentifier === "Kodim 0733/Semarang (BS)"
+    ) {
+      return "Kodim 0733/Kota Semarang";
     }
-    
-    return (
-        <div style={{ maxHeight: "50vh", overflow: "auto" }}>
-            <table className="table table-striped table-bordered table-hover mb-0" style={{ minWidth: "1200px", width: "100%" }}>
-                <thead className="table-dark" style={{ position: "sticky", top: 0, zIndex: 1 }}>
-                    <tr>
-                        <th style={{ minWidth: "120px" }}>NUP</th>
-                        <th style={{ minWidth: "140px" }}>Wilayah Korem</th>
-                        <th style={{ minWidth: "140px" }}>Wilayah Kodim</th>
-                        <th style={{ minWidth: "200px" }}>Alamat</th>
-                        <th style={{ minWidth: "120px" }}>Peruntukan</th>
-                        <th style={{ minWidth: "100px" }}>Status</th>
-                        <th style={{ minWidth: "120px" }}>Luas</th>
-                        <th style={{ minWidth: "100px" }}>Sertifikat</th>
-                        <th style={{ minWidth: "100px" }}>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {assets.map((asset) => {
-                        const korem = koremList.find((k) => k.id == asset.korem_id);
-                        const kodimName = getKodimName(asset);
 
-                        return (
-                            <tr key={asset.id}>
-                                <td style={{ minWidth: "120px" }}>{asset.nama || "-"}</td>
-                                <td style={{ minWidth: "140px" }}>{korem?.nama || "-"}</td>
-                                <td style={{ minWidth: "140px" }}>{kodimName}</td>
-                                <td style={{ minWidth: "200px" }}>
-                                    <div style={{ whiteSpace: "normal" }}>
-                                        {asset.alamat ? (asset.alamat.length > 40 ? `${asset.alamat.substring(0, 40)}...` : asset.alamat) : "-"}
-                                    </div>
-                                </td>
-                                <td style={{ minWidth: "120px" }}>{asset.peruntukan || asset.fungsi || "-"}</td>
-                                <td style={{ minWidth: "100px" }}>
-                                    <span className={`badge ${getStatusBadgeClass(asset.status)}`}>
-                                        {asset.status || "-"}
-                                    </span>
-                                </td>
-                                <td style={{ minWidth: "120px" }}>{renderLuas(asset)}</td>
-                                <td style={{ minWidth: "100px" }}>
-                                    {asset.pemilikan_sertifikat === "Ya" ? (
-                                        <span className="badge bg-success">Ya</span>
-                                    ) : (
-                                        <span className="badge bg-danger">Tidak</span>
-                                    )}
-                                </td>
-                                  <td style={{ minWidth: "100px" }}>
-                                      <div className="d-flex gap-1 flex-wrap">
-                                          <Button
-                                              variant="info"
-                                              size="sm"
-                                              onClick={() => onViewDetail(asset)}
-                                              title="Lihat Detail"
-                                          >
-                                              Detail
-                                          </Button>
-                                          {userRole === 'admin' && onEdit && (
-                                              <Button
-                                                  variant="warning"
-                                                  size="sm"
-                                                  onClick={() => onEdit(asset)}
-                                                  title="Edit Aset"
-                                              >
-                                                  Edit
-                                              </Button>
-                                          )}
-                                          {userRole === 'admin' && onDelete && (
-                                              <Button
-                                                  variant="danger"
-                                                  size="sm"
-                                                  onClick={() => onDelete(asset.id)}
-                                                  title="Hapus Aset"
-                                              >
-                                                  Hapus
-                                              </Button>
-                                          )}
-                                      </div>
-                                  </td>
-                            </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
-        </div>
+    const kodim = allKodimList.find(
+      (k) =>
+        k.id === assetKodimIdentifier ||
+        k.nama === assetKodimIdentifier ||
+        normalizeKodimName(k.nama) === normalizedAssetKodim
     );
+    return kodim ? kodim.nama : asset.kodim_nama || assetKodimIdentifier || "-";
+  };
+
+  const renderLuas = (asset) => {
+    const totalLuas = parseFloat(asset.luas) || 0;
+    return totalLuas > 0 ? totalLuas.toLocaleString("id-ID") + " m²" : "-";
+  };
+
+  if (!assets || assets.length === 0) {
+    return (
+      <div className="text-center py-5">
+        <p className="text-muted">Tidak ada data aset yang ditemukan.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ maxHeight: "50vh", overflow: "auto" }}>
+      <table
+        className="table table-striped table-bordered table-hover mb-0"
+        style={{ minWidth: "1200px", width: "100%" }}
+      >
+        <thead
+          className="table-dark"
+          style={{ position: "sticky", top: 0, zIndex: 1 }}
+        >
+          <tr>
+            <th style={{ minWidth: "120px" }}>NUP</th>
+            <th style={{ minWidth: "140px" }}>Wilayah Korem</th>
+            <th style={{ minWidth: "140px" }}>Wilayah Kodim</th>
+            <th style={{ minWidth: "200px" }}>Alamat</th>
+            <th style={{ minWidth: "120px" }}>Peruntukan</th>
+            <th style={{ minWidth: "100px" }}>Status</th>
+            <th style={{ minWidth: "120px" }}>Luas</th>
+            <th style={{ minWidth: "100px" }}>Sertifikat</th>
+            <th style={{ minWidth: "100px" }}>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {assets.map((asset) => {
+            const korem = koremList.find((k) => k.id == asset.korem_id);
+            const kodimName = getKodimName(asset);
+
+            return (
+              <tr key={asset.id}>
+                <td style={{ minWidth: "120px" }}>{asset.nama || "-"}</td>
+                <td style={{ minWidth: "140px" }}>{korem?.nama || "-"}</td>
+                <td style={{ minWidth: "140px" }}>{kodimName}</td>
+                <td style={{ minWidth: "200px" }}>
+                  <div style={{ whiteSpace: "normal" }}>
+                    {asset.alamat
+                      ? asset.alamat.length > 40
+                        ? `${asset.alamat.substring(0, 40)}...`
+                        : asset.alamat
+                      : "-"}
+                  </div>
+                </td>
+                <td style={{ minWidth: "120px" }}>
+                  {asset.peruntukan || asset.fungsi || "-"}
+                </td>
+                <td style={{ minWidth: "100px" }}>
+                  <span
+                    className={`badge ${getStatusBadgeClass(asset.status)}`}
+                  >
+                    {asset.status || "-"}
+                  </span>
+                </td>
+                <td style={{ minWidth: "120px" }}>{renderLuas(asset)}</td>
+                <td style={{ minWidth: "100px" }}>
+                  {asset.pemilikan_sertifikat === "Ya" ? (
+                    <span className="badge bg-success">Ya</span>
+                  ) : (
+                    <span className="badge bg-danger">Tidak</span>
+                  )}
+                </td>
+                <td style={{ minWidth: "100px" }}>
+                  <div className="d-flex gap-1 flex-wrap">
+                    <Button
+                      variant="info"
+                      size="sm"
+                      onClick={() => onViewDetail(asset)}
+                      title="Lihat Detail"
+                    >
+                      Detail
+                    </Button>
+                    {userRole === "admin" && onEdit && (
+                      <Button
+                        variant="warning"
+                        size="sm"
+                        onClick={() => onEdit(asset)}
+                        title="Edit Aset"
+                      >
+                        Edit
+                      </Button>
+                    )}
+                    {userRole === "admin" && onDelete && (
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => onDelete(asset.id)}
+                        title="Hapus Aset"
+                      >
+                        Hapus
+                      </Button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
 };
 
-const FilterPanelTop = ({ koremList, kodimList, allKodimList, selectedKorem, selectedKodim, statusFilter, onSelectKorem, onSelectKodim, onSelectStatus, onShowAll, totalAssets, filteredAssetsCount, assetsOnMapCount }) => {
-    // FilterPanelTop implementation remains the same
-    const statusOptions = [
+const FilterPanelTop = ({
+  koremList,
+  kodimList,
+  allKodimList,
+  selectedKorem,
+  selectedKodim,
+  statusFilter,
+  onSelectKorem,
+  onSelectKodim,
+  onSelectStatus,
+  onShowAll,
+  totalAssets,
+  filteredAssetsCount,
+  assetsOnMapCount,
+}) => {
+  // FilterPanelTop implementation remains the same
+  const statusOptions = [
     { value: "", label: "Semua Status" },
     { value: "Aman", label: "Aman" },
     { value: "Sengketa", label: "Sengketa" },
@@ -229,7 +272,9 @@ const FilterPanelTop = ({ koremList, kodimList, allKodimList, selectedKorem, sel
                 <option value="">Semua Korem</option>
                 {koremList.map((korem) => (
                   <option key={korem.id} value={korem.id}>
-                    {korem.nama === "Berdiri Sendiri" ? "Kodim 0733/Kota Semarang" : korem.nama}
+                    {korem.nama === "Berdiri Sendiri"
+                      ? "Kodim 0733/Kota Semarang"
+                      : korem.nama}
                   </option>
                 ))}
               </select>
@@ -294,10 +339,15 @@ const FilterPanelTop = ({ koremList, kodimList, allKodimList, selectedKorem, sel
         <Row>
           <Col>
             <div className="bg-light p-2 rounded">
-               <small className="text-muted">
-                <strong>Hasil:</strong> Menampilkan <strong>{assetsOnMapCount}</strong> aset di peta dari <strong>{filteredAssetsCount}</strong> yang cocok dengan filter.
+              <small className="text-muted">
+                <strong>Hasil:</strong> Menampilkan{" "}
+                <strong>{assetsOnMapCount}</strong> aset di peta dari{" "}
+                <strong>{filteredAssetsCount}</strong> yang cocok dengan filter.
                 {filteredAssetsCount > assetsOnMapCount && (
-                  <em className="ms-2">({filteredAssetsCount - assetsOnMapCount} aset tidak memiliki lokasi valid)</em>
+                  <em className="ms-2">
+                    ({filteredAssetsCount - assetsOnMapCount} aset tidak
+                    memiliki lokasi valid)
+                  </em>
                 )}
               </small>
             </div>
@@ -308,33 +358,43 @@ const FilterPanelTop = ({ koremList, kodimList, allKodimList, selectedKorem, sel
   );
 };
 
-const DetailModalAset = ({ asset, show, onHide, koremList, allKodimList, koremGeoJSON, kodimGeoJSON }) => {
-    // State untuk popup preview - HARUS DIDEKLARASIKAN DI AWAL SEBELUM LOGIKA APA PUN
+const DetailModalAset = ({
+  asset,
+  show,
+  onHide,
+  koremList,
+  allKodimList,
+  koremGeoJSON,
+  kodimGeoJSON,
+}) => {
+  // State untuk popup preview - HARUS DIDEKLARASIKAN DI AWAL SEBELUM LOGIKA APA PUN
   const [showImagePreview, setShowImagePreview] = useState(false);
-  const [previewImageUrl, setPreviewImageUrl] = useState('');
-  const [previewImageTitle, setPreviewImageTitle] = useState('');
+  const [previewImageUrl, setPreviewImageUrl] = useState("");
+  const [previewImageTitle, setPreviewImageTitle] = useState("");
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [previewAssetPhotos, setPreviewAssetPhotos] = useState([]);
 
-    // Re-use the location parsing logic from the main map to ensure consistency.
-    if (!asset) return null;
+  // Re-use the location parsing logic from the main map to ensure consistency.
+  if (!asset) return null;
 
   const locationData = parseLocation(asset.lokasi);
   const hasValidLocation = locationData && getCentroid(locationData) !== null;
 
-  const assetForMap = hasValidLocation ? {
-      id: asset.id || `temp-${Date.now()}`,
-      nama: asset.nama || "Unknown",
-      kodim: asset.kodim || "",
-      lokasi: asset.lokasi, // Pass original data, PetaAset will parse it
-      luas: Number(asset.luas) || 0,
-      status: asset.status || "",
-      alamat: asset.alamat || "",
-      peruntukan: asset.peruntukan || asset.fungsi || "",
-      keterangan: asset.keterangan || "",
-      pemilikan_sertifikat: asset.pemilikan_sertifikat || "Tidak", // Add this line
-      type: "aset",
-  } : null;
+  const assetForMap = hasValidLocation
+    ? {
+        id: asset.id || `temp-${Date.now()}`,
+        nama: asset.nama || "Unknown",
+        kodim: asset.kodim || "",
+        lokasi: asset.lokasi, // Pass original data, PetaAset will parse it
+        luas: Number(asset.luas) || 0,
+        status: asset.status || "",
+        alamat: asset.alamat || "",
+        peruntukan: asset.peruntukan || asset.fungsi || "",
+        keterangan: asset.keterangan || "",
+        pemilikan_sertifikat: asset.pemilikan_sertifikat || "Tidak", // Add this line
+        type: "aset",
+      }
+    : null;
 
   const korem = koremList.find((k) => k.id == asset.korem_id);
   const kodim = allKodimList.find(
@@ -361,9 +421,12 @@ const DetailModalAset = ({ asset, show, onHide, koremList, allKodimList, koremGe
   const handleNextPhoto = () => {
     if (previewAssetPhotos && previewAssetPhotos.length > 0) {
       setCurrentPhotoIndex((prevIndex) => {
-        const newIndex = prevIndex === previewAssetPhotos.length - 1 ? 0 : prevIndex + 1;
+        const newIndex =
+          prevIndex === previewAssetPhotos.length - 1 ? 0 : prevIndex + 1;
         const newPhotoUrl = previewAssetPhotos[newIndex];
-        const fullUrl = newPhotoUrl.startsWith('http') ? newPhotoUrl : `${API_URL}${newPhotoUrl}`;
+        const fullUrl = newPhotoUrl.startsWith("http")
+          ? newPhotoUrl
+          : `${API_URL}${newPhotoUrl}`;
         setPreviewImageUrl(fullUrl);
         return newIndex;
       });
@@ -373,9 +436,12 @@ const DetailModalAset = ({ asset, show, onHide, koremList, allKodimList, koremGe
   const handlePrevPhoto = () => {
     if (previewAssetPhotos && previewAssetPhotos.length > 0) {
       setCurrentPhotoIndex((prevIndex) => {
-        const newIndex = prevIndex === 0 ? previewAssetPhotos.length - 1 : prevIndex - 1;
+        const newIndex =
+          prevIndex === 0 ? previewAssetPhotos.length - 1 : prevIndex - 1;
         const newPhotoUrl = previewAssetPhotos[newIndex];
-        const fullUrl = newPhotoUrl.startsWith('http') ? newPhotoUrl : `${API_URL}${newPhotoUrl}`;
+        const fullUrl = newPhotoUrl.startsWith("http")
+          ? newPhotoUrl
+          : `${API_URL}${newPhotoUrl}`;
         setPreviewImageUrl(fullUrl);
         return newIndex;
       });
@@ -392,456 +458,523 @@ const DetailModalAset = ({ asset, show, onHide, koremList, allKodimList, koremGe
 
   return (
     <>
-    <Modal show={show} onHide={onHide} size="xl" centered>
-      <Modal.Header closeButton>
-        <Modal.Title>Detail Aset Tanah - {asset.nama || "Unknown"}</Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        <Row>
-          <Col md={6}>
-            <div className="card h-100">
-              <div className="card-header bg-primary text-white">
-                <h5 className="mb-0">Informasi Aset Tanah</h5>
-              </div>
-              <div className="card-body">
-                <table className="table table-borderless">
-                  <tbody>
-                    <tr>
-                      <td>
-                        <strong>NUP:</strong>
-                      </td>
-                      <td>{asset.nama || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Wilayah Korem:</strong>
-                      </td>
-                      <td>{korem?.nama || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Wilayah Kodim:</strong>
-                      </td>
-                      <td>{kodim?.nama || asset.kodim || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Alamat:</strong>
-                      </td>
-                      <td>{asset.alamat || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Peruntukan:</strong>
-                      </td>
-                      <td>{asset.peruntukan || asset.fungsi || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Status:</strong>
-                      </td>
-                      <td>
-                        <span
-                          className={`badge ${getStatusBadgeClass(
-                            asset.status
-                          )}`}
-                        >
-                          {asset.status || "-"}
-                        </span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>KIB/Kode Barang:</strong>
-                      </td>
-                      <td>
-                        {asset.kib_kode_barang || asset.kode_barang || "-"}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Nomor Registrasi:</strong>
-                      </td>
-                      <td>
-                        {asset.nomor_registrasi || asset.no_registrasi || "-"}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Asal Milik:</strong>
-                      </td>
-                      <td>{asset.asal_milik || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Keterangan:</strong>
-                      </td>
-                      <td style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{asset.keterangan || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Luas:</strong>
-                      </td>
-                      <td>
-                        <span>
-                          {(asset.luas ? parseFloat(asset.luas).toLocaleString("id-ID") : '0')} m²
-                        </span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Sertifikat:</strong>
-                      </td>
-                      <td>
-                        {asset.pemilikan_sertifikat === "Ya" ? (
-                          <span className="badge bg-success">Ya</span>
-                        ) : (
-                          <span className="badge bg-warning text-dark">Tidak</span>
-                        )}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Bukti Pemilikan:</strong>
-                      </td>
-                      <td>
-                        {imageUrl ? (
-                          <div className="d-flex align-items-center gap-2">
-                            {hasValidImage && (
-                              <div
-                                style={{
-                                  width: "60px",
-                                  height: "60px",
-                                  border: "1px solid #ddd",
-                                  borderRadius: "4px",
-                                  overflow: "hidden",
-                                  cursor: "pointer",
-                                }}
-                                onClick={() => handleShowImagePreview(imageUrl, "Preview Bukti Pemilikan")}
-                                title="Klik untuk preview gambar"
-                              >
-                                <img
-                                  src={imageUrl}
-                                  alt="Preview"
-                                  style={{
-                                    width: "100%",
-                                    height: "100%",
-                                    objectFit: "cover",
-                                  }}
-                                />
-                              </div>
-                            )}
-                            {hasPdf && (
-                              <Button
-                                variant="outline-danger"
-                                size="sm"
-                                onClick={() => window.open(imageUrl, "_blank")}
-                                title="Lihat PDF"
-                              >
-                                Lihat PDF
-                              </Button>
-                            )}
-                            <div>
-                              <div>{filename}</div>
-                              <small className="text-muted">
-                                <Button
-                                  variant="link"
-                                  size="sm"
-                                  onClick={() => handleShowImagePreview(imageUrl, "Preview Bukti Pemilikan")}
-                                  className="p-0"
-                                >
-                                  Lihat Preview
-                                </Button>
-                              </small>
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-muted">Tidak ada file</span>
-                        )}
-                      </td>
-                    </tr>
-                    {asset.foto_aset && asset.foto_aset.length > 0 && (
-                      <tr>
-                        <td>
-                          <strong>Foto Aset:</strong>
-                        </td>
-                        <td>
-                          <div className="d-flex flex-wrap gap-2">
-                            {asset.foto_aset.map((fotoUrl, index) => {
-                              const fullUrl = fotoUrl.startsWith('http') ? fotoUrl : `${API_URL}${fotoUrl}`;
-                              const isVideo = isVideoFile(fullUrl);
-                              return (
-                                <div key={index} style={{ width: '100px', height: '100px', border: '1px solid #ddd', borderRadius: '4px', overflow: 'hidden' }}>
-                                  {isVideo ? (
-                                    <video
-                                      src={fullUrl}
-                                      controls={false}
-                                      style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
-                                      onClick={() => handleShowPhotoPreview(fullUrl, `Foto Aset ${index + 1}`, index, asset.foto_aset || [])}
-                                      title="Klik untuk lihat video"
-                                    />
-                                  ) : (
-                                    <Image
-                                      src={fullUrl}
-                                      alt={`Foto Aset ${index + 1}`}
-                                      style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
-                                      onClick={() => handleShowPhotoPreview(fullUrl, `Foto Aset ${index + 1}`, index, asset.foto_aset || [])}
-                                      fluid
-                                    />
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                    {asset.keterangan_bukti_pemilikan && (
-                      <tr>
-                        <td>
-                          <strong>Keterangan Bukti Pemilikan:</strong>
-                        </td>
-                        <td>{asset.keterangan_bukti_pemilikan}</td>
-                      </tr>
-                    )}
-                    {asset.atas_nama_pemilik_sertifikat && (
-                      <tr>
-                        <td>
-                          <strong>Atas Nama Pemilik Sertifikat:</strong>
-                        </td>
-                        <td>{asset.atas_nama_pemilik_sertifikat}</td>
-                      </tr>
-                    )}
-                    <tr>
-                      <td>
-                        <strong>Koordinat:</strong>
-                      </td>
-                      <td>
-                        {hasValidLocation && locationData ? (
-                          <div>
-                            <small className="text-muted">
-                              Polygon dengan{" "}
-                              {locationData.coordinates[0]?.length || 0}{" "}
-                              titik
-                            </small>
-                            <details className="mt-1">
-                              <summary
-                                style={{
-                                  cursor: "pointer",
-                                  fontSize: "0.85em",
-                                }}
-                              >
-                                Lihat koordinat
-                              </summary>
-                              <div
-                                style={{
-                                  maxHeight: "100px",
-                                  overflowY: "auto",
-                                  fontSize: "0.8em",
-                                }}
-                              >
-                                {locationData.coordinates[0] ? (
-                                  locationData.coordinates[0].map((coord, idx) => (
-                                    <div key={idx}>
-                                      {idx + 1}: [
-                                      {coord[0]?.toFixed(6) || "N/A"},{" "}
-                                      {coord[1]?.toFixed(6) || "N/A"}]
-                                    </div>
-                                  ))
-                                ) : (
-                                  <span className="text-muted">
-                                    Format koordinat tidak valid
-                                  </span>
-                                )}
-                              </div>
-                            </details>
-                          </div>
-                        ) : (
-                          <span className="text-muted">Tidak tersedia</span>
-                        )}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </Col>
-
-          <Col md={6}>
-            <div className="card h-100">
-              <div className="card-header bg-info text-white">
-                <h5 className="mb-0">Lokasi di Peta</h5>
-              </div>
-              <div className="card-body p-0">
-                <div style={{ height: "500px", width: "100%" }}>
-                  {hasValidLocation && assetForMap ? (
-                    <PetaAset
-                      assets={assetForMap ? [assetForMap] : []}
-                      koremData={koremGeoJSON}
-                      kodimData={kodimGeoJSON}
-                      mode="detail"
-                    />
-                  ) : (
-                    <div className="d-flex align-items-center justify-content-center h-100 text-muted">
-                      <div className="text-center">
-                        <i className="fas fa-map-marker-alt fa-3x mb-3"></i>
-                        <p>Lokasi tidak tersedia</p>
-                        {asset.lokasi && (
-                          <div className="mt-2">
-                            <small className="text-danger">
-                              Data lokasi tidak valid atau rusak
-                            </small>
-                            <br />
-                            <small className="text-muted">
-                              Format: {typeof asset.lokasi}
-                            </small>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {hasValidLocation && assetForMap && (
-                <div className="card-footer bg-light">
-                  <small className="text-muted">
-                    <i className="fas fa-info-circle me-1"></i>
-                    Peta menampilkan area yang telah digambar untuk aset ini
-                  </small>
-                </div>
-              )}
-            </div>
-          </Col>
-        </Row>
-
-        {hasValidLocation && assetForMap && (
-          <Row className="mt-3">
-            <Col md={12}>
-              <div className="card">
-                <div className="card-header bg-warning text-dark">
-                  <h6 className="mb-0">Informasi Geografis</h6>
+      <Modal show={show} onHide={onHide} size="xl" centered>
+        <Modal.Header closeButton>
+          <Modal.Title>
+            Detail Aset Tanah - {asset.nama || "Unknown"}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Row>
+            <Col md={6}>
+              <div className="card h-100">
+                <div className="card-header bg-primary text-white">
+                  <h5 className="mb-0">Informasi Aset Tanah</h5>
                 </div>
                 <div className="card-body">
-                  <Row>
-                    <Col md={4}>
-                      <strong>Tipe Geometri:</strong>
-                      <br />
-                      <span className="text-muted">Polygon</span>
-                    </Col>
-                    <Col md={4}>
-                      <strong>Jumlah Koordinat:</strong>
-                      <br />
-                      <span className="text-muted">
-                        {locationData.coordinates[0] ? locationData.coordinates[0].length : 0}{" "}
-                        titik
-                      </span>
-                    </Col>
-                    <Col md={4}>
-                      <strong>Status Sertifikat:</strong>
-                      <br />
-                      <span
-                        className={`text-muted ${
-                          asset.pemilikan_sertifikat === "Ya"
-                            ? "text-success"
-                            : "text-warning"
-                        }`}
-                      >
-                        {asset.pemilikan_sertifikat === "Ya"
-                          ? "Bersertifikat"
-                          : "Tidak Bersertifikat"}
-                      </span>
-                    </Col>
-                  </Row>
+                  <table className="table table-borderless">
+                    <tbody>
+                      <tr>
+                        <td>
+                          <strong>NUP:</strong>
+                        </td>
+                        <td>{asset.nama || "-"}</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Wilayah Korem:</strong>
+                        </td>
+                        <td>{korem?.nama || "-"}</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Wilayah Kodim:</strong>
+                        </td>
+                        <td>{kodim?.nama || asset.kodim || "-"}</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Alamat:</strong>
+                        </td>
+                        <td>{asset.alamat || "-"}</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Peruntukan:</strong>
+                        </td>
+                        <td>{asset.peruntukan || asset.fungsi || "-"}</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Status:</strong>
+                        </td>
+                        <td>
+                          <span
+                            className={`badge ${getStatusBadgeClass(
+                              asset.status
+                            )}`}
+                          >
+                            {asset.status || "-"}
+                          </span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>KIB/Kode Barang:</strong>
+                        </td>
+                        <td>
+                          {asset.kib_kode_barang || asset.kode_barang || "-"}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Nomor Registrasi:</strong>
+                        </td>
+                        <td>
+                          {asset.nomor_registrasi || asset.no_registrasi || "-"}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Asal Milik:</strong>
+                        </td>
+                        <td>{asset.asal_milik || "-"}</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Keterangan:</strong>
+                        </td>
+                        <td
+                          style={{
+                            whiteSpace: "pre-wrap",
+                            wordBreak: "break-word",
+                          }}
+                        >
+                          {asset.keterangan || "-"}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Luas:</strong>
+                        </td>
+                        <td>
+                          <span>
+                            {asset.luas
+                              ? parseFloat(asset.luas).toLocaleString("id-ID")
+                              : "0"}{" "}
+                            m²
+                          </span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Sertifikat:</strong>
+                        </td>
+                        <td>
+                          {asset.pemilikan_sertifikat === "Ya" ? (
+                            <span className="badge bg-success">Ya</span>
+                          ) : (
+                            <span className="badge bg-warning text-dark">
+                              Tidak
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Bukti Pemilikan:</strong>
+                        </td>
+                        <td>
+                          {imageUrl ? (
+                            <div className="d-flex align-items-center gap-2">
+                              {hasValidImage && (
+                                <div
+                                  style={{
+                                    width: "60px",
+                                    height: "60px",
+                                    border: "1px solid #ddd",
+                                    borderRadius: "4px",
+                                    overflow: "hidden",
+                                    cursor: "pointer",
+                                  }}
+                                  onClick={() =>
+                                    handleShowImagePreview(
+                                      imageUrl,
+                                      "Preview Bukti Pemilikan"
+                                    )
+                                  }
+                                  title="Klik untuk preview gambar"
+                                >
+                                  <img
+                                    src={imageUrl}
+                                    alt="Preview"
+                                    style={{
+                                      width: "100%",
+                                      height: "100%",
+                                      objectFit: "cover",
+                                    }}
+                                  />
+                                </div>
+                              )}
+                              {hasPdf && (
+                                <Button
+                                  variant="outline-danger"
+                                  size="sm"
+                                  onClick={() =>
+                                    window.open(imageUrl, "_blank")
+                                  }
+                                  title="Lihat PDF"
+                                >
+                                  Lihat PDF
+                                </Button>
+                              )}
+                              <div>
+                                <div>{filename}</div>
+                                <small className="text-muted">
+                                  <Button
+                                    variant="link"
+                                    size="sm"
+                                    onClick={() =>
+                                      handleShowImagePreview(
+                                        imageUrl,
+                                        "Preview Bukti Pemilikan"
+                                      )
+                                    }
+                                    className="p-0"
+                                  >
+                                    Lihat Preview
+                                  </Button>
+                                </small>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-muted">Tidak ada file</span>
+                          )}
+                        </td>
+                      </tr>
+                      {asset.foto_aset && asset.foto_aset.length > 0 && (
+                        <tr>
+                          <td>
+                            <strong>Foto Aset:</strong>
+                          </td>
+                          <td>
+                            <div className="d-flex flex-wrap gap-2">
+                              {asset.foto_aset.map((fotoUrl, index) => {
+                                const fullUrl = fotoUrl.startsWith("http")
+                                  ? fotoUrl
+                                  : `${API_URL}${fotoUrl}`;
+                                const isVideo = isVideoFile(fullUrl);
+                                return (
+                                  <div
+                                    key={index}
+                                    style={{
+                                      width: "100px",
+                                      height: "100px",
+                                      border: "1px solid #ddd",
+                                      borderRadius: "4px",
+                                      overflow: "hidden",
+                                    }}
+                                  >
+                                    {isVideo ? (
+                                      <video
+                                        src={fullUrl}
+                                        controls={false}
+                                        style={{
+                                          width: "100%",
+                                          height: "100%",
+                                          objectFit: "cover",
+                                          cursor: "pointer",
+                                        }}
+                                        onClick={() =>
+                                          handleShowPhotoPreview(
+                                            fullUrl,
+                                            `Foto Aset ${index + 1}`,
+                                            index,
+                                            asset.foto_aset || []
+                                          )
+                                        }
+                                        title="Klik untuk lihat video"
+                                      />
+                                    ) : (
+                                      <Image
+                                        src={fullUrl}
+                                        alt={`Foto Aset ${index + 1}`}
+                                        style={{
+                                          width: "100%",
+                                          height: "100%",
+                                          objectFit: "cover",
+                                          cursor: "pointer",
+                                        }}
+                                        onClick={() =>
+                                          handleShowPhotoPreview(
+                                            fullUrl,
+                                            `Foto Aset ${index + 1}`,
+                                            index,
+                                            asset.foto_aset || []
+                                          )
+                                        }
+                                        fluid
+                                      />
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                      {asset.keterangan_bukti_pemilikan && (
+                        <tr>
+                          <td>
+                            <strong>Keterangan Bukti Pemilikan:</strong>
+                          </td>
+                          <td>{asset.keterangan_bukti_pemilikan}</td>
+                        </tr>
+                      )}
+                      {asset.atas_nama_pemilik_sertifikat && (
+                        <tr>
+                          <td>
+                            <strong>Atas Nama Pemilik Sertifikat:</strong>
+                          </td>
+                          <td>{asset.atas_nama_pemilik_sertifikat}</td>
+                        </tr>
+                      )}
+                      <tr>
+                        <td>
+                          <strong>Koordinat:</strong>
+                        </td>
+                        <td>
+                          {hasValidLocation && locationData ? (
+                            <div>
+                              <small className="text-muted">
+                                Polygon dengan{" "}
+                                {locationData.coordinates[0]?.length || 0} titik
+                              </small>
+                              <details className="mt-1">
+                                <summary
+                                  style={{
+                                    cursor: "pointer",
+                                    fontSize: "0.85em",
+                                  }}
+                                >
+                                  Lihat koordinat
+                                </summary>
+                                <div
+                                  style={{
+                                    maxHeight: "100px",
+                                    overflowY: "auto",
+                                    fontSize: "0.8em",
+                                  }}
+                                >
+                                  {locationData.coordinates[0] ? (
+                                    locationData.coordinates[0].map(
+                                      (coord, idx) => (
+                                        <div key={idx}>
+                                          {idx + 1}: [
+                                          {coord[0]?.toFixed(6) || "N/A"},{" "}
+                                          {coord[1]?.toFixed(6) || "N/A"}]
+                                        </div>
+                                      )
+                                    )
+                                  ) : (
+                                    <span className="text-muted">
+                                      Format koordinat tidak valid
+                                    </span>
+                                  )}
+                                </div>
+                              </details>
+                            </div>
+                          ) : (
+                            <span className="text-muted">Tidak tersedia</span>
+                          )}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </Col>
+
+            <Col md={6}>
+              <div className="card h-100">
+                <div className="card-header bg-info text-white">
+                  <h5 className="mb-0">Lokasi di Peta</h5>
+                </div>
+                <div className="card-body p-0">
+                  <div style={{ height: "500px", width: "100%" }}>
+                    {hasValidLocation && assetForMap ? (
+                      <PetaAset
+                        assets={assetForMap ? [assetForMap] : []}
+                        koremData={koremGeoJSON}
+                        kodimData={kodimGeoJSON}
+                        mode="detail"
+                      />
+                    ) : (
+                      <div className="d-flex align-items-center justify-content-center h-100 text-muted">
+                        <div className="text-center">
+                          <i className="fas fa-map-marker-alt fa-3x mb-3"></i>
+                          <p>Lokasi tidak tersedia</p>
+                          {asset.lokasi && (
+                            <div className="mt-2">
+                              <small className="text-danger">
+                                Data lokasi tidak valid atau rusak
+                              </small>
+                              <br />
+                              <small className="text-muted">
+                                Format: {typeof asset.lokasi}
+                              </small>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {hasValidLocation && assetForMap && (
+                  <div className="card-footer bg-light">
+                    <small className="text-muted">
+                      <i className="fas fa-info-circle me-1"></i>
+                      Peta menampilkan area yang telah digambar untuk aset ini
+                    </small>
+                  </div>
+                )}
+              </div>
+            </Col>
           </Row>
-        )}
-      </Modal.Body>
-      <Modal.Footer>
-        <Button variant="secondary" onClick={onHide}>
-          Tutup
-        </Button>
-      </Modal.Footer>
-    </Modal>
-    
-    {/* Modal untuk preview gambar */}
-    <Modal 
-      show={showImagePreview} 
-      onHide={() => setShowImagePreview(false)} 
-      size="lg"
-      centered
-      dialogClassName="modal-90w"
-    >
-      <Modal.Header closeButton>
-        <Modal.Title>{previewImageTitle}</Modal.Title>
-      </Modal.Header>
-      <Modal.Body className="text-center">
-        {isImageFile(previewImageUrl) ? (
-          <img 
-            src={previewImageUrl} 
-            alt="Preview" 
-            className="img-fluid" 
-            style={{ maxHeight: '70vh', objectFit: 'contain' }} 
-          />
-        ) : isVideoFile(previewImageUrl) ? (
-          <video 
-            src={previewImageUrl} 
-            controls
-            className="img-fluid" 
-            style={{ maxHeight: '70vh', objectFit: 'contain' }} 
-            onClick={(e) => e.stopPropagation()}
+
+          {hasValidLocation && assetForMap && (
+            <Row className="mt-3">
+              <Col md={12}>
+                <div className="card">
+                  <div className="card-header bg-warning text-dark">
+                    <h6 className="mb-0">Informasi Geografis</h6>
+                  </div>
+                  <div className="card-body">
+                    <Row>
+                      <Col md={4}>
+                        <strong>Tipe Geometri:</strong>
+                        <br />
+                        <span className="text-muted">Polygon</span>
+                      </Col>
+                      <Col md={4}>
+                        <strong>Jumlah Koordinat:</strong>
+                        <br />
+                        <span className="text-muted">
+                          {locationData.coordinates[0]
+                            ? locationData.coordinates[0].length
+                            : 0}{" "}
+                          titik
+                        </span>
+                      </Col>
+                      <Col md={4}>
+                        <strong>Status Sertifikat:</strong>
+                        <br />
+                        <span
+                          className={`text-muted ${
+                            asset.pemilikan_sertifikat === "Ya"
+                              ? "text-success"
+                              : "text-warning"
+                          }`}
+                        >
+                          {asset.pemilikan_sertifikat === "Ya"
+                            ? "Bersertifikat"
+                            : "Tidak Bersertifikat"}
+                        </span>
+                      </Col>
+                    </Row>
+                  </div>
+                </div>
+              </Col>
+            </Row>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={onHide}>
+            Tutup
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Modal untuk preview gambar */}
+      <Modal
+        show={showImagePreview}
+        onHide={() => setShowImagePreview(false)}
+        size="lg"
+        centered
+        dialogClassName="modal-90w"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>{previewImageTitle}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="text-center">
+          {isImageFile(previewImageUrl) ? (
+            <img
+              src={previewImageUrl}
+              alt="Preview"
+              className="img-fluid"
+              style={{ maxHeight: "70vh", objectFit: "contain" }}
+            />
+          ) : isVideoFile(previewImageUrl) ? (
+            <video
+              src={previewImageUrl}
+              controls
+              className="img-fluid"
+              style={{ maxHeight: "70vh", objectFit: "contain" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              Browser Anda tidak mendukung elemen video.
+            </video>
+          ) : (
+            <div>
+              <p>Preview tidak tersedia untuk file ini.</p>
+              <Button
+                variant="primary"
+                onClick={() => window.open(previewImageUrl, "_blank")}
+              >
+                Buka File
+              </Button>
+            </div>
+          )}
+
+          {/* Navigasi untuk foto aset jika ada */}
+          {previewAssetPhotos && previewAssetPhotos.length > 1 && (
+            <div className="mt-3 d-flex justify-content-between align-items-center">
+              <Button
+                variant="outline-primary"
+                onClick={handlePrevPhoto}
+                disabled={previewAssetPhotos.length <= 1}
+              >
+                &larr; Sebelumnya
+              </Button>
+              <span>
+                {currentPhotoIndex + 1} dari {previewAssetPhotos.length}
+              </span>
+              <Button
+                variant="outline-primary"
+                onClick={handleNextPhoto}
+                disabled={previewAssetPhotos.length <= 1}
+              >
+                Berikutnya &rarr;
+              </Button>
+            </div>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            variant="secondary"
+            onClick={() => setShowImagePreview(false)}
           >
-            Browser Anda tidak mendukung elemen video.
-          </video>
-        ) : (
-          <div>
-            <p>Preview tidak tersedia untuk file ini.</p>
-            <Button 
-              variant="primary" 
-              onClick={() => window.open(previewImageUrl, '_blank')}
-            >
-              Buka File
-            </Button>
-          </div>
-        )}
-        
-        {/* Navigasi untuk foto aset jika ada */}
-        {previewAssetPhotos && previewAssetPhotos.length > 1 && (
-          <div className="mt-3 d-flex justify-content-between align-items-center">
-            <Button 
-              variant="outline-primary" 
-              onClick={handlePrevPhoto}
-              disabled={previewAssetPhotos.length <= 1}
-            >
-              &larr; Sebelumnya
-            </Button>
-            <span>
-              {currentPhotoIndex + 1} dari {previewAssetPhotos.length}
-            </span>
-            <Button 
-              variant="outline-primary" 
-              onClick={handleNextPhoto}
-              disabled={previewAssetPhotos.length <= 1}
-            >
-              Berikutnya &rarr;
-            </Button>
-          </div>
-        )}
-      </Modal.Body>
-      <Modal.Footer>
-        <Button variant="secondary" onClick={() => setShowImagePreview(false)}>
-          Tutup
-        </Button>
-        <Button 
-          variant="primary" 
-          onClick={() => window.open(previewImageUrl, '_blank')}
-        >
-          Buka di Tab Baru
-        </Button>
-      </Modal.Footer>
-    </Modal>
+            Tutup
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => window.open(previewImageUrl, "_blank")}
+          >
+            Buka di Tab Baru
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </>
   );
 };
@@ -864,7 +997,7 @@ const DataAsetTanahPage = () => {
 
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedAssetDetail, setSelectedAssetDetail] = useState(null);
-  
+
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingAsset, setEditingAsset] = useState(null);
 
@@ -879,8 +1012,10 @@ const DataAsetTanahPage = () => {
   const [kodimGeoJSONSimplified, setKodimGeoJSONSimplified] = useState(null);
   const [koremDataForMap, setKoremDataForMap] = useState(null);
   const [kodimDataForMap, setKodimDataForMap] = useState(null);
-  const [koremDataForMapSimplified, setKoremDataForMapSimplified] = useState(null);
-  const [kodimDataForMapSimplified, setKodimDataForMapSimplified] = useState(null);
+  const [koremDataForMapSimplified, setKoremDataForMapSimplified] =
+    useState(null);
+  const [kodimDataForMapSimplified, setKodimDataForMapSimplified] =
+    useState(null);
 
   const handleMarkerClick = (asset) => {
     setAssetForOffcanvas(asset);
@@ -907,14 +1042,19 @@ const DataAsetTanahPage = () => {
           // Handle special case for "Berdiri Sendiri" Korem
           if (selectedKoremData.nama === "Kodim 0733/Kota Semarang") {
             // For "Berdiri Sendiri", create a single Kodim entry
-            const kodimObjects = [{
-              id: "Kodim 0733/Kota Semarang",
-              nama: "Kodim 0733/Kota Semarang"
-            }];
+            const kodimObjects = [
+              {
+                id: "Kodim 0733/Kota Semarang",
+                nama: "Kodim 0733/Kota Semarang",
+              },
+            ];
             setKodimList(kodimObjects);
           } else if (selectedKoremData.kodim) {
             // For regular Korems with Kodim list
-            const kodimObjects = selectedKoremData.kodim.map((kName) => ({ id: kName, nama: normalizeKodimName(kName) }));
+            const kodimObjects = selectedKoremData.kodim.map((kName) => ({
+              id: kName,
+              nama: normalizeKodimName(kName),
+            }));
             setKodimList(kodimObjects);
           } else {
             setKodimList([]);
@@ -938,13 +1078,20 @@ const DataAsetTanahPage = () => {
     setLoading(true);
     try {
       // Use Promise.all to fetch all data concurrently
-      const [assetsRes, koremRes, koremGeoJSONRes, kodimGeoJSONRes, koremGeoJSONSimplifiedRes, kodimGeoJSONSimplifiedRes] = await Promise.all([
+      const [
+        assetsRes,
+        koremRes,
+        koremGeoJSONRes,
+        kodimGeoJSONRes,
+        koremGeoJSONSimplifiedRes,
+        kodimGeoJSONSimplifiedRes,
+      ] = await Promise.all([
         axios.get(`${API_URL}/assets`),
         axios.get(`${API_URL}/korem`),
         axios.get(`/data/korem.geojson`),
         axios.get(`/data/Kodim.geojson`),
         axios.get(`/data/korem_simplified.geojson`),
-        axios.get(`/data/Kodim_simplified.geojson`)
+        axios.get(`/data/Kodim_simplified.geojson`),
       ]);
 
       setAssets(assetsRes.data);
@@ -957,20 +1104,30 @@ const DataAsetTanahPage = () => {
       const allKodims = koremRes.data.flatMap((korem) => {
         // Handle special case for "Berdiri Sendiri" Korem
         if (korem.nama === "Kodim 0733/Kota Semarang") {
-          return [{
-            id: "Kodim 0733/Kota Semarang",
-            nama: "Kodim 0733/Kota Semarang",
-            korem_id: korem.id
-          }];
+          return [
+            {
+              id: "Kodim 0733/Kota Semarang",
+              nama: "Kodim 0733/Kota Semarang",
+              korem_id: korem.id,
+            },
+          ];
         }
         // For regular Korems with Kodim list
-        return korem.kodim ? korem.kodim.map((k) => ({ id: k, nama: normalizeKodimName(k), korem_id: korem.id })) : [];
+        return korem.kodim
+          ? korem.kodim.map((k) => ({
+              id: k,
+              nama: normalizeKodimName(k),
+              korem_id: korem.id,
+            }))
+          : [];
       });
       console.log("All Kodims:", allKodims);
       setAllKodimList(allKodims);
       setError(null);
     } catch (err) {
-      setError("Gagal memuat data dari server. Pastikan server API dan file GeoJSON tersedia.");
+      setError(
+        "Gagal memuat data dari server. Pastikan server API dan file GeoJSON tersedia."
+      );
       console.error(err);
     } finally {
       setLoading(false);
@@ -992,14 +1149,16 @@ const DataAsetTanahPage = () => {
   // Effect to calculate asset counts per korem
   useEffect(() => {
     console.log("Calculating asset counts per korem (Revised Logic)");
-    
+
     if (assets.length > 0 && koremGeoJSON?.features) {
       const koremFeatures = JSON.parse(JSON.stringify(koremGeoJSON.features));
 
       // Initialize counts
-      koremFeatures.forEach(f => { f.properties.asset_count = 0; });
+      koremFeatures.forEach((f) => {
+        f.properties.asset_count = 0;
+      });
 
-      assets.forEach(asset => {
+      assets.forEach((asset) => {
         const geometry = parseLocation(asset.lokasi);
         const centroid = getCentroid(geometry);
 
@@ -1007,111 +1166,158 @@ const DataAsetTanahPage = () => {
           const point = turf.point([centroid[1], centroid[0]]);
           // Find which korem polygon the asset is in
           for (const koremFeature of koremFeatures) {
-            if (koremFeature.geometry && turf.booleanPointInPolygon(point, koremFeature.geometry)) {
+            if (
+              koremFeature.geometry &&
+              turf.booleanPointInPolygon(point, koremFeature.geometry)
+            ) {
               koremFeature.properties.asset_count++;
               // Break after finding the containing polygon
-              break; 
+              break;
             }
           }
         }
       });
-      
-      console.log("Korem data with revised counts:", { ...koremGeoJSON, features: koremFeatures });
-      setKoremDataForMap({ ...koremGeoJSON, features: koremFeatures });
 
+      console.log("Korem data with revised counts:", {
+        ...koremGeoJSON,
+        features: koremFeatures,
+      });
+      setKoremDataForMap({ ...koremGeoJSON, features: koremFeatures });
     } else if (koremGeoJSON?.features) {
-        // If no assets, just initialize counts to 0
-        const koremFeatures = JSON.parse(JSON.stringify(koremGeoJSON.features));
-        koremFeatures.forEach(f => { f.properties.asset_count = 0; });
-        setKoremDataForMap({ ...koremGeoJSON, features: koremFeatures });
+      // If no assets, just initialize counts to 0
+      const koremFeatures = JSON.parse(JSON.stringify(koremGeoJSON.features));
+      koremFeatures.forEach((f) => {
+        f.properties.asset_count = 0;
+      });
+      setKoremDataForMap({ ...koremGeoJSON, features: koremFeatures });
     }
   }, [assets, koremGeoJSON]);
 
   // Effect to calculate asset counts per kodim
   useEffect(() => {
     console.log("Calculating asset counts per kodim");
-    
+
     if (assets.length > 0 && kodimGeoJSON?.features) {
-        const kodimFeatures = JSON.parse(JSON.stringify(kodimGeoJSON.features));
+      const kodimFeatures = JSON.parse(JSON.stringify(kodimGeoJSON.features));
 
-        // Initialize counts
-        kodimFeatures.forEach(f => { f.properties.asset_count = 0; });
+      // Initialize counts
+      kodimFeatures.forEach((f) => {
+        f.properties.asset_count = 0;
+      });
 
-        assets.forEach(asset => {
-            const geometry = parseLocation(asset.lokasi);
-            const centroid = getCentroid(geometry);
+      assets.forEach((asset) => {
+        const geometry = parseLocation(asset.lokasi);
+        const centroid = getCentroid(geometry);
 
-            if (centroid) {
-                const point = turf.point([centroid[1], centroid[0]]);
-                // Find which kodim polygon the asset is in
-                for (const kodimFeature of kodimFeatures) {
-                    if (kodimFeature.geometry && turf.booleanPointInPolygon(point, kodimFeature.geometry)) {
-                        kodimFeature.properties.asset_count++;
-                        break; 
-                    }
-                }
+        if (centroid) {
+          const point = turf.point([centroid[1], centroid[0]]);
+          // Find which kodim polygon the asset is in
+          for (const kodimFeature of kodimFeatures) {
+            if (
+              kodimFeature.geometry &&
+              turf.booleanPointInPolygon(point, kodimFeature.geometry)
+            ) {
+              kodimFeature.properties.asset_count++;
+              break;
             }
-        });
-      
-        setKodimDataForMap({ ...kodimGeoJSON, features: kodimFeatures });
+          }
+        }
+      });
 
+      setKodimDataForMap({ ...kodimGeoJSON, features: kodimFeatures });
     } else if (kodimGeoJSON?.features) {
-        // If no assets, just initialize counts to 0
-        const kodimFeatures = JSON.parse(JSON.stringify(kodimGeoJSON.features));
-        kodimFeatures.forEach(f => { f.properties.asset_count = 0; });
-        setKodimDataForMap({ ...kodimGeoJSON, features: kodimFeatures });
+      // If no assets, just initialize counts to 0
+      const kodimFeatures = JSON.parse(JSON.stringify(kodimGeoJSON.features));
+      kodimFeatures.forEach((f) => {
+        f.properties.asset_count = 0;
+      });
+      setKodimDataForMap({ ...kodimGeoJSON, features: kodimFeatures });
     }
   }, [assets, kodimGeoJSON]);
 
   // Effect to calculate asset counts per simplified korem
   useEffect(() => {
     if (assets.length > 0 && koremGeoJSONSimplified?.features) {
-      const koremFeatures = JSON.parse(JSON.stringify(koremGeoJSONSimplified.features));
-      koremFeatures.forEach(f => { f.properties.asset_count = 0; });
-      assets.forEach(asset => {
+      const koremFeatures = JSON.parse(
+        JSON.stringify(koremGeoJSONSimplified.features)
+      );
+      koremFeatures.forEach((f) => {
+        f.properties.asset_count = 0;
+      });
+      assets.forEach((asset) => {
         const geometry = parseLocation(asset.lokasi);
         const centroid = getCentroid(geometry);
         if (centroid) {
           const point = turf.point([centroid[1], centroid[0]]);
           for (const koremFeature of koremFeatures) {
-            if (koremFeature.geometry && turf.booleanPointInPolygon(point, koremFeature.geometry)) {
+            if (
+              koremFeature.geometry &&
+              turf.booleanPointInPolygon(point, koremFeature.geometry)
+            ) {
               koremFeature.properties.asset_count++;
-              break; 
+              break;
             }
           }
         }
       });
-      setKoremDataForMapSimplified({ ...koremGeoJSONSimplified, features: koremFeatures });
+      setKoremDataForMapSimplified({
+        ...koremGeoJSONSimplified,
+        features: koremFeatures,
+      });
     } else if (koremGeoJSONSimplified?.features) {
-        const koremFeatures = JSON.parse(JSON.stringify(koremGeoJSONSimplified.features));
-        koremFeatures.forEach(f => { f.properties.asset_count = 0; });
-        setKoremDataForMapSimplified({ ...koremGeoJSONSimplified, features: koremFeatures });
+      const koremFeatures = JSON.parse(
+        JSON.stringify(koremGeoJSONSimplified.features)
+      );
+      koremFeatures.forEach((f) => {
+        f.properties.asset_count = 0;
+      });
+      setKoremDataForMapSimplified({
+        ...koremGeoJSONSimplified,
+        features: koremFeatures,
+      });
     }
   }, [assets, koremGeoJSONSimplified]);
 
   // Effect to calculate asset counts per simplified kodim
   useEffect(() => {
     if (assets.length > 0 && kodimGeoJSONSimplified?.features) {
-        const kodimFeatures = JSON.parse(JSON.stringify(kodimGeoJSONSimplified.features));
-        kodimFeatures.forEach(f => { f.properties.asset_count = 0; });
-        assets.forEach(asset => {
-            const geometry = parseLocation(asset.lokasi);
-            const centroid = getCentroid(geometry);
-            if (centroid) {
-                const point = turf.point([centroid[1], centroid[0]]);
-                for (const kodimFeature of kodimFeatures) {
-                    if (kodimFeature.geometry && turf.booleanPointInPolygon(point, kodimFeature.geometry)) {
-                        kodimFeature.properties.asset_count++;
-                        break; 
-                    }
-                }
+      const kodimFeatures = JSON.parse(
+        JSON.stringify(kodimGeoJSONSimplified.features)
+      );
+      kodimFeatures.forEach((f) => {
+        f.properties.asset_count = 0;
+      });
+      assets.forEach((asset) => {
+        const geometry = parseLocation(asset.lokasi);
+        const centroid = getCentroid(geometry);
+        if (centroid) {
+          const point = turf.point([centroid[1], centroid[0]]);
+          for (const kodimFeature of kodimFeatures) {
+            if (
+              kodimFeature.geometry &&
+              turf.booleanPointInPolygon(point, kodimFeature.geometry)
+            ) {
+              kodimFeature.properties.asset_count++;
+              break;
             }
-        });
-        setKodimDataForMapSimplified({ ...kodimGeoJSONSimplified, features: kodimFeatures });
+          }
+        }
+      });
+      setKodimDataForMapSimplified({
+        ...kodimGeoJSONSimplified,
+        features: kodimFeatures,
+      });
     } else if (kodimGeoJSONSimplified?.features) {
-        const kodimFeatures = JSON.parse(JSON.stringify(kodimGeoJSONSimplified.features));
-        kodimFeatures.forEach(f => { f.properties.asset_count = 0; });
-        setKodimDataForMapSimplified({ ...kodimGeoJSONSimplified, features: kodimFeatures });
+      const kodimFeatures = JSON.parse(
+        JSON.stringify(kodimGeoJSONSimplified.features)
+      );
+      kodimFeatures.forEach((f) => {
+        f.properties.asset_count = 0;
+      });
+      setKodimDataForMapSimplified({
+        ...kodimGeoJSONSimplified,
+        features: kodimFeatures,
+      });
     }
   }, [assets, kodimGeoJSONSimplified]);
 
@@ -1120,20 +1326,25 @@ const DataAsetTanahPage = () => {
     console.log("Selected Korem:", selectedKorem);
     console.log("Selected Kodim:", selectedKodim);
     console.log("Status Filter:", statusFilter);
-    
+
     let filtered = assets;
 
     if (selectedKodim) {
       console.log("Filtering by Kodim:", selectedKodim);
-      const filterKodim = normalizeKodimName(String(selectedKodim || "").trim());
-      
+      const filterKodim = normalizeKodimName(
+        String(selectedKodim || "").trim()
+      );
+
       filtered = filtered.filter((asset) => {
         const assetKodim = normalizeKodimName(String(asset.kodim || "").trim());
-        
+
         if (filterKodim === "Kodim 0733/Kota Semarang") {
-          return assetKodim === "Kodim 0733/Kota Semarang" || asset.kodim === "Kodim 0733/Semarang (BS)";
+          return (
+            assetKodim === "Kodim 0733/Kota Semarang" ||
+            asset.kodim === "Kodim 0733/Semarang (BS)"
+          );
         }
-        
+
         return assetKodim === filterKodim;
       });
     } else if (selectedKorem) {
@@ -1143,18 +1354,20 @@ const DataAsetTanahPage = () => {
     if (statusFilter) {
       filtered = filtered.filter((asset) => asset.status === statusFilter);
     }
-    
+
     console.log("Filtered assets count:", filtered.length);
     setFilteredAssets(filtered);
   }, [selectedKorem, selectedKodim, statusFilter, assets]);
 
-  const assetsOnMapCount = useMemo(() => 
-    filteredAssets.filter(asset => {
+  const assetsOnMapCount = useMemo(
+    () =>
+      filteredAssets.filter((asset) => {
         const locationData = parseLocation(asset.lokasi);
         const centroid = getCentroid(locationData);
         return centroid !== null;
-    }).length
-  , [filteredAssets]);
+      }).length,
+    [filteredAssets]
+  );
 
   const handleKoremChange = (korem) => {
     setSelectedKorem(korem || null);
@@ -1172,9 +1385,11 @@ const DataAsetTanahPage = () => {
 
     // If a kodim is selected, automatically select its parent korem
     if (normalizedKodimName) {
-      const kodimData = allKodimList.find(k => normalizeKodimName(k.nama) === normalizedKodimName);
+      const kodimData = allKodimList.find(
+        (k) => normalizeKodimName(k.nama) === normalizedKodimName
+      );
       if (kodimData) {
-        const koremData = koremList.find(k => k.id === kodimData.korem_id);
+        const koremData = koremList.find((k) => k.id === kodimData.korem_id);
         // Check if the korem is already selected to avoid infinite loops
         if (koremData && selectedKorem?.id !== koremData.id) {
           setSelectedKorem(koremData);
@@ -1203,24 +1418,35 @@ const DataAsetTanahPage = () => {
       handleShowAll();
       return;
     }
-    
+
     // Cari korem berdasarkan nama
-    let koremFromList = koremList.find(k => k.nama === koremProperties.listkodim_Korem);
-    
+    let koremFromList = koremList.find(
+      (k) => k.nama === koremProperties.listkodim_Korem
+    );
+
     // Tangani kasus khusus untuk "Berdiri Sendiri"
-    if (!koremFromList && koremProperties.listkodim_Korem === "Kodim 0733/Kota Semarang") {
+    if (
+      !koremFromList &&
+      koremProperties.listkodim_Korem === "Kodim 0733/Kota Semarang"
+    ) {
       // Cari korem dengan nama "Berdiri Sendiri" atau id "5" (berdasarkan db.json)
-      koremFromList = koremList.find(k => k.nama === "Berdiri Sendiri" || k.id === "5");
+      koremFromList = koremList.find(
+        (k) => k.nama === "Berdiri Sendiri" || k.id === "5"
+      );
     }
-    
+
     if (koremFromList) {
       handleKoremChange(koremFromList);
     } else {
       // Jika tidak ditemukan, coba cari dengan pendekatan yang lebih fleksibel
-      const koremFromListAlt = koremList.find(k => 
-        k.nama && k.nama.toLowerCase().includes(koremProperties.listkodim_Korem.toLowerCase())
+      const koremFromListAlt = koremList.find(
+        (k) =>
+          k.nama &&
+          k.nama
+            .toLowerCase()
+            .includes(koremProperties.listkodim_Korem.toLowerCase())
       );
-      
+
       if (koremFromListAlt) {
         handleKoremChange(koremFromListAlt);
       } else {
@@ -1235,8 +1461,10 @@ const DataAsetTanahPage = () => {
       return;
     }
     // Pastikan kita menggunakan nama kodim yang sudah dinormalisasi
-    const normalizedKodimName = normalizeKodimName(kodimProperties.listkodim_Kodim);
-    
+    const normalizedKodimName = normalizeKodimName(
+      kodimProperties.listkodim_Kodim
+    );
+
     // Tangani kasus khusus untuk Kodim Kota Semarang
     if (kodimProperties.listkodim_Kodim === "Kodim 0733/Semarang (BS)") {
       handleKodimChange("Kodim 0733/Kota Semarang");
@@ -1247,22 +1475,29 @@ const DataAsetTanahPage = () => {
 
   const handleMapBack = (viewState) => {
     // Update filter state based on map view changes
-    if (viewState.type === 'nasional') {
+    if (viewState.type === "nasional") {
       // Reset all filters when going back to national view
       setSelectedKorem(null);
       setSelectedKodim("");
       setKodimList([]);
-    } else if (viewState.type === 'korem') {
+    } else if (viewState.type === "korem") {
       // Update to show only korem level filters
       if (viewState.korem) {
         // Tangani kasus khusus untuk "Berdiri Sendiri"
-        let koremFromList = koremList.find(k => k.nama === viewState.korem.listkodim_Korem);
-        
-        if (!koremFromList && viewState.korem.listkodim_Korem === "Kodim 0733/Kota Semarang") {
+        let koremFromList = koremList.find(
+          (k) => k.nama === viewState.korem.listkodim_Korem
+        );
+
+        if (
+          !koremFromList &&
+          viewState.korem.listkodim_Korem === "Kodim 0733/Kota Semarang"
+        ) {
           // Cari korem dengan nama "Berdiri Sendiri" atau id "5" (berdasarkan db.json)
-          koremFromList = koremList.find(k => k.nama === "Berdiri Sendiri" || k.id === "5");
+          koremFromList = koremList.find(
+            (k) => k.nama === "Berdiri Sendiri" || k.id === "5"
+          );
         }
-        
+
         if (koremFromList) {
           setSelectedKorem(koremFromList);
           fetchKodim(koremFromList.id);
@@ -1292,7 +1527,11 @@ const DataAsetTanahPage = () => {
     setShowEditModal(false);
   };
 
-  const handleSaveAsset = async (assetData, buktiPemilikanFile, assetPhotos) => {
+  const handleSaveAsset = async (
+    assetData,
+    buktiPemilikanFile,
+    assetPhotos
+  ) => {
     const toastId = toast.loading("Menyimpan perubahan...");
     const { id } = assetData;
     let updatedData = { ...assetData };
@@ -1303,13 +1542,20 @@ const DataAsetTanahPage = () => {
         toast.loading("Mengupload bukti pemilikan...", { id: toastId });
         const formData = new FormData();
         formData.append("bukti_pemilikan", buktiPemilikanFile);
-        const uploadRes = await axios.post(`${API_URL}/upload/bukti-pemilikan`, formData);
+        const uploadRes = await axios.post(
+          `${API_URL}/upload/bukti-pemilikan`,
+          formData
+        );
         updatedData.bukti_pemilikan_url = uploadRes.data.url;
         updatedData.bukti_pemilikan_filename = uploadRes.data.filename;
       } catch (err) {
-        const message = err.response?.data?.message || "Gagal mengupload bukti pemilikan.";
+        const message =
+          err.response?.data?.message || "Gagal mengupload bukti pemilikan.";
         toast.error(message, { id: toastId });
-        console.error("Upload error (bukti pemilikan):", err.response?.data || err);
+        console.error(
+          "Upload error (bukti pemilikan):",
+          err.response?.data || err
+        );
         return; // Stop execution if upload fails
       }
     }
@@ -1317,18 +1563,31 @@ const DataAsetTanahPage = () => {
     // 2. Upload Foto/Video Aset
     if (assetPhotos && assetPhotos.length > 0) {
       try {
-        toast.loading(`Mengupload ${assetPhotos.length} file aset...`, { id: toastId });
+        toast.loading(`Mengupload ${assetPhotos.length} file aset...`, {
+          id: toastId,
+        });
         const photosFormData = new FormData();
-        assetPhotos.forEach(photo => {
+        assetPhotos.forEach((photo) => {
           photosFormData.append("asset_photos", photo);
         });
-        const photosUploadRes = await axios.post(`${API_URL}/upload/asset-photos`, photosFormData);
-        const newPhotoUrls = photosUploadRes.data.files.map(file => file.url);
-        updatedData.foto_aset = [...(updatedData.foto_aset || []), ...newPhotoUrls];
+        const photosUploadRes = await axios.post(
+          `${API_URL}/upload/asset-photos`,
+          photosFormData
+        );
+        const newPhotoUrls = photosUploadRes.data.files.map((file) => file.url);
+        updatedData.foto_aset = [
+          ...(updatedData.foto_aset || []),
+          ...newPhotoUrls,
+        ];
       } catch (err) {
-        const message = err.response?.data?.message || "Gagal mengupload file aset. File mungkin terlalu besar.";
+        const message =
+          err.response?.data?.message ||
+          "Gagal mengupload file aset. File mungkin terlalu besar.";
         toast.error(message, { id: toastId });
-        console.error("Upload error (asset photos/videos):", err.response?.data || err);
+        console.error(
+          "Upload error (asset photos/videos):",
+          err.response?.data || err
+        );
         return; // Stop execution if upload fails
       }
     }
@@ -1337,7 +1596,7 @@ const DataAsetTanahPage = () => {
     try {
       toast.loading("Menyimpan data ke database...", { id: toastId });
       await axios.put(`${API_URL}/assets/${id}`, updatedData);
-      
+
       toast.success("Aset berhasil diperbarui!", { id: toastId });
       handleCloseEditModal();
       fetchData(); // Refresh data
@@ -1430,7 +1689,9 @@ const DataAsetTanahPage = () => {
                     <div className="text-muted">
                       <i className="fas fa-folder-open fa-3x mb-3"></i>
                       <h5>Belum Ada Data Aset BMN</h5>
-                      <p>Silakan tambah aset BMN baru di halaman Tambah Aset BMN.</p>
+                      <p>
+                        Silakan tambah aset BMN baru di halaman Tambah Aset BMN.
+                      </p>
                     </div>
                   </div>
                 ) : (
@@ -1452,33 +1713,31 @@ const DataAsetTanahPage = () => {
             <Card className="mt-3">
               <Card.Body>
                 <Row className="text-center">
-                  <Col md={3}>
+                  <Col md={4}>
                     <div className="border-end">
                       <h5 className="text-primary">{filteredAssets.length}</h5>
                       <small className="text-muted">Total Aset</small>
                     </div>
                   </Col>
-                  <Col md={3}>
+                  <Col md={4}>
                     <div className="border-end">
                       <h5 className="text-success">
-                        {filteredAssets.filter((a) => a.status === "Dimiliki/Dikuasai").length}
+                        {
+                          filteredAssets.filter((a) => a.status === "Aman")
+                            .length
+                        }
                       </h5>
-                      <small className="text-muted">Dimiliki/Dikuasai</small>
+                      <small className="text-muted">Aman</small>
                     </div>
                   </Col>
-                  <Col md={3}>
-                    <div className="border-end">
-                      <h5 className="text-danger">
-                        {filteredAssets.filter((a) => a.status === "Tidak Dimiliki/Tidak Dikuasai").length}
-                      </h5>
-                      <small className="text-muted">Tidak Dimiliki/Tidak Dikuasai</small>
-                    </div>
-                  </Col>
-                  <Col md={3}>
-                    <h5 className="text-warning">
-                      {filteredAssets.filter((a) => a.status === "Lain-lain").length}
+                  <Col md={4}>
+                    <h5 className="text-danger">
+                      {
+                        filteredAssets.filter((a) => a.status === "Sengketa")
+                          .length
+                      }
                     </h5>
-                    <small className="text-muted">Lain-lain</small>
+                    <small className="text-muted">Sengketa</small>
                   </Col>
                 </Row>
               </Card.Body>

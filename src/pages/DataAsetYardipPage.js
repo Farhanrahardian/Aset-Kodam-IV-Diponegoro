@@ -24,67 +24,130 @@ import DetailYardipModal from "../components/DetailYardipModal"; // Import the n
 const API_URL = "http://localhost:3001";
 
 // FilterPanelTop component remains the same
-const FilterPanelTop = ({ provinsiOptions, kotaOptions, selectedProvinsi, selectedKota, onSelectProvinsi, onSelectKota, onShowAll, totalAssets, filteredAssetsCount }) => {
-    return (
-        <Card className="mb-4">
-            <Card.Header className="bg-primary text-white"><h5 className="mb-0">Filter Data Aset Yardip</h5></Card.Header>
-            <Card.Body>
-                <Row>
-                    <Col md={4}>
-                        <Form.Group className="mb-3">
-                            <Form.Label className="fw-bold">Provinsi</Form.Label>
-                            <Form.Select value={selectedProvinsi} onChange={(e) => onSelectProvinsi(e.target.value)}>
-                                <option value="">Semua Provinsi</option>
-                                {provinsiOptions.map((p) => (<option key={p.value} value={p.value}>{p.label}</option>))}
-                            </Form.Select>
-                        </Form.Group>
-                    </Col>
-                    <Col md={4}>
-                        <Form.Group className="mb-3">
-                            <Form.Label className="fw-bold">Kota/Kabupaten</Form.Label>
-                            <Form.Select value={selectedKota} onChange={(e) => onSelectKota(e.target.value)} disabled={!selectedProvinsi}>
-                                <option value="">{selectedProvinsi ? "Semua Kota/Kabupaten" : "Pilih Provinsi Dulu"}</option>
-                                {kotaOptions.map((k) => (<option key={k.value} value={k.value}>{k.label}</option>))}
-                            </Form.Select>
-                        </Form.Group>
-                    </Col>
-                    <Col md={4} className="d-flex align-items-end">
-                         <Button variant="outline-secondary" onClick={onShowAll} className="w-100 mb-3">Reset Filter & Peta</Button>
-                    </Col>
-                </Row>
-                <Row>
-                    <Col>
-                        <div className="bg-light p-2 rounded">
-                            <small className="text-muted">
-                                <strong>Menampilkan:</strong> {filteredAssetsCount} dari {totalAssets} aset yardip
-                            </small>
-                        </div>
-                    </Col>
-                </Row>
-            </Card.Body>
-        </Card>
-    );
+const FilterPanelTop = ({
+  provinsiOptions,
+  kotaOptions,
+  selectedProvinsi,
+  selectedKota,
+  onSelectProvinsi,
+  onSelectKota,
+  onShowAll,
+  totalAssets,
+  filteredAssetsCount,
+}) => {
+  return (
+    <Card className="mb-4">
+      <Card.Header className="bg-primary text-white">
+        <h5 className="mb-0">Filter Data Aset Yardip</h5>
+      </Card.Header>
+      <Card.Body>
+        <Row>
+          <Col md={4}>
+            <Form.Group className="mb-3">
+              <Form.Label className="fw-bold">Provinsi</Form.Label>
+              <Form.Select
+                value={selectedProvinsi}
+                onChange={(e) => onSelectProvinsi(e.target.value)}
+              >
+                <option value="">Semua Provinsi</option>
+                {provinsiOptions.map((p) => (
+                  <option key={p.value} value={p.value}>
+                    {p.label}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+          </Col>
+          <Col md={4}>
+            <Form.Group className="mb-3">
+              <Form.Label className="fw-bold">Kota/Kabupaten</Form.Label>
+              <Form.Select
+                value={selectedKota}
+                onChange={(e) => onSelectKota(e.target.value)}
+                disabled={!selectedProvinsi}
+              >
+                <option value="">
+                  {selectedProvinsi
+                    ? "Semua Kota/Kabupaten"
+                    : "Pilih Provinsi Dulu"}
+                </option>
+                {kotaOptions.map((k) => (
+                  <option key={k.value} value={k.value}>
+                    {k.label}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+          </Col>
+          <Col md={4} className="d-flex align-items-end">
+            <Button
+              variant="outline-secondary"
+              onClick={onShowAll}
+              className="w-100 mb-3"
+            >
+              Reset Filter & Peta
+            </Button>
+          </Col>
+        </Row>
+        <Row>
+          <Col>
+            <div className="bg-light p-2 rounded">
+              <small className="text-muted">
+                <strong>Menampilkan:</strong> {filteredAssetsCount} dari{" "}
+                {totalAssets} aset yardip
+              </small>
+            </div>
+          </Col>
+        </Row>
+      </Card.Body>
+    </Card>
+  );
 };
 
 // TabelAsetYardip component remains mostly the same
-const TabelAsetYardip = ({ assets, onEdit, onDelete, onViewDetail, userRole }) => {
+const TabelAsetYardip = ({
+  assets,
+  onEdit,
+  onDelete,
+  onViewDetail,
+  userRole,
+}) => {
   if (!assets || assets.length === 0) {
     return (
       <div className="text-center py-5">
-        <p className="text-muted">Tidak ada data aset yardip yang cocok dengan filter Anda.</p>
+        <p className="text-muted">
+          Tidak ada data aset yardip yang cocok dengan filter Anda.
+        </p>
       </div>
     );
   }
   const getStatusBadgeClass = (status) => {
     switch (status) {
-      case "Dimiliki/Dikuasai": return "bg-success";
-      case "Tidak Dimiliki/Tidak Dikuasai": return "bg-danger";
-      default: return "bg-info";
+      case "Dimiliki/Dikuasai":
+        return "bg-success";
+      case "Tidak Dimiliki/Tidak Dikuasai":
+        return "bg-danger";
+      default:
+        return "bg-info";
     }
-  }
+  };
+  const getBidangBadgeClass = (bidang) => {
+    switch (bidang?.toLowerCase()) {
+      case "tanah":
+        return "bg-warning"; // kuning
+      case "tanah gudang kantor":
+        return "bg-primary"; // biru tua
+      case "tanah bangunan":
+        return "bg-info"; // biru muda
+      case "ruko":
+        return "bg-success"; // hijau
+      default:
+        return "bg-secondary";
+    }
+  };
 
   return (
-    <Table striped bordered hover responsive style={{minWidth: "1200px"}}>
+    <Table striped bordered hover responsive style={{ minWidth: "1200px" }}>
       <thead className="table-dark">
         <tr>
           <th>Pengelola</th>
@@ -100,19 +163,51 @@ const TabelAsetYardip = ({ assets, onEdit, onDelete, onViewDetail, userRole }) =
         {assets.map((asset) => (
           <tr key={asset.id}>
             <td>{asset.pengelola || "-"}</td>
-            <td><span className="badge bg-secondary">{asset.bidang || "-"}</span></td>
+            <td>
+              <span className={`badge ${getBidangBadgeClass(asset.bidang)}`}>
+                {asset.bidang || "-"}
+              </span>
+            </td>
             <td>{asset.provinsi || "-"}</td>
             <td>{asset.kabkota || "-"}</td>
-            <td><span className={`badge ${getStatusBadgeClass(asset.status)}`}>{asset.status || "-"}</span></td>
-            <td>{asset.area ? `${Number(asset.area).toLocaleString("id-ID")} m²` : "-"}</td>
             <td>
-                <Button variant="info" size="sm" onClick={() => onViewDetail(asset)} className="me-1">Detail</Button>
-                {userRole === 'admin' && onEdit && (
-                    <Button variant="warning" size="sm" onClick={() => onEdit(asset)} className="me-1">Edit</Button>
-                )}
-                {userRole === 'admin' && onDelete && (
-                    <Button variant="danger" size="sm" onClick={() => onDelete(asset.id)}>Hapus</Button>
-                )}
+              <span className={`badge ${getStatusBadgeClass(asset.status)}`}>
+                {asset.status || "-"}
+              </span>
+            </td>
+            <td>
+              {asset.area
+                ? `${Number(asset.area).toLocaleString("id-ID")} m²`
+                : "-"}
+            </td>
+            <td>
+              <Button
+                variant="info"
+                size="sm"
+                onClick={() => onViewDetail(asset)}
+                className="me-1"
+              >
+                Detail
+              </Button>
+              {userRole === "admin" && onEdit && (
+                <Button
+                  variant="warning"
+                  size="sm"
+                  onClick={() => onEdit(asset)}
+                  className="me-1"
+                >
+                  Edit
+                </Button>
+              )}
+              {userRole === "admin" && onDelete && (
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => onDelete(asset.id)}
+                >
+                  Hapus
+                </Button>
+              )}
             </td>
           </tr>
         ))}
@@ -120,7 +215,6 @@ const TabelAsetYardip = ({ assets, onEdit, onDelete, onViewDetail, userRole }) =
     </Table>
   );
 };
-
 
 const DataAsetYardipPage = () => {
   const { user } = useAuth();
@@ -164,27 +258,35 @@ const DataAsetYardipPage = () => {
     fetchData();
   }, [fetchData]);
 
-  // --- Opsi untuk Filter --- 
-  const provinsiOptions = useMemo(() => [
+  // --- Opsi untuk Filter ---
+  const provinsiOptions = useMemo(
+    () => [
       { value: "Jawa Tengah", label: "Jawa Tengah" },
-      { value: "Daerah Istimewa Yogyakarta", label: "Daerah Istimewa Yogyakarta" },
-  ], []);
+      {
+        value: "Daerah Istimewa Yogyakarta",
+        label: "Daerah Istimewa Yogyakarta",
+      },
+    ],
+    []
+  );
 
   const kotaOptions = useMemo(() => {
     if (!view.provinsi || !kabupatenData) return [];
     const kotaInProvinsi = kabupatenData.features
-      .filter(f => f.properties.PROVINCE === view.provinsi)
-      .map(f => f.properties.Kabupaten);
+      .filter((f) => f.properties.PROVINCE === view.provinsi)
+      .map((f) => f.properties.Kabupaten);
     const uniqueKota = new Set(kotaInProvinsi);
-    return Array.from(uniqueKota).map(k => ({ value: k, label: k })).sort((a,b) => a.label.localeCompare(b.label));
+    return Array.from(uniqueKota)
+      .map((k) => ({ value: k, label: k }))
+      .sort((a, b) => a.label.localeCompare(b.label));
   }, [kabupatenData, view.provinsi]);
 
   // --- Logika Filtering untuk Tabel ---
   const filteredTableAssets = useMemo(() => {
-    return assets.filter(asset => {
-        const provMatch = !view.provinsi || asset.provinsi === view.provinsi;
-        const kabMatch = !view.kabupaten || asset.kabkota === view.kabupaten;
-        return provMatch && kabMatch;
+    return assets.filter((asset) => {
+      const provMatch = !view.provinsi || asset.provinsi === view.provinsi;
+      const kabMatch = !view.kabupaten || asset.kabkota === view.kabupaten;
+      return provMatch && kabMatch;
     });
   }, [assets, view]);
 
@@ -194,7 +296,7 @@ const DataAsetYardipPage = () => {
   };
 
   const handleSelectKota = (kab) => {
-    setView(prev => ({ ...prev, kabupaten: kab }));
+    setView((prev) => ({ ...prev, kabupaten: kab }));
   };
 
   const handleShowAll = () => {
@@ -202,7 +304,10 @@ const DataAsetYardipPage = () => {
   };
 
   const handleMapViewChange = (newView) => {
-      setView({ provinsi: newView.provinsi || "", kabupaten: newView.kabupaten || "" });
+    setView({
+      provinsi: newView.provinsi || "",
+      kabupaten: newView.kabupaten || "",
+    });
   };
 
   const handleViewDetail = useCallback((asset) => {
@@ -220,22 +325,24 @@ const DataAsetYardipPage = () => {
     if (!assetToDelete) return;
 
     const result = await Swal.fire({
-        title: 'Hapus Aset Yardip?',
-        html: `Yakin ingin menghapus: <strong>"${assetToDelete.pengelola}"</strong>?`,
-        icon: 'warning',
-        showCancelButton: true, confirmButtonColor: '#d33', cancelButtonText: 'Batal',
-        confirmButtonText: 'Ya, Hapus!',
+      title: "Hapus Aset Yardip?",
+      html: `Yakin ingin menghapus: <strong>"${assetToDelete.pengelola}"</strong>?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonText: "Batal",
+      confirmButtonText: "Ya, Hapus!",
     });
 
     if (result.isConfirmed) {
-        const toastId = toast.loading('Menghapus aset...');
-        try {
-            await axios.delete(`${API_URL}/yardip_assets/${id}`);
-            toast.success('Aset berhasil dihapus!', { id: toastId });
-            fetchData(); // Refresh data
-        } catch (err) {
-            toast.error('Gagal menghapus aset.', { id: toastId });
-        }
+      const toastId = toast.loading("Menghapus aset...");
+      try {
+        await axios.delete(`${API_URL}/yardip_assets/${id}`);
+        toast.success("Aset berhasil dihapus!", { id: toastId });
+        fetchData(); // Refresh data
+      } catch (err) {
+        toast.error("Gagal menghapus aset.", { id: toastId });
+      }
     }
   };
 
@@ -264,7 +371,7 @@ const DataAsetYardipPage = () => {
   return (
     <Container fluid className="mt-4">
       <h3>Data Aset Yardip</h3>
-      
+
       <Row>
         <Col md={12}>
           <Card className="mb-4">
@@ -296,18 +403,19 @@ const DataAsetYardipPage = () => {
           />
 
           <Card>
-            <Card.Header><h5 className="mb-0">Daftar Aset Yardip</h5></Card.Header>
-            <Card.Body style={{maxHeight: '60vh', overflowY: 'auto'}}>
-                <TabelAsetYardip
-                    assets={filteredTableAssets}
-                    onEdit={user ? handleEditAsset : null}
-                    onDelete={user ? handleDeleteAsset : null}
-                    onViewDetail={handleViewDetail} // Open modal on table button click
-                    userRole={user?.role}
-                />
+            <Card.Header>
+              <h5 className="mb-0">Daftar Aset Yardip</h5>
+            </Card.Header>
+            <Card.Body style={{ maxHeight: "60vh", overflowY: "auto" }}>
+              <TabelAsetYardip
+                assets={filteredTableAssets}
+                onEdit={user ? handleEditAsset : null}
+                onDelete={user ? handleDeleteAsset : null}
+                onViewDetail={handleViewDetail} // Open modal on table button click
+                userRole={user?.role}
+              />
             </Card.Body>
           </Card>
-
         </Col>
       </Row>
 
@@ -335,7 +443,6 @@ const DataAsetYardipPage = () => {
           kabupatenData={kabupatenData}
         />
       )}
-
     </Container>
   );
 };

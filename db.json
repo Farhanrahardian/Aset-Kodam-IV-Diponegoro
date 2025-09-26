@@ -95,6 +95,72 @@
       "foto_aset": [
         "/uploads/asset_photos-1758880939197.mp4"
       ]
+    },
+    {
+      "nama": "1098812441",
+      "korem_id": "5",
+      "kodim": "Kodim 0733/Kota Semarang",
+      "luas": 68052.13,
+      "kib_kode_barang": "1.21.21.212.121",
+      "nomor_registrasi": "111442344",
+      "alamat": "semarang kidul",
+      "peruntukan": "Kantor Alami Daerah ",
+      "status": "Aman",
+      "asal_milik": "Suharto",
+      "pemilikan_sertifikat": "Ya",
+      "keterangan_bukti_pemilikan": "Sertifikat PDF 123",
+      "sertifikat_bidang": "12",
+      "sertifikat_luas": 68052.13,
+      "belum_sertifikat_bidang": "",
+      "belum_sertifikat_luas": "",
+      "keterangan": "Masuk pada saat siang hari",
+      "atas_nama_pemilik_sertifikat": "pemerinta RI bersertifikat",
+      "lokasi": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              110.406240145144,
+              -7.086335949357334
+            ],
+            [
+              110.4069341620066,
+              -7.087092280605106
+            ],
+            [
+              110.4081619393046,
+              -7.086880237612142
+            ],
+            [
+              110.4086261425555,
+              -7.085102360542956
+            ],
+            [
+              110.407850145381,
+              -7.084234744199549
+            ],
+            [
+              110.4066317168391,
+              -7.084552062607084
+            ],
+            [
+              110.4057617750237,
+              -7.085270145347082
+            ],
+            [
+              110.406240145144,
+              -7.086335949357334
+            ]
+          ]
+        ]
+      },
+      "id": "T1758905069016",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1758905068748.jpg",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1758905068748.jpg",
+      "foto_aset": [
+        "/uploads/asset_photos-1758905069000.jpg",
+        "/uploads/asset_photos-1758905132835.mp4"
+      ]
     }
   ],
   "yardip_assets": [
@@ -148,6 +214,23 @@
       "type": "yardip",
       "created_at": "2025-09-26T07:01:50.178Z",
       "updated_at": "2025-09-26T07:01:50.178Z"
+    },
+    {
+      "pengelola": "Adam Sukamto",
+      "bidang": "Ruko",
+      "kabkota": "Kulon Progo",
+      "kecamatan": "bonang",
+      "kelurahan": "moro",
+      "peruntukan": "Kantor Badan Pemerintahan Desarma",
+      "status": "Dimiliki/Dikuasai",
+      "keterangan": "ga masuk",
+      "provinsi": "Daerah Istimewa Yogyakarta",
+      "area": 4543428.097417076,
+      "id": "Y1758908096547",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.135371,-7.846055],[110.147742,-7.849115],[110.142931,-7.859997],[110.111317,-7.861357],[110.115097,-7.849115],[110.125062,-7.849796],[110.130217,-7.852856],[110.135371,-7.846055]]]}",
+      "type": "yardip",
+      "created_at": "2025-09-26T17:34:56.547Z",
+      "updated_at": "2025-09-26T17:34:56.555Z"
     }
   ],
   "korem": [
