@@ -35,9 +35,10 @@ const LoginPage = () => {
   };
 
   const backgroundStyle = {
-    minHeight: "100vh",
+    height: "100vh",
+    width: "100vw",
     backgroundImage: "url(/uploads/login.png)",
-    backgroundSize: "cover",
+    backgroundSize: "100% 100%",
     backgroundPosition: "center",
     backgroundRepeat: "no-repeat",
     position: "relative",
@@ -63,31 +64,54 @@ const LoginPage = () => {
             <Card
               style={{
                 width: "24rem",
-                backgroundColor: "rgba(255, 255, 255, 0.95)",
+                backgroundColor: "rgba(255, 255, 255, 0.2)",
+                backdropFilter: "blur(10px)",
+                WebkitBackdropFilter: "blur(10px)",
               }}
             >
               <Card.Body className="p-4">
-                <h3 className="text-center mb-4">Login</h3>
+                <h3
+                  className="text-center mb-4"
+                  style={{ color: "rgba(255, 255, 255, 0.7)" }}
+                >
+                  Login
+                </h3>
                 <Form onSubmit={handleSubmit}>
                   <Form.Group className="mb-3" controlId="formBasicEmail">
-                    <Form.Label>Username</Form.Label>
+                    <Form.Label style={{ color: "rgba(255, 255, 255, 0.7)" }}>
+                      Username
+                    </Form.Label>
                     <Form.Control
                       type="text"
                       placeholder="Masukkan username"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       required
+                      style={{
+                        backgroundColor: "rgba(255, 255, 255, 0.2)",
+                        backdropFilter: "blur(8px)",
+                        WebkitBackdropFilter: "blur(8px)",
+                        color: "white",
+                      }}
                     />
                   </Form.Group>
 
                   <Form.Group className="mb-3" controlId="formBasicPassword">
-                    <Form.Label>Password</Form.Label>
+                    <Form.Label style={{ color: "rgba(255, 255, 255, 0.7)" }}>
+                      Password
+                    </Form.Label>
                     <Form.Control
                       type="password"
                       placeholder="Password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
+                      style={{
+                        backgroundColor: "rgba(255, 255, 255, 0.2)",
+                        backdropFilter: "blur(8px)",
+                        WebkitBackdropFilter: "blur(8px)",
+                        color: "white",
+                      }}
                     />
                   </Form.Group>
 
