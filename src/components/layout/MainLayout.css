@@ -1,3 +1,4 @@
+
 .content-area {
   display: flex;
   flex: 1;
@@ -53,4 +54,8 @@
   .sidebar.open {
     transform: translateX(0);
   }
+}
+
+.btn-outline-primary:hover {
+  color: white !important;
 }
