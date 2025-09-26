@@ -14,41 +14,18 @@ import ExcelJS from "exceljs";
 
 const API_URL = "http://localhost:3001";
 
-// Data provinsi dan kota yang sama dengan DataAsetYardipPage
-const kotaData = {
-  jateng: [
-    { id: "semarang", name: "Semarang" },
-    { id: "solo", name: "Surakarta (Solo)" },
-    { id: "yogya", name: "Yogyakarta" },
-    { id: "magelang", name: "Magelang" },
-    { id: "salatiga", name: "Salatiga" },
-    { id: "tegal", name: "Tegal" },
-    { id: "pekalongan", name: "Pekalongan" },
-    { id: "purwokerto", name: "Purwokerto" },
-    { id: "cilacap", name: "Cilacap" },
-    { id: "kudus", name: "Kudus" },
-    { id: "jepara", name: "Jepara" },
-    { id: "rembang", name: "Rembang" },
-  ],
-  diy: [
-    { id: "jogja", name: "Yogyakarta" },
-    { id: "sleman", name: "Sleman" },
-    { id: "bantul", name: "Bantul" },
-    { id: "kulonprogo", name: "Kulon Progo" },
-    { id: "gunungkidul", name: "Gunung Kidul" },
-  ],
-};
-
 const LaporanYardipPage = () => {
   const [assets, setAssets] = useState([]);
   const [bidangList, setBidangList] = useState([]);
+  const [provinsiList, setProvinsiList] = useState([]);
+  const [kabupatenList, setKabupatenList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState(null);
 
-  // Filter states
+  // Filter states - Updated to match current data structure
   const [selectedProvinsi, setSelectedProvinsi] = useState("");
-  const [selectedKota, setSelectedKota] = useState("");
+  const [selectedKabupaten, setSelectedKabupaten] = useState("");
   const [selectedBidang, setSelectedBidang] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [filteredAssets, setFilteredAssets] = useState([]);
@@ -58,18 +35,29 @@ const LaporanYardipPage = () => {
       setLoading(true);
       try {
         const assetsRes = await axios.get(`${API_URL}/yardip_assets`);
+        const assetsData = assetsRes.data || [];
 
-        setAssets(assetsRes.data);
+        setAssets(assetsData);
 
         // Extract unique bidang for filter
         const uniqueBidang = [
-          ...new Set(
-            assetsRes.data.map((asset) => asset.bidang).filter(Boolean)
-          ),
+          ...new Set(assetsData.map((asset) => asset.bidang).filter(Boolean)),
         ];
         setBidangList(uniqueBidang);
 
-        setFilteredAssets(assetsRes.data);
+        // Extract unique provinsi for filter
+        const uniqueProvinsi = [
+          ...new Set(assetsData.map((asset) => asset.provinsi).filter(Boolean)),
+        ];
+        setProvinsiList(uniqueProvinsi);
+
+        // Extract unique kabupaten for filter
+        const uniqueKabupaten = [
+          ...new Set(assetsData.map((asset) => asset.kabkota).filter(Boolean)),
+        ];
+        setKabupatenList(uniqueKabupaten);
+
+        setFilteredAssets(assetsData);
         setError(null);
       } catch (err) {
         setError(
@@ -89,12 +77,14 @@ const LaporanYardipPage = () => {
 
     if (selectedProvinsi) {
       filtered = filtered.filter(
-        (asset) => asset.provinsi_id === selectedProvinsi
+        (asset) => asset.provinsi === selectedProvinsi
       );
     }
 
-    if (selectedKota) {
-      filtered = filtered.filter((asset) => asset.kota_id === selectedKota);
+    if (selectedKabupaten) {
+      filtered = filtered.filter(
+        (asset) => asset.kabkota === selectedKabupaten
+      );
     }
 
     if (selectedBidang) {
@@ -106,65 +96,55 @@ const LaporanYardipPage = () => {
     }
 
     setFilteredAssets(filtered);
-  }, [selectedProvinsi, selectedKota, selectedBidang, statusFilter, assets]);
+  }, [
+    selectedProvinsi,
+    selectedKabupaten,
+    selectedBidang,
+    statusFilter,
+    assets,
+  ]);
 
-  // Get kota list based on selected provinsi
-  const getKotaForSelectedProvinsi = () => {
-    if (!selectedProvinsi) return [];
-    return kotaData[selectedProvinsi] || [];
+  // Get kabupaten list based on selected provinsi
+  const getKabupatenForSelectedProvinsi = () => {
+    if (!selectedProvinsi) return kabupatenList;
+    return assets
+      .filter((asset) => asset.provinsi === selectedProvinsi)
+      .map((asset) => asset.kabkota)
+      .filter(
+        (kabkota, index, arr) => kabkota && arr.indexOf(kabkota) === index
+      )
+      .sort();
   };
 
   const handleProvinsiChange = (e) => {
     setSelectedProvinsi(e.target.value);
-    setSelectedKota(""); // Reset kota when provinsi changes
+    setSelectedKabupaten(""); // Reset kabupaten when provinsi changes
   };
 
   const handleResetFilter = () => {
     setSelectedProvinsi("");
-    setSelectedKota("");
+    setSelectedKabupaten("");
     setSelectedBidang("");
     setStatusFilter("");
   };
 
-  // Helper function untuk mendapatkan nama provinsi
-  const getProvinsiName = (provinsiId) => {
-    switch (provinsiId) {
-      case "jateng":
-        return "JAWA TENGAH";
-      case "diy":
-        return "DI YOGYAKARTA";
-      default:
-        return "-";
-    }
-  };
-
-  // Helper function untuk mendapatkan nama kota
-  const getKotaName = (provinsiId, kotaId) => {
-    if (!provinsiId || !kotaId) return "-";
-    const kota = kotaData[provinsiId]?.find((k) => k.id === kotaId);
-    return kota ? kota.name.toUpperCase() : kotaId.toUpperCase();
-  };
-
-  // Helper function untuk group assets berdasarkan Provinsi dan Kota (untuk preview)
-  const groupAssetsByProvinsiKota = (assets) => {
+  // Helper function untuk group assets berdasarkan Provinsi dan Kabupaten
+  const groupAssetsByProvinsiKabupaten = (assets) => {
     const grouped = {};
 
     assets.forEach((asset) => {
-      const provinsiId = asset.provinsi_id || "unknown";
-      const kotaId = asset.kota_id || "Tidak Ada Kota";
+      const provinsi = asset.provinsi || "Provinsi Tidak Diketahui";
+      const kabupaten = asset.kabkota || "Kabupaten Tidak Diketahui";
 
-      if (!grouped[provinsiId]) {
-        grouped[provinsiId] = {
-          provinsiName: getProvinsiName(provinsiId),
-          kotas: {},
-        };
+      if (!grouped[provinsi]) {
+        grouped[provinsi] = {};
       }
 
-      if (!grouped[provinsiId].kotas[kotaId]) {
-        grouped[provinsiId].kotas[kotaId] = [];
+      if (!grouped[provinsi][kabupaten]) {
+        grouped[provinsi][kabupaten] = [];
       }
 
-      grouped[provinsiId].kotas[kotaId].push(asset);
+      grouped[provinsi][kabupaten].push(asset);
     });
 
     return grouped;
@@ -321,15 +301,15 @@ const LaporanYardipPage = () => {
         const row2 = worksheet.getRow(currentRow);
         row2.getCell(3).value = asset.kecamatan || "-";
 
-        // Row 3: Kota
+        // Row 3: Kabupaten/Kota
         currentRow++;
         const row3 = worksheet.getRow(currentRow);
-        row3.getCell(3).value = getKotaName(asset.provinsi_id, asset.kota_id);
+        row3.getCell(3).value = asset.kabkota || "-";
 
         // Row 4: Provinsi
         currentRow++;
         const row4 = worksheet.getRow(currentRow);
-        row4.getCell(3).value = getProvinsiName(asset.provinsi_id);
+        row4.getCell(3).value = asset.provinsi || "-";
 
         // Format all 4 rows
         [row1, row2, row3, row4].forEach((row) => {
@@ -389,10 +369,10 @@ const LaporanYardipPage = () => {
 
       // Prepare subtitle based on filters
       let subtitle = "";
-      if (selectedProvinsi && selectedKota) {
-        subtitle = `DI WILAYAH ${getKotaName(selectedProvinsi, selectedKota)}`;
+      if (selectedProvinsi && selectedKabupaten) {
+        subtitle = `DI WILAYAH ${selectedKabupaten.toUpperCase()}`;
       } else if (selectedProvinsi) {
-        subtitle = `DI WILAYAH ${getProvinsiName(selectedProvinsi)}`;
+        subtitle = `DI WILAYAH ${selectedProvinsi.toUpperCase()}`;
       } else {
         subtitle = "DI SELURUH WILAYAH";
       }
@@ -479,9 +459,7 @@ const LaporanYardipPage = () => {
 
       // Generate filename
       const provinsiName = selectedProvinsi
-        ? getProvinsiName(selectedProvinsi)
-            .replace(/[^a-zA-Z0-9\s]/g, "")
-            .replace(/\s+/g, "_")
+        ? selectedProvinsi.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "_")
         : "Semua";
       const fileName = `Laporan_Aset_Yardip_${provinsiName}_${
         new Date().toISOString().split("T")[0]
@@ -512,9 +490,9 @@ const LaporanYardipPage = () => {
     }
   };
 
-  // Helper function untuk group assets for preview (kembali ke format asli)
+  // Helper function untuk group assets for preview
   const getGroupedAssetsForPreview = () => {
-    return groupAssetsByProvinsiKota(filteredAssets);
+    return groupAssetsByProvinsiKabupaten(filteredAssets);
   };
 
   if (loading)
@@ -571,8 +549,11 @@ const LaporanYardipPage = () => {
                   className="form-select-lg"
                 >
                   <option value="">Semua Provinsi</option>
-                  <option value="jateng">Jawa Tengah</option>
-                  <option value="diy">DI Yogyakarta</option>
+                  {provinsiList.map((provinsi) => (
+                    <option key={provinsi} value={provinsi}>
+                      {provinsi}
+                    </option>
+                  ))}
                 </Form.Select>
               </Form.Group>
             </Col>
@@ -584,15 +565,15 @@ const LaporanYardipPage = () => {
                   Kota/Kabupaten
                 </Form.Label>
                 <Form.Select
-                  value={selectedKota}
-                  onChange={(e) => setSelectedKota(e.target.value)}
+                  value={selectedKabupaten}
+                  onChange={(e) => setSelectedKabupaten(e.target.value)}
                   className="form-select-lg"
                   disabled={!selectedProvinsi}
                 >
-                  <option value="">Semua Kota</option>
-                  {getKotaForSelectedProvinsi().map((kota) => (
-                    <option key={kota.id} value={kota.id}>
-                      {kota.name}
+                  <option value="">Semua Kota/Kabupaten</option>
+                  {getKabupatenForSelectedProvinsi().map((kabupaten) => (
+                    <option key={kabupaten} value={kabupaten}>
+                      {kabupaten}
                     </option>
                   ))}
                 </Form.Select>
@@ -714,7 +695,7 @@ const LaporanYardipPage = () => {
             </div>
           ) : (
             <>
-              {/* Summary Cards - Updated to show Lain-lain instead of Total Luas */}
+              {/* Summary Cards */}
               <Row className="mb-4">
                 <Col lg={3} md={6} className="mb-3">
                   <Card className="bg-primary text-white h-100">
@@ -771,15 +752,15 @@ const LaporanYardipPage = () => {
                 </Col>
               </Row>
 
-              {/* Data Preview dengan Grouping berdasarkan Provinsi dan Kota (format asli) */}
+              {/* Data Preview dengan Grouping berdasarkan Provinsi dan Kabupaten */}
               <div
                 className="border rounded"
                 style={{ maxHeight: "600px", overflowY: "auto" }}
               >
-                {Object.keys(getGroupedAssetsForPreview()).map((provinsiId) => {
-                  const provinsiData = getGroupedAssetsForPreview()[provinsiId];
+                {Object.keys(getGroupedAssetsForPreview()).map((provinsi) => {
+                  const provinsiData = getGroupedAssetsForPreview()[provinsi];
                   return (
-                    <div key={provinsiId} className="mb-4">
+                    <div key={provinsi} className="mb-4">
                       {/* Header Provinsi dengan background biru */}
                       <div
                         className="p-3"
@@ -787,20 +768,19 @@ const LaporanYardipPage = () => {
                       >
                         <h5 className="mb-0 fw-bold">
                           <i className="fas fa-map-marked-alt me-2"></i>
-                          {provinsiData.provinsiName}
+                          {provinsi}
                         </h5>
                       </div>
 
-                      {Object.keys(provinsiData.kotas).map((kotaId) => {
-                        const kotaAssets = provinsiData.kotas[kotaId];
-                        const kotaName = getKotaName(provinsiId, kotaId);
+                      {Object.keys(provinsiData).map((kabupaten) => {
+                        const kabupatenAssets = provinsiData[kabupaten];
 
                         return (
-                          <div key={kotaId} className="ms-3 mb-3">
+                          <div key={kabupaten} className="ms-3 mb-3">
                             <div className="bg-warning bg-opacity-25 p-2 border-start border-warning border-3">
                               <strong className="text-dark">
                                 <i className="fas fa-building me-2"></i>
-                                {kotaName} ({kotaAssets.length} aset)
+                                {kabupaten} ({kabupatenAssets.length} aset)
                               </strong>
                             </div>
 
@@ -821,7 +801,7 @@ const LaporanYardipPage = () => {
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {kotaAssets.map((asset, index) => (
+                                  {kabupatenAssets.map((asset, index) => (
                                     <tr key={asset.id}>
                                       <td className="text-center">
                                         {index + 1}
@@ -837,12 +817,7 @@ const LaporanYardipPage = () => {
                                         </strong>
                                       </td>
                                       <td>
-                                        <strong>
-                                          {getKotaName(
-                                            asset.provinsi_id,
-                                            asset.kota_id
-                                          )}
-                                        </strong>
+                                        <strong>{asset.kabkota || "-"}</strong>
                                       </td>
                                       <td>
                                         <strong>

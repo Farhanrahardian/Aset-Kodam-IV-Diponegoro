@@ -1,5 +1,13 @@
 import React, { useState, useCallback, useMemo, useEffect } from "react";
-import { Container, Row, Col, Button, Alert, Card, Spinner } from "react-bootstrap";
+import {
+  Container,
+  Row,
+  Col,
+  Button,
+  Alert,
+  Card,
+  Spinner,
+} from "react-bootstrap";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -25,6 +33,9 @@ const TambahAsetYardipPage = () => {
   const [provinsiData, setProvinsiData] = useState(null);
   const [kabupatenData, setKabupatenData] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // NEW: State to handle form-triggered map navigation
+  const [mapNavigationTrigger, setMapNavigationTrigger] = useState(null);
 
   // Load boundary data on mount
   useEffect(() => {
@@ -58,7 +69,9 @@ const TambahAsetYardipPage = () => {
       setSelectedLocation((prev) => ({ ...prev, kabupaten: name }));
       setIsDrawingEnabled(true);
       setDrawnAsset(null);
-      toast.success(`Kabupaten/Kota ${name} dipilih. Silakan gambar area aset.`);
+      toast.success(
+        `Kabupaten/Kota ${name} dipilih. Silakan gambar area aset.`
+      );
     } else {
       // Kembali ke tampilan nasional
       setSelectedLocation({ provinsi: null, kabupaten: null });
@@ -77,47 +90,75 @@ const TambahAsetYardipPage = () => {
     setDrawnAsset(null); // Clear any drawing when location changes
   }, []);
 
+  // NEW: Handler untuk navigasi peta dari form
+  const handleMapLocationSelect = useCallback((type, name) => {
+    // Set trigger untuk memaksa map component untuk zoom ke lokasi
+    setMapNavigationTrigger({ type, name, timestamp: Date.now() });
+
+    if (type === "provinsi") {
+      setSelectedLocation({ provinsi: name, kabupaten: null });
+      setIsDrawingEnabled(false);
+      setDrawnAsset(null);
+      toast.success(`Peta dipindahkan ke Provinsi ${name}`);
+    } else if (type === "kabupaten") {
+      setSelectedLocation((prev) => ({ ...prev, kabupaten: name }));
+      setIsDrawingEnabled(true);
+      setDrawnAsset(null);
+      toast.success(`Peta dipindahkan ke Kabupaten/Kota ${name}`);
+    }
+  }, []);
+
   const handleDrawingCreated = useCallback((data) => {
     setDrawnAsset(data);
     toast.success(`Area seluas ${data.area.toFixed(2)} m² berhasil digambar.`);
   }, []);
 
-  const handleImportedGeometry = useCallback((geometry) => {
-    if (!geometry || !kabupatenData || !provinsiData) {
-      toast.error("Gagal memproses geometri, data batas wilayah belum siap.");
-      return;
-    }
+  const handleImportedGeometry = useCallback(
+    (geometry) => {
+      if (!geometry || !kabupatenData || !provinsiData) {
+        toast.error("Gagal memproses geometri, data batas wilayah belum siap.");
+        return;
+      }
 
-    const area = turf.area(geometry);
-    let containingKab = null;
-    let containingProv = null;
+      const area = turf.area(geometry);
+      let containingKab = null;
+      let containingProv = null;
 
-    try {
-      const centroid = turf.centroid(geometry);
+      try {
+        const centroid = turf.centroid(geometry);
 
-      for (const kabFeature of kabupatenData.features) {
-        if (turf.booleanPointInPolygon(centroid, kabFeature)) {
-          containingKab = kabFeature.properties.Kabupaten;
-          containingProv = kabFeature.properties.PROVINCE;
-          break;
+        for (const kabFeature of kabupatenData.features) {
+          if (turf.booleanPointInPolygon(centroid, kabFeature)) {
+            containingKab = kabFeature.properties.Kabupaten;
+            containingProv = kabFeature.properties.PROVINCE;
+            break;
+          }
         }
-      }
 
-      if (containingProv && containingKab) {
-        setSelectedLocation({ provinsi: containingProv, kabupaten: containingKab });
-        setDrawnAsset({ geometry, area });
-        toast.success(`Poligon berhasil diimpor! Lokasi: ${containingKab}, ${containingProv}.`);
-      } else {
-        toast.error("Tidak dapat menentukan lokasi poligon. Pastikan poligon berada di dalam wilayah yang didukung.");
-        // Still draw the asset, but don't set the location
-        setDrawnAsset({ geometry, area });
+        if (containingProv && containingKab) {
+          setSelectedLocation({
+            provinsi: containingProv,
+            kabupaten: containingKab,
+          });
+          setDrawnAsset({ geometry, area });
+          toast.success(
+            `Poligon berhasil diimpor! Lokasi: ${containingKab}, ${containingProv}.`
+          );
+        } else {
+          toast.error(
+            "Tidak dapat menentukan lokasi poligon. Pastikan poligon berada di dalam wilayah yang didukung."
+          );
+          // Still draw the asset, but don't set the location
+          setDrawnAsset({ geometry, area });
+        }
+      } catch (e) {
+        toast.error("Terjadi kesalahan saat menganalisis poligon.");
+        console.error("Polygon analysis error:", e);
+        setDrawnAsset({ geometry, area }); // Draw it anyway
       }
-    } catch (e) {
-      toast.error("Terjadi kesalahan saat menganalisis poligon.");
-      console.error("Polygon analysis error:", e);
-      setDrawnAsset({ geometry, area }); // Draw it anyway
-    }
-  }, [kabupatenData, provinsiData]);
+    },
+    [kabupatenData, provinsiData]
+  );
 
   const handleSaveAsset = useCallback(
     async (assetData) => {
@@ -126,7 +167,9 @@ const TambahAsetYardipPage = () => {
         return;
       }
       if (!selectedLocation.provinsi || !selectedLocation.kabupaten) {
-        toast.error("Lokasi provinsi dan kabupaten/kota belum dipilih di peta.");
+        toast.error(
+          "Lokasi provinsi dan kabupaten/kota belum dipilih di peta."
+        );
         return;
       }
 
@@ -146,17 +189,18 @@ const TambahAsetYardipPage = () => {
 
         await axios.post(`${API_URL}/yardip_assets`, payload);
         toast.success("Aset Yardip berhasil ditambahkan!", { id: toastId });
-        
+
         // Reload assets to include the new one
         const response = await axios.get(`${API_URL}/yardip_assets`);
         setYardipAssets(response.data || []);
-        
-        setTimeout(() => navigate("/data-aset-yardip"), 1500);
 
+        setTimeout(() => navigate("/data-aset-yardip"), 1500);
       } catch (err) {
         toast.error("Gagal menyimpan aset yardip.", { id: toastId });
         console.error("Error saving yardip asset:", err);
-        setError(`Gagal menyimpan: ${err.response?.data?.message || err.message}`);
+        setError(
+          `Gagal menyimpan: ${err.response?.data?.message || err.message}`
+        );
       }
     },
     [drawnAsset, selectedLocation, navigate]
@@ -168,20 +212,23 @@ const TambahAsetYardipPage = () => {
 
   const alertMessage = useMemo(() => {
     if (!selectedLocation.provinsi) {
-      return "Pilih Provinsi di Peta untuk memulai.";
+      return "Pilih Provinsi di Peta atau melalui dropdown untuk memulai.";
     }
     if (!selectedLocation.kabupaten) {
-      return `Provinsi ${selectedLocation.provinsi} dipilih. Selanjutnya, pilih Kabupaten/Kota di dalam area provinsi.`;
+      return `Provinsi ${selectedLocation.provinsi} dipilih. Selanjutnya, pilih Kabupaten/Kota di peta atau melalui dropdown.`;
     }
     if (!drawnAsset) {
       return `Kabupaten/Kota ${selectedLocation.kabupaten} dipilih. Gunakan tool di pojok kiri atas peta untuk menggambar area aset.`;
     }
-    return `Area aset telah digambar di ${selectedLocation.kabupaten}. Silakan lengkapi form di sebelah kanan.`
+    return `Area aset telah digambar di ${selectedLocation.kabupaten}. Silakan lengkapi form di sebelah kanan.`;
   }, [selectedLocation, drawnAsset]);
 
   if (loading) {
     return (
-      <Container className="d-flex justify-content-center align-items-center" style={{ height: "100vh" }}>
+      <Container
+        className="d-flex justify-content-center align-items-center"
+        style={{ height: "100vh" }}
+      >
         <Spinner animation="border" variant="primary" />
       </Container>
     );
@@ -201,12 +248,12 @@ const TambahAsetYardipPage = () => {
         <Col md={7}>
           <Card className="border-0 shadow-sm mb-3">
             <Card.Header className="bg-white border-bottom-0">
-                <Alert variant="info" className="mb-0 mt-2 py-2">
-                  <small>
-                    <i className="bi bi-info-circle me-1"></i>
-                    <strong>Petunjuk:</strong> {alertMessage}
-                  </small>
-                </Alert>
+              <Alert variant="info" className="mb-0 mt-2 py-2">
+                <small>
+                  <i className="bi bi-info-circle me-1"></i>
+                  <strong>Petunjuk:</strong> {alertMessage}
+                </small>
+              </Alert>
             </Card.Header>
           </Card>
 
@@ -223,6 +270,7 @@ const TambahAsetYardipPage = () => {
                 isDrawingEnabled={isDrawingEnabled}
                 assets={yardipAssets} // Pass existing YARDIP assets to the map
                 newlyDrawnGeometry={drawnAsset ? drawnAsset.geometry : null} // Auto zoom to newly drawn geometry
+                mapNavigationTrigger={mapNavigationTrigger} // NEW: Pass trigger for form-controlled navigation
               />
             </MapErrorBoundary>
           </div>
@@ -243,6 +291,7 @@ const TambahAsetYardipPage = () => {
               kabupatenData={kabupatenData}
               onLocationChange={handleLocationChangeFromForm}
               isPolygonCreated={!!drawnAsset}
+              onMapLocationSelect={handleMapLocationSelect} // NEW: Pass handler for form-controlled map navigation
             />
           </div>
         </Col>

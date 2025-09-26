@@ -24,12 +24,26 @@ L.Icon.Default.mergeOptions({
 
 // --- STYLING ---
 const provinceStyles = {
-  "Jawa Tengah": { fillColor: "#2E7D32", color: "black", weight: 1, fillOpacity: 0.5 },
-  "Daerah Istimewa Yogyakarta": { fillColor: "#FFC107", color: "black", weight: 1, fillOpacity: 0.5 },
+  "Jawa Tengah": {
+    fillColor: "#2E7D32",
+    color: "black",
+    weight: 1,
+    fillOpacity: 0.5,
+  },
+  "Daerah Istimewa Yogyakarta": {
+    fillColor: "#FFC107",
+    color: "black",
+    weight: 1,
+    fillOpacity: 0.5,
+  },
 };
-const kabupatenStyle = { fillColor: "#0d6efd", color: "white", weight: 2, fillOpacity: 0.5 };
+const kabupatenStyle = {
+  fillColor: "#0d6efd",
+  color: "white",
+  weight: 2,
+  fillOpacity: 0.5,
+};
 const selectedStyle = { color: "#ffc107", weight: 4, fillOpacity: 0.3 };
-
 
 // --- MAIN COMPONENT ---
 const PetaGambarYardip = ({
@@ -40,23 +54,60 @@ const PetaGambarYardip = ({
   newlyDrawnGeometry,
   provinsiData,
   kabupatenData,
+  mapNavigationTrigger, // NEW: prop for form-controlled navigation
 }) => {
-  const [view, setView] = useState({ type: "nasional", name: null, feature: null });
-  
+  const [view, setView] = useState({
+    type: "nasional",
+    name: null,
+    feature: null,
+  });
+
   const featureGroupRef = useRef(null);
   const geoJsonLayerRef = useRef(null);
+
+  // NEW: Effect to handle form-triggered navigation
+  useEffect(() => {
+    if (mapNavigationTrigger && provinsiData && kabupatenData) {
+      const { type, name } = mapNavigationTrigger;
+
+      if (type === "provinsi") {
+        // Find the province and navigate to it
+        const provinceFeature = provinsiData.features.find(
+          (f) => f.properties.PROVINCE === name
+        );
+        if (provinceFeature) {
+          setView({ type: "provinsi", name: name, feature: null });
+        }
+      } else if (type === "kabupaten") {
+        // Find the kabupaten and navigate to it
+        const kabupatenFeature = kabupatenData.features.find(
+          (f) => f.properties.Kabupaten === name
+        );
+        if (kabupatenFeature) {
+          setView({
+            type: "kabupaten",
+            name: kabupatenFeature.properties.PROVINCE,
+            feature: kabupatenFeature,
+          });
+        }
+      }
+    }
+  }, [mapNavigationTrigger, provinsiData, kabupatenData]);
 
   // Effect to draw imported geometry
   useEffect(() => {
     const featureGroup = featureGroupRef.current;
     if (featureGroup) {
       featureGroup.clearLayers();
-      if (newlyDrawnGeometry && newlyDrawnGeometry.type === 'Polygon') {
+      if (newlyDrawnGeometry && newlyDrawnGeometry.type === "Polygon") {
         try {
           // Convert GeoJSON [lng, lat] to Leaflet [lat, lng]
-          const latLngs = newlyDrawnGeometry.coordinates[0].map(coord => [coord[1], coord[0]]);
+          const latLngs = newlyDrawnGeometry.coordinates[0].map((coord) => [
+            coord[1],
+            coord[0],
+          ]);
           const newLayer = L.polygon(latLngs, {
-            color: "#ff0000" // Style it like the drawn polygon
+            color: "#ff0000", // Style it like the drawn polygon
           });
           featureGroup.addLayer(newLayer);
         } catch (e) {
@@ -67,7 +118,11 @@ const PetaGambarYardip = ({
   }, [newlyDrawnGeometry]);
 
   // --- ZOOM CONTROLLER COMPONENT ---
-  const ZoomController = ({ view, newlyDrawnGeometry }) => {
+  const ZoomController = ({
+    view,
+    newlyDrawnGeometry,
+    mapNavigationTrigger,
+  }) => {
     const map = useMap();
 
     useEffect(() => {
@@ -93,9 +148,40 @@ const PetaGambarYardip = ({
           }
         }
 
+        // NEW: Handle form-triggered navigation with specific bounds
+        if (
+          (!bounds || !bounds.isValid()) &&
+          mapNavigationTrigger &&
+          provinsiData &&
+          kabupatenData
+        ) {
+          const { type, name } = mapNavigationTrigger;
+          try {
+            if (type === "provinsi") {
+              const provinceFeature = provinsiData.features.find(
+                (f) => f.properties.PROVINCE === name
+              );
+              if (provinceFeature) {
+                const layer = L.geoJSON(provinceFeature);
+                bounds = layer.getBounds();
+              }
+            } else if (type === "kabupaten") {
+              const kabupatenFeature = kabupatenData.features.find(
+                (f) => f.properties.Kabupaten === name
+              );
+              if (kabupatenFeature) {
+                const layer = L.geoJSON(kabupatenFeature);
+                bounds = layer.getBounds();
+              }
+            }
+          } catch (e) {
+            console.error("Error creating bounds for form navigation:", e);
+          }
+        }
+
         if (bounds && bounds.isValid()) {
           map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
-        } else if (view.type === 'nasional') {
+        } else if (view.type === "nasional") {
           // Fallback to default view if no bounds are valid
           map.setView([-7.5, 110.0], 8);
         }
@@ -105,19 +191,29 @@ const PetaGambarYardip = ({
       const timer = setTimeout(zoomToFeature, 200);
 
       return () => clearTimeout(timer);
-    }, [map, view, newlyDrawnGeometry]);
+    }, [map, view, newlyDrawnGeometry, mapNavigationTrigger]);
 
     return null;
   };
-  
+
   const getAssetCenter = (asset) => {
     try {
-      let lokasi = typeof asset.lokasi === 'string' ? JSON.parse(asset.lokasi) : asset.lokasi;
+      let lokasi =
+        typeof asset.lokasi === "string"
+          ? JSON.parse(asset.lokasi)
+          : asset.lokasi;
       if (!lokasi) return null;
-      const polygon = turf.polygon(lokasi.type === 'Polygon' ? lokasi.coordinates : lokasi);
+      const polygon = turf.polygon(
+        lokasi.type === "Polygon" ? lokasi.coordinates : lokasi
+      );
       const centroid = turf.centroid(polygon);
-      return [centroid.geometry.coordinates[1], centroid.geometry.coordinates[0]];
-    } catch (e) { return null; }
+      return [
+        centroid.geometry.coordinates[1],
+        centroid.geometry.coordinates[0],
+      ];
+    } catch (e) {
+      return null;
+    }
   };
 
   // --- RENDER EXISTING ASSETS ---
@@ -129,14 +225,19 @@ const PetaGambarYardip = ({
 
       const assetLayers = L.layerGroup();
 
-      assets.forEach(asset => {
+      assets.forEach((asset) => {
         try {
-          let lokasi = typeof asset.lokasi === 'string' ? JSON.parse(asset.lokasi) : asset.lokasi;
+          let lokasi =
+            typeof asset.lokasi === "string"
+              ? JSON.parse(asset.lokasi)
+              : asset.lokasi;
           if (lokasi) {
             const assetLayer = L.geoJSON(lokasi, {
-              style: { color: '#00ff00', weight: 2, opacity: 0.7 },
+              style: { color: "#00ff00", weight: 2, opacity: 0.7 },
             }).bindPopup(
-              `<b>${asset.pengelola || 'Aset'}</b><br/>Status: ${asset.status || 'N/A'}`
+              `<b>${asset.pengelola || "Aset"}</b><br/>Status: ${
+                asset.status || "N/A"
+              }`
             );
             assetLayers.addLayer(assetLayer);
           }
@@ -182,32 +283,45 @@ const PetaGambarYardip = ({
   const onEachProvinceFeature = (feature, layer) => {
     const provinceName = feature.properties.PROVINCE;
     layer.bindPopup(`<b>${provinceName}</b>`);
-    layer.on({ click: () => {
+    layer.on({
+      click: () => {
         setView({ type: "provinsi", name: provinceName, feature: null });
         if (onLocationSelect) onLocationSelect("provinsi", provinceName);
-    }});
-  }
+      },
+    });
+  };
 
   const onEachKabupatenFeature = (feature, layer) => {
     const { PROVINCE, Kabupaten } = feature.properties;
     layer.bindPopup(`<b>${Kabupaten}</b><br/>${PROVINCE}`);
-    layer.on({ click: () => {
+    layer.on({
+      click: () => {
         setView({ type: "kabupaten", name: PROVINCE, feature: feature });
         if (onLocationSelect) onLocationSelect("kabupaten", Kabupaten);
-    }});
-  }
+      },
+    });
+  };
 
   const getStyle = (feature) => {
-    if (view.type === 'kabupaten' && view.feature?.properties.Kabupaten === feature.properties.Kabupaten) {
-        return selectedStyle;
+    if (
+      view.type === "kabupaten" &&
+      view.feature?.properties.Kabupaten === feature.properties.Kabupaten
+    ) {
+      return selectedStyle;
     }
     return kabupatenStyle;
-  }
+  };
 
   const buttonStyle = {
-    position: "absolute", top: "10px", left: "50px", zIndex: 1000,
-    padding: "8px 12px", backgroundColor: "white", border: "2px solid rgba(0,0,0,0.2)",
-    borderRadius: "4px", cursor: "pointer",
+    position: "absolute",
+    top: "10px",
+    left: "50px",
+    zIndex: 1000,
+    padding: "8px 12px",
+    backgroundColor: "white",
+    border: "2px solid rgba(0,0,0,0.2)",
+    borderRadius: "4px",
+    cursor: "pointer",
   };
 
   if (!provinsiData || !kabupatenData) {
@@ -226,7 +340,11 @@ const PetaGambarYardip = ({
         zoom={8}
         style={{ height: "100%", width: "100%" }}
       >
-        <ZoomController view={view} newlyDrawnGeometry={newlyDrawnGeometry} />
+        <ZoomController
+          view={view}
+          newlyDrawnGeometry={newlyDrawnGeometry}
+          mapNavigationTrigger={mapNavigationTrigger}
+        />
 
         <LayersControl position="topright">
           <LayersControl.BaseLayer checked name="Street Map">
@@ -237,45 +355,61 @@ const PetaGambarYardip = ({
           </LayersControl.BaseLayer>
         </LayersControl>
 
-        {!newlyDrawnGeometry && view.type === 'nasional' && (
-            <GeoJSON 
-                ref={geoJsonLayerRef}
-                key='provinsi-layer'
-                data={provinsiData}
-                style={(feature) => provinceStyles[feature.properties.PROVINCE] || provinceStyles.default}
-                onEachFeature={onEachProvinceFeature}
-            />
+        {!newlyDrawnGeometry && view.type === "nasional" && (
+          <GeoJSON
+            ref={geoJsonLayerRef}
+            key="provinsi-layer"
+            data={provinsiData}
+            style={(feature) =>
+              provinceStyles[feature.properties.PROVINCE] ||
+              provinceStyles.default
+            }
+            onEachFeature={onEachProvinceFeature}
+          />
         )}
 
-        {!newlyDrawnGeometry && view.type === 'provinsi' && (
-            <GeoJSON 
-                ref={geoJsonLayerRef}
-                key={'kabupaten-layer-' + view.name}
-                data={{ type: "FeatureCollection", features: kabupatenData.features.filter(f => f.properties.PROVINCE === view.name) }}
-                style={getStyle}
-                onEachFeature={onEachKabupatenFeature}
-            />
+        {!newlyDrawnGeometry && view.type === "provinsi" && (
+          <GeoJSON
+            ref={geoJsonLayerRef}
+            key={"kabupaten-layer-" + view.name}
+            data={{
+              type: "FeatureCollection",
+              features: kabupatenData.features.filter(
+                (f) => f.properties.PROVINCE === view.name
+              ),
+            }}
+            style={getStyle}
+            onEachFeature={onEachKabupatenFeature}
+          />
         )}
 
-        {view.type === 'kabupaten' && view.feature && (
-            <GeoJSON 
-                ref={geoJsonLayerRef}
-                key={'kabupaten-selected-' + view.feature.properties.Kabupaten}
-                data={view.feature}
-                style={getStyle}
-            />
+        {view.type === "kabupaten" && view.feature && (
+          <GeoJSON
+            ref={geoJsonLayerRef}
+            key={"kabupaten-selected-" + view.feature.properties.Kabupaten}
+            data={view.feature}
+            style={getStyle}
+          />
         )}
 
         <AssetsLayer />
 
         <FeatureGroup ref={featureGroupRef}>
-          {isDrawingEnabled && view.type === 'kabupaten' && (
+          {isDrawingEnabled && view.type === "kabupaten" && (
             <EditControl
               position="topleft"
               onCreated={handleCreated}
               draw={{
-                rectangle: false, circle: false, circlemarker: false, marker: false, polyline: false,
-                polygon: { allowIntersection: false, showArea: true, shapeOptions: { color: "#ff0000" } },
+                rectangle: false,
+                circle: false,
+                circlemarker: false,
+                marker: false,
+                polyline: false,
+                polygon: {
+                  allowIntersection: false,
+                  showArea: true,
+                  shapeOptions: { color: "#ff0000" },
+                },
               }}
               edit={{ remove: true, edit: true }}
             />
