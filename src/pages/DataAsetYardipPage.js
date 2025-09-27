@@ -416,6 +416,44 @@ const DataAsetYardipPage = () => {
               />
             </Card.Body>
           </Card>
+
+          {filteredTableAssets.length > 0 && (
+            <Card className="mt-3">
+              <Card.Body>
+                <Row className="text-center">
+                  <Col md={4}>
+                    <div className="border-end">
+                      <h5 className="text-primary">{filteredTableAssets.length}</h5>
+                      <small className="text-muted">Total Aset</small>
+                    </div>
+                  </Col>
+                  <Col md={4}>
+                    <div className="border-end">
+                      <h5 className="text-success">
+                        {
+                          filteredTableAssets.filter(
+                            (a) => a.status === "Dimiliki/Dikuasai"
+                          ).length
+                        }
+                      </h5>
+                      <small className="text-muted">Dimiliki/Dikuasai</small>
+                    </div>
+                  </Col>
+                  <Col md={4}>
+                    <h5 className="text-danger">
+                      {
+                        filteredTableAssets.filter(
+                          (a) => a.status === "Tidak Dimiliki/Tidak Dikuasai"
+                        ).length
+                      }
+                    </h5>
+                    <small className="text-muted">Tidak Dimiliki/Tidak Dikuasai</small>
+                  </Col>
+                </Row>
+              </Card.Body>
+            </Card>
+          )}
+
         </Col>
       </Row>
 
