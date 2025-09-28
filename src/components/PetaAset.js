@@ -154,17 +154,17 @@ const MapController = ({
           (f) => normalizeKodimName(f.properties.listkodim_Kodim) === normalizedViewKodim
         );
       }
-      if (feature) map.fitBounds(L.geoJSON(feature).getBounds());
+      if (feature) map.fitBounds(L.geoJSON(feature).getBounds(), { animate: false });
 
     } else if (view.type === "korem" && view.korem) {
       const feature = koremData?.features.find(
         (f) => f.properties.listkodim_Korem === view.korem.listkodim_Korem
       );
-      if (feature) map.fitBounds(L.geoJSON(feature).getBounds());
+      if (feature) map.fitBounds(L.geoJSON(feature).getBounds(), { animate: false });
 
     } else { // Nasional view
       if (koremData && koremData.features.length > 0) {
-        map.fitBounds(L.geoJSON(koremData).getBounds());
+        map.fitBounds(L.geoJSON(koremData).getBounds(), { animate: false });
       }
     }
 

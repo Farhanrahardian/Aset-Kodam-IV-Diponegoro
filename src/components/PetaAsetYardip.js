@@ -147,7 +147,7 @@ const PetaAsetYardip = ({ assets = [], onAssetClick, filter, onViewChange, provi
         }
 
         if (bounds && bounds.isValid()) {
-          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15, animate: true });
+          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15, animate: false });
         } else if (view.type === 'nasional') {
           // Fallback to default view if no bounds are valid
           map.setView([-1.5, 110.0], 8);
