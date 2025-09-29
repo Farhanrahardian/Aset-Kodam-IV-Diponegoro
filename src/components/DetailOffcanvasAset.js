@@ -103,6 +103,8 @@ const DetailOffcanvasAset = ({
   const [previewMedia, setPreviewMedia] = useState(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [previewMediaTitle, setPreviewMediaTitle] = useState('');
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [previewAssetPhotos, setPreviewAssetPhotos] = useState([]);
   
   const navigate = useNavigate();
 
@@ -112,19 +114,53 @@ const DetailOffcanvasAset = ({
     navigate(`/view-file/${relativePath}`);
   };
 
-  const handlePreviewMedia = (mediaUrl, title = 'Preview Media Aset') => {
+  const handlePreviewMedia = (mediaUrl, title = 'Preview Media Aset', index = 0, allPhotos = []) => {
     const fullUrl = mediaUrl.startsWith('http') ? mediaUrl : `${API_URL}${mediaUrl}`;
     setPreviewMedia({
       url: fullUrl,
       isVideo: isVideoFile(mediaUrl),
     });
     setPreviewMediaTitle(title);
+    setCurrentPhotoIndex(index);
+    setPreviewAssetPhotos(allPhotos);
     setShowPreviewModal(true);
   };
 
   const handleClosePreview = () => {
     setShowPreviewModal(false);
     setPreviewMedia(null);
+    setPreviewAssetPhotos([]);
+    setCurrentPhotoIndex(0);
+  };
+
+  const handleNextPhoto = () => {
+    if (previewAssetPhotos && previewAssetPhotos.length > 1) {
+      const newIndex = (currentPhotoIndex + 1) % previewAssetPhotos.length;
+      const newMediaUrl = previewAssetPhotos[newIndex];
+      const fullUrl = newMediaUrl.startsWith('http') ? newMediaUrl : `${API_URL}${newMediaUrl}`;
+      
+      setPreviewMedia({
+        url: fullUrl,
+        isVideo: isVideoFile(fullUrl),
+      });
+      setCurrentPhotoIndex(newIndex);
+      setPreviewMediaTitle(`Foto Aset ${newIndex + 1}`);
+    }
+  };
+
+  const handlePrevPhoto = () => {
+    if (previewAssetPhotos && previewAssetPhotos.length > 1) {
+      const newIndex = (currentPhotoIndex - 1 + previewAssetPhotos.length) % previewAssetPhotos.length;
+      const newMediaUrl = previewAssetPhotos[newIndex];
+      const fullUrl = newMediaUrl.startsWith('http') ? newMediaUrl : `${API_URL}${newMediaUrl}`;
+
+      setPreviewMedia({
+        url: fullUrl,
+        isVideo: isVideoFile(fullUrl),
+      });
+      setCurrentPhotoIndex(newIndex);
+      setPreviewMediaTitle(`Foto Aset ${newIndex + 1}`);
+    }
   };
 
   if (!aset) return null;
@@ -241,7 +277,7 @@ const DetailOffcanvasAset = ({
         {aset.lokasi && (
           <div style={{ height: "200px", width: "100%" }}>
             <PetaAset
-              key={`detail-${aset.id}-${aset.updated_at || Date.now()}`}
+              key={`detail-${aset.id}`}
               assets={assetForMap}
               mode="detail"
             />
@@ -364,7 +400,7 @@ const DetailOffcanvasAset = ({
                                   overflow: "hidden",
                                   cursor: "pointer",
                                 }}
-                                onClick={() => handlePreviewMedia(imageUrl, "Preview Bukti Pemilikan")}
+                                onClick={() => handlePreviewMedia(imageUrl, "Preview Bukti Pemilikan", 0, imageUrl ? [imageUrl] : [])}
                                 title="Klik untuk preview gambar"
                               >
                                 <img
@@ -385,7 +421,7 @@ const DetailOffcanvasAset = ({
                               <Button
                                 variant="link"
                                 size="sm"
-                                onClick={() => handlePreviewMedia(imageUrl, "Preview Bukti Pemilikan")}
+                                onClick={() => handlePreviewMedia(imageUrl, "Preview Bukti Pemilikan", 0, imageUrl ? [imageUrl] : [])}
                                 className="p-0"
                                 style={{ fontSize: "0.7em" }}
                               >
@@ -489,7 +525,7 @@ const DetailOffcanvasAset = ({
                     cursor: "pointer",
                     border: "1px solid #ddd",
                   }}
-                  onClick={() => handlePreviewMedia(imageUrl, "Preview Bukti Pemilikan")}
+                  onClick={() => handlePreviewMedia(imageUrl, "Preview Bukti Pemilikan", 0, imageUrl ? [imageUrl] : [])}
                 />
                 <div className="mt-2">
                   <small className="text-muted">
@@ -514,7 +550,7 @@ const DetailOffcanvasAset = ({
                     return (
                       <Col key={index} md={4} className="mb-3">
                         <Card 
-                          onClick={() => handlePreviewMedia(foto)}
+                          onClick={() => handlePreviewMedia(foto, `Foto Aset ${index + 1}`, index, aset.foto_aset)}
                           className="h-100"
                           style={{ cursor: "pointer", border: "1px solid #ddd" }}
                         >
@@ -611,43 +647,78 @@ const DetailOffcanvasAset = ({
       </Offcanvas.Body>
     </Offcanvas>
     
-    {/* Preview Modal for Media - Rendered conditionally */}
+    {/* Preview Modal for Media - updated to match DetailModalAset */}
     {showPreviewModal && (
       <Modal 
         show={showPreviewModal} 
         onHide={handleClosePreview} 
-        size="xl" 
+        size="lg" 
         centered
-        backdrop="static"
-        keyboard={false}
-        dialogClassName="preview-modal"
-        backdropClassName="modal-backdrop-blur"
-        enforceFocus={false} // Important to allow video controls to work
+        dialogClassName="modal-90w"
       >
         <Modal.Header closeButton>
           <Modal.Title>{previewMediaTitle}</Modal.Title>
         </Modal.Header>
-        <Modal.Body className="d-flex justify-content-center align-items-center" style={{ height: '80vh', background: '#000' }}>
+        <Modal.Body className="text-center">
           {previewMedia && previewMedia.isVideo ? (
             <video
               src={previewMedia.url}
               controls
-              style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+              className="img-fluid"
+              style={{ maxHeight: "70vh", objectFit: "contain" }}
               autoPlay
+            >
+              Browser Anda tidak mendukung elemen video.
+            </video>
+          ) : previewMedia ? (
+            <img
+              src={previewMedia.url}
+              alt="Preview"
+              className="img-fluid"
+              style={{ maxHeight: "70vh", objectFit: "contain" }}
             />
           ) : (
-            <img
-              src={previewMedia?.url}
-              alt="Preview Aset"
-              style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-              onClick={(e) => e.stopPropagation()}
-            />
+            <div>
+              <p>Preview tidak tersedia untuk file ini.</p>
+              <Button
+                variant="primary"
+                onClick={() => window.open(previewMedia?.url, "_blank")}
+              >
+                Buka File
+              </Button>
+            </div>
           )}
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={handleClosePreview}>
-            Tutup
-          </Button>
+          <div className="d-flex justify-content-between align-items-center w-100">
+            <div>
+              {previewAssetPhotos && previewAssetPhotos.length > 1 && (
+                <>
+                  <Button variant="outline-primary" onClick={handlePrevPhoto} className="me-2">
+                    &larr; Sebelumnya
+                  </Button>
+                  <Button variant="outline-primary" onClick={handleNextPhoto}>
+                    Berikutnya &rarr;
+                  </Button>
+                </>
+              )}
+            </div>
+            <div className="d-flex align-items-center">
+              {previewAssetPhotos && previewAssetPhotos.length > 1 && (
+                <span className="me-3">
+                  {currentPhotoIndex + 1} dari {previewAssetPhotos.length}
+                </span>
+              )}
+              {previewMedia && (
+                <Button variant="info" onClick={() => window.open(previewMedia.url, "_blank")} className="me-2">
+                  Buka di Tab Baru
+                </Button>
+              )}
+              <Button variant="secondary" onClick={handleClosePreview}>
+                Tutup
+              </Button>
+            </div>
+          </div>
         </Modal.Footer>
       </Modal>
     )}
