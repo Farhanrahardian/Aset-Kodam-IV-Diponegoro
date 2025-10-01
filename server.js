@@ -117,6 +117,119 @@ app.post(
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+// --- User Management Endpoints ---
+
+// Login
+app.post("/login", (req, res) => {
+  const { username, password } = req.body;
+  const db = readDb();
+  const user = db.users.find(
+    (u) => u.username === username && u.password === password
+  );
+
+  if (user) {
+    res.json({
+      message: "Login successful",
+      user: {
+        id: user.id,
+        username: user.username,
+        name: user.name,
+        role: user.role,
+      },
+    });
+  } else {
+    res.status(401).json({ message: "Invalid username or password" });
+  }
+});
+
+// Get all users
+app.get("/api/users", (req, res) => {
+  const db = readDb();
+  res.json(db.users.map(u => ({ id: u.id, username: u.username, role: u.role, name: u.name })));
+});
+
+// Create a new user
+app.post("/api/users", (req, res) => {
+  const { username, password, role, name } = req.body;
+  if (!username || !password || !role || !name) {
+    return res.status(400).json({ message: "Semua field wajib diisi" });
+  }
+
+  // Server-side validation
+  if (username.length !== 18 || !/^\d+$/.test(username)) {
+    return res.status(400).json({ message: "NRP (Username) harus berupa 18 digit angka." });
+  }
+
+  const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
+  if (!passwordRegex.test(password)) {
+    return res.status(400).json({ message: "Password minimal 8 karakter dan harus mengandung huruf dan angka." });
+  }
+
+  const db = readDb();
+  
+  // Check if user already exists
+  if (db.users.some(u => u.username === username)) {
+    return res.status(409).json({ message: "Username already exists" });
+  }
+
+  const newUser = {
+    id: `u${Date.now()}`,
+    username,
+    password, // In a real app, hash this password!
+    name,
+    role,
+  };
+
+  db.users.push(newUser);
+  writeDb(db);
+  res.status(201).json({ id: newUser.id, username: newUser.username, role: newUser.role, name: newUser.name });
+});
+
+// Update a user
+app.put("/api/users/:id", (req, res) => {
+  const { id } = req.params;
+  const { role, password, name } = req.body;
+  const db = readDb();
+  const userIndex = db.users.findIndex((u) => u.id === id);
+
+  if (userIndex === -1) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  // Update fields if they are provided
+  if (role) db.users[userIndex].role = role;
+  if (name) db.users[userIndex].name = name;
+  
+  if (password) {
+    // Also validate password on update if it is being changed
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({ message: "Password minimal 8 karakter dan harus mengandung huruf dan angka." });
+    }
+    db.users[userIndex].password = password; // In a real app, hash this!
+  }
+
+  writeDb(db);
+  res.json({ message: "User updated successfully", user: db.users[userIndex] });
+});
+
+// Delete a user
+app.delete("/api/users/:id", (req, res) => {
+  const { id } = req.params;
+  const db = readDb();
+  const initialLength = db.users.length;
+  db.users = db.users.filter((u) => u.id !== id);
+
+  if (db.users.length === initialLength) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  writeDb(db);
+  res.status(200).json({ message: "User deleted successfully" });
+});
+
+
+
 
 // --- JSON-Server equivalent routes ---
 
@@ -275,6 +388,7 @@ app.use((error, req, res, next) => {
 
 app.listen(port, () => {
   console.log(
-    `Express server with file upload listening at http://localhost:${port}`
+    `Server listening at http://localhost:${port}`
   );
+  console.log("User management endpoints are now active on /api/users.");
 });

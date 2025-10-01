@@ -13,6 +13,13 @@
       "password": "pengguna123",
       "name": "Pengguna Biasa",
       "role": "pengguna"
+    },
+    {
+      "id": "u1759305566619",
+      "username": "123456789123456789",
+      "password": "rudi1234",
+      "name": "rudi",
+      "role": "pengguna"
     }
   ],
   "assets": [

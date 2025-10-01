@@ -13,6 +13,7 @@ import DataAsetYardipPage from "./pages/DataAsetYardipPage";
 import EditAsetPage from "./pages/EditAsetPage";
 import LaporanPage from "./pages/LaporanPage";
 import LaporanYardipPage from "./pages/LaporanYardipPage"; // ✅ import halaman laporan yardip
+import ManageUsersPage from "./pages/ManageUsersPage"; // Import ManageUsersPage
 import ViewFilePage from "./pages/ViewFilePage";
 import { Toaster } from "react-hot-toast";
 
@@ -129,6 +130,14 @@ function App() {
                     element={
                       <ProtectedRoute roles={["admin"]}>
                         <SettingsPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/manage-users"
+                    element={
+                      <ProtectedRoute roles={["admin"]}>
+                        <ManageUsersPage />
                       </ProtectedRoute>
                     }
                   />

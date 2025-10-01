@@ -70,6 +70,9 @@ const Sidebar = ({ show }) => {
             <NavLink to="/laporan-yardip" className="nav-link" style={navLinkStyle}>
               Cetak Laporan Aset Yardip
             </NavLink>
+            <NavLink to="/manage-users" className="nav-link" style={navLinkStyle}>
+              Kelola Pengguna
+            </NavLink>
             <NavLink to="/settings" className="nav-link" style={navLinkStyle}>
               Pengaturan
             </NavLink>
