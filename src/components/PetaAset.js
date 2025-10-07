@@ -742,18 +742,14 @@ const PetaAset = React.memo(
             assets={assetsToShow}
             mode={mode}
           />
-          {mode !== 'detail' ? (
-            <LayersControl position="topright">
-              <LayersControl.BaseLayer checked name="Street Map">
-                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-              </LayersControl.BaseLayer>
-              <LayersControl.BaseLayer name="Satelit">
-                <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" />
-              </LayersControl.BaseLayer>
-            </LayersControl>
-          ) : (
-            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          )}
+          <LayersControl position="topright">
+            <LayersControl.BaseLayer checked name="Street Map">
+              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+            </LayersControl.BaseLayer>
+            <LayersControl.BaseLayer name="Satelit">
+              <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" />
+            </LayersControl.BaseLayer>
+          </LayersControl>
 
           {mode !== 'detail' && <RegionLabels
             view={view}
