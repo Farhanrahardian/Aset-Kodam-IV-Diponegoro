@@ -6,9 +6,16 @@ import {
   FaInfoCircle,
   FaGlobe,
 } from "react-icons/fa";
-import { MapContainer, TileLayer, Polygon, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import { parseLocation } from '../utils/locationUtils';
+import {
+  MapContainer,
+  TileLayer,
+  Polygon,
+  useMap,
+  LayersControl,
+} from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import { parseLocation } from "../utils/locationUtils";
 
 // Helper untuk mendapatkan warna badge berdasarkan status
 const getStatusBadgeVariant = (status) => {
@@ -40,8 +47,10 @@ const DetailMapController = ({ geometry }) => {
     if (map && geometry) {
       try {
         const geoJsonForBounds = {
-          type: 'Polygon',
-          coordinates: [geometry.coordinates[0].map(latLng => [latLng[1], latLng[0]])]
+          type: "Polygon",
+          coordinates: [
+            geometry.coordinates[0].map((latLng) => [latLng[1], latLng[0]]),
+          ],
         };
         const layer = L.geoJSON(geoJsonForBounds);
         const bounds = layer.getBounds();
@@ -60,12 +69,15 @@ const DetailOffcanvasYardip = ({ show, handleClose, asetYardip }) => {
   if (!asetYardip) return null;
 
   const locationData = parseLocation(asetYardip.lokasi);
-  const hasValidLocation = locationData && locationData.type === 'Polygon';
+  const hasValidLocation = locationData && locationData.type === "Polygon";
 
   let mapGeometry = null;
   if (hasValidLocation) {
-    const latLngs = locationData.coordinates[0].map(coord => [coord[1], coord[0]]);
-    mapGeometry = { type: 'Polygon', coordinates: [latLngs] };
+    const latLngs = locationData.coordinates[0].map((coord) => [
+      coord[1],
+      coord[0],
+    ]);
+    mapGeometry = { type: "Polygon", coordinates: [latLngs] };
   }
 
   return (
@@ -87,18 +99,35 @@ const DetailOffcanvasYardip = ({ show, handleClose, asetYardip }) => {
       </Offcanvas.Header>
 
       <Offcanvas.Body style={{ padding: 0 }}>
-        {/* Mini Map Preview */}
+        {/* Mini Map Preview dengan Layer Control */}
         <div style={{ height: "250px", width: "100%" }}>
           {hasValidLocation ? (
             <MapContainer
-              key={asetYardip.id}
+              key={`map-detail-${asetYardip.id}`}
               center={[-7.5, 110.0]}
-              zoom={8}
-              style={{ height: '100%', width: '100%' }}
-              scrollWheelZoom={false}
+              zoom={10}
+              style={{ height: "100%", width: "100%" }}
+              scrollWheelZoom={true}
             >
-              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-              <Polygon positions={mapGeometry.coordinates[0]} pathOptions={getPolygonStyleByStatus(asetYardip.status)} />
+              <LayersControl position="topright">
+                <LayersControl.BaseLayer checked name="Street Map">
+                  <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution="&copy; OpenStreetMap contributors"
+                  />
+                </LayersControl.BaseLayer>
+                <LayersControl.BaseLayer name="Satelit">
+                  <TileLayer
+                    url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                    attribution="&copy; Esri"
+                  />
+                </LayersControl.BaseLayer>
+              </LayersControl>
+
+              <Polygon
+                positions={mapGeometry.coordinates[0]}
+                pathOptions={getPolygonStyleByStatus(asetYardip.status)}
+              />
               <DetailMapController geometry={mapGeometry} />
             </MapContainer>
           ) : (
@@ -134,7 +163,7 @@ const DetailOffcanvasYardip = ({ show, handleClose, asetYardip }) => {
                 </div>
               </div>
 
-              {/* Detailed Information Table - ID DIHAPUS */}
+              {/* Detailed Information Table */}
               <div className="table-responsive">
                 <table className="table table-sm table-borderless mb-0">
                   <tbody>
@@ -199,8 +228,7 @@ const DetailOffcanvasYardip = ({ show, handleClose, asetYardip }) => {
                       <td>
                         {asetYardip.area ? (
                           <span className="text-success">
-                            {Number(asetYardip.area).toLocaleString("id-ID")}{" "}
-                            mÂ²
+                            {Number(asetYardip.area).toLocaleString("id-ID")} m²
                           </span>
                         ) : (
                           "-"
@@ -222,9 +250,7 @@ const DetailOffcanvasYardip = ({ show, handleClose, asetYardip }) => {
                           <div>
                             <small className="text-muted">
                               Polygon dengan{" "}
-                              {locationData.coordinates[0]?.length || 0}
-                              {" "}
-                              titik
+                              {locationData.coordinates[0]?.length || 0} titik
                             </small>
                             <details className="mt-1">
                               <summary
@@ -243,13 +269,15 @@ const DetailOffcanvasYardip = ({ show, handleClose, asetYardip }) => {
                                 }}
                               >
                                 {locationData.coordinates[0] ? (
-                                  locationData.coordinates[0].map((coord, idx) => (
-                                    <div key={idx}>
-                                      {idx + 1}: [
-                                      {coord[0]?.toFixed(6) || "N/A"},{" "}
-                                      {coord[1]?.toFixed(6) || "N/A"}]
-                                    </div>
-                                  ))
+                                  locationData.coordinates[0].map(
+                                    (coord, idx) => (
+                                      <div key={idx}>
+                                        {idx + 1}: [
+                                        {coord[0]?.toFixed(6) || "N/A"},{" "}
+                                        {coord[1]?.toFixed(6) || "N/A"}]
+                                      </div>
+                                    )
+                                  )
                                 ) : (
                                   <span className="text-muted">
                                     Format koordinat tidak valid
@@ -313,9 +341,7 @@ const DetailOffcanvasYardip = ({ show, handleClose, asetYardip }) => {
                       <strong>Jumlah Koordinat:</strong>
                       <br />
                       <span className="text-muted">
-                        {locationData.coordinates[0]?.length || 0}
-                        {" "}
-                        titik
+                        {locationData.coordinates[0]?.length || 0} titik
                       </span>
                     </div>
                   </Col>
@@ -327,7 +353,7 @@ const DetailOffcanvasYardip = ({ show, handleClose, asetYardip }) => {
                         {asetYardip.area
                           ? `${Number(asetYardip.area).toLocaleString(
                               "id-ID"
-                            )} mÂ²`
+                            )} m²`
                           : "Tidak tersedia"}
                       </span>
                     </div>

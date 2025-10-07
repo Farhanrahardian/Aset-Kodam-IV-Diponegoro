@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import React, { useState, Fragment } from "react";
-import { 
+import {
   Offcanvas,
   Badge,
   Card,
@@ -30,24 +30,22 @@ const API_URL = "http://localhost:3001";
 
 // Helper untuk mendapatkan warna badge berdasarkan status
 const getStatusBadgeVariant = (status) => {
-  switch (status) {
-    case "Dimiliki/Dikuasai":
-      return "success";
-    case "Tidak Dimiliki/Tidak Dikuasai":
-      return "danger";
-    case "Lain-lain":
-      return "warning";
-    case "Aktif":
-      return "success";
-    case "Sengketa":
-      return "danger";
-    case "Dalam Proses":
-      return "warning";
-    case "Tidak Aktif":
-      return "secondary";
-    default:
-      return "light";
+  if (!status) return "secondary";
+
+  const statusLower = status.toLowerCase().trim();
+
+  // Status Aman = Hijau
+  if (statusLower.includes("aman")) {
+    return "success";
   }
+
+  // Status Sengketa = Merah
+  if (statusLower.includes("sengketa")) {
+    return "danger";
+  }
+
+  // Default jika tidak ada match
+  return "secondary";
 };
 
 // Helper function untuk memperbaiki path gambar
@@ -102,20 +100,27 @@ const DetailOffcanvasAset = ({
 }) => {
   const [previewMedia, setPreviewMedia] = useState(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
-  const [previewMediaTitle, setPreviewMediaTitle] = useState('');
+  const [previewMediaTitle, setPreviewMediaTitle] = useState("");
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [previewAssetPhotos, setPreviewAssetPhotos] = useState([]);
-  
+
   const navigate = useNavigate();
 
   const handleViewFile = (url) => {
     if (!url) return;
-    const relativePath = url.replace(`${API_URL}/`, '');
+    const relativePath = url.replace(`${API_URL}/`, "");
     navigate(`/view-file/${relativePath}`);
   };
 
-  const handlePreviewMedia = (mediaUrl, title = 'Preview Media Aset', index = 0, allPhotos = []) => {
-    const fullUrl = mediaUrl.startsWith('http') ? mediaUrl : `${API_URL}${mediaUrl}`;
+  const handlePreviewMedia = (
+    mediaUrl,
+    title = "Preview Media Aset",
+    index = 0,
+    allPhotos = []
+  ) => {
+    const fullUrl = mediaUrl.startsWith("http")
+      ? mediaUrl
+      : `${API_URL}${mediaUrl}`;
     setPreviewMedia({
       url: fullUrl,
       isVideo: isVideoFile(mediaUrl),
@@ -137,8 +142,10 @@ const DetailOffcanvasAset = ({
     if (previewAssetPhotos && previewAssetPhotos.length > 1) {
       const newIndex = (currentPhotoIndex + 1) % previewAssetPhotos.length;
       const newMediaUrl = previewAssetPhotos[newIndex];
-      const fullUrl = newMediaUrl.startsWith('http') ? newMediaUrl : `${API_URL}${newMediaUrl}`;
-      
+      const fullUrl = newMediaUrl.startsWith("http")
+        ? newMediaUrl
+        : `${API_URL}${newMediaUrl}`;
+
       setPreviewMedia({
         url: fullUrl,
         isVideo: isVideoFile(fullUrl),
@@ -150,9 +157,13 @@ const DetailOffcanvasAset = ({
 
   const handlePrevPhoto = () => {
     if (previewAssetPhotos && previewAssetPhotos.length > 1) {
-      const newIndex = (currentPhotoIndex - 1 + previewAssetPhotos.length) % previewAssetPhotos.length;
+      const newIndex =
+        (currentPhotoIndex - 1 + previewAssetPhotos.length) %
+        previewAssetPhotos.length;
       const newMediaUrl = previewAssetPhotos[newIndex];
-      const fullUrl = newMediaUrl.startsWith('http') ? newMediaUrl : `${API_URL}${newMediaUrl}`;
+      const fullUrl = newMediaUrl.startsWith("http")
+        ? newMediaUrl
+        : `${API_URL}${newMediaUrl}`;
 
       setPreviewMedia({
         url: fullUrl,
@@ -262,466 +273,515 @@ const DetailOffcanvasAset = ({
         backdrop={true}
         style={{ width: "600px" }}
       >
-      <Offcanvas.Header
-        closeButton
-        className="bg-primary text-white border-bottom"
-      >
-        <Offcanvas.Title as="h5">
-          <FaLandmark className="me-2" />
-          Detail Aset Tanah
-        </Offcanvas.Title>
-      </Offcanvas.Header>
-
-      <Offcanvas.Body style={{ padding: 0 }}>
-        {/* Mini Map Preview */}
-        {aset.lokasi && (
-          <div style={{ height: "200px", width: "100%" }}>
-            <PetaAset
-              key={`detail-${aset.id}`}
-              assets={assetForMap}
-              mode="detail"
-            />
-          </div>
-        )}
-
-        <div
-          style={{
-            padding: "1rem",
-            maxHeight: "calc(100vh - 300px)",
-            overflowY: "auto",
-          }}
+        <Offcanvas.Header
+          closeButton
+          className="bg-primary text-white border-bottom"
         >
-          {/* Main Info Card */}
-          <Card className="mb-3 shadow-sm">
-            <Card.Header className="bg-primary text-white">
-              <FaLandmark className="me-2" /> Informasi Aset Tanah
-            </Card.Header>
-            <Card.Body>
-              <div className="mb-3">
-                <h5 className="mb-1">{aset.nama || "N/A"}</h5>
-                <small className="text-muted">
-                  NUP (Nomor Urut Pendaftaran)
-                </small>
-                <div className="mt-2">
-                  <Badge bg={getStatusBadgeVariant(aset.status)} pill>
-                    {aset.status || "Status Tidak Diketahui"}
-                  </Badge>
-                </div>
-              </div>
+          <Offcanvas.Title as="h5">
+            <FaLandmark className="me-2" />
+            Detail Aset Tanah
+          </Offcanvas.Title>
+        </Offcanvas.Header>
 
-              {/* Detailed Information Table */}
-              <div className="table-responsive">
-                <table className="table table-sm table-borderless mb-0">
-                  <tbody>
-                    <tr>
-                      <td width="40%">
-                        <strong>NUP:</strong>
-                      </td>
-                      <td>{aset.nama || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Wilayah Korem:</strong>
-                      </td>
-                      <td>{korem?.nama || aset.korem_id || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Wilayah Kodim:</strong>
-                      </td>
-                      <td>{kodim?.nama || aset.kodim || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Alamat:</strong>
-                      </td>
-                      <td>{aset.alamat || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Peruntukan:</strong>
-                      </td>
-                      <td>{aset.peruntukan || aset.fungsi || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Status:</strong>
-                      </td>
-                      <td>
-                        <Badge bg={getStatusBadgeVariant(aset.status)}>
-                          {aset.status || "-"}
-                        </Badge>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>KIB/Kode Barang:</strong>
-                      </td>
-                      <td>{aset.kib_kode_barang || aset.kode_barang || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Nomor Registrasi:</strong>
-                      </td>
-                      <td>
-                        {aset.nomor_registrasi || aset.no_registrasi || "-"}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Asal Milik:</strong>
-                      </td>
-                      <td>{aset.asal_milik || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>{luasInfo.label}:</strong>
-                      </td>
-                      <td>
-                        <span className={luasInfo.className}>
-                          {luasInfo.value}
-                        </span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Bukti Pemilikan:</strong>
-                      </td>
-                      <td>
-                        {imageUrl ? (
-                          <div className="d-flex align-items-center gap-2">
-                            {hasValidImage && (
-                              <div
-                                style={{
-                                  width: "40px",
-                                  height: "40px",
-                                  border: "1px solid #ddd",
-                                  borderRadius: "4px",
-                                  overflow: "hidden",
-                                  cursor: "pointer",
-                                }}
-                                onClick={() => handlePreviewMedia(imageUrl, "Preview Bukti Pemilikan", 0, imageUrl ? [imageUrl] : [])}
-                                title="Klik untuk preview gambar"
-                              >
-                                <img
-                                  src={imageUrl}
-                                  alt="Preview"
+        <Offcanvas.Body style={{ padding: 0 }}>
+          {/* Mini Map Preview */}
+          {aset.lokasi && (
+            <div style={{ height: "200px", width: "100%" }}>
+              <PetaAset
+                key={`detail-${aset.id}`}
+                assets={assetForMap}
+                mode="detail"
+              />
+            </div>
+          )}
+
+          <div
+            style={{
+              padding: "1rem",
+              maxHeight: "calc(100vh - 300px)",
+              overflowY: "auto",
+            }}
+          >
+            {/* Main Info Card */}
+            <Card className="mb-3 shadow-sm">
+              <Card.Header className="bg-primary text-white">
+                <FaLandmark className="me-2" /> Informasi Aset Tanah
+              </Card.Header>
+              <Card.Body>
+                <div className="mb-3">
+                  <h5 className="mb-1">{aset.nama || "N/A"}</h5>
+                  <small className="text-muted">
+                    NUP (Nomor Urut Pendaftaran)
+                  </small>
+                  <div className="mt-2">
+                    <Badge bg={getStatusBadgeVariant(aset.status)} pill>
+                      {aset.status || "Status Tidak Diketahui"}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Detailed Information Table */}
+                <div className="table-responsive">
+                  <table className="table table-sm table-borderless mb-0">
+                    <tbody>
+                      <tr>
+                        <td width="40%">
+                          <strong>NUP:</strong>
+                        </td>
+                        <td>{aset.nama || "-"}</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Wilayah Korem:</strong>
+                        </td>
+                        <td>{korem?.nama || aset.korem_id || "-"}</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Wilayah Kodim:</strong>
+                        </td>
+                        <td>{kodim?.nama || aset.kodim || "-"}</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Alamat:</strong>
+                        </td>
+                        <td>{aset.alamat || "-"}</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Peruntukan:</strong>
+                        </td>
+                        <td>{aset.peruntukan || aset.fungsi || "-"}</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Status:</strong>
+                        </td>
+                        <td>
+                          <Badge bg={getStatusBadgeVariant(aset.status)}>
+                            {aset.status || "-"}
+                          </Badge>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>KIB/Kode Barang:</strong>
+                        </td>
+                        <td>
+                          {aset.kib_kode_barang || aset.kode_barang || "-"}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Nomor Registrasi:</strong>
+                        </td>
+                        <td>
+                          {aset.nomor_registrasi || aset.no_registrasi || "-"}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Asal Milik:</strong>
+                        </td>
+                        <td>{aset.asal_milik || "-"}</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>{luasInfo.label}:</strong>
+                        </td>
+                        <td>
+                          <span className={luasInfo.className}>
+                            {luasInfo.value}
+                          </span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Bukti Pemilikan:</strong>
+                        </td>
+                        <td>
+                          {imageUrl ? (
+                            <div className="d-flex align-items-center gap-2">
+                              {hasValidImage && (
+                                <div
                                   style={{
+                                    width: "40px",
+                                    height: "40px",
+                                    border: "1px solid #ddd",
+                                    borderRadius: "4px",
+                                    overflow: "hidden",
+                                    cursor: "pointer",
+                                  }}
+                                  onClick={() =>
+                                    handlePreviewMedia(
+                                      imageUrl,
+                                      "Preview Bukti Pemilikan",
+                                      0,
+                                      imageUrl ? [imageUrl] : []
+                                    )
+                                  }
+                                  title="Klik untuk preview gambar"
+                                >
+                                  <img
+                                    src={imageUrl}
+                                    alt="Preview"
+                                    style={{
+                                      width: "100%",
+                                      height: "100%",
+                                      objectFit: "cover",
+                                    }}
+                                  />
+                                </div>
+                              )}
+                              <div>
+                                <div style={{ fontSize: "0.8em" }}>
+                                  {filename}
+                                </div>
+                                <Button
+                                  variant="link"
+                                  size="sm"
+                                  onClick={() =>
+                                    handlePreviewMedia(
+                                      imageUrl,
+                                      "Preview Bukti Pemilikan",
+                                      0,
+                                      imageUrl ? [imageUrl] : []
+                                    )
+                                  }
+                                  className="p-0"
+                                  style={{ fontSize: "0.7em" }}
+                                >
+                                  Lihat Preview
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-muted">Tidak ada file</span>
+                          )}
+                        </td>
+                      </tr>
+                      {aset.keterangan_bukti_pemilikan && (
+                        <tr>
+                          <td>
+                            <strong>Keterangan Bukti Pemilikan:</strong>
+                          </td>
+                          <td>{aset.keterangan_bukti_pemilikan}</td>
+                        </tr>
+                      )}
+                      {aset.atas_nama_pemilik_sertifikat && (
+                        <tr>
+                          <td>
+                            <strong>Atas Nama Pemilik Sertifikat:</strong>
+                          </td>
+                          <td>{aset.atas_nama_pemilik_sertifikat}</td>
+                        </tr>
+                      )}
+                      <tr>
+                        <td>
+                          <strong>Koordinat:</strong>
+                        </td>
+                        <td>
+                          {hasValidLocation && validatedLocation ? (
+                            <div>
+                              <small className="text-muted">
+                                Polygon dengan{" "}
+                                {Array.isArray(validatedLocation)
+                                  ? validatedLocation[0]?.length || 0
+                                  : 0}{" "}
+                                titik
+                              </small>
+                              <details className="mt-1">
+                                <summary
+                                  style={{
+                                    cursor: "pointer",
+                                    fontSize: "0.8em",
+                                  }}
+                                >
+                                  Lihat koordinat
+                                </summary>
+                                <div
+                                  style={{
+                                    maxHeight: "100px",
+                                    overflowY: "auto",
+                                    fontSize: "0.7em",
+                                  }}
+                                >
+                                  {Array.isArray(validatedLocation) &&
+                                  validatedLocation[0] ? (
+                                    validatedLocation[0].map((coord, idx) => (
+                                      <div key={idx}>
+                                        {idx + 1}: [
+                                        {coord[0]?.toFixed(6) || "N/A"},{" "}
+                                        {coord[1]?.toFixed(6) || "N/A"}]
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <span className="text-muted">
+                                      Format koordinat tidak valid
+                                    </span>
+                                  )}
+                                </div>
+                              </details>
+                            </div>
+                          ) : (
+                            <span className="text-muted">Tidak tersedia</span>
+                          )}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </Card.Body>
+            </Card>
+
+            {/* Image Preview Card - Bukti Pemilikan */}
+            {hasValidImage && (
+              <Card className="mb-3 shadow-sm">
+                <Card.Header className="bg-info text-white">
+                  <FaFileAlt className="me-2" /> Preview Bukti Pemilikan
+                </Card.Header>
+                <Card.Body className="text-center">
+                  <Image
+                    src={imageUrl}
+                    alt="Bukti Pemilikan"
+                    fluid
+                    rounded
+                    style={{
+                      maxHeight: "200px",
+                      cursor: "pointer",
+                      border: "1px solid #ddd",
+                    }}
+                    onClick={() =>
+                      handlePreviewMedia(
+                        imageUrl,
+                        "Preview Bukti Pemilikan",
+                        0,
+                        imageUrl ? [imageUrl] : []
+                      )
+                    }
+                  />
+                  <div className="mt-2">
+                    <small className="text-muted">
+                      Klik gambar untuk melihat preview
+                    </small>
+                  </div>
+                </Card.Body>
+              </Card>
+            )}
+
+            {/* Asset Photos Card */}
+            {aset.foto_aset &&
+              Array.isArray(aset.foto_aset) &&
+              aset.foto_aset.length > 0 && (
+                <Card className="mb-3 shadow-sm">
+                  <Card.Header className="bg-success text-white">
+                    <FaFileAlt className="me-2" /> Foto Aset
+                  </Card.Header>
+                  <Card.Body>
+                    <Row>
+                      {aset.foto_aset.map((foto, index) => {
+                        const fullUrl = foto.startsWith("http")
+                          ? foto
+                          : `${API_URL}${foto}`;
+                        const isVideo = isVideoFile(fullUrl);
+                        return (
+                          <Col key={index} md={4} className="mb-3">
+                            <Card
+                              onClick={() =>
+                                handlePreviewMedia(
+                                  foto,
+                                  `Foto Aset ${index + 1}`,
+                                  index,
+                                  aset.foto_aset
+                                )
+                              }
+                              className="h-100"
+                              style={{
+                                cursor: "pointer",
+                                border: "1px solid #ddd",
+                              }}
+                            >
+                              {isVideo ? (
+                                <video
+                                  src={fullUrl}
+                                  controls={false}
+                                  style={{
+                                    objectFit: "cover",
                                     width: "100%",
-                                    height: "100%",
+                                    height: "100px",
+                                  }}
+                                  title="Klik untuk lihat preview"
+                                />
+                              ) : (
+                                <Card.Img
+                                  variant="top"
+                                  src={fullUrl}
+                                  alt={`Foto Aset ${index + 1}`}
+                                  style={{
+                                    height: "100px",
+                                    width: "100%",
                                     objectFit: "cover",
                                   }}
                                 />
-                              </div>
-                            )}
-                            <div>
-                              <div style={{ fontSize: "0.8em" }}>
-                                {filename}
-                              </div>
-                              <Button
-                                variant="link"
-                                size="sm"
-                                onClick={() => handlePreviewMedia(imageUrl, "Preview Bukti Pemilikan", 0, imageUrl ? [imageUrl] : [])}
-                                className="p-0"
-                                style={{ fontSize: "0.7em" }}
-                              >
-                                Lihat Preview
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-muted">Tidak ada file</span>
-                        )}
-                      </td>
-                    </tr>
-                    {aset.keterangan_bukti_pemilikan && (
-                      <tr>
-                        <td>
-                          <strong>Keterangan Bukti Pemilikan:</strong>
-                        </td>
-                        <td>{aset.keterangan_bukti_pemilikan}</td>
-                      </tr>
-                    )}
-                    {aset.atas_nama_pemilik_sertifikat && (
-                      <tr>
-                        <td>
-                          <strong>Atas Nama Pemilik Sertifikat:</strong>
-                        </td>
-                        <td>{aset.atas_nama_pemilik_sertifikat}</td>
-                      </tr>
-                    )}
-                    <tr>
-                      <td>
-                        <strong>Koordinat:</strong>
-                      </td>
-                      <td>
-                        {hasValidLocation && validatedLocation ? (
-                          <div>
-                            <small className="text-muted">
-                              Polygon dengan{" "}
-                              {Array.isArray(validatedLocation)
-                                ? validatedLocation[0]?.length || 0
-                                : 0}{" "}
-                              titik
-                            </small>
-                            <details className="mt-1">
-                              <summary
-                                style={{
-                                  cursor: "pointer",
-                                  fontSize: "0.8em",
-                                }}
-                              >
-                                Lihat koordinat
-                              </summary>
-                              <div
-                                style={{
-                                  maxHeight: "100px",
-                                  overflowY: "auto",
-                                  fontSize: "0.7em",
-                                }}
-                              >
-                                {Array.isArray(validatedLocation) &&
-                                validatedLocation[0] ? (
-                                  validatedLocation[0].map((coord, idx) => (
-                                    <div key={idx}>
-                                      {idx + 1}: [
-                                      {coord[0]?.toFixed(6) || "N/A"},{" "}
-                                      {coord[1]?.toFixed(6) || "N/A"}]
-                                    </div>
-                                  ))
-                                ) : (
-                                  <span className="text-muted">
-                                    Format koordinat tidak valid
-                                  </span>
-                                )}
-                              </div>
-                            </details>
-                          </div>
-                        ) : (
-                          <span className="text-muted">Tidak tersedia</span>
-                        )}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </Card.Body>
-          </Card>
+                              )}
+                            </Card>
+                          </Col>
+                        );
+                      })}
+                    </Row>
+                  </Card.Body>
+                </Card>
+              )}
 
-          {/* Image Preview Card - Bukti Pemilikan */}
-          {hasValidImage && (
-            <Card className="mb-3 shadow-sm">
-              <Card.Header className="bg-info text-white">
-                <FaFileAlt className="me-2" /> Preview Bukti Pemilikan
-              </Card.Header>
-              <Card.Body className="text-center">
-                <Image
-                  src={imageUrl}
-                  alt="Bukti Pemilikan"
-                  fluid
-                  rounded
-                  style={{
-                    maxHeight: "200px",
-                    cursor: "pointer",
-                    border: "1px solid #ddd",
-                  }}
-                  onClick={() => handlePreviewMedia(imageUrl, "Preview Bukti Pemilikan", 0, imageUrl ? [imageUrl] : [])}
-                />
-                <div className="mt-2">
-                  <small className="text-muted">
-                    Klik gambar untuk melihat preview
-                  </small>
-                </div>
-              </Card.Body>
-            </Card>
-          )}
-
-          {/* Asset Photos Card */}
-          {aset.foto_aset && Array.isArray(aset.foto_aset) && aset.foto_aset.length > 0 && (
-            <Card className="mb-3 shadow-sm">
-              <Card.Header className="bg-success text-white">
-                <FaFileAlt className="me-2" /> Foto Aset
-              </Card.Header>
-              <Card.Body>
-                <Row>
-                  {aset.foto_aset.map((foto, index) => {
-                    const fullUrl = foto.startsWith('http') ? foto : `${API_URL}${foto}`;
-                    const isVideo = isVideoFile(fullUrl);
-                    return (
-                      <Col key={index} md={4} className="mb-3">
-                        <Card 
-                          onClick={() => handlePreviewMedia(foto, `Foto Aset ${index + 1}`, index, aset.foto_aset)}
-                          className="h-100"
-                          style={{ cursor: "pointer", border: "1px solid #ddd" }}
+            {/* Geographic Information Card */}
+            {hasValidLocation && (
+              <Card className="mb-3 shadow-sm">
+                <Card.Header className="bg-warning text-dark">
+                  <FaGlobe className="me-2" /> Informasi Geografis
+                </Card.Header>
+                <Card.Body>
+                  <Row>
+                    <Col sm={6}>
+                      <div className="mb-2">
+                        <strong>Tipe Geometri:</strong>
+                        <br />
+                        <span className="text-muted">Polygon</span>
+                      </div>
+                    </Col>
+                    <Col sm={6}>
+                      <div className="mb-2">
+                        <strong>Jumlah Koordinat:</strong>
+                        <br />
+                        <span className="text-muted">
+                          {Array.isArray(validatedLocation) &&
+                          validatedLocation[0]
+                            ? validatedLocation[0].length
+                            : 0}{" "}
+                          titik
+                        </span>
+                      </div>
+                    </Col>
+                    <Col sm={12}>
+                      <div className="mb-0">
+                        <strong>Status Sertifikat:</strong>
+                        <br />
+                        <span
+                          className={
+                            aset.pemilikan_sertifikat === "Ya"
+                              ? "text-success"
+                              : "text-warning"
+                          }
                         >
-                          {isVideo ? (
-                            <video
-                              src={fullUrl}
-                              controls={false}
-                              style={{ objectFit: 'cover', width: '100%', height: '100px' }}
-                              title="Klik untuk lihat preview"
-                            />
-                          ) : (
-                            <Card.Img
-                              variant="top"
-                              src={fullUrl}
-                              alt={`Foto Aset ${index + 1}`}
-                              style={{
-                                height: "100px",
-                                width: "100%",
-                                objectFit: "cover",
-                              }}
-                            />
-                          )}
-                        </Card>
-                      </Col>
-                    );
-                  })}
-                </Row>
-              </Card.Body>
-            </Card>
-          )}
+                          {aset.pemilikan_sertifikat === "Ya"
+                            ? "Bersertifikat"
+                            : "Tidak Bersertifikat"}
+                        </span>
+                      </div>
+                    </Col>
+                  </Row>
+                </Card.Body>
+              </Card>
+            )}
 
-          {/* Geographic Information Card */}
-          {hasValidLocation && (
-            <Card className="mb-3 shadow-sm">
-              <Card.Header className="bg-warning text-dark">
-                <FaGlobe className="me-2" /> Informasi Geografis
-              </Card.Header>
-              <Card.Body>
-                <Row>
-                  <Col sm={6}>
-                    <div className="mb-2">
-                      <strong>Tipe Geometri:</strong>
-                      <br />
-                      <span className="text-muted">Polygon</span>
-                    </div>
-                  </Col>
-                  <Col sm={6}>
-                    <div className="mb-2">
-                      <strong>Jumlah Koordinat:</strong>
-                      <br />
-                      <span className="text-muted">
-                        {Array.isArray(validatedLocation) &&
-                        validatedLocation[0]
-                          ? validatedLocation[0].length
-                          : 0}{" "}
-                        titik
-                      </span>
-                    </div>
-                  </Col>
-                  <Col sm={12}>
-                    <div className="mb-0">
-                      <strong>Status Sertifikat:</strong>
-                      <br />
-                      <span
-                        className={
-                          aset.pemilikan_sertifikat === "Ya"
-                            ? "text-success"
-                            : "text-warning"
-                        }
-                      >
-                        {aset.pemilikan_sertifikat === "Ya"
-                          ? "Bersertifikat"
-                          : "Tidak Bersertifikat"}
-                      </span>
-                    </div>
-                  </Col>
-                </Row>
-              </Card.Body>
-            </Card>
-          )}
-
-          {/* Additional Information */}
-          {aset.keterangan && (
-            <Card className="mb-3 shadow-sm">
-              <Card.Header className="bg-secondary text-white">
-                <FaInfoCircle className="me-2" /> Keterangan Tambahan
-              </Card.Header>
-              <Card.Body>
-                <p className="mb-0">{aset.keterangan}</p>
-              </Card.Body>
-            </Card>
-          )}
-        </div>
-      </Offcanvas.Body>
-    </Offcanvas>
-    
-    {/* Preview Modal for Media - updated to match DetailModalAset */}
-    {showPreviewModal && (
-      <Modal 
-        show={showPreviewModal} 
-        onHide={handleClosePreview} 
-        size="lg" 
-        centered
-        dialogClassName="modal-90w"
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>{previewMediaTitle}</Modal.Title>
-        </Modal.Header>
-        <Modal.Body className="text-center">
-          {previewMedia && previewMedia.isVideo ? (
-            <video
-              src={previewMedia.url}
-              controls
-              className="img-fluid"
-              style={{ maxHeight: "70vh", objectFit: "contain" }}
-              autoPlay
-            >
-              Browser Anda tidak mendukung elemen video.
-            </video>
-          ) : previewMedia ? (
-            <img
-              src={previewMedia.url}
-              alt="Preview"
-              className="img-fluid"
-              style={{ maxHeight: "70vh", objectFit: "contain" }}
-            />
-          ) : (
-            <div>
-              <p>Preview tidak tersedia untuk file ini.</p>
-              <Button
-                variant="primary"
-                onClick={() => window.open(previewMedia?.url, "_blank")}
-              >
-                Buka File
-              </Button>
-            </div>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <div className="d-flex justify-content-between align-items-center w-100">
-            <div>
-              {previewAssetPhotos && previewAssetPhotos.length > 1 && (
-                <>
-                  <Button variant="outline-primary" onClick={handlePrevPhoto} className="me-2">
-                    &larr; Sebelumnya
-                  </Button>
-                  <Button variant="outline-primary" onClick={handleNextPhoto}>
-                    Berikutnya &rarr;
-                  </Button>
-                </>
-              )}
-            </div>
-            <div className="d-flex align-items-center">
-              {previewAssetPhotos && previewAssetPhotos.length > 1 && (
-                <span className="me-3">
-                  {currentPhotoIndex + 1} dari {previewAssetPhotos.length}
-                </span>
-              )}
-              {previewMedia && (
-                <Button variant="info" onClick={() => window.open(previewMedia.url, "_blank")} className="me-2">
-                  Buka di Tab Baru
-                </Button>
-              )}
-              <Button variant="secondary" onClick={handleClosePreview}>
-                Tutup
-              </Button>
-            </div>
+            {/* Additional Information */}
+            {aset.keterangan && (
+              <Card className="mb-3 shadow-sm">
+                <Card.Header className="bg-secondary text-white">
+                  <FaInfoCircle className="me-2" /> Keterangan Tambahan
+                </Card.Header>
+                <Card.Body>
+                  <p className="mb-0">{aset.keterangan}</p>
+                </Card.Body>
+              </Card>
+            )}
           </div>
-        </Modal.Footer>
-      </Modal>
-    )}
+        </Offcanvas.Body>
+      </Offcanvas>
+
+      {/* Preview Modal for Media - updated to match DetailModalAset */}
+      {showPreviewModal && (
+        <Modal
+          show={showPreviewModal}
+          onHide={handleClosePreview}
+          size="lg"
+          centered
+          dialogClassName="modal-90w"
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>{previewMediaTitle}</Modal.Title>
+          </Modal.Header>
+          <Modal.Body className="text-center">
+            {previewMedia && previewMedia.isVideo ? (
+              <video
+                src={previewMedia.url}
+                controls
+                className="img-fluid"
+                style={{ maxHeight: "70vh", objectFit: "contain" }}
+                autoPlay
+              >
+                Browser Anda tidak mendukung elemen video.
+              </video>
+            ) : previewMedia ? (
+              <img
+                src={previewMedia.url}
+                alt="Preview"
+                className="img-fluid"
+                style={{ maxHeight: "70vh", objectFit: "contain" }}
+              />
+            ) : (
+              <div>
+                <p>Preview tidak tersedia untuk file ini.</p>
+                <Button
+                  variant="primary"
+                  onClick={() => window.open(previewMedia?.url, "_blank")}
+                >
+                  Buka File
+                </Button>
+              </div>
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <div className="d-flex justify-content-between align-items-center w-100">
+              <div>
+                {previewAssetPhotos && previewAssetPhotos.length > 1 && (
+                  <>
+                    <Button
+                      variant="outline-primary"
+                      onClick={handlePrevPhoto}
+                      className="me-2"
+                    >
+                      &larr; Sebelumnya
+                    </Button>
+                    <Button variant="outline-primary" onClick={handleNextPhoto}>
+                      Berikutnya &rarr;
+                    </Button>
+                  </>
+                )}
+              </div>
+              <div className="d-flex align-items-center">
+                {previewAssetPhotos && previewAssetPhotos.length > 1 && (
+                  <span className="me-3">
+                    {currentPhotoIndex + 1} dari {previewAssetPhotos.length}
+                  </span>
+                )}
+                {previewMedia && (
+                  <Button
+                    variant="info"
+                    onClick={() => window.open(previewMedia.url, "_blank")}
+                    className="me-2"
+                  >
+                    Buka di Tab Baru
+                  </Button>
+                )}
+                <Button variant="secondary" onClick={handleClosePreview}>
+                  Tutup
+                </Button>
+              </div>
+            </div>
+          </Modal.Footer>
+        </Modal>
+      )}
     </>
   );
 };

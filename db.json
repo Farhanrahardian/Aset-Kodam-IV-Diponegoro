@@ -20,6 +20,13 @@
       "password": "rudi1234",
       "name": "rudi",
       "role": "pengguna"
+    },
+    {
+      "id": "u1759311691111",
+      "username": "155455155455155455",
+      "password": "yazna155455",
+      "name": "Yazna",
+      "role": "admin"
     }
   ],
   "assets": [
