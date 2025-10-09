@@ -104,12 +104,32 @@ const DetailOffcanvasAset = ({
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [previewAssetPhotos, setPreviewAssetPhotos] = useState([]);
 
+  const [buktiPreviewMedia, setBuktiPreviewMedia] = useState(null);
+  const [showBuktiPreviewModal, setShowBuktiPreviewModal] = useState(false);
+
   const navigate = useNavigate();
 
   const handleViewFile = (url) => {
     if (!url) return;
     const relativePath = url.replace(`${API_URL}/`, "");
     navigate(`/view-file/${relativePath}`);
+  };
+
+  const handlePreviewBukti = (mediaUrl) => {
+    const fullUrl = mediaUrl.startsWith("http")
+      ? mediaUrl
+      : `${API_URL}${mediaUrl}`;
+    setBuktiPreviewMedia({
+      url: fullUrl,
+      isVideo: isVideoFile(mediaUrl),
+      isPdf: isPdfFile(mediaUrl),
+    });
+    setShowBuktiPreviewModal(true);
+  };
+
+  const handleCloseBuktiPreview = () => {
+    setShowBuktiPreviewModal(false);
+    setBuktiPreviewMedia(null);
   };
 
   const handlePreviewMedia = (
@@ -279,7 +299,7 @@ const DetailOffcanvasAset = ({
         >
           <Offcanvas.Title as="h5">
             <FaLandmark className="me-2" />
-            Detail Aset Tanah
+            Detail Aset BMN
           </Offcanvas.Title>
         </Offcanvas.Header>
 
@@ -305,7 +325,7 @@ const DetailOffcanvasAset = ({
             {/* Main Info Card */}
             <Card className="mb-3 shadow-sm">
               <Card.Header className="bg-primary text-white">
-                <FaLandmark className="me-2" /> Informasi Aset Tanah
+                <FaLandmark className="me-2" /> Informasi Aset BMN
               </Card.Header>
               <Card.Body>
                 <div className="mb-3">
@@ -411,17 +431,7 @@ const DetailOffcanvasAset = ({
                                     border: "1px solid #ddd",
                                     borderRadius: "4px",
                                     overflow: "hidden",
-                                    cursor: "pointer",
                                   }}
-                                  onClick={() =>
-                                    handlePreviewMedia(
-                                      imageUrl,
-                                      "Preview Bukti Pemilikan",
-                                      0,
-                                      imageUrl ? [imageUrl] : []
-                                    )
-                                  }
-                                  title="Klik untuk preview gambar"
                                 >
                                   <img
                                     src={imageUrl}
@@ -441,18 +451,12 @@ const DetailOffcanvasAset = ({
                                 <Button
                                   variant="link"
                                   size="sm"
-                                  onClick={() =>
-                                    handlePreviewMedia(
-                                      imageUrl,
-                                      "Preview Bukti Pemilikan",
-                                      0,
-                                      imageUrl ? [imageUrl] : []
-                                    )
-                                  }
+                                  onClick={() => handlePreviewBukti(imageUrl)}
                                   className="p-0"
                                   style={{ fontSize: "0.7em" }}
+                                  disabled={!hasPdf && !hasValidImage}
                                 >
-                                  Lihat Preview
+                                  {hasPdf ? "Lihat PDF" : "Lihat Gambar"}
                                 </Button>
                               </div>
                             </div>
@@ -535,40 +539,7 @@ const DetailOffcanvasAset = ({
               </Card.Body>
             </Card>
 
-            {/* Image Preview Card - Bukti Pemilikan */}
-            {hasValidImage && (
-              <Card className="mb-3 shadow-sm">
-                <Card.Header className="bg-info text-white">
-                  <FaFileAlt className="me-2" /> Preview Bukti Pemilikan
-                </Card.Header>
-                <Card.Body className="text-center">
-                  <Image
-                    src={imageUrl}
-                    alt="Bukti Pemilikan"
-                    fluid
-                    rounded
-                    style={{
-                      maxHeight: "200px",
-                      cursor: "pointer",
-                      border: "1px solid #ddd",
-                    }}
-                    onClick={() =>
-                      handlePreviewMedia(
-                        imageUrl,
-                        "Preview Bukti Pemilikan",
-                        0,
-                        imageUrl ? [imageUrl] : []
-                      )
-                    }
-                  />
-                  <div className="mt-2">
-                    <small className="text-muted">
-                      Klik gambar untuk melihat preview
-                    </small>
-                  </div>
-                </Card.Body>
-              </Card>
-            )}
+
 
             {/* Asset Photos Card */}
             {aset.foto_aset &&
@@ -779,6 +750,55 @@ const DetailOffcanvasAset = ({
                 </Button>
               </div>
             </div>
+          </Modal.Footer>
+        </Modal>
+      )}
+
+      {/* Preview Modal for Bukti Pemilikan */}
+      {showBuktiPreviewModal && (
+        <Modal
+          show={showBuktiPreviewModal}
+          onHide={handleCloseBuktiPreview}
+          size="lg"
+          centered
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>Bukti Kepemilikan</Modal.Title>
+          </Modal.Header>
+          <Modal.Body className="text-center">
+            {buktiPreviewMedia?.isPdf ? (
+              <iframe
+                src={buktiPreviewMedia.url}
+                style={{
+                  width: "100%",
+                  height: "70vh",
+                  border: "none",
+                }}
+                title="Preview PDF"
+              ></iframe>
+            ) : buktiPreviewMedia?.isVideo ? (
+              <video
+                src={buktiPreviewMedia.url}
+                controls
+                className="img-fluid"
+                style={{ maxHeight: "70vh", objectFit: "contain" }}
+                autoPlay
+              >
+                Browser Anda tidak mendukung elemen video.
+              </video>
+            ) : (
+              <img
+                src={buktiPreviewMedia?.url}
+                alt="Preview Bukti Pemilikan"
+                className="img-fluid"
+                style={{ maxHeight: "70vh", objectFit: "contain" }}
+              />
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={handleCloseBuktiPreview}>
+              Tutup
+            </Button>
           </Modal.Footer>
         </Modal>
       )}
