@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -100,7 +100,7 @@ const MapController = ({
       if (importedGeometry) {
         try {
           const layer = L.geoJSON(importedGeometry);
-          map.fitBounds(layer.getBounds(), { padding: [50, 50], animate: false });
+          map.fitBounds(layer.getBounds(), { padding: [50, 50], animate: true });
         } catch (e) {
           console.error("Error fitting bounds to imported geometry:", e);
         }
@@ -119,7 +119,7 @@ const MapController = ({
         if (kodimFeature) {
           try {
             const layer = L.geoJSON(kodimFeature);
-            map.fitBounds(layer.getBounds(), { animate: false });
+            map.fitBounds(layer.getBounds(), { animate: true });
           } catch (error) {
             console.error("Error fitting bounds for kodim:", error);
           }
@@ -141,7 +141,7 @@ const MapController = ({
             const featureGroup = L.featureGroup(
               koremFeatures.map((f) => L.geoJSON(f))
             );
-            map.fitBounds(featureGroup.getBounds(), { animate: false });
+            map.fitBounds(featureGroup.getBounds(), { animate: true });
           } catch (error) {
             console.error("Error fitting bounds for korem:", error);
           }
@@ -151,7 +151,7 @@ const MapController = ({
 
       try {
         const allKoremLayer = L.geoJSON(koremBoundaries);
-        map.fitBounds(allKoremLayer.getBounds(), { animate: false });
+        map.fitBounds(allKoremLayer.getBounds(), { animate: true });
       } catch (error) {
         console.error("Error fitting bounds for all korems:", error);
       }
@@ -171,12 +171,12 @@ const PetaGambarAset = ({
   onLocationSelect,
   importedGeometry,
   geoJsonKey, // Terima key prop
+  koremBoundaries,
+  kodimBoundaries,
 }) => {
   const featureGroupRef = useRef(null);
-  const [koremBoundaries, setKoremBoundaries] = useState(null);
-  const [kodimBoundaries, setKodimBoundaries] = useState(null);
   const selectedLayerRef = useRef(null);
-  const [mapReady, setMapReady] = useState(false);
+  const [mapReady, setMapReady] = useState(true);
 
   const mapCenter = [-7.5, 110.0];
   const initialZoom = 8;
@@ -199,23 +199,7 @@ const PetaGambarAset = ({
     };
   }, []);
 
-  useEffect(() => {
-    const loadBoundaries = async () => {
-      try {
-        const [koremRes, kodimRes] = await Promise.all([
-          axios.get("/data/korem.geojson"),
-          axios.get("/data/Kodim.geojson"),
-        ]);
-        setKoremBoundaries(koremRes.data);
-        setKodimBoundaries(kodimRes.data);
-        setTimeout(() => setMapReady(true), 100);
-      } catch (error) {
-        console.error("Error loading boundaries:", error);
-        setTimeout(() => setMapReady(true), 100);
-      }
-    };
-    loadBoundaries();
-  }, []);
+
 
   const resetSelectedLayer = useCallback(() => {
     if (selectedLayerRef.current) {
@@ -239,7 +223,7 @@ const PetaGambarAset = ({
     }
   }, []);
 
-  const onKoremEachFeature = (feature, layer) => {
+  const onKoremEachFeature = useCallback((feature, layer) => {
     const koremName = feature.properties.listkodim_Korem;
     const displayKoremName = koremName === "Berdiri Sendiri" ? "Kodim 0733/Kota Semarang" : koremName;
     if (displayKoremName) {
@@ -255,9 +239,9 @@ const PetaGambarAset = ({
         }
       },
     });
-  };
+  }, [onLocationSelect]);
 
-  const onKodimEachFeature = (feature, layer) => {
+  const onKodimEachFeature = useCallback((feature, layer) => {
     const kodimName = normalizeKodimName(feature.properties.listkodim_Kodim);
     const koremName = feature.properties.listkodim_Korem;
     const displayKodimName = kodimName.includes("Semarang") ? "Kodim 0733/Kota Semarang" : kodimName;
@@ -279,7 +263,7 @@ const PetaGambarAset = ({
         }
       },
     });
-  };
+  }, [resetSelectedLayer, onLocationSelect]);
 
   const handleCreated = (e) => {
     const { layerType, layer } = e;
@@ -316,23 +300,32 @@ const PetaGambarAset = ({
     cursor: "pointer",
   };
 
-  const filteredKodimData = selectedKorem && kodimBoundaries ? {
-    ...kodimBoundaries,
-    features: kodimBoundaries.features.filter((feature) => {
-      const featureKoremName = feature.properties.listkodim_Korem;
-      const featureKodimName = normalizeKodimName(feature.properties.listkodim_Kodim);
-      const isKoremMatch = selectedKorem.nama === "Kodim 0733/Kota Semarang" ? featureKoremName === "Berdiri Sendiri" : featureKoremName === selectedKorem.nama;
-      if (!isKoremMatch) return false;
-      if (selectedKodim && selectedKodim.nama) {
-        const searchName = selectedKodim.nama;
-        if (searchName === "Kodim 0733/Kota Semarang") {
-          return featureKodimName.includes("Semarang");
+  const filteredKodimData = useMemo(() => {
+    return selectedKorem && kodimBoundaries
+      ? {
+          ...kodimBoundaries,
+          features: kodimBoundaries.features.filter((feature) => {
+            const featureKoremName = feature.properties.listkodim_Korem;
+            const featureKodimName = normalizeKodimName(
+              feature.properties.listkodim_Kodim
+            );
+            const isKoremMatch =
+              selectedKorem.nama === "Kodim 0733/Kota Semarang"
+                ? featureKoremName === "Berdiri Sendiri"
+                : featureKoremName === selectedKorem.nama;
+            if (!isKoremMatch) return false;
+            if (selectedKodim && selectedKodim.nama) {
+              const searchName = selectedKodim.nama;
+              if (searchName === "Kodim 0733/Kota Semarang") {
+                return featureKodimName.includes("Semarang");
+              }
+              return featureKodimName === searchName;
+            }
+            return true;
+          }),
         }
-        return featureKodimName === searchName;
-      }
-      return true;
-    }),
-  } : null;
+      : null;
+  }, [selectedKorem, selectedKodim, kodimBoundaries]);
 
   return (
     <div style={{ position: "relative", height: "100%", width: "100%" }}>
@@ -341,7 +334,7 @@ const PetaGambarAset = ({
         zoom={initialZoom}
         style={{ height: "100%", width: "100%" }}
         maxZoom={22}
-        zoomAnimation={false}
+        zoomAnimation={true}
         fadeAnimation={false}
         markerZoomAnimation={false}
       >
@@ -467,4 +460,4 @@ const PetaGambarAset = ({
   );
 };
 
-export default PetaGambarAset;
+export default React.memo(PetaGambarAset);

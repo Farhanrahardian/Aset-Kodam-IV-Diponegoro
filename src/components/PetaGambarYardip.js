@@ -209,7 +209,7 @@ const PetaGambarYardip = ({
         }
 
         if (bounds && bounds.isValid()) {
-          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16, animate: false });
+          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16, animate: true });
         } else if (view.type === "nasional") {
           // Fallback to default view if no bounds are valid
           map.setView([-7.5, 110.0], 8);

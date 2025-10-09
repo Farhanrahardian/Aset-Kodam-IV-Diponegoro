@@ -23,6 +23,7 @@ const TambahAsetPage = () => {
 
   const [koremList, setKoremList] = useState([]);
   const [kodimBoundaries, setKodimBoundaries] = useState(null);
+  const [koremBoundaries, setKoremBoundaries] = useState(null);
 
   const [selectedKoremId, setSelectedKoremId] = useState("");
   const [selectedKodimId, setSelectedKodimId] = useState("");
@@ -44,12 +45,14 @@ const TambahAsetPage = () => {
     const fetchInitialData = async () => {
       setLoading(true);
       try {
-        const [koremRes, kodimGeoRes] = await Promise.all([
+        const [koremRes, kodimGeoRes, koremGeoRes] = await Promise.all([
           axios.get(`${API_URL}/korem`),
-          axios.get("/data/Kodim.geojson"),
+          axios.get("/data/Kodim_simplified.geojson"),
+          axios.get("/data/korem_simplified.geojson"),
         ]);
         setKoremList(koremRes.data);
         setKodimBoundaries(kodimGeoRes.data);
+        setKoremBoundaries(koremGeoRes.data);
       } catch (err) {
         setError("Gagal memuat data. Coba muat ulang halaman.");
         console.error("Error fetching data:", err);
@@ -343,6 +346,8 @@ const TambahAsetPage = () => {
                       onLocationSelect={handleAreaSelect}
                       selectionSource={selectionSource}
                       koremList={koremList}
+                      koremBoundaries={koremBoundaries}
+                      kodimBoundaries={kodimBoundaries}
                       importedGeometry={importedGeometry} // Pass prop ke peta
                       geoJsonKey={geoJsonKey} // Pass key ke peta
                     />
