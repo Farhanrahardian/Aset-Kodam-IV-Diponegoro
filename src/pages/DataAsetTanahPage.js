@@ -254,7 +254,7 @@ const FilterPanelTop = ({
   return (
     <Card className="mb-4">
       <Card.Header className="bg-primary text-white">
-        <h5 className="mb-0">Filter Data Aset</h5>
+        <h5 className="mb-0">Filter Data Aset BMN</h5>
       </Card.Header>
       <Card.Body>
         <Row>
@@ -410,10 +410,11 @@ const DetailModalAset = ({
   const hasPdf = imageUrl && isPdfFile(filename);
 
   // Fungsi untuk menampilkan preview bukti pemilikan
-  const handleShowImagePreview = (url, title) => {
+  const handleShowImagePreview = (url, title, isBuktiPemilikan = false) => {
     setPreviewImageUrl(url);
     setPreviewImageTitle(title);
-    setPreviewAssetPhotos(asset?.foto_aset || []); // Tetap simpan foto aset untuk navigasi
+    // If it's a 'bukti pemilikan', don't load the asset photos gallery
+    setPreviewAssetPhotos(isBuktiPemilikan ? [] : asset?.foto_aset || []);
     setShowImagePreview(true);
   };
 
@@ -595,15 +596,7 @@ const DetailModalAset = ({
                                     border: "1px solid #ddd",
                                     borderRadius: "4px",
                                     overflow: "hidden",
-                                    cursor: "pointer",
                                   }}
-                                  onClick={() =>
-                                    handleShowImagePreview(
-                                      imageUrl,
-                                      "Preview Bukti Pemilikan"
-                                    )
-                                  }
-                                  title="Klik untuk preview gambar"
                                 >
                                   <img
                                     src={imageUrl}
@@ -616,35 +609,23 @@ const DetailModalAset = ({
                                   />
                                 </div>
                               )}
-                              {hasPdf && (
-                                <Button
-                                  variant="outline-danger"
-                                  size="sm"
-                                  onClick={() =>
-                                    window.open(imageUrl, "_blank")
-                                  }
-                                  title="Lihat PDF"
-                                >
-                                  Lihat PDF
-                                </Button>
-                              )}
                               <div>
                                 <div>{filename}</div>
-                                <small className="text-muted">
-                                  <Button
-                                    variant="link"
-                                    size="sm"
-                                    onClick={() =>
-                                      handleShowImagePreview(
-                                        imageUrl,
-                                        "Preview Bukti Pemilikan"
-                                      )
-                                    }
-                                    className="p-0"
-                                  >
-                                    Lihat Preview
-                                  </Button>
-                                </small>
+                                <Button
+                                  variant="link"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleShowImagePreview(
+                                      imageUrl,
+                                      "Bukti Kepemilikan",
+                                      true
+                                    )
+                                  }
+                                  className="p-0"
+                                  disabled={!hasPdf && !hasValidImage}
+                                >
+                                  {hasPdf ? "Lihat PDF" : "Lihat Gambar"}
+                                </Button>
                               </div>
                             </div>
                           ) : (
@@ -908,7 +889,17 @@ const DetailModalAset = ({
           <Modal.Title>{previewImageTitle}</Modal.Title>
         </Modal.Header>
         <Modal.Body className="text-center">
-          {isImageFile(previewImageUrl) ? (
+          {isPdfFile(previewImageUrl) ? (
+            <iframe
+              src={previewImageUrl}
+              style={{
+                width: "100%",
+                height: "70vh",
+                border: "none",
+              }}
+              title="Preview PDF"
+            ></iframe>
+          ) : isImageFile(previewImageUrl) ? (
             <img
               src={previewImageUrl}
               alt="Preview"
@@ -1642,7 +1633,7 @@ const DataAsetTanahPage = () => {
       <Row>
         <Col md={12}>
           <Card className="mb-4">
-            <Card.Header as="h5">Peta Aset Tanah</Card.Header>
+            <Card.Header as="h5">Peta Aset BMN</Card.Header>
             <Card.Body style={{ height: "50vh", padding: 0 }}>
               <PetaAset
                 assets={filteredAssets}
@@ -1680,7 +1671,7 @@ const DataAsetTanahPage = () => {
 
           <Card>
             <Card.Header className="bg-light">
-              <h5 className="mb-0">Daftar Aset Tanah</h5>
+              <h5 className="mb-0">Daftar Aset BMN</h5>
             </Card.Header>
             <Card.Body className="p-0">
               <div className="position-relative">
