@@ -9,7 +9,7 @@ import { faSignOutAlt } from "@fortawesome/free-solid-svg-icons";
 const Navbar = ({ onToggleSidebar }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const logoUrl = "/LOGO KODAM DIPONEGORO.png";
+  const logoUrl = "/logo-kodam-diponegoro.png";
 
   const handleLogout = () => {
     logout();
