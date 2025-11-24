@@ -3,12 +3,12 @@
   "name": "Aplikasi Aset dan Data Yardip Kodam IV Diponegoro",
   "icons": [
     {
-      "src": "logo-kodam-diponegoro.png",
+      "src": "192-logo.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "logo-kodam-diponegoro.png",
+      "src": "512-logo.png",
       "sizes": "512x512",
       "type": "image/png"
     }
