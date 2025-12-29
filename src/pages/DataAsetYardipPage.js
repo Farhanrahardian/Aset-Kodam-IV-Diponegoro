@@ -356,15 +356,21 @@ const DataAsetYardipPage = () => {
     try {
       await axios.put(`${API_URL}/yardip_assets/${formData.id}`, formData);
       toast.success("Aset Yardip berhasil diperbarui!", { id: toastId });
-      setShowEditModal(false);
-      setEditingAsset(null);
-      fetchData(); // Refresh data
+      // setShowEditModal(false);  // <-- COMMENT ATAU HAPUS BARIS INI
+      // setEditingAsset(null);    // <-- COMMENT ATAU HAPUS BARIS INI
+
+      // Refresh data aset yang sedang di-edit agar modal menampilkan data terbaru
+      const refreshedAsset = await axios.get(
+        `${API_URL}/yardip_assets/${formData.id}`
+      );
+      setEditingAsset(refreshedAsset.data);
+
+      fetchData(); // Refresh semua data di background
     } catch (err) {
       toast.error("Gagal menyimpan perubahan.", { id: toastId });
       console.error("Error updating yardip asset:", err);
     }
   };
-
   if (loading) return <Spinner animation="border" variant="primary" />;
   if (error) return <Alert variant="danger">{error}</Alert>;
 
@@ -423,7 +429,9 @@ const DataAsetYardipPage = () => {
                 <Row className="text-center">
                   <Col md={4}>
                     <div className="border-end">
-                      <h5 className="text-primary">{filteredTableAssets.length}</h5>
+                      <h5 className="text-primary">
+                        {filteredTableAssets.length}
+                      </h5>
                       <small className="text-muted">Total Aset</small>
                     </div>
                   </Col>
@@ -447,13 +455,14 @@ const DataAsetYardipPage = () => {
                         ).length
                       }
                     </h5>
-                    <small className="text-muted">Tidak Dimiliki/Tidak Dikuasai</small>
+                    <small className="text-muted">
+                      Tidak Dimiliki/Tidak Dikuasai
+                    </small>
                   </Col>
                 </Row>
               </Card.Body>
             </Card>
           )}
-
         </Col>
       </Row>
 

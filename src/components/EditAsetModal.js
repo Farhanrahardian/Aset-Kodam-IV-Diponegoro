@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Modal, Button, Row, Col, Form } from "react-bootstrap";
-import { MapContainer, TileLayer, FeatureGroup, Polygon, useMap } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  FeatureGroup,
+  Polygon,
+  useMap,
+} from "react-leaflet";
 import { EditControl } from "react-leaflet-draw";
 import L from "leaflet";
 import toast from "react-hot-toast";
@@ -21,13 +27,21 @@ const EditMapController = ({ geometry }) => {
   const map = useMap();
 
   useEffect(() => {
-    if (map && geometry && geometry.coordinates && geometry.coordinates.length > 0) {
-      const geoJsonCoords = geometry.coordinates[0].map(latLng => [latLng[1], latLng[0]]);
+    if (
+      map &&
+      geometry &&
+      geometry.coordinates &&
+      geometry.coordinates.length > 0
+    ) {
+      const geoJsonCoords = geometry.coordinates[0].map((latLng) => [
+        latLng[1],
+        latLng[0],
+      ]);
       const geoJsonGeometry = {
         type: "Polygon",
-        coordinates: [geoJsonCoords]
+        coordinates: [geoJsonCoords],
       };
-      
+
       const layer = L.geoJSON(geoJsonGeometry);
       const bounds = layer.getBounds();
       if (bounds.isValid()) {
@@ -50,7 +64,10 @@ const EditAsetModal = ({ show, onHide, asset, koremList, onSave }) => {
       setFormData({ ...asset });
       const locationData = parseLocation(asset.lokasi);
       if (locationData && locationData.type === "Polygon") {
-        const latLngs = locationData.coordinates[0].map(coord => [coord[1], coord[0]]);
+        const latLngs = locationData.coordinates[0].map((coord) => [
+          coord[1],
+          coord[0],
+        ]);
         setGeometry({ type: "Polygon", coordinates: [latLngs] });
       } else {
         setGeometry(null);
@@ -63,16 +80,25 @@ const EditAsetModal = ({ show, onHide, asset, koremList, onSave }) => {
 
   const handleSave = () => {
     if (formAsetRef.current) {
-      const { formData: latestFormData, buktiPemilikanFile, assetPhotos } = formAsetRef.current.getFormData();
-      
-      console.log("Original form data from FormAset:", JSON.stringify(latestFormData.lokasi));
+      const {
+        formData: latestFormData,
+        buktiPemilikanFile,
+        assetPhotos,
+      } = formAsetRef.current.getFormData();
+
+      console.log(
+        "Original form data from FormAset:",
+        JSON.stringify(latestFormData.lokasi)
+      );
 
       let finalData = { ...latestFormData };
       if (geometry) {
         console.log("Geometry state exists. Updating lokasi.");
         const geoJsonForSave = {
           type: "Polygon",
-          coordinates: [geometry.coordinates[0].map(latLng => [latLng[1], latLng[0]])]
+          coordinates: [
+            geometry.coordinates[0].map((latLng) => [latLng[1], latLng[0]]),
+          ],
         };
         const area = turf.area(geoJsonForSave);
         const roundedArea = parseFloat(area.toFixed(2));
@@ -86,11 +112,14 @@ const EditAsetModal = ({ show, onHide, asset, koremList, onSave }) => {
         }
 
         finalData.lokasi = geoJsonForSave;
-        console.log("Final lokasi to be saved:", JSON.stringify(finalData.lokasi));
+        console.log(
+          "Final lokasi to be saved:",
+          JSON.stringify(finalData.lokasi)
+        );
       } else {
         console.log("Geometry state does not exist.");
       }
-      
+
       console.log("Calling onSave with final data.");
       onSave(finalData, buktiPemilikanFile, assetPhotos);
     } else {
@@ -106,7 +135,10 @@ const EditAsetModal = ({ show, onHide, asset, koremList, onSave }) => {
       if (layer instanceof L.Polygon) {
         console.log("Layer is a polygon. Updating geometry state.");
         const geoJSON = layer.toGeoJSON();
-        const latLngs = geoJSON.geometry.coordinates[0].map(coord => [coord[1], coord[0]]);
+        const latLngs = geoJSON.geometry.coordinates[0].map((coord) => [
+          coord[1],
+          coord[0],
+        ]);
         setGeometry({ type: "Polygon", coordinates: [latLngs] });
       }
     });
@@ -116,14 +148,22 @@ const EditAsetModal = ({ show, onHide, asset, koremList, onSave }) => {
     const { layer } = e;
     if (layer instanceof L.Polygon) {
       const geoJSON = layer.toGeoJSON();
-      const latLngs = geoJSON.geometry.coordinates[0].map(coord => [coord[1], coord[0]]);
+      const latLngs = geoJSON.geometry.coordinates[0].map((coord) => [
+        coord[1],
+        coord[0],
+      ]);
       setGeometry({ type: "Polygon", coordinates: [latLngs] });
       toast.success("Poligon baru berhasil dibuat.");
       featureGroupRef.current.removeLayer(layer);
     }
   };
-  
-  const mapCenter = geometry ? getCentroid({type: 'Polygon', coordinates: [geometry.coordinates[0].map(c => [c[1], c[0]])]}) : [-7.7956, 110.3695];
+
+  const mapCenter = geometry
+    ? getCentroid({
+        type: "Polygon",
+        coordinates: [geometry.coordinates[0].map((c) => [c[1], c[0]])],
+      })
+    : [-7.7956, 110.3695];
 
   return (
     <Modal show={show} onHide={onHide} size="xl" centered>
@@ -134,7 +174,13 @@ const EditAsetModal = ({ show, onHide, asset, koremList, onSave }) => {
         <Row>
           <Col md={6}>
             <h5>Data Formulir</h5>
-            <div style={{ maxHeight: '65vh', overflowY: 'auto', paddingRight: '15px' }}>
+            <div
+              style={{
+                maxHeight: "65vh",
+                overflowY: "auto",
+                paddingRight: "15px",
+              }}
+            >
               {formData && (
                 <FormAset
                   ref={formAsetRef}
@@ -181,7 +227,8 @@ const EditAsetModal = ({ show, onHide, asset, koremList, onSave }) => {
               </FeatureGroup>
             </MapContainer>
             <Form.Text className="mt-2">
-              Gunakan kontrol di pojok kanan atas peta untuk membuat atau mengedit poligon.
+              Gunakan kontrol di pojok kanan atas peta untuk membuat atau
+              mengedit poligon.
             </Form.Text>
           </Col>
         </Row>

@@ -31,13 +31,13 @@
   ],
   "assets": [
     {
-      "nama": "1",
+      "nama": "12",
       "korem_id": "5",
       "kodim": "Kodim 0733/Kota Semarang",
       "luas": 6287500.65,
       "kib_kode_barang": "1",
       "nomor_registrasi": "1",
-      "alamat": "1",
+      "alamat": "1234",
       "peruntukan": "1",
       "status": "Aman",
       "asal_milik": "1",
@@ -76,11 +76,10 @@
       "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1760014390893.pdf",
       "bukti_pemilikan_filename": "bukti_pemilikan-1760014390893.pdf",
       "foto_aset": [
-        "/uploads/asset_photos-1758837449972.png",
-        "/uploads/asset_photos-1758837449972.png",
-        "/uploads/asset_photos-1758837449972.png",
-        "/uploads/asset_photos-1758837449973.png",
-        "/uploads/asset_photos-1758837449973.png"
+        "/uploads/asset_photos-1766995021085.jpeg",
+        "/uploads/asset_photos-1766995021093.jpeg",
+        "/uploads/asset_photos-1766995021098.png",
+        "/uploads/asset_photos-1766995021102.png"
       ]
     },
     {
@@ -201,7 +200,7 @@
   ],
   "yardip_assets": [
     {
-      "pengelola": "Yayasan Rumpun Diponegoro",
+      "pengelola": "Yayasan Rumpun Diponegoro 2",
       "bidang": "Tanah",
       "kabkota": "Gunung Kidul",
       "kecamatan": "bonang",
@@ -210,7 +209,7 @@
       "status": "Dimiliki/Dikuasai",
       "keterangan": "dede",
       "provinsi": "Daerah Istimewa Yogyakarta",
-      "area": 142681085.7362328,
+      "area": 142681085.74,
       "id": "Y1758869453820",
       "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.521834,-7.941433],[110.659289,-7.957752],[110.61118,-8.02846],[110.470976,-8.02846],[110.499842,-7.967271],[110.521834,-7.941433]]]}",
       "type": "yardip",

@@ -1589,8 +1589,13 @@ const DataAsetTanahPage = () => {
       await axios.put(`${API_URL}/assets/${id}`, updatedData);
 
       toast.success("Aset berhasil diperbarui!", { id: toastId });
-      handleCloseEditModal();
-      fetchData(); // Refresh data
+      // handleCloseEditModal();  <-- COMMENT ATAU HAPUS BARIS INI
+
+      // Refresh data aset yang sedang di-edit agar form menampilkan data terbaru
+      const refreshedAsset = await axios.get(`${API_URL}/assets/${id}`);
+      setEditingAsset(refreshedAsset.data);
+
+      fetchData(); // Refresh semua data di background
     } catch (err) {
       toast.error("Gagal menyimpan data aset ke database.", { id: toastId });
       console.error("DB save error:", err.response?.data || err);

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Container, Row, Col, Spinner, Alert } from "react-bootstrap";
@@ -36,7 +35,11 @@ const EditAsetPage = () => {
     fetchData();
   }, [id]);
 
-  const handleSaveAsset = async (assetData, buktiPemilikanFile, assetPhotos) => {
+  const handleSaveAsset = async (
+    assetData,
+    buktiPemilikanFile,
+    assetPhotos
+  ) => {
     const toastId = toast.loading("Menyimpan perubahan...");
 
     let updatedData = { ...assetData };
@@ -47,7 +50,10 @@ const EditAsetPage = () => {
         toast.loading("Mengupload bukti pemilikan baru...", { id: toastId });
         const formData = new FormData();
         formData.append("bukti_pemilikan", buktiPemilikanFile);
-        const uploadRes = await axios.post(`${API_URL}/upload/bukti-pemilikan`, formData);
+        const uploadRes = await axios.post(
+          `${API_URL}/upload/bukti-pemilikan`,
+          formData
+        );
         updatedData.bukti_pemilikan_url = uploadRes.data.url;
         updatedData.bukti_pemilikan_filename = uploadRes.data.filename;
       } catch (err) {
@@ -60,21 +66,30 @@ const EditAsetPage = () => {
     // 2. Upload new Asset Photos if they exist
     if (assetPhotos && assetPhotos.length > 0) {
       try {
-        toast.loading(`Mengupload ${assetPhotos.length} foto aset baru...`, { id: toastId });
+        toast.loading(`Mengupload ${assetPhotos.length} foto aset baru...`, {
+          id: toastId,
+        });
         const photosFormData = new FormData();
-        assetPhotos.forEach(photo => {
+        assetPhotos.forEach((photo) => {
           photosFormData.append("asset_photos", photo);
         });
-        const photosUploadRes = await axios.post(`${API_URL}/upload/asset-photos`, photosFormData);
+        const photosUploadRes = await axios.post(
+          `${API_URL}/upload/asset-photos`,
+          photosFormData
+        );
         // Replace old photos with new ones
-                const newPhotoUrls = photosUploadRes.data.files.map(file => file.url);
+        const newPhotoUrls = photosUploadRes.data.files.map((file) => file.url);
         const existingPhotoUrls = updatedData.foto_aset || [];
         updatedData.foto_aset = [...existingPhotoUrls, ...newPhotoUrls];
       } catch (err) {
         // Menampilkan pesan error yang lebih spesifik
-        const errorMessage = err.response?.data?.error || "Gagal mengupload foto aset baru.";
+        const errorMessage =
+          err.response?.data?.error || "Gagal mengupload foto aset baru.";
         toast.error(errorMessage, { id: toastId });
-        console.error("Asset photos upload error:", err.response?.data || err.message);
+        console.error(
+          "Asset photos upload error:",
+          err.response?.data || err.message
+        );
         return;
       }
     }
