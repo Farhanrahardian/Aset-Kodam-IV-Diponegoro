@@ -45,6 +45,7 @@ const EditYardipModal = ({ show, onHide, asset, onSave, provinsiData, kabupatenD
   const featureGroupRef = useRef();
   const [formData, setFormData] = useState(null);
   const [geometry, setGeometry] = useState(null);
+  const [manualArea, setManualArea] = useState(null); // NEW: Track manual area changes
 
   // Effect to programmatically add/update the polygon layer for editing
   useEffect(() => {
@@ -66,6 +67,12 @@ const EditYardipModal = ({ show, onHide, asset, onSave, provinsiData, kabupatenD
     setFormData(prev => ({ ...prev, provinsi, kabkota: kabupaten }));
   };
 
+  // NEW: Handler for manual area changes from form
+  const handleManualAreaChange = (newArea) => {
+    setManualArea(newArea);
+    setFormData(prev => ({ ...prev, area: newArea }));
+  };
+
   useEffect(() => {
     if (asset) {
       const locationData = parseLocation(asset.lokasi);
@@ -76,10 +83,12 @@ const EditYardipModal = ({ show, onHide, asset, onSave, provinsiData, kabupatenD
         initialGeometry = { type: "Polygon", coordinates: [latLngs] };
       }
       setGeometry(initialGeometry);
-      setFormData({ ...asset, lokasi: initialGeometry }); // Pass geometry to form
+      setFormData({ ...asset, lokasi: initialGeometry });
+      setManualArea(asset.area); // Initialize manual area with existing area
     } else {
       setFormData(null);
       setGeometry(null);
+      setManualArea(null);
     }
   }, [asset]);
 
@@ -94,11 +103,24 @@ const EditYardipModal = ({ show, onHide, asset, onSave, provinsiData, kabupatenD
           type: "Polygon",
           coordinates: [geometry.coordinates[0].map(latLng => [latLng[1], latLng[0]])]
         };
-        const area = turf.area(geoJsonForSave);
-        finalData.area = parseFloat(area.toFixed(2));
-        finalData.lokasi = JSON.stringify(geoJsonForSave); // Save as stringified GeoJSON object
+        
+        // Use manual area if set, otherwise calculate from geometry
+        let finalArea;
+        if (manualArea !== null) {
+          finalArea = manualArea;
+        } else {
+          const calculatedArea = turf.area(geoJsonForSave);
+          finalArea = parseFloat(calculatedArea.toFixed(2));
+        }
+        
+        finalData.area = finalArea;
+        finalData.lokasi = JSON.stringify(geoJsonForSave);
+      } else if (manualArea !== null) {
+        // If no geometry but manual area was changed
+        finalData.area = manualArea;
       }
       
+      console.log("Saving data:", finalData); // Debug log
       onSave(finalData);
     }
   };
@@ -112,9 +134,15 @@ const EditYardipModal = ({ show, onHide, asset, onSave, provinsiData, kabupatenD
         const newGeometry = { type: "Polygon", coordinates: [latLngs] };
         setGeometry(newGeometry);
 
-        // Update form data with new area
+        // Calculate new area from edited polygon
         const area = turf.area(geoJSON.geometry);
-        setFormData(prev => ({...prev, area: parseFloat(area.toFixed(2))}));
+        const calculatedArea = parseFloat(area.toFixed(2));
+        
+        // Update both manual area and form data
+        setManualArea(calculatedArea);
+        setFormData(prev => ({...prev, area: calculatedArea}));
+        
+        toast.success(`Poligon berhasil diedit. Luas baru: ${calculatedArea.toLocaleString('id-ID')} m²`);
       }
     });
   };
@@ -122,16 +150,20 @@ const EditYardipModal = ({ show, onHide, asset, onSave, provinsiData, kabupatenD
   const onCreated = (e) => {
     const { layer } = e;
     if (layer instanceof L.Polygon) {
-      featureGroupRef.current.clearLayers(); // Clear previous layers
-      featureGroupRef.current.addLayer(layer); // Add the new one
+      featureGroupRef.current.clearLayers();
+      featureGroupRef.current.addLayer(layer);
       const geoJSON = layer.toGeoJSON();
       const latLngs = geoJSON.geometry.coordinates[0].map(coord => [coord[1], coord[0]]);
       const newGeometry = { type: "Polygon", coordinates: [latLngs] };
       setGeometry(newGeometry);
 
       const area = turf.area(geoJSON.geometry);
-      setFormData(prev => ({...prev, area: parseFloat(area.toFixed(2))}));
-      toast.success("Poligon baru berhasil dibuat.");
+      const calculatedArea = parseFloat(area.toFixed(2));
+      
+      setManualArea(calculatedArea);
+      setFormData(prev => ({...prev, area: calculatedArea}));
+      
+      toast.success(`Poligon baru berhasil dibuat. Luas: ${calculatedArea.toLocaleString('id-ID')} m²`);
     }
   };
 
@@ -150,10 +182,10 @@ const EditYardipModal = ({ show, onHide, asset, onSave, provinsiData, kabupatenD
               {formData && (
                 <FormYardip
                   ref={formRef}
-                  assetToEdit={formData} // Pass the whole formData so area updates are reflected
+                  assetToEdit={formData}
                   isEditMode={true}
                   isEnabled={true}
-                  onSave={() => {}} // Dummy onSave
+                  onSave={() => {}}
                   onCancel={onHide}
                   selectedProvinceName={formData.provinsi}
                   selectedKabupatenName={formData.kabkota}
@@ -162,6 +194,7 @@ const EditYardipModal = ({ show, onHide, asset, onSave, provinsiData, kabupatenD
                   kabupatenData={kabupatenData}
                   onLocationChange={handleLocationChange}
                   isPolygonCreated={true}
+                  onManualAreaChange={handleManualAreaChange} // NEW: Pass handler
                 />
               )}
             </div>
@@ -187,17 +220,22 @@ const EditYardipModal = ({ show, onHide, asset, onSave, provinsiData, kabupatenD
                     circlemarker: false,
                     marker: false,
                     polyline: false,
-                    polygon: !geometry, // Allow creating only if no polygon exists
+                    polygon: !geometry,
                   }}
                   edit={{
-                    edit: !!geometry, // Allow editing only if a polygon exists
-                    remove: false, // Disallow removal for now
+                    edit: !!geometry,
+                    remove: false,
                   }}
                 />
               </FeatureGroup>
             </MapContainer>
-            <Form.Text className="mt-2">
+            <Form.Text className="mt-2 d-block">
               Gunakan kontrol di pojok kanan atas peta untuk membuat atau mengedit poligon.
+              {manualArea && (
+                <div className="mt-2">
+                  <strong>Luas saat ini:</strong> {manualArea.toLocaleString('id-ID')} m²
+                </div>
+              )}
             </Form.Text>
           </Col>
         </Row>

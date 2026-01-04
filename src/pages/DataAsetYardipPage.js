@@ -19,11 +19,10 @@ import PetaAsetYardip from "../components/PetaAsetYardip";
 import MapErrorBoundary from "../components/MapErrorBoundary";
 import EditYardipModal from "../components/EditYardipModal";
 import DetailOffcanvasYardip from "../components/DetailOffcanvasYardip";
-import DetailYardipModal from "../components/DetailYardipModal"; // Import the new detail modal
+import DetailYardipModal from "../components/DetailYardipModal";
 
 const API_URL = "http://localhost:3001";
 
-// FilterPanelTop component remains the same
 const FilterPanelTop = ({
   provinsiOptions,
   kotaOptions,
@@ -104,7 +103,6 @@ const FilterPanelTop = ({
   );
 };
 
-// TabelAsetYardip component remains mostly the same
 const TabelAsetYardip = ({
   assets,
   onEdit,
@@ -134,85 +132,87 @@ const TabelAsetYardip = ({
   const getBidangBadgeClass = (bidang) => {
     switch (bidang?.toLowerCase()) {
       case "tanah":
-        return "bg-warning"; // kuning
+        return "bg-warning";
       case "tanah gudang kantor":
-        return "bg-primary"; // biru tua
+        return "bg-primary";
       case "tanah bangunan":
-        return "bg-info"; // biru muda
+        return "bg-info";
       case "ruko":
-        return "bg-success"; // hijau
+        return "bg-success";
       default:
         return "bg-secondary";
     }
   };
 
   return (
-    <Table striped bordered hover responsive style={{ minWidth: "1200px" }}>
-      <thead className="table-dark">
-        <tr>
-          <th>Pengelola</th>
-          <th>Bidang</th>
-          <th>Provinsi</th>
-          <th>Kota/Kab.</th>
-          <th>Status</th>
-          <th>Luas</th>
-          <th>Aksi</th>
-        </tr>
-      </thead>
-      <tbody>
-        {assets.map((asset) => (
-          <tr key={asset.id}>
-            <td>{asset.pengelola || "-"}</td>
-            <td>
-              <span className={`badge ${getBidangBadgeClass(asset.bidang)}`}>
-                {asset.bidang || "-"}
-              </span>
-            </td>
-            <td>{asset.provinsi || "-"}</td>
-            <td>{asset.kabkota || "-"}</td>
-            <td>
-              <span className={`badge ${getStatusBadgeClass(asset.status)}`}>
-                {asset.status || "-"}
-              </span>
-            </td>
-            <td>
-              {asset.area
-                ? `${Number(asset.area).toLocaleString("id-ID")} m²`
-                : "-"}
-            </td>
-            <td>
-              <Button
-                variant="info"
-                size="sm"
-                onClick={() => onViewDetail(asset)}
-                className="me-1"
-              >
-                Detail
-              </Button>
-              {userRole === "admin" && onEdit && (
+    <div style={{ width: "100%", minWidth: "1200px" }}>
+      <Table striped bordered hover style={{ marginBottom: 0 }}>
+        <thead className="table-dark">
+          <tr>
+            <th>Pengelola</th>
+            <th>Bidang</th>
+            <th>Provinsi</th>
+            <th>Kota/Kab.</th>
+            <th>Status</th>
+            <th>Luas</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {assets.map((asset) => (
+            <tr key={asset.id}>
+              <td>{asset.pengelola || "-"}</td>
+              <td>
+                <span className={`badge ${getBidangBadgeClass(asset.bidang)}`}>
+                  {asset.bidang || "-"}
+                </span>
+              </td>
+              <td>{asset.provinsi || "-"}</td>
+              <td>{asset.kabkota || "-"}</td>
+              <td>
+                <span className={`badge ${getStatusBadgeClass(asset.status)}`}>
+                  {asset.status || "-"}
+                </span>
+              </td>
+              <td>
+                {asset.area
+                  ? `${Number(asset.area).toLocaleString("id-ID")} m²`
+                  : "-"}
+              </td>
+              <td>
                 <Button
-                  variant="warning"
+                  variant="info"
                   size="sm"
-                  onClick={() => onEdit(asset)}
+                  onClick={() => onViewDetail(asset)}
                   className="me-1"
                 >
-                  Edit
+                  Detail
                 </Button>
-              )}
-              {userRole === "admin" && onDelete && (
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => onDelete(asset.id)}
-                >
-                  Hapus
-                </Button>
-              )}
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </Table>
+                {userRole === "admin" && onEdit && (
+                  <Button
+                    variant="warning"
+                    size="sm"
+                    onClick={() => onEdit(asset)}
+                    className="me-1"
+                  >
+                    Edit
+                  </Button>
+                )}
+                {userRole === "admin" && onDelete && (
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => onDelete(asset.id)}
+                  >
+                    Hapus
+                  </Button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+    </div>
   );
 };
 
@@ -224,10 +224,8 @@ const DataAsetYardipPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // State untuk filter dan view peta
   const [view, setView] = useState({ provinsi: "", kabupaten: "" });
 
-  // State untuk modal dan offcanvas
   const [editingAsset, setEditingAsset] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedAssetDetail, setSelectedAssetDetail] = useState(null);
@@ -258,7 +256,6 @@ const DataAsetYardipPage = () => {
     fetchData();
   }, [fetchData]);
 
-  // --- Opsi untuk Filter ---
   const provinsiOptions = useMemo(
     () => [
       { value: "Jawa Tengah", label: "Jawa Tengah" },
@@ -281,7 +278,6 @@ const DataAsetYardipPage = () => {
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [kabupatenData, view.provinsi]);
 
-  // --- Logika Filtering untuk Tabel ---
   const filteredTableAssets = useMemo(() => {
     return assets.filter((asset) => {
       const provMatch = !view.provinsi || asset.provinsi === view.provinsi;
@@ -290,7 +286,6 @@ const DataAsetYardipPage = () => {
     });
   }, [assets, view]);
 
-  // --- Handlers ---
   const handleSelectProvinsi = (prov) => {
     setView({ provinsi: prov, kabupaten: "" });
   };
@@ -339,7 +334,7 @@ const DataAsetYardipPage = () => {
       try {
         await axios.delete(`${API_URL}/yardip_assets/${id}`);
         toast.success("Aset berhasil dihapus!", { id: toastId });
-        fetchData(); // Refresh data
+        fetchData();
       } catch (err) {
         toast.error("Gagal menghapus aset.", { id: toastId });
       }
@@ -356,21 +351,19 @@ const DataAsetYardipPage = () => {
     try {
       await axios.put(`${API_URL}/yardip_assets/${formData.id}`, formData);
       toast.success("Aset Yardip berhasil diperbarui!", { id: toastId });
-      // setShowEditModal(false);  // <-- COMMENT ATAU HAPUS BARIS INI
-      // setEditingAsset(null);    // <-- COMMENT ATAU HAPUS BARIS INI
 
-      // Refresh data aset yang sedang di-edit agar modal menampilkan data terbaru
       const refreshedAsset = await axios.get(
         `${API_URL}/yardip_assets/${formData.id}`
       );
       setEditingAsset(refreshedAsset.data);
 
-      fetchData(); // Refresh semua data di background
+      fetchData();
     } catch (err) {
       toast.error("Gagal menyimpan perubahan.", { id: toastId });
       console.error("Error updating yardip asset:", err);
     }
   };
+
   if (loading) return <Spinner animation="border" variant="primary" />;
   if (error) return <Alert variant="danger">{error}</Alert>;
 
@@ -387,10 +380,10 @@ const DataAsetYardipPage = () => {
                 <PetaAsetYardip
                   provinsiData={provinsiData}
                   kabupatenData={kabupatenData}
-                  assets={filteredTableAssets} // Pass filtered assets
-                  onAssetClick={handleMarkerClick} // Open offcanvas on marker click
-                  filter={view} // Pass current view as filter
-                  onViewChange={handleMapViewChange} // Handle view changes from map
+                  assets={filteredTableAssets}
+                  onAssetClick={handleMarkerClick}
+                  filter={view}
+                  onViewChange={handleMapViewChange}
                 />
               </MapErrorBoundary>
             </Card.Body>
@@ -412,14 +405,23 @@ const DataAsetYardipPage = () => {
             <Card.Header>
               <h5 className="mb-0">Daftar Aset Yardip</h5>
             </Card.Header>
-            <Card.Body style={{ maxHeight: "60vh", overflowY: "auto" }}>
-              <TabelAsetYardip
-                assets={filteredTableAssets}
-                onEdit={user ? handleEditAsset : null}
-                onDelete={user ? handleDeleteAsset : null}
-                onViewDetail={handleViewDetail} // Open modal on table button click
-                userRole={user?.role}
-              />
+            <Card.Body>
+              {/* Container dengan dual scroll - scroll horizontal dan vertical */}
+              <div
+                style={{
+                  maxHeight: "60vh",
+                  overflowY: "auto",
+                  overflowX: "auto",
+                }}
+              >
+                <TabelAsetYardip
+                  assets={filteredTableAssets}
+                  onEdit={user ? handleEditAsset : null}
+                  onDelete={user ? handleDeleteAsset : null}
+                  onViewDetail={handleViewDetail}
+                  userRole={user?.role}
+                />
+              </div>
             </Card.Body>
           </Card>
 

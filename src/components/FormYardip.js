@@ -14,6 +14,7 @@ import {
   Alert,
   ButtonGroup,
   ToggleButton,
+  InputGroup,
 } from "react-bootstrap";
 import toast from "react-hot-toast";
 import { kml } from "@tmcw/togeojson";
@@ -24,19 +25,20 @@ const FormYardip = forwardRef(
     {
       onSave,
       onCancel,
-      isEnabled = false, // Disabled by default
+      isEnabled = false,
       selectedProvinceName,
       selectedKabupatenName,
       initialArea = 0,
-      assetToEdit, // New prop for editing
-      isEditMode = false, // New prop to indicate edit mode
-      onKmlImport, // New prop for KML import
-      onCoordsImport, // New prop for Coords import
-      provinsiData, // New prop for province boundaries
-      kabupatenData, // New prop for district boundaries
-      onLocationChange, // New prop for form location changes
-      isPolygonCreated, // New prop to check if polygon exists
-      onMapLocationSelect, // NEW: prop to trigger map zoom from form
+      assetToEdit,
+      isEditMode = false,
+      onKmlImport,
+      onCoordsImport,
+      provinsiData,
+      kabupatenData,
+      onLocationChange,
+      isPolygonCreated,
+      onMapLocationSelect,
+      onManualAreaChange, // NEW PROP
     },
     ref
   ) => {
@@ -62,10 +64,9 @@ const FormYardip = forwardRef(
           peruntukan: assetToEdit.peruntukan || "",
           status: assetToEdit.status || "",
           keterangan: assetToEdit.keterangan || "",
-          // Include other fields from the asset that are part of the form
           provinsi: assetToEdit.provinsi || selectedProvinceName,
           area: assetToEdit.area || initialArea,
-          id: assetToEdit.id, // Keep the ID for the update request
+          id: assetToEdit.id,
         });
       } else {
         setFormData({
@@ -102,7 +103,6 @@ const FormYardip = forwardRef(
       "Lain-lain",
     ];
 
-    // Reset form when drawing is cleared or location changes
     useEffect(() => {
       if (!isEnabled && !isEditMode) {
         handleReset();
@@ -118,6 +118,25 @@ const FormYardip = forwardRef(
         }
       },
       [errors]
+    );
+
+    // NEW: Handler untuk perubahan area manual
+    const handleAreaChange = useCallback(
+      (e) => {
+        const value = e.target.value;
+        const numValue = parseFloat(value) || 0;
+
+        setFormData((prev) => ({
+          ...prev,
+          area: numValue,
+        }));
+
+        // Notify parent component about manual area change
+        if (onManualAreaChange) {
+          onManualAreaChange(numValue);
+        }
+      },
+      [onManualAreaChange]
     );
 
     const validateForm = useCallback(() => {
@@ -187,7 +206,6 @@ const FormYardip = forwardRef(
               f.geometry.type === "MultiPolygon"
           );
           if (importedPolygon) {
-            // For MultiPolygon, just take the first polygon for simplicity
             const geometry =
               importedPolygon.geometry.type === "MultiPolygon"
                 ? {
@@ -206,7 +224,7 @@ const FormYardip = forwardRef(
         }
       };
       reader.readAsText(file);
-      event.target.value = null; // Reset file input
+      event.target.value = null;
     };
 
     const handleProcessCoords = () => {
@@ -222,7 +240,6 @@ const FormYardip = forwardRef(
       const coordinates = [];
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
-        // Support comma, space, or tab as separators
         const parts = line.split(/[\s,;\t]+/);
         if (parts.length !== 2) {
           setCoordsError(
@@ -246,7 +263,6 @@ const FormYardip = forwardRef(
         coordinates.push([lon, lat]);
       }
 
-      // Close the ring if it's not already closed
       if (
         coordinates.length > 0 &&
         (coordinates[0][0] !== coordinates[coordinates.length - 1][0] ||
@@ -260,27 +276,17 @@ const FormYardip = forwardRef(
       toast.success("Koordinat berhasil diproses!");
     };
 
-    // NEW: Handle province selection from form
     const handleProvinceChange = (e) => {
       const selectedProvince = e.target.value;
-
-      // Update form location via existing prop
       onLocationChange(selectedProvince, "");
-
-      // NEW: Trigger map zoom to province
       if (selectedProvince && onMapLocationSelect) {
         onMapLocationSelect("provinsi", selectedProvince);
       }
     };
 
-    // NEW: Handle kabupaten selection from form
     const handleKabupatenChange = (e) => {
       const selectedKabupaten = e.target.value;
-
-      // Update form location via existing prop
       onLocationChange(selectedProvinceName, selectedKabupaten);
-
-      // NEW: Trigger map zoom to kabupaten
       if (selectedKabupaten && onMapLocationSelect) {
         onMapLocationSelect("kabupaten", selectedKabupaten);
       }
@@ -452,13 +458,23 @@ const FormYardip = forwardRef(
                     </Col>
                   </Row>
                   <Form.Group className="mb-3">
-                    <Form.Label>Luas Area (dari Peta)</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={`${(formData.area || 0).toFixed(2)} m²`}
-                      readOnly
-                      disabled
-                    />
+                    <Form.Label>
+                      Luas Area (dari Peta) <span className="text-danger">*</span>
+                    </Form.Label>
+                    <InputGroup>
+                      <Form.Control
+                        type="number"
+                        step="0.01"
+                        name="area"
+                        value={formData.area || 0}
+                        onChange={handleAreaChange}
+                        placeholder="Area dari peta"
+                      />
+                      <InputGroup.Text>m²</InputGroup.Text>
+                    </InputGroup>
+                    <Form.Text className="text-muted">
+                      Nilai otomatis dari peta, dapat diedit manual jika diperlukan
+                    </Form.Text>
                   </Form.Group>
                 </Card.Body>
               </Card>

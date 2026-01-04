@@ -12,7 +12,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import * as turf from "@turf/turf";
-import PetaGambarYardip from "../components/PetaGambarYardip"; // DIUBAH
+import PetaGambarYardip from "../components/PetaGambarYardip";
 import FormYardip from "../components/FormYardip";
 import MapErrorBoundary from "../components/MapErrorBoundary";
 
@@ -21,20 +21,21 @@ const API_URL = "http://localhost:3001";
 const TambahAsetYardipPage = () => {
   const navigate = useNavigate();
 
-  // State yang disederhanakan untuk alur baru
   const [selectedLocation, setSelectedLocation] = useState({
     provinsi: null,
     kabupaten: null,
   });
   const [isDrawingEnabled, setIsDrawingEnabled] = useState(false);
   const [drawnAsset, setDrawnAsset] = useState(null);
+  
+  // NEW: Separate state for manual area editing
+  const [manualArea, setManualArea] = useState(null);
+  
   const [error, setError] = useState(null);
   const [yardipAssets, setYardipAssets] = useState([]);
   const [provinsiData, setProvinsiData] = useState(null);
   const [kabupatenData, setKabupatenData] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  // NEW: State to handle form-triggered map navigation
   const [mapNavigationTrigger, setMapNavigationTrigger] = useState(null);
 
   // Load boundary data on mount
@@ -58,25 +59,26 @@ const TambahAsetYardipPage = () => {
     loadBoundaryData();
   }, []);
 
-  // Handler untuk menerima data dari PetaGambarYardip
   const handleLocationSelect = useCallback((type, name) => {
     if (type === "provinsi") {
       setSelectedLocation({ provinsi: name, kabupaten: null });
       setIsDrawingEnabled(false);
       setDrawnAsset(null);
+      setManualArea(null);
       toast.success(`Provinsi ${name} dipilih. Silakan pilih kabupaten/kota.`);
     } else if (type === "kabupaten") {
       setSelectedLocation((prev) => ({ ...prev, kabupaten: name }));
       setIsDrawingEnabled(true);
       setDrawnAsset(null);
+      setManualArea(null);
       toast.success(
         `Kabupaten/Kota ${name} dipilih. Silakan gambar area aset.`
       );
     } else {
-      // Kembali ke tampilan nasional
       setSelectedLocation({ provinsi: null, kabupaten: null });
       setIsDrawingEnabled(false);
       setDrawnAsset(null);
+      setManualArea(null);
     }
   }, []);
 
@@ -87,29 +89,31 @@ const TambahAsetYardipPage = () => {
     } else {
       setIsDrawingEnabled(false);
     }
-    setDrawnAsset(null); // Clear any drawing when location changes
+    setDrawnAsset(null);
+    setManualArea(null);
   }, []);
 
-  // NEW: Handler untuk navigasi peta dari form
   const handleMapLocationSelect = useCallback((type, name) => {
-    // Set trigger untuk memaksa map component untuk zoom ke lokasi
     setMapNavigationTrigger({ type, name, timestamp: Date.now() });
 
     if (type === "provinsi") {
       setSelectedLocation({ provinsi: name, kabupaten: null });
       setIsDrawingEnabled(false);
       setDrawnAsset(null);
+      setManualArea(null);
       toast.success(`Peta dipindahkan ke Provinsi ${name}`);
     } else if (type === "kabupaten") {
       setSelectedLocation((prev) => ({ ...prev, kabupaten: name }));
       setIsDrawingEnabled(true);
       setDrawnAsset(null);
+      setManualArea(null);
       toast.success(`Peta dipindahkan ke Kabupaten/Kota ${name}`);
     }
   }, []);
 
   const handleDrawingCreated = useCallback((data) => {
     setDrawnAsset(data);
+    setManualArea(data.area); // Set initial manual area from calculated area
     toast.success(`Area seluas ${data.area.toFixed(2)} m² berhasil digambar.`);
   }, []);
 
@@ -141,6 +145,7 @@ const TambahAsetYardipPage = () => {
             kabupaten: containingKab,
           });
           setDrawnAsset({ geometry, area });
+          setManualArea(area);
           toast.success(
             `Poligon berhasil diimpor! Lokasi: ${containingKab}, ${containingProv}.`
           );
@@ -148,17 +153,23 @@ const TambahAsetYardipPage = () => {
           toast.error(
             "Tidak dapat menentukan lokasi poligon. Pastikan poligon berada di dalam wilayah yang didukung."
           );
-          // Still draw the asset, but don't set the location
           setDrawnAsset({ geometry, area });
+          setManualArea(area);
         }
       } catch (e) {
         toast.error("Terjadi kesalahan saat menganalisis poligon.");
         console.error("Polygon analysis error:", e);
-        setDrawnAsset({ geometry, area }); // Draw it anyway
+        setDrawnAsset({ geometry, area });
+        setManualArea(area);
       }
     },
     [kabupatenData, provinsiData]
   );
+
+  // NEW: Handler for manual area changes
+  const handleManualAreaChange = useCallback((newArea) => {
+    setManualArea(newArea);
+  }, []);
 
   const handleSaveAsset = useCallback(
     async (assetData) => {
@@ -173,16 +184,19 @@ const TambahAsetYardipPage = () => {
         return;
       }
 
+      // Use manual area if set, otherwise use calculated area from polygon
+      const finalArea = manualArea !== null ? manualArea : drawnAsset.area;
+
       const toastId = toast.loading("Menyimpan data aset yardip...");
       try {
         const payload = {
           ...assetData,
           id: `Y${Date.now()}`,
           lokasi: JSON.stringify(drawnAsset.geometry),
-          area: drawnAsset.area,
+          area: finalArea, // Use manual area here
           type: "yardip",
           provinsi: selectedLocation.provinsi,
-          kabkota: selectedLocation.kabupaten, // Menggunakan nama kab/kota dari peta
+          kabkota: selectedLocation.kabupaten,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
@@ -190,7 +204,6 @@ const TambahAsetYardipPage = () => {
         await axios.post(`${API_URL}/yardip_assets`, payload);
         toast.success("Aset Yardip berhasil ditambahkan!", { id: toastId });
 
-        // Reload assets to include the new one
         const response = await axios.get(`${API_URL}/yardip_assets`);
         setYardipAssets(response.data || []);
 
@@ -203,7 +216,7 @@ const TambahAsetYardipPage = () => {
         );
       }
     },
-    [drawnAsset, selectedLocation, navigate]
+    [drawnAsset, selectedLocation, manualArea, navigate]
   );
 
   const handleCancel = useCallback(() => {
@@ -268,9 +281,9 @@ const TambahAsetYardipPage = () => {
                 onLocationSelect={handleLocationSelect}
                 onPolygonCreated={handleDrawingCreated}
                 isDrawingEnabled={isDrawingEnabled}
-                assets={yardipAssets} // Pass existing YARDIP assets to the map
-                newlyDrawnGeometry={drawnAsset ? drawnAsset.geometry : null} // Auto zoom to newly drawn geometry
-                mapNavigationTrigger={mapNavigationTrigger} // NEW: Pass trigger for form-controlled navigation
+                assets={yardipAssets}
+                newlyDrawnGeometry={drawnAsset ? drawnAsset.geometry : null}
+                mapNavigationTrigger={mapNavigationTrigger}
               />
             </MapErrorBoundary>
           </div>
@@ -281,17 +294,18 @@ const TambahAsetYardipPage = () => {
             <FormYardip
               onSave={handleSaveAsset}
               onCancel={handleCancel}
-              isEnabled={true} // Form is enabled by default
+              isEnabled={true}
               selectedProvinceName={selectedLocation.provinsi}
               selectedKabupatenName={selectedLocation.kabupaten}
-              initialArea={drawnAsset ? drawnAsset.area : 0}
+              initialArea={manualArea !== null ? manualArea : (drawnAsset ? drawnAsset.area : 0)}
               onKmlImport={handleImportedGeometry}
               onCoordsImport={handleImportedGeometry}
               provinsiData={provinsiData}
               kabupatenData={kabupatenData}
               onLocationChange={handleLocationChangeFromForm}
               isPolygonCreated={!!drawnAsset}
-              onMapLocationSelect={handleMapLocationSelect} // NEW: Pass handler for form-controlled map navigation
+              onMapLocationSelect={handleMapLocationSelect}
+              onManualAreaChange={handleManualAreaChange} // NEW: Pass handler to form
             />
           </div>
         </Col>
