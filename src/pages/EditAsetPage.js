@@ -42,6 +42,11 @@ const EditAsetPage = () => {
   ) => {
     const toastId = toast.loading("Menyimpan perubahan...");
 
+    console.log("=== EDIT ASSET PAGE SAVE ===");
+    console.log("Received assetData:", assetData);
+    console.log("buktiPemilikanFile:", buktiPemilikanFile);
+    console.log("assetPhotos:", assetPhotos);
+
     let updatedData = { ...assetData };
 
     // 1. Upload new Bukti Pemilikan if it exists
@@ -56,6 +61,7 @@ const EditAsetPage = () => {
         );
         updatedData.bukti_pemilikan_url = uploadRes.data.url;
         updatedData.bukti_pemilikan_filename = uploadRes.data.filename;
+        console.log("Bukti pemilikan uploaded:", uploadRes.data);
       } catch (err) {
         toast.error("Gagal mengupload bukti pemilikan baru.", { id: toastId });
         console.error("File upload error:", err);
@@ -77,12 +83,12 @@ const EditAsetPage = () => {
           `${API_URL}/upload/asset-photos`,
           photosFormData
         );
-        // Replace old photos with new ones
+        // Append new photos to existing ones
         const newPhotoUrls = photosUploadRes.data.files.map((file) => file.url);
         const existingPhotoUrls = updatedData.foto_aset || [];
         updatedData.foto_aset = [...existingPhotoUrls, ...newPhotoUrls];
+        console.log("Asset photos uploaded:", newPhotoUrls);
       } catch (err) {
-        // Menampilkan pesan error yang lebih spesifik
         const errorMessage =
           err.response?.data?.error || "Gagal mengupload foto aset baru.";
         toast.error(errorMessage, { id: toastId });
@@ -97,12 +103,22 @@ const EditAsetPage = () => {
     // 3. Save the final updated asset data
     try {
       toast.loading("Menyimpan data ke database...", { id: toastId });
+
+      console.log("Final data being sent to server:", updatedData);
+      console.log("Luas data:", {
+        luas: updatedData.luas,
+        sertifikat_luas: updatedData.sertifikat_luas,
+        belum_sertifikat_luas: updatedData.belum_sertifikat_luas,
+        pemilikan_sertifikat: updatedData.pemilikan_sertifikat,
+      });
+
       await axios.put(`${API_URL}/assets/${id}`, updatedData);
       toast.success("Aset berhasil diperbarui!", { id: toastId });
       navigate("/data-aset-tanah");
     } catch (err) {
       toast.error("Gagal menyimpan perubahan.", { id: toastId });
       console.error("Gagal menyimpan aset", err);
+      console.error("Error response:", err.response?.data);
     }
   };
 

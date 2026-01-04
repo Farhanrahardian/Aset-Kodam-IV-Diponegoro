@@ -8,24 +8,42 @@ const app = express();
 const port = 3001;
 const dbPath = path.join(__dirname, "db.json");
 
-// Helper function to read the database
+// ===== HELPER FUNCTIONS =====
 const readDb = () => {
   const dbRaw = fs.readFileSync(dbPath);
   return JSON.parse(dbRaw);
 };
 
-// Helper function to write to the database
 const writeDb = (data) => {
   fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
 };
 
-// CORS configuration
-app.use(cors());
+const deleteFileFromUploads = (fileUrl) => {
+  try {
+    if (!fileUrl) return false;
 
-// Serve static files from the 'public' directory, making /uploads accessible
+    const filename = path.basename(fileUrl);
+    const filePath = path.join(__dirname, "public", "uploads", filename);
+
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      console.log(`✅ File deleted: ${filename}`);
+      return true;
+    } else {
+      console.log(`⚠️  File not found: ${filename}`);
+      return false;
+    }
+  } catch (error) {
+    console.error(`❌ Error deleting file: ${error.message}`);
+    return false;
+  }
+};
+
+// ===== MIDDLEWARE =====
+app.use(cors());
 app.use(express.static("public"));
 
-// --- Multer Configuration ---
+// ===== MULTER CONFIGURATION =====
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     const dir = "public/uploads/";
@@ -35,7 +53,6 @@ const storage = multer.diskStorage({
     cb(null, dir);
   },
   filename: function (req, file, cb) {
-    // Create a unique filename to avoid overwrites
     cb(
       null,
       file.fieldname + "-" + Date.now() + path.extname(file.originalname)
@@ -43,41 +60,37 @@ const storage = multer.diskStorage({
   },
 });
 
-// Konfigurasi Multer untuk foto aset (menerima gambar dan video dengan ukuran lebih besar)
-const uploadAssetPhotos = multer({ 
+const uploadAssetPhotos = multer({
   storage: storage,
-  limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB limit per file
-    files: 5 // maksimal 5 file
-  },
+  limits: { fileSize: 50 * 1024 * 1024, files: 5 },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
+    if (
+      file.mimetype.startsWith("image/") ||
+      file.mimetype.startsWith("video/")
+    ) {
       cb(null, true);
     } else {
-      cb(new Error('File foto aset harus berupa gambar atau video'), false);
+      cb(new Error("File foto aset harus berupa gambar atau video"), false);
     }
-  }
+  },
 });
 
-// Konfigurasi Multer untuk bukti pemilikan (menerima gambar dan PDF dengan ukuran sedang)
-const uploadBuktiPemilikan = multer({ 
+const uploadBuktiPemilikan = multer({
   storage: storage,
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit per file
-  },
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {
+    if (
+      file.mimetype.startsWith("image/") ||
+      file.mimetype === "application/pdf"
+    ) {
       cb(null, true);
     } else {
-      cb(new Error('File bukti pemilikan harus berupa gambar atau PDF'), false);
+      cb(new Error("File bukti pemilikan harus berupa gambar atau PDF"), false);
     }
-  }
+  },
 });
 
-// --- File Upload API Endpoints ---
-// IMPORTANT: These must be defined BEFORE the express.json() body parser.
-
-// Endpoint for single file upload (Bukti Pemilikan)
+// ===== UPLOAD ENDPOINTS (must be before body parser) =====
 app.post(
   "/upload/bukti-pemilikan",
   uploadBuktiPemilikan.single("bukti_pemilikan"),
@@ -93,7 +106,6 @@ app.post(
   }
 );
 
-// Endpoint for multiple file upload (Foto Aset)
 app.post(
   "/upload/asset-photos",
   uploadAssetPhotos.array("asset_photos", 5),
@@ -112,14 +124,123 @@ app.post(
   }
 );
 
-// --- Body-parser middleware ---
-// IMPORTANT: Must be AFTER file upload endpoints.
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+// Body parser (must be AFTER upload endpoints)
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-// --- User Management Endpoints ---
+// ===== DELETE ENDPOINTS FOR FILES =====
+app.delete("/delete-bukti-pemilikan", (req, res) => {
+  try {
+    const { buktiPemilikanUrl, assetId } = req.body;
+    console.log("🗑️  DELETE bukti pemilikan request:", {
+      buktiPemilikanUrl,
+      assetId,
+      body: req.body,
+    });
 
-// Login
+    if (!buktiPemilikanUrl || !assetId) {
+      console.log("❌ Missing required fields");
+      return res.status(400).json({
+        error: "URL bukti pemilikan dan Asset ID diperlukan",
+      });
+    }
+
+    const db = readDb();
+    const assetIndex = db.assets.findIndex(
+      (asset) => String(asset.id) === String(assetId)
+    );
+
+    if (assetIndex === -1) {
+      console.log("❌ Asset not found:", assetId);
+      return res.status(404).json({ error: "Asset tidak ditemukan" });
+    }
+
+    console.log("✅ Asset found:", db.assets[assetIndex].nama);
+
+    // Delete file from filesystem
+    const fileDeleted = deleteFileFromUploads(buktiPemilikanUrl);
+    console.log("File deletion result:", fileDeleted);
+
+    // Update database
+    db.assets[assetIndex].bukti_pemilikan_url = null;
+    db.assets[assetIndex].bukti_pemilikan_filename = null;
+    writeDb(db);
+
+    console.log("✅ Bukti pemilikan deleted successfully");
+    res.json({
+      success: true,
+      message: "Bukti pemilikan berhasil dihapus",
+      fileDeleted: fileDeleted,
+    });
+  } catch (error) {
+    console.error("❌ Error deleting bukti pemilikan:", error);
+    res.status(500).json({
+      error: "Gagal menghapus bukti pemilikan",
+      details: error.message,
+    });
+  }
+});
+
+app.delete("/delete-asset-photo", (req, res) => {
+  try {
+    const { photoUrl, assetId } = req.body;
+    console.log("🗑️  DELETE asset photo request:", {
+      photoUrl,
+      assetId,
+      body: req.body,
+    });
+
+    if (!photoUrl || !assetId) {
+      console.log("❌ Missing required fields");
+      return res.status(400).json({
+        error: "URL foto dan Asset ID diperlukan",
+      });
+    }
+
+    const db = readDb();
+    const assetIndex = db.assets.findIndex(
+      (asset) => String(asset.id) === String(assetId)
+    );
+
+    if (assetIndex === -1) {
+      console.log("❌ Asset not found:", assetId);
+      return res.status(404).json({ error: "Asset tidak ditemukan" });
+    }
+
+    const asset = db.assets[assetIndex];
+    console.log("✅ Asset found:", asset.nama);
+    console.log("Current foto_aset:", asset.foto_aset);
+
+    let fotoAsetArray = asset.foto_aset || [];
+
+    // Delete file from filesystem
+    const fileDeleted = deleteFileFromUploads(photoUrl);
+    console.log("File deletion result:", fileDeleted);
+
+    // Remove URL from array
+    const updatedFotoAset = fotoAsetArray.filter((url) => url !== photoUrl);
+    console.log("Updated foto_aset:", updatedFotoAset);
+
+    db.assets[assetIndex].foto_aset = updatedFotoAset;
+    writeDb(db);
+
+    console.log("✅ Asset photo deleted successfully");
+    res.json({
+      success: true,
+      message: "Foto aset berhasil dihapus",
+      fileDeleted: fileDeleted,
+      updatedFotoAset: updatedFotoAset,
+    });
+  } catch (error) {
+    console.error("❌ Error deleting asset photo:", error);
+    res.status(500).json({
+      error: "Gagal menghapus foto aset",
+      details: error.message,
+    });
+  }
+});
+
+// ===== USER MANAGEMENT =====
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
   const db = readDb();
@@ -142,50 +263,54 @@ app.post("/login", (req, res) => {
   }
 });
 
-// Get all users
 app.get("/api/users", (req, res) => {
   const db = readDb();
-  res.json(db.users.map(u => ({ id: u.id, username: u.username, role: u.role, name: u.name })));
+  res.json(
+    db.users.map((u) => ({
+      id: u.id,
+      username: u.username,
+      role: u.role,
+      name: u.name,
+    }))
+  );
 });
 
-// Create a new user
 app.post("/api/users", (req, res) => {
   const { username, password, role, name } = req.body;
   if (!username || !password || !role || !name) {
     return res.status(400).json({ message: "Semua field wajib diisi" });
   }
 
-  // Server-side validation
   if (username.length !== 18 || !/^\d+$/.test(username)) {
-    return res.status(400).json({ message: "NRP (Username) harus berupa 18 digit angka." });
+    return res
+      .status(400)
+      .json({ message: "NRP (Username) harus berupa 18 digit angka." });
   }
 
   const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
   if (!passwordRegex.test(password)) {
-    return res.status(400).json({ message: "Password minimal 8 karakter dan harus mengandung huruf dan angka." });
+    return res.status(400).json({
+      message:
+        "Password minimal 8 karakter dan harus mengandung huruf dan angka.",
+    });
   }
 
   const db = readDb();
-  
-  // Check if user already exists
-  if (db.users.some(u => u.username === username)) {
+  if (db.users.some((u) => u.username === username)) {
     return res.status(409).json({ message: "Username already exists" });
   }
 
-  const newUser = {
-    id: `u${Date.now()}`,
-    username,
-    password, // In a real app, hash this password!
-    name,
-    role,
-  };
-
+  const newUser = { id: `u${Date.now()}`, username, password, name, role };
   db.users.push(newUser);
   writeDb(db);
-  res.status(201).json({ id: newUser.id, username: newUser.username, role: newUser.role, name: newUser.name });
+  res.status(201).json({
+    id: newUser.id,
+    username: newUser.username,
+    role: newUser.role,
+    name: newUser.name,
+  });
 });
 
-// Update a user
 app.put("/api/users/:id", (req, res) => {
   const { id } = req.params;
   const { role, password, name } = req.body;
@@ -196,24 +321,24 @@ app.put("/api/users/:id", (req, res) => {
     return res.status(404).json({ message: "User not found" });
   }
 
-  // Update fields if they are provided
   if (role) db.users[userIndex].role = role;
   if (name) db.users[userIndex].name = name;
-  
+
   if (password) {
-    // Also validate password on update if it is being changed
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
     if (!passwordRegex.test(password)) {
-      return res.status(400).json({ message: "Password minimal 8 karakter dan harus mengandung huruf dan angka." });
+      return res.status(400).json({
+        message:
+          "Password minimal 8 karakter dan harus mengandung huruf dan angka.",
+      });
     }
-    db.users[userIndex].password = password; // In a real app, hash this!
+    db.users[userIndex].password = password;
   }
 
   writeDb(db);
   res.json({ message: "User updated successfully", user: db.users[userIndex] });
 });
 
-// Delete a user
 app.delete("/api/users/:id", (req, res) => {
   const { id } = req.params;
   const db = readDb();
@@ -228,12 +353,7 @@ app.delete("/api/users/:id", (req, res) => {
   res.status(200).json({ message: "User deleted successfully" });
 });
 
-
-
-
-// --- JSON-Server equivalent routes ---
-
-// Get all from a resource (e.g., /assets, /korem, /yardip_assets)
+// ===== GENERIC JSON-SERVER ROUTES =====
 app.get("/:resource", (req, res) => {
   const { resource } = req.params;
   const db = readDb();
@@ -245,7 +365,6 @@ app.get("/:resource", (req, res) => {
   }
 });
 
-// Get item by id from a resource
 app.get("/:resource/:id", (req, res) => {
   const { resource, id } = req.params;
   const db = readDb();
@@ -262,7 +381,6 @@ app.get("/:resource/:id", (req, res) => {
   }
 });
 
-// Create a new item in a resource
 app.post("/:resource", (req, res) => {
   const { resource } = req.params;
   const db = readDb();
@@ -276,7 +394,6 @@ app.post("/:resource", (req, res) => {
   }
 });
 
-// Update an asset by ID
 app.put("/assets/:id", (req, res) => {
   const { id } = req.params;
   const updatedAsset = req.body;
@@ -295,7 +412,6 @@ app.put("/assets/:id", (req, res) => {
   res.json(db.assets[assetIndex]);
 });
 
-// Delete an asset by ID
 app.delete("/assets/:id", (req, res) => {
   const { id } = req.params;
   const db = readDb();
@@ -309,36 +425,31 @@ app.delete("/assets/:id", (req, res) => {
     return res.status(404).json({ message: "Asset not found" });
   }
   const assetToDelete = db.assets[assetIndex];
-  // Delete associated files
-  if (assetToDelete.bukti_pemilikan_filename) {
-    const filePath = path.join(__dirname, "public", "uploads", assetToDelete.bukti_pemilikan_filename);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    }
+
+  // Delete files
+  if (assetToDelete.bukti_pemilikan_url) {
+    deleteFileFromUploads(assetToDelete.bukti_pemilikan_url);
   }
   if (assetToDelete.foto_aset && Array.isArray(assetToDelete.foto_aset)) {
     assetToDelete.foto_aset.forEach((fotoUrl) => {
-      const filename = path.basename(fotoUrl);
-      const filePath = path.join(__dirname, "public", "uploads", filename);
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-      }
+      deleteFileFromUploads(fotoUrl);
     });
   }
+
   db.assets.splice(assetIndex, 1);
   writeDb(db);
   res.status(200).json({ message: "Asset deleted successfully" });
 });
 
-// ===== YARDIP ASSETS ENDPOINTS =====
-
-// UPDATE endpoint untuk yardip_assets
+// ===== YARDIP ASSETS =====
 app.put("/yardip_assets/:id", (req, res) => {
   const { id } = req.params;
   const updatedAsset = req.body;
   const db = readDb();
   if (!db.yardip_assets) {
-    return res.status(404).json({ message: "Resource 'yardip_assets' not found" });
+    return res
+      .status(404)
+      .json({ message: "Resource 'yardip_assets' not found" });
   }
   const assetIndex = db.yardip_assets.findIndex(
     (asset) => String(asset.id) === String(id)
@@ -346,17 +457,21 @@ app.put("/yardip_assets/:id", (req, res) => {
   if (assetIndex === -1) {
     return res.status(404).json({ message: "Yardip asset not found" });
   }
-  db.yardip_assets[assetIndex] = { ...db.yardip_assets[assetIndex], ...updatedAsset };
+  db.yardip_assets[assetIndex] = {
+    ...db.yardip_assets[assetIndex],
+    ...updatedAsset,
+  };
   writeDb(db);
   res.json(db.yardip_assets[assetIndex]);
 });
 
-// DELETE endpoint untuk yardip_assets
 app.delete("/yardip_assets/:id", (req, res) => {
   const { id } = req.params;
   const db = readDb();
   if (!db.yardip_assets) {
-    return res.status(404).json({ message: "Resource 'yardip_assets' not found" });
+    return res
+      .status(404)
+      .json({ message: "Resource 'yardip_assets' not found" });
   }
   const assetIndex = db.yardip_assets.findIndex(
     (asset) => String(asset.id) === String(id)
@@ -369,26 +484,35 @@ app.delete("/yardip_assets/:id", (req, res) => {
   res.status(200).json({ message: "Yardip asset deleted successfully" });
 });
 
-// --- Final Error Handling Middleware ---
+// ===== ERROR HANDLING =====
 app.use((error, req, res, next) => {
   if (error instanceof multer.MulterError) {
-    if (error.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ message: 'File terlalu besar. Maksimal 50MB untuk foto/video aset dan 10MB untuk bukti pemilikan.' });
+    if (error.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({
+        message:
+          "File terlalu besar. Maksimal 50MB untuk foto/video aset dan 10MB untuk bukti pemilikan.",
+      });
     }
-    if (error.code === 'LIMIT_FILE_COUNT') {
-      return res.status(400).json({ message: 'Terlalu banyak file yang diupload. Maksimal 5 file.' });
+    if (error.code === "LIMIT_FILE_COUNT") {
+      return res.status(400).json({
+        message: "Terlalu banyak file yang diupload. Maksimal 5 file.",
+      });
     }
     return res.status(400).json({ message: error.message });
   } else if (error) {
-    // Handle non-multer errors
-    return res.status(500).json({ message: error.message || 'Terjadi kesalahan pada server.' });
+    return res
+      .status(500)
+      .json({ message: error.message || "Terjadi kesalahan pada server." });
   }
   next();
 });
 
+// ===== START SERVER =====
 app.listen(port, () => {
+  console.log(`\n🚀 Server running at http://localhost:${port}`);
   console.log(
-    `Server listening at http://localhost:${port}`
+    `📁 Uploads directory: ${path.join(__dirname, "public/uploads")}`
   );
-  console.log("User management endpoints are now active on /api/users.");
+  console.log(`💾 Database: ${dbPath}`);
+  console.log(`✅ Ready to accept requests!\n`);
 });

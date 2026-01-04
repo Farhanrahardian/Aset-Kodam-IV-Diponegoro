@@ -56,8 +56,9 @@ const EditMapController = ({ geometry }) => {
 const EditAsetModal = ({ show, onHide, asset, koremList, onSave }) => {
   const [formData, setFormData] = useState(null);
   const [geometry, setGeometry] = useState(null);
+  const [geometryChanged, setGeometryChanged] = useState(false);
   const featureGroupRef = useRef();
-  const formAsetRef = useRef(); // Create a ref for FormAset
+  const formAsetRef = useRef();
 
   useEffect(() => {
     if (asset) {
@@ -69,12 +70,15 @@ const EditAsetModal = ({ show, onHide, asset, koremList, onSave }) => {
           coord[0],
         ]);
         setGeometry({ type: "Polygon", coordinates: [latLngs] });
+        setGeometryChanged(false);
       } else {
         setGeometry(null);
+        setGeometryChanged(false);
       }
     } else {
       setFormData(null);
       setGeometry(null);
+      setGeometryChanged(false);
     }
   }, [asset]);
 
@@ -86,41 +90,60 @@ const EditAsetModal = ({ show, onHide, asset, koremList, onSave }) => {
         assetPhotos,
       } = formAsetRef.current.getFormData();
 
-      console.log(
-        "Original form data from FormAset:",
-        JSON.stringify(latestFormData.lokasi)
-      );
+      console.log("=== SAVE DEBUG ===");
+      console.log("Original formData:", latestFormData);
+      console.log("Geometry state:", geometry);
+      console.log("Geometry changed:", geometryChanged);
 
       let finalData = { ...latestFormData };
-      if (geometry) {
-        console.log("Geometry state exists. Updating lokasi.");
+
+      // Jika geometry berubah, update lokasi dan luas
+      if (geometryChanged && geometry) {
+        console.log("Geometry changed - updating lokasi");
+
         const geoJsonForSave = {
           type: "Polygon",
           coordinates: [
             geometry.coordinates[0].map((latLng) => [latLng[1], latLng[0]]),
           ],
         };
+
         const area = turf.area(geoJsonForSave);
         const roundedArea = parseFloat(area.toFixed(2));
 
-        finalData.luas = roundedArea;
+        console.log("Calculated area:", roundedArea);
 
+        // Update luas dan lokasi
+        finalData.luas = roundedArea;
+        finalData.lokasi = geoJsonForSave;
+
+        // Update luas sesuai status sertifikat
         if (finalData.pemilikan_sertifikat === "Ya") {
           finalData.sertifikat_luas = roundedArea;
+          console.log("Updated sertifikat_luas:", roundedArea);
         } else {
           finalData.belum_sertifikat_luas = roundedArea;
+          console.log("Updated belum_sertifikat_luas:", roundedArea);
         }
-
-        finalData.lokasi = geoJsonForSave;
-        console.log(
-          "Final lokasi to be saved:",
-          JSON.stringify(finalData.lokasi)
-        );
       } else {
-        console.log("Geometry state does not exist.");
+        console.log("Geometry not changed - keeping original data");
+        // Pastikan data luas dari form tetap digunakan
+        if (finalData.pemilikan_sertifikat === "Ya") {
+          console.log(
+            "Using sertifikat_luas from form:",
+            finalData.sertifikat_luas
+          );
+        } else {
+          console.log(
+            "Using belum_sertifikat_luas from form:",
+            finalData.belum_sertifikat_luas
+          );
+        }
       }
 
-      console.log("Calling onSave with final data.");
+      console.log("Final data to be saved:", finalData);
+      console.log("=== END SAVE DEBUG ===");
+
       onSave(finalData, buktiPemilikanFile, assetPhotos);
     } else {
       toast.error("Tidak ada data untuk disimpan.");
@@ -140,6 +163,10 @@ const EditAsetModal = ({ show, onHide, asset, koremList, onSave }) => {
           coord[0],
         ]);
         setGeometry({ type: "Polygon", coordinates: [latLngs] });
+        setGeometryChanged(true);
+        toast.success(
+          "Poligon berhasil diedit. Luas akan diperbarui saat menyimpan."
+        );
       }
     });
   };
@@ -153,6 +180,7 @@ const EditAsetModal = ({ show, onHide, asset, koremList, onSave }) => {
         coord[0],
       ]);
       setGeometry({ type: "Polygon", coordinates: [latLngs] });
+      setGeometryChanged(true);
       toast.success("Poligon baru berhasil dibuat.");
       featureGroupRef.current.removeLayer(layer);
     }
@@ -226,9 +254,18 @@ const EditAsetModal = ({ show, onHide, asset, koremList, onSave }) => {
                 {geometry && <Polygon positions={geometry.coordinates[0]} />}
               </FeatureGroup>
             </MapContainer>
-            <Form.Text className="mt-2">
-              Gunakan kontrol di pojok kanan atas peta untuk membuat atau
-              mengedit poligon.
+            <Form.Text className="mt-2 d-block">
+              {geometryChanged && (
+                <span className="text-warning fw-bold">
+                  ⚠️ Poligon telah diubah. Luas akan diperbarui saat menyimpan.
+                </span>
+              )}
+              {!geometryChanged && (
+                <span>
+                  Gunakan kontrol di pojok kanan atas peta untuk membuat atau
+                  mengedit poligon.
+                </span>
+              )}
             </Form.Text>
           </Col>
         </Row>
