@@ -17,18 +17,23 @@ const API_URL = "http://localhost:3001";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [asetTanahData, setAsetTanahData] = useState([]);
-  const [asetYardipData, setAsetYardipData] = useState([]);
+
+  // ========== STATE MANAGEMENT ==========
+  // Raw data states
+  const [rawAssetsData, setRawAssetsData] = useState([]);
+  const [rawYardipData, setRawYardipData] = useState([]);
   const [koremList, setKoremList] = useState([]);
-  const [selectedKorem, setSelectedKorem] = useState(""); // Filter state for tanah
-  const [selectedKodim, setSelectedKodim] = useState(""); // NEW: Filter state for kodim
-  const [selectedProvince, setSelectedProvince] = useState(""); // Filter state for yardip
-  const [selectedCity, setSelectedCity] = useState(""); // Filter state for city
-  const [rawAssetsData, setRawAssetsData] = useState([]); // Store raw data for filtering
-  const [rawYardipData, setRawYardipData] = useState([]); // Store raw yardip data
+  const [cityList, setCityList] = useState([]);
+
+  // Filter states
+  const [selectedKorem, setSelectedKorem] = useState("");
+  const [selectedKodim, setSelectedKodim] = useState("");
+  const [selectedProvince, setSelectedProvince] = useState("");
+  const [selectedCity, setSelectedCity] = useState("");
+
+  // UI states
   const [loading, setLoading] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [kabupatenData, setKabupatenData] = useState(null); // Data for city filter
 
   // Slider images
   const slides = [
@@ -37,123 +42,9 @@ const Dashboard = () => {
     { src: "/uploads/slide3.png", alt: "Slide 3" },
   ];
 
-  // Process data by Korem (default view)
-  const processDataByKorem = useCallback((assetsData, koremData) => {
-    const koremStats = {};
-
-    // Initialize korem stats
-    koremData.forEach((korem) => {
-      koremStats[korem.id] = {
-        id: korem.id,
-        name: korem.nama,
-        bersertifikat: 0,
-        tidakBersertifikat: 0,
-        total: 0,
-        kodimList: korem.kodim || [],
-      };
-    });
-
-    // Count assets by korem
-    assetsData.forEach((asset) => {
-      const koremId = asset.korem_id;
-      if (koremStats[koremId]) {
-        const hasSertifikat = asset.pemilikan_sertifikat === "Ya";
-
-        if (hasSertifikat) {
-          koremStats[koremId].bersertifikat += 1;
-        } else {
-          koremStats[koremId].tidakBersertifikat += 1;
-        }
-
-        koremStats[koremId].total += 1;
-      }
-    });
-
-    return Object.values(koremStats)
-      .filter((korem) => korem.total > 0)
-      .sort((a, b) => b.total - a.total);
-  }, []);
-
-  // Process data by Kodim (filtered view)
-  const processDataByKodim = useCallback(
-    (assetsData, koremData, selectedKoremId, selectedKodimName = null) => {
-      const selectedKoremData = koremData.find(
-        (k) => k.id.toString() === selectedKoremId.toString()
-      );
-
-      if (!selectedKoremData) return [];
-
-      const kodimStats = {};
-
-      // Initialize kodim stats for selected korem
-      if (selectedKoremData.nama === "Kodim 0733/Kota Semarang") {
-        // Special case for standalone Kodim
-        const kodimName = "Kodim 0733/Kota Semarang";
-        kodimStats[kodimName] = {
-          name: kodimName,
-          korem: selectedKoremData.nama,
-          bersertifikat: 0,
-          tidakBersertifikat: 0,
-          total: 0,
-        };
-      } else {
-        // Regular case
-        selectedKoremData.kodim.forEach((kodimName) => {
-          kodimStats[kodimName] = {
-            name: kodimName,
-            korem: selectedKoremData.nama,
-            bersertifikat: 0,
-            tidakBersertifikat: 0,
-            total: 0,
-          };
-        });
-      }
-
-      // Count assets by kodim for selected korem
-      assetsData
-        .filter((asset) => {
-          const matchesKorem =
-            asset.korem_id.toString() === selectedKoremId.toString();
-          const matchesKodim = selectedKodimName
-            ? asset.kodim === selectedKodimName
-            : true;
-          return matchesKorem && matchesKodim;
-        })
-        .forEach((asset) => {
-          const kodimName = asset.kodim;
-          if (kodimStats[kodimName]) {
-            const hasSertifikat = asset.pemilikan_sertifikat === "Ya";
-
-            if (hasSertifikat) {
-              kodimStats[kodimName].bersertifikat += 1;
-            } else {
-              kodimStats[kodimName].tidakBersertifikat += 1;
-            }
-
-            kodimStats[kodimName].total += 1;
-          }
-        });
-
-      let result = Object.values(kodimStats)
-        .filter((kodim) => kodim.total > 0)
-        .sort((a, b) => b.total - a.total);
-
-      // If specific kodim selected, show only that kodim
-      if (selectedKodimName) {
-        result = result.filter((kodim) => kodim.name === selectedKodimName);
-      }
-
-      return result;
-    },
-    []
-  );
-
-  // FIXED: Helper function to categorize yardip asset based on bidang field
-  const categorizeYardipAsset = (asset) => {
-    // Use bidang field instead of peruntukan for more accurate categorization
+  // ========== HELPER FUNCTIONS (MEMOIZED) ==========
+  const categorizeYardipAsset = useCallback((asset) => {
     const bidang = (asset.bidang || "").toLowerCase().trim();
-
-    // Match exactly with bidang options from FormYardip.js
     switch (bidang) {
       case "tanah":
         return "tanah";
@@ -164,71 +55,225 @@ const Dashboard = () => {
       case "ruko":
         return "ruko";
       default:
-        // Fallback to peruntukan if bidang is not standard
         const peruntukan = (asset.peruntukan || "").toLowerCase().trim();
-        if (peruntukan.includes("ruko") || peruntukan.includes("toko")) {
+        if (peruntukan.includes("ruko") || peruntukan.includes("toko"))
           return "ruko";
-        } else if (
-          peruntukan.includes("gudang") ||
-          peruntukan.includes("kantor")
-        ) {
+        if (peruntukan.includes("gudang") || peruntukan.includes("kantor"))
           return "tanahGudangKantor";
-        } else if (peruntukan.includes("bangunan")) {
-          return "tanahBangunan";
-        } else {
-          return "tanah"; // Default fallback
-        }
+        if (peruntukan.includes("bangunan")) return "tanahBangunan";
+        return "tanah";
     }
-  };
+  }, []);
 
-  // Helper function to determine province from asset data
-  const determineProvince = (asset) => {
+  const determineProvince = useCallback((asset) => {
     const prov = (asset.provinsi || "").toLowerCase();
-    if (prov.includes("jawa tengah")) {
-      return "Jawa Tengah";
-    }
-    if (prov.includes("yogyakarta")) {
-      return "Daerah Istimewa Yogyakarta";
-    }
+    if (prov.includes("jawa tengah")) return "Jawa Tengah";
+    if (prov.includes("yogyakarta")) return "Daerah Istimewa Yogyakarta";
     return null;
-  };
+  }, []);
 
-  // Helper function to determine city from asset data
-  const determineCity = (asset) => {
-    return asset.kabkota || null;
-  };
+  const isConservationArea = useCallback((kabupatenName) => {
+    return kabupatenName === "Hutan" || kabupatenName === "Wadung Kedungombo";
+  }, []);
 
-  // Province options for the filter
+  // ========== STATIC OPTIONS ==========
   const provinsiOptions = useMemo(
     () => [
       { value: "Jawa Tengah", label: "Jawa Tengah" },
-      {
-        value: "Daerah Istimewa Yogyakarta",
-        label: "DI Yogyakarta",
-      },
+      { value: "Daerah Istimewa Yogyakarta", label: "DI Yogyakarta" },
     ],
     []
   );
 
-  // Fungsi untuk mengecek apakah kabupaten adalah area konservasi
-  const isConservationArea = (kabupatenName) => {
-    return kabupatenName === "Hutan" || kabupatenName === "Wadung Kedungombo";
-  };
+  // ========== STATIC CITY LIST (LIGHTWEIGHT - HARDCODED) ==========
+  const allCitiesData = useMemo(
+    () => ({
+      "Jawa Tengah": [
+        "Banjarnegara",
+        "Banyumas",
+        "Batang",
+        "Blora",
+        "Boyolali",
+        "Brebes",
+        "Cilacap",
+        "Demak",
+        "Grobogan",
+        "Jepara",
+        "Karanganyar",
+        "Kebumen",
+        "Kendal",
+        "Klaten",
+        "Kota Magelang",
+        "Kota Pekalongan",
+        "Kota Salatiga",
+        "Kota Semarang",
+        "Kota Surakarta",
+        "Kota Tegal",
+        "Kudus",
+        "Magelang",
+        "Pati",
+        "Pekalongan",
+        "Pemalang",
+        "Purbalingga",
+        "Purworejo",
+        "Rembang",
+        "Semarang",
+        "Sragen",
+        "Sukoharjo",
+        "Tegal",
+        "Temanggung",
+        "Wonogiri",
+        "Wonosobo",
+      ],
+      "Daerah Istimewa Yogyakarta": [
+        "Bantul",
+        "Gunungkidul",
+        "Kota Yogyakarta",
+        "Kulon Progo",
+        "Sleman",
+      ],
+    }),
+    []
+  );
 
-  // Dynamic city options based on selected province
-  const kotaOptions = useMemo(() => {
-    if (!selectedProvince || !kabupatenData) return [];
-    const kotaInProvinsi = kabupatenData.features
-      .filter((f) => f.properties.PROVINCE === selectedProvince && !isConservationArea(f.properties.Kabupaten))
-      .map((f) => f.properties.Kabupaten);
-    const uniqueKota = [...new Set(kotaInProvinsi)];
-    return uniqueKota
-      .map((k) => ({ value: k, label: k }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-  }, [kabupatenData, selectedProvince]);
+  // ========== FETCH DATA (OPTIMIZED - NO GEOJSON) ==========
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [tanahRes, yardipRes, koremRes] = await Promise.all([
+        axios.get(`${API_URL}/assets`),
+        axios.get(`${API_URL}/yardip_assets`),
+        axios.get(`${API_URL}/korem`),
+      ]);
 
-  // Process Yardip data by Province (default view)
-  const processYardipByProvince = useCallback((yardipData) => {
+      const assetsData = tanahRes.data;
+      const yardipData = yardipRes.data;
+      const koremData = koremRes.data;
+
+      setRawAssetsData(assetsData);
+      setRawYardipData(yardipData);
+      setKoremList(koremData);
+
+      // Build complete city list dari static data + yardip data
+      const citiesFromData = new Set();
+      yardipData.forEach((asset) => {
+        const city = asset.kabkota;
+        const province = (asset.provinsi || "").toLowerCase();
+        if (city && !isConservationArea(city)) {
+          let prov = "";
+          if (province.includes("jawa tengah")) prov = "Jawa Tengah";
+          else if (province.includes("yogyakarta"))
+            prov = "Daerah Istimewa Yogyakarta";
+
+          if (prov) {
+            citiesFromData.add(JSON.stringify({ city, province: prov }));
+          }
+        }
+      });
+
+      // Combine static cities + cities from data
+      const allCities = [];
+      Object.keys(allCitiesData).forEach((province) => {
+        allCitiesData[province].forEach((city) => {
+          allCities.push({ city, province });
+        });
+      });
+
+      // Add any cities from data that might not be in static list
+      citiesFromData.forEach((cityJson) => {
+        const cityObj = JSON.parse(cityJson);
+        if (
+          !allCities.find(
+            (c) => c.city === cityObj.city && c.province === cityObj.province
+          )
+        ) {
+          allCities.push(cityObj);
+        }
+      });
+
+      const cityArray = allCities.sort((a, b) => a.city.localeCompare(b.city));
+
+      setCityList(cityArray);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [isConservationArea, allCitiesData]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // ========== COMPUTED DATA (OPTIMIZED WITH USEMEMO) ==========
+  // Process Tanah Data
+  const asetTanahData = useMemo(() => {
+    const koremStats = {};
+    const kodimStats = {};
+
+    // Initialize korem stats
+    koremList.forEach((korem) => {
+      koremStats[korem.id] = {
+        id: korem.id,
+        name: korem.nama,
+        bersertifikat: 0,
+        tidakBersertifikat: 0,
+        total: 0,
+        kodim: korem.kodim || [],
+      };
+    });
+
+    // Count assets
+    rawAssetsData.forEach((asset) => {
+      const koremId = asset.korem_id;
+      const kodimName = asset.kodim;
+      const hasSertifikat = asset.pemilikan_sertifikat === "Ya";
+
+      // Count by korem
+      if (koremStats[koremId]) {
+        koremStats[koremId][
+          hasSertifikat ? "bersertifikat" : "tidakBersertifikat"
+        ] += 1;
+        koremStats[koremId].total += 1;
+      }
+
+      // Count by kodim
+      if (kodimName) {
+        if (!kodimStats[kodimName]) {
+          kodimStats[kodimName] = {
+            name: kodimName,
+            koremId: koremId,
+            bersertifikat: 0,
+            tidakBersertifikat: 0,
+            total: 0,
+          };
+        }
+        kodimStats[kodimName][
+          hasSertifikat ? "bersertifikat" : "tidakBersertifikat"
+        ] += 1;
+        kodimStats[kodimName].total += 1;
+      }
+    });
+
+    // Return based on filter
+    if (selectedKodim) {
+      return kodimStats[selectedKodim] ? [kodimStats[selectedKodim]] : [];
+    } else if (selectedKorem) {
+      return Object.values(kodimStats)
+        .filter(
+          (k) =>
+            k.koremId?.toString() === selectedKorem.toString() && k.total > 0
+        )
+        .sort((a, b) => b.total - a.total);
+    } else {
+      return Object.values(koremStats)
+        .filter((k) => k.total > 0)
+        .sort((a, b) => b.total - a.total);
+    }
+  }, [rawAssetsData, koremList, selectedKorem, selectedKodim]);
+
+  // Process Yardip Data
+  const asetYardipData = useMemo(() => {
     const provinceStats = {
       "Jawa Tengah": {
         name: "Jawa Tengah",
@@ -247,321 +292,154 @@ const Dashboard = () => {
         total: 0,
       },
     };
+    const cityStats = {};
 
-    // Count yardip assets by province and category
-    yardipData.forEach((asset) => {
-      const provinceKey = determineProvince(asset);
-      const cityKey = determineCity(asset);
+    rawYardipData.forEach((asset) => {
+      const province = determineProvince(asset);
+      const city = asset.kabkota;
 
-      // Jangan proses jika merupakan wilayah konservasi
-      if (isConservationArea(cityKey)) return;
+      if (isConservationArea(city)) return;
 
       const category = categorizeYardipAsset(asset);
 
-      if (provinceKey && provinceStats[provinceKey]) {
-        provinceStats[provinceKey][category] += 1;
-        provinceStats[provinceKey].total += 1;
+      // Count by province
+      if (province && provinceStats[province]) {
+        provinceStats[province][category] += 1;
+        provinceStats[province].total += 1;
+      }
+
+      // Count by city
+      if (city && province) {
+        const cityKey = `${province}:${city}`;
+        if (!cityStats[cityKey]) {
+          cityStats[cityKey] = {
+            name: city,
+            province: province,
+            tanah: 0,
+            tanahBangunan: 0,
+            tanahGudangKantor: 0,
+            ruko: 0,
+            total: 0,
+          };
+        }
+        cityStats[cityKey][category] += 1;
+        cityStats[cityKey].total += 1;
       }
     });
 
-    return Object.values(provinceStats)
-      .filter((province) => province.total > 0)
-      .sort((a, b) => b.total - a.total);
-  }, [isConservationArea]);
-
-  // Process Yardip data by City within selected province
-  const processYardipByCity = useCallback(
-    (yardipData, selectedProvinceName, selectedCityName = null) => {
-      let filteredData = yardipData.filter((asset) => {
-        const assetProvince = determineProvince(asset);
-        if (assetProvince !== selectedProvinceName) return false;
-
-        // Filter out conservation areas
-        const assetCity = determineCity(asset);
-        if (isConservationArea(assetCity)) return false;
-
-        // If specific city is selected, filter by city too
-        if (selectedCityName) {
-          return assetCity === selectedCityName;
-        }
-
-        return true;
-      });
-
-      if (selectedCityName) {
-        // If specific city selected, show single city data
-        const cityStats = {
-          name: selectedCityName,
-          tanah: 0,
-          tanahBangunan: 0,
-          tanahGudangKantor: 0,
-          ruko: 0,
-          total: 0,
-        };
-
-        filteredData.forEach((asset) => {
-          const category = categorizeYardipAsset(asset);
-          cityStats[category] += 1;
-          cityStats.total += 1;
-        });
-
-        return cityStats.total > 0 ? [cityStats] : [];
-      } else {
-        // Show all cities in the province
-        const cityStats = {};
-
-        filteredData.forEach((asset) => {
-          const cityName = determineCity(asset) || "Tidak Diketahui";
-          // Jika ini adalah wilayah konservasi, lewati
-          if (isConservationArea(cityName)) return;
-
-          const category = categorizeYardipAsset(asset);
-
-          if (!cityStats[cityName]) {
-            cityStats[cityName] = {
-              name: cityName,
-              tanah: 0,
-              tanahBangunan: 0,
-              tanahGudangKantor: 0,
-              ruko: 0,
-              total: 0,
-            };
-          }
-
-          cityStats[cityName][category] += 1;
-          cityStats[cityName].total += 1;
-        });
-
-        return Object.values(cityStats)
-          .filter((city) => city.total > 0)
-          .sort((a, b) => b.total - a.total)
-          .slice(0, 15); // Limit to top 15 cities for better visualization
-      }
-    },
-    [isConservationArea]
-  );
-
-  // Fetch data for charts
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [tanahRes, yardipRes, koremRes, kabRes] = await Promise.all([
-        axios.get(`${API_URL}/assets`),
-        axios.get(`${API_URL}/yardip_assets`),
-        axios.get(`${API_URL}/korem`),
-        axios.get("/data/kabupaten_kota.geojson"),
-      ]);
-
-      const assetsData = tanahRes.data;
-      const yardipData = yardipRes.data;
-      const koremData = koremRes.data;
-      const kabupatenGeoJSON = kabRes.data;
-
-      setRawAssetsData(assetsData);
-      setRawYardipData(yardipData);
-      setKoremList(koremData);
-      setKabupatenData(kabupatenGeoJSON);
-
-      // Default view: by Korem for tanah
-      const tanahByKorem = processDataByKorem(assetsData, koremData);
-      setAsetTanahData(tanahByKorem);
-
-      // Default view: by Province for yardip
-      const yardipByProvince = processYardipByProvince(yardipData);
-      setAsetYardipData(yardipByProvince);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setLoading(false);
+    // Return based on filter
+    if (selectedCity && selectedProvince) {
+      const cityKey = `${selectedProvince}:${selectedCity}`;
+      return cityStats[cityKey] ? [cityStats[cityKey]] : [];
+    } else if (selectedProvince) {
+      return Object.values(cityStats)
+        .filter((c) => c.province === selectedProvince && c.total > 0)
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 15);
+    } else {
+      return Object.values(provinceStats)
+        .filter((p) => p.total > 0)
+        .sort((a, b) => b.total - a.total);
     }
-  }, [processDataByKorem, processYardipByProvince]);
+  }, [
+    rawYardipData,
+    selectedProvince,
+    selectedCity,
+    categorizeYardipAsset,
+    determineProvince,
+    isConservationArea,
+  ]);
 
-  // Handle filter change for tanah (korem and kodim)
-  const handleKoremFilterChange = useCallback(
-    (koremId) => {
-      setSelectedKorem(koremId);
-      setSelectedKodim(""); // Reset kodim when korem changes
+  // ========== FILTER OPTIONS (COMPUTED) ==========
+  const availableKodim = useMemo(() => {
+    if (!selectedKorem) return [];
+    const korem = koremList.find(
+      (k) => k.id.toString() === selectedKorem.toString()
+    );
+    return korem?.kodim || [];
+  }, [selectedKorem, koremList]);
 
-      if (koremId) {
-        // Show kodim data for selected korem
-        const kodimData = processDataByKodim(rawAssetsData, koremList, koremId);
-        setAsetTanahData(kodimData);
-      } else {
-        // Show korem data (default)
-        const koremData = processDataByKorem(rawAssetsData, koremList);
-        setAsetTanahData(koremData);
-      }
-    },
-    [rawAssetsData, koremList, processDataByKorem, processDataByKodim]
+  const kotaOptions = useMemo(() => {
+    if (!selectedProvince) return [];
+    return cityList
+      .filter((c) => c.province === selectedProvince)
+      .map((c) => ({ value: c.city, label: c.city }));
+  }, [cityList, selectedProvince]);
+
+  // ========== TOTALS (COMPUTED) ==========
+  const tanahTotals = useMemo(
+    () => ({
+      bersertifikat: asetTanahData.reduce(
+        (sum, item) => sum + item.bersertifikat,
+        0
+      ),
+      tidakBersertifikat: asetTanahData.reduce(
+        (sum, item) => sum + item.tidakBersertifikat,
+        0
+      ),
+      total: asetTanahData.reduce((sum, item) => sum + item.total, 0),
+      grandTotal: rawAssetsData.length,
+    }),
+    [asetTanahData, rawAssetsData.length]
   );
 
-  // NEW: Handle kodim filter change
-  const handleKodimFilterChange = useCallback(
-    (kodimName) => {
-      setSelectedKodim(kodimName);
-
-      if (selectedKorem) {
-        // Show specific kodim data or all kodim in selected korem
-        const kodimData = processDataByKodim(
-          rawAssetsData,
-          koremList,
-          selectedKorem,
-          kodimName || null
-        );
-        setAsetTanahData(kodimData);
-      }
-    },
-    [selectedKorem, rawAssetsData, koremList, processDataByKodim]
+  const yardipTotals = useMemo(
+    () => ({
+      tanah: asetYardipData.reduce((sum, item) => sum + (item.tanah || 0), 0),
+      tanahBangunan: asetYardipData.reduce(
+        (sum, item) => sum + (item.tanahBangunan || 0),
+        0
+      ),
+      tanahGudangKantor: asetYardipData.reduce(
+        (sum, item) => sum + (item.tanahGudangKantor || 0),
+        0
+      ),
+      ruko: asetYardipData.reduce((sum, item) => sum + (item.ruko || 0), 0),
+      grandTotal: rawYardipData.length,
+    }),
+    [asetYardipData, rawYardipData.length]
   );
 
-  // Handle filter change for yardip (province and city)
-  const handleProvinceFilterChange = useCallback(
-    (provinceName) => {
-      setSelectedProvince(provinceName);
-      setSelectedCity(""); // Reset city when province changes
+  // ========== EVENT HANDLERS ==========
+  const handleKoremFilterChange = useCallback((koremId) => {
+    setSelectedKorem(koremId);
+    setSelectedKodim("");
+  }, []);
 
-      if (provinceName) {
-        // Show city data for selected province
-        const cityData = processYardipByCity(rawYardipData, provinceName);
-        setAsetYardipData(cityData);
-      } else {
-        // Show province data (default)
-        const provinceData = processYardipByProvince(rawYardipData);
-        setAsetYardipData(provinceData);
-      }
-    },
-    [rawYardipData, processYardipByProvince, processYardipByCity]
-  );
+  const handleKodimFilterChange = useCallback((kodimName) => {
+    setSelectedKodim(kodimName);
+  }, []);
 
-  // Handle city filter change
-  const handleCityFilterChange = useCallback(
-    (cityName) => {
-      setSelectedCity(cityName);
+  const handleProvinceFilterChange = useCallback((provinceName) => {
+    setSelectedProvince(provinceName);
+    setSelectedCity("");
+  }, []);
 
-      if (selectedProvince) {
-        // Show specific city data or all cities in selected province
-        const cityData = processYardipByCity(
-          rawYardipData,
-          selectedProvince,
-          cityName || null
-        );
-        setAsetYardipData(cityData);
-      } else {
-        // This case should ideally not happen if city filter is disabled
-        const provinceData = processYardipByProvince(rawYardipData);
-        setAsetYardipData(provinceData);
-      }
-    },
-    [
-      selectedProvince,
-      rawYardipData,
-      processYardipByProvince,
-      processYardipByCity,
-    ]
-  );
+  const handleCityFilterChange = useCallback((cityName) => {
+    setSelectedCity(cityName);
+  }, []);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  // ========== UI HELPERS ==========
+  const chartHeight = useMemo(() => {
+    const availableHeight = window.innerHeight - 100;
+    return Math.max(200, Math.floor(availableHeight / 2.5));
+  }, []);
 
-  // Auto slide functionality
   useEffect(() => {
     const slideInterval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
     }, 5000);
-
     return () => clearInterval(slideInterval);
   }, [slides.length]);
 
-  const goToSlide = (index) => {
+  const goToSlide = useCallback((index) => {
     setCurrentSlide(index);
-  };
-
-  const handleNavigateToTanah = () => {
-    navigate("/data-aset-tanah");
-  };
-
-  const handleNavigateToYardip = () => {
-    navigate("/data-aset-yardip");
-  };
-
-  // Calculate totals for tanah
-  const totalBersertifikat = asetTanahData.reduce(
-    (sum, item) => sum + item.bersertifikat,
-    0
-  );
-  const totalTidakBersertifikat = asetTanahData.reduce(
-    (sum, item) => sum + item.tidakBersertifikat,
-    0
-  );
-  const totalAsetTanah = asetTanahData.reduce(
-    (sum, item) => sum + item.total,
-    0
-  );
-
-  // Calculate grand totals (all data, not filtered)
-  const grandTotalBersertifikat = rawAssetsData.filter(
-    (asset) => asset.pemilikan_sertifikat === "Ya"
-  ).length;
-  const grandTotalTidakBersertifikat = rawAssetsData.filter(
-    (asset) => asset.pemilikan_sertifikat !== "Ya"
-  ).length;
-  const grandTotalAsetTanah = rawAssetsData.length;
-
-  // Calculate totals for yardip (from current filtered/displayed data)
-  const totalTanah = asetYardipData.reduce(
-    (sum, item) => sum + (item.tanah || 0),
-    0
-  );
-  const totalTanahBangunan = asetYardipData.reduce(
-    (sum, item) => sum + (item.tanahBangunan || 0),
-    0
-  );
-  const totalTanahGudangKantor = asetYardipData.reduce(
-    (sum, item) => sum + (item.tanahGudangKantor || 0),
-    0
-  );
-  const totalRuko = asetYardipData.reduce(
-    (sum, item) => sum + (item.ruko || 0),
-    0
-  );
-  const totalAsetYardip = rawYardipData.length; // Grand total from raw data
-
-  // Calculate grand totals by category for yardip (for verification)
-  const grandTotalByCategory = rawYardipData.reduce((acc, asset) => {
-    const category = categorizeYardipAsset(asset);
-    acc[category] = (acc[category] || 0) + 1;
-    return acc;
-  }, {});
-
-  const selectedKoremName = selectedKorem
-    ? koremList.find((k) => k.id.toString() === selectedKorem.toString())
-        ?.nama || "Unknown"
-    : null;
-
-  // Get available kodim for selected korem
-  const availableKodim = selectedKorem
-    ? koremList.find((k) => k.id.toString() === selectedKorem.toString())
-        ?.kodim || []
-    : [];
-
-  const chartHeight = useMemo(() => {
-    const headerHeight = 60;
-    // Ubah bagian ini - perbesar angka-angkanya
-    const heroSliderHeight =
-      window.innerHeight < 600 ? 600 : window.innerHeight < 800 ? 700 : 800;
-    const marginBottom = 20;
-    const otherElements = headerHeight + heroSliderHeight + marginBottom;
-
-    const availableHeight = window.innerHeight - otherElements - 100;
-    const heightPerChart = Math.max(200, Math.floor(availableHeight / 2));
-
-    return heightPerChart;
   }, []);
 
+  // ========== RENDER ==========
   return (
     <Container fluid className="dashboard-container p-4">
-      {/* Hero Slider with improved styling */}
+      {/* Hero Slider */}
       <Row className="mb-4">
         <Col>
           <div className="hero-slider">
@@ -585,7 +463,6 @@ const Dashboard = () => {
                   <div className="slide-overlay"></div>
                 </div>
               ))}
-
               <div className="slider-dots">
                 {slides.map((_, index) => (
                   <button
@@ -600,41 +477,39 @@ const Dashboard = () => {
         </Col>
       </Row>
 
-      {/* Chart Section */}
+      {/* Charts */}
       <Row>
+        {/* BMN Chart */}
         <Col md={6} className="mb-4">
           <Card className="chart-card h-100 border-0 shadow-sm">
             <Card.Header className="bg-primary text-white border-0">
               <Card.Title className="mb-0">Data Aset BMN KODAM</Card.Title>
             </Card.Header>
             <Card.Body>
-              {/* Enhanced Filter Section with Kodim */}
+              {/* Filters */}
               <div className="mb-3 p-3 bg-light rounded">
                 <Row className="align-items-center">
-                  <Col md={4}>
+                  <Col md={5}>
                     <Form.Label className="mb-1 fw-bold">
-                      Filter by Korem:
+                      Filter Korem:
                     </Form.Label>
                     <Form.Select
                       size="sm"
                       value={selectedKorem}
                       onChange={(e) => handleKoremFilterChange(e.target.value)}
                     >
-                      <option value="">
-                        Semua Korem (Tampilkan per Korem)
-                      </option>
+                      <option value="">Semua Korem</option>
                       {koremList.map((korem) => (
                         <option key={korem.id} value={korem.id}>
-                          {korem.nama} (Tampilkan per Kodim)
+                          {korem.nama}
                         </option>
                       ))}
                     </Form.Select>
                   </Col>
 
-                  {/* NEW: Kodim Filter */}
-                  <Col md={4}>
+                  <Col md={5}>
                     <Form.Label className="mb-1 fw-bold">
-                      Filter by Kodim:
+                      Filter Kodim:
                     </Form.Label>
                     <Form.Select
                       size="sm"
@@ -645,50 +520,28 @@ const Dashboard = () => {
                       <option value="">
                         {selectedKorem ? "Semua Kodim" : "Pilih Korem dulu"}
                       </option>
-                      {selectedKorem &&
-                        availableKodim.map((kodimName) => (
-                          <option key={kodimName} value={kodimName}>
-                            {kodimName}
-                          </option>
-                        ))}
+                      {availableKodim.map((kodimName) => (
+                        <option key={kodimName} value={kodimName}>
+                          {kodimName}
+                        </option>
+                      ))}
                     </Form.Select>
                   </Col>
 
-                  <Col md={4}>
-                    <div className="text-end">
-                      <small className="text-muted">
-                        Menampilkan: <strong>{asetTanahData.length}</strong>{" "}
-                        {selectedKodim
-                          ? "Kodim (Spesifik)"
-                          : selectedKorem
-                          ? "Kodim"
-                          : "Korem"}
-                      </small>
-                      {(selectedKorem || selectedKodim) && (
-                        <div>
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            className="mt-1 me-1"
-                            onClick={() => handleKodimFilterChange("")}
-                            disabled={!selectedKodim}
-                          >
-                            Reset Kodim
-                          </Button>
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            className="mt-1"
-                            onClick={() => {
-                              handleKoremFilterChange("");
-                              setSelectedKodim("");
-                            }}
-                          >
-                            Reset Semua
-                          </Button>
-                        </div>
-                      )}
-                    </div>
+                  <Col md={2}>
+                    {(selectedKorem || selectedKodim) && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="w-100 mt-4"
+                        onClick={() => {
+                          handleKoremFilterChange("");
+                          setSelectedKodim("");
+                        }}
+                      >
+                        Reset
+                      </Button>
+                    )}
                   </Col>
                 </Row>
               </div>
@@ -705,7 +558,7 @@ const Dashboard = () => {
                         height: "15px",
                       }}
                     ></div>
-                    <small>Bersertifikat ({totalBersertifikat})</small>
+                    <small>Bersertifikat ({tanahTotals.bersertifikat})</small>
                   </div>
                   <div className="legend-item d-flex align-items-center">
                     <div
@@ -717,7 +570,7 @@ const Dashboard = () => {
                       }}
                     ></div>
                     <small>
-                      Tidak Bersertifikat ({totalTidakBersertifikat})
+                      Tidak Bersertifikat ({tanahTotals.tidakBersertifikat})
                     </small>
                   </div>
                   <div className="legend-item d-flex align-items-center">
@@ -729,7 +582,7 @@ const Dashboard = () => {
                         height: "15px",
                       }}
                     ></div>
-                    <small>Total ({totalAsetTanah})</small>
+                    <small>Total ({tanahTotals.total})</small>
                   </div>
                 </div>
               </div>
@@ -742,58 +595,23 @@ const Dashboard = () => {
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis
                     dataKey="name"
-                    tick={{ fontSize: 9, fill: "#666" }}
+                    tick={{ fontSize: 9 }}
                     angle={-45}
                     textAnchor="end"
                     height={80}
                   />
-                  <YAxis
-                    tick={{ fontSize: 10, fill: "#666" }}
-                    axisLine={{ stroke: "#ddd" }}
-                  />
-                  <Tooltip
-                    formatter={(value, name) => [
-                      `${value} aset`,
-                      name === "bersertifikat"
-                        ? "Bersertifikat"
-                        : name === "tidakBersertifikat"
-                        ? "Tidak Bersertifikat"
-                        : "Total",
-                    ]}
-                    labelFormatter={(label) => {
-                      if (selectedKorem) {
-                        return `Kodim ${label}`;
-                      } else {
-                        return `Korem ${label}`;
-                      }
-                    }}
-                    labelStyle={{ color: "#333", fontWeight: "bold" }}
-                    contentStyle={{
-                      backgroundColor: "#fff",
-                      border: "1px solid #ddd",
-                      borderRadius: "4px",
-                      fontSize: "12px",
-                    }}
-                  />
-                  <Bar
-                    dataKey="bersertifikat"
-                    fill="#4285f4"
-                    name="bersertifikat"
-                  />
-                  <Bar
-                    dataKey="tidakBersertifikat"
-                    fill="#ea4335"
-                    name="tidakBersertifikat"
-                  />
-                  <Bar dataKey="total" fill="#34a853" name="total" />
+                  <YAxis tick={{ fontSize: 10 }} />
+                  <Tooltip />
+                  <Bar dataKey="bersertifikat" fill="#4285f4" />
+                  <Bar dataKey="tidakBersertifikat" fill="#ea4335" />
+                  <Bar dataKey="total" fill="#34a853" />
                 </BarChart>
               </ResponsiveContainer>
 
               <div className="text-center mt-3">
                 <Button
                   variant="primary"
-                  onClick={handleNavigateToTanah}
-                  className="btn-chart-action"
+                  onClick={() => navigate("/data-aset-tanah")}
                 >
                   Lihat Semua Data Aset BMN
                 </Button>
@@ -802,18 +620,19 @@ const Dashboard = () => {
           </Card>
         </Col>
 
+        {/* Yardip Chart */}
         <Col md={6} className="mb-4">
           <Card className="chart-card h-100 border-0 shadow-sm">
             <Card.Header className="bg-success text-white border-0">
               <Card.Title className="mb-0">Data Aset Yardip KODAM</Card.Title>
             </Card.Header>
             <Card.Body>
-              {/* Filter Section for Yardip with City Selection */}
+              {/* Filters */}
               <div className="mb-3 p-3 bg-light rounded">
                 <Row className="align-items-center">
-                  <Col md={4}>
+                  <Col md={5}>
                     <Form.Label className="mb-1 fw-bold">
-                      Filter by Provinsi:
+                      Filter Provinsi:
                     </Form.Label>
                     <Form.Select
                       size="sm"
@@ -822,21 +641,18 @@ const Dashboard = () => {
                         handleProvinceFilterChange(e.target.value)
                       }
                     >
-                      <option value="">
-                        Semua Provinsi (Tampilkan per Provinsi)
-                      </option>
+                      <option value="">Semua Provinsi</option>
                       {provinsiOptions.map((p) => (
                         <option key={p.value} value={p.value}>
-                          {p.label} (Tampilkan per Kota)
+                          {p.label}
                         </option>
                       ))}
                     </Form.Select>
                   </Col>
 
-                  {/* City Filter */}
-                  <Col md={4}>
+                  <Col md={5}>
                     <Form.Label className="mb-1 fw-bold">
-                      Filter by Kota:
+                      Filter Kota:
                     </Form.Label>
                     <Form.Select
                       size="sm"
@@ -857,45 +673,25 @@ const Dashboard = () => {
                     </Form.Select>
                   </Col>
 
-                  <Col md={4}>
-                    <div className="text-end">
-                      <small className="text-muted">
-                        Menampilkan: <strong>{asetYardipData.length}</strong>{" "}
-                        {selectedCity
-                          ? "Kota (Spesifik)"
-                          : selectedProvince
-                          ? "Kota"
-                          : "Provinsi"}
-                      </small>
-                      {(selectedProvince || selectedCity) && (
-                        <div>
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            className="mt-1 me-1"
-                            onClick={() => handleCityFilterChange("")}
-                            disabled={!selectedCity}
-                          >
-                            Reset Kota
-                          </Button>
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            className="mt-1"
-                            onClick={() => {
-                              handleProvinceFilterChange("");
-                            }}
-                          >
-                            Reset Semua
-                          </Button>
-                        </div>
-                      )}
-                    </div>
+                  <Col md={2}>
+                    {(selectedProvince || selectedCity) && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="w-100 mt-4"
+                        onClick={() => {
+                          handleProvinceFilterChange("");
+                          setSelectedCity("");
+                        }}
+                      >
+                        Reset
+                      </Button>
+                    )}
                   </Col>
                 </Row>
               </div>
 
-              {/* Updated Legend with Corrected Categories */}
+              {/* Legend */}
               <div className="mb-3">
                 <div className="d-flex flex-wrap gap-2 justify-content-center">
                   <div className="legend-item d-flex align-items-center">
@@ -907,7 +703,7 @@ const Dashboard = () => {
                         height: "13px",
                       }}
                     ></div>
-                    <small>Tanah ({totalTanah})</small>
+                    <small>Tanah ({yardipTotals.tanah})</small>
                   </div>
                   <div className="legend-item d-flex align-items-center">
                     <div
@@ -918,7 +714,7 @@ const Dashboard = () => {
                         height: "13px",
                       }}
                     ></div>
-                    <small>Tanah Bangunan ({totalTanahBangunan})</small>
+                    <small>Tanah Bangunan ({yardipTotals.tanahBangunan})</small>
                   </div>
                   <div className="legend-item d-flex align-items-center">
                     <div
@@ -930,7 +726,7 @@ const Dashboard = () => {
                       }}
                     ></div>
                     <small>
-                      Tanah Gudang Kantor ({totalTanahGudangKantor})
+                      Tanah Gudang Kantor ({yardipTotals.tanahGudangKantor})
                     </small>
                   </div>
                   <div className="legend-item d-flex align-items-center">
@@ -942,7 +738,7 @@ const Dashboard = () => {
                         height: "13px",
                       }}
                     ></div>
-                    <small>Ruko ({totalRuko})</small>
+                    <small>Ruko ({yardipTotals.ruko})</small>
                   </div>
                 </div>
               </div>
@@ -955,63 +751,24 @@ const Dashboard = () => {
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis
                     dataKey="name"
-                    tick={{ fontSize: 9, fill: "#666" }}
+                    tick={{ fontSize: 9 }}
                     angle={-45}
                     textAnchor="end"
                     height={80}
                   />
-                  <YAxis
-                    tick={{ fontSize: 10, fill: "#666" }}
-                    axisLine={{ stroke: "#ddd" }}
-                  />
-                  <Tooltip
-                    formatter={(value, name) => [
-                      `${value} aset`,
-                      name === "tanah"
-                        ? "Tanah"
-                        : name === "tanahBangunan"
-                        ? "Tanah Bangunan"
-                        : name === "tanahGudangKantor"
-                        ? "Tanah Gudang Kantor"
-                        : "Ruko",
-                    ]}
-                    labelFormatter={(label) => {
-                      if (selectedCity) {
-                        return `Kota ${label}`;
-                      } else if (selectedProvince) {
-                        return `Kota ${label}`;
-                      } else {
-                        return `Provinsi ${label}`;
-                      }
-                    }}
-                    labelStyle={{ color: "#333", fontWeight: "bold" }}
-                    contentStyle={{
-                      backgroundColor: "#fff",
-                      border: "1px solid #ddd",
-                      borderRadius: "4px",
-                      fontSize: "12px",
-                    }}
-                  />
-                  <Bar dataKey="tanah" fill="#34a853" name="tanah" />
-                  <Bar
-                    dataKey="tanahBangunan"
-                    fill="#4285f4"
-                    name="tanahBangunan"
-                  />
-                  <Bar
-                    dataKey="tanahGudangKantor"
-                    fill="#fbbc04"
-                    name="tanahGudangKantor"
-                  />
-                  <Bar dataKey="ruko" fill="#ea4335" name="ruko" />
+                  <YAxis tick={{ fontSize: 10 }} />
+                  <Tooltip />
+                  <Bar dataKey="tanah" fill="#34a853" />
+                  <Bar dataKey="tanahBangunan" fill="#4285f4" />
+                  <Bar dataKey="tanahGudangKantor" fill="#fbbc04" />
+                  <Bar dataKey="ruko" fill="#ea4335" />
                 </BarChart>
               </ResponsiveContainer>
 
               <div className="text-center mt-3">
                 <Button
                   variant="success"
-                  onClick={handleNavigateToYardip}
-                  className="btn-chart-action"
+                  onClick={() => navigate("/data-aset-yardip")}
                 >
                   Lihat Semua Data Aset Yardip
                 </Button>
@@ -1021,7 +778,6 @@ const Dashboard = () => {
         </Col>
       </Row>
 
-      {/* Loading indicator */}
       {loading && (
         <div className="text-center py-4">
           <div className="spinner-border text-primary" role="status">
