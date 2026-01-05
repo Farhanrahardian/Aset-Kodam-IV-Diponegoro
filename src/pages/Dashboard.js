@@ -15,30 +15,6 @@ import "./Dashboard.css";
 
 const API_URL = "http://localhost:3001";
 
-// Data kota untuk filter
-const kotaData = {
-  jateng: [
-    { id: "semarang", name: "Semarang" },
-    { id: "solo", name: "Surakarta (Solo)" },
-    { id: "magelang", name: "Magelang" },
-    { id: "salatiga", name: "Salatiga" },
-    { id: "tegal", name: "Tegal" },
-    { id: "pekalongan", name: "Pekalongan" },
-    { id: "purwokerto", name: "Purwokerto" },
-    { id: "cilacap", name: "Cilacap" },
-    { id: "kudus", name: "Kudus" },
-    { id: "jepara", name: "Jepara" },
-    { id: "rembang", name: "Rembang" },
-  ],
-  diy: [
-    { id: "jogja", name: "Yogyakarta" },
-    { id: "sleman", name: "Sleman" },
-    { id: "bantul", name: "Bantul" },
-    { id: "kulonprogo", name: "Kulon Progo" },
-    { id: "gunungkidul", name: "Gunung Kidul" },
-  ],
-};
-
 const Dashboard = () => {
   const navigate = useNavigate();
   const [asetTanahData, setAsetTanahData] = useState([]);
@@ -52,6 +28,7 @@ const Dashboard = () => {
   const [rawYardipData, setRawYardipData] = useState([]); // Store raw yardip data
   const [loading, setLoading] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [kabupatenData, setKabupatenData] = useState(null); // Data for city filter
 
   // Slider images
   const slides = [
@@ -176,13 +153,6 @@ const Dashboard = () => {
     // Use bidang field instead of peruntukan for more accurate categorization
     const bidang = (asset.bidang || "").toLowerCase().trim();
 
-    console.log("Categorizing asset:", {
-      id: asset.id,
-      pengelola: asset.pengelola,
-      bidang: asset.bidang,
-      bidang_lower: bidang,
-    });
-
     // Match exactly with bidang options from FormYardip.js
     switch (bidang) {
       case "tanah":
@@ -213,94 +183,49 @@ const Dashboard = () => {
 
   // Helper function to determine province from asset data
   const determineProvince = (asset) => {
-    if (asset.provinsi_id) {
-      return asset.provinsi_id;
-    } else if (asset.provinsi) {
-      if (
-        asset.provinsi.toLowerCase().includes("jawa tengah") ||
-        asset.provinsi.toLowerCase().includes("jateng")
-      ) {
-        return "jateng";
-      } else if (
-        asset.provinsi.toLowerCase().includes("yogya") ||
-        asset.provinsi.toLowerCase().includes("diy")
-      ) {
-        return "diy";
-      }
-    } else {
-      // Fallback: determine by kabkota
-      const kabkota = (asset.kabkota || "").toLowerCase();
-      const jatengCities = [
-        "semarang",
-        "solo",
-        "surakarta",
-        "magelang",
-        "salatiga",
-        "tegal",
-        "pekalongan",
-        "purwokerto",
-        "cilacap",
-        "kudus",
-        "jepara",
-        "rembang",
-      ];
-      const diyCities = [
-        "yogyakarta",
-        "jogja",
-        "sleman",
-        "bantul",
-        "kulon progo",
-        "gunung kidul",
-      ];
-
-      if (jatengCities.some((city) => kabkota.includes(city))) {
-        return "jateng";
-      } else if (diyCities.some((city) => kabkota.includes(city))) {
-        return "diy";
-      }
+    const prov = (asset.provinsi || "").toLowerCase();
+    if (prov.includes("jawa tengah")) {
+      return "Jawa Tengah";
+    }
+    if (prov.includes("yogyakarta")) {
+      return "Daerah Istimewa Yogyakarta";
     }
     return null;
   };
 
   // Helper function to determine city from asset data
   const determineCity = (asset) => {
-    if (asset.kota_id) {
-      return asset.kota_id;
-    } else if (asset.kota) {
-      // Try to match city name with kotaData
-      const province = determineProvince(asset);
-      if (province && kotaData[province]) {
-        const cityData = kotaData[province].find(
-          (city) =>
-            city.name.toLowerCase().includes(asset.kota.toLowerCase()) ||
-            asset.kota.toLowerCase().includes(city.name.toLowerCase())
-        );
-        return cityData ? cityData.id : null;
-      }
-    } else if (asset.kabkota) {
-      // Try to match kabkota with kotaData
-      const province = determineProvince(asset);
-      if (province && kotaData[province]) {
-        const cityData = kotaData[province].find(
-          (city) =>
-            city.name.toLowerCase().includes(asset.kabkota.toLowerCase()) ||
-            asset.kabkota.toLowerCase().includes(city.name.toLowerCase())
-        );
-        return cityData ? cityData.id : null;
-      }
-    }
-    return null;
+    return asset.kabkota || null;
   };
+
+  // Province options for the filter
+  const provinsiOptions = useMemo(
+    () => [
+      { value: "Jawa Tengah", label: "Jawa Tengah" },
+      {
+        value: "Daerah Istimewa Yogyakarta",
+        label: "DI Yogyakarta",
+      },
+    ],
+    []
+  );
+
+  // Dynamic city options based on selected province
+  const kotaOptions = useMemo(() => {
+    if (!selectedProvince || !kabupatenData) return [];
+    const kotaInProvinsi = kabupatenData.features
+      .filter((f) => f.properties.PROVINCE === selectedProvince)
+      .map((f) => f.properties.Kabupaten);
+    const uniqueKota = [...new Set(kotaInProvinsi)];
+    return uniqueKota
+      .map((k) => ({ value: k, label: k }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [kabupatenData, selectedProvince]);
 
   // Process Yardip data by Province (default view)
   const processYardipByProvince = useCallback((yardipData) => {
-    console.log(
-      "Processing yardip by province, total data:",
-      yardipData.length
-    );
-
     const provinceStats = {
-      jateng: {
+      "Jawa Tengah": {
         name: "Jawa Tengah",
         tanah: 0,
         tanahBangunan: 0,
@@ -308,7 +233,7 @@ const Dashboard = () => {
         ruko: 0,
         total: 0,
       },
-      diy: {
+      "Daerah Istimewa Yogyakarta": {
         name: "DI Yogyakarta",
         tanah: 0,
         tanahBangunan: 0,
@@ -323,62 +248,37 @@ const Dashboard = () => {
       const provinceKey = determineProvince(asset);
       const category = categorizeYardipAsset(asset);
 
-      console.log("Asset processing:", {
-        pengelola: asset.pengelola,
-        provinceKey,
-        category,
-        bidang: asset.bidang,
-      });
-
       if (provinceKey && provinceStats[provinceKey]) {
         provinceStats[provinceKey][category] += 1;
         provinceStats[provinceKey].total += 1;
       }
     });
 
-    console.log("Province stats result:", provinceStats);
-
     return Object.values(provinceStats)
       .filter((province) => province.total > 0)
       .sort((a, b) => b.total - a.total);
   }, []);
 
-  // FIXED: Process Yardip data by City within selected province
+  // Process Yardip data by City within selected province
   const processYardipByCity = useCallback(
-    (yardipData, selectedProvinceKey, selectedCityKey = null) => {
-      console.log(
-        "Processing yardip by city for province:",
-        selectedProvinceKey,
-        "city:",
-        selectedCityKey
-      );
-
+    (yardipData, selectedProvinceName, selectedCityName = null) => {
       let filteredData = yardipData.filter((asset) => {
         const assetProvince = determineProvince(asset);
-        if (assetProvince !== selectedProvinceKey) return false;
+        if (assetProvince !== selectedProvinceName) return false;
 
         // If specific city is selected, filter by city too
-        if (selectedCityKey) {
+        if (selectedCityName) {
           const assetCity = determineCity(asset);
-          return assetCity === selectedCityKey;
+          return assetCity === selectedCityName;
         }
 
         return true;
       });
 
-      console.log(
-        "Filtered data for province/city:",
-        filteredData.length,
-        "assets"
-      );
-
-      if (selectedCityKey) {
+      if (selectedCityName) {
         // If specific city selected, show single city data
-        const cityName =
-          kotaData[selectedProvinceKey]?.find((c) => c.id === selectedCityKey)
-            ?.name || "Unknown City";
         const cityStats = {
-          name: cityName,
+          name: selectedCityName,
           tanah: 0,
           tanahBangunan: 0,
           tanahGudangKantor: 0,
@@ -398,14 +298,7 @@ const Dashboard = () => {
         const cityStats = {};
 
         filteredData.forEach((asset) => {
-          const cityId = determineCity(asset);
-          const cityName = cityId
-            ? kotaData[selectedProvinceKey]?.find((c) => c.id === cityId)
-                ?.name ||
-              asset.kabkota ||
-              "Unknown"
-            : asset.kabkota || asset.kota || "Tidak Diketahui";
-
+          const cityName = determineCity(asset) || "Tidak Diketahui";
           const category = categorizeYardipAsset(asset);
 
           if (!cityStats[cityName]) {
@@ -421,15 +314,7 @@ const Dashboard = () => {
 
           cityStats[cityName][category] += 1;
           cityStats[cityName].total += 1;
-
-          console.log("City processing:", {
-            city: cityName,
-            category,
-            bidang: asset.bidang,
-          });
         });
-
-        console.log("City stats result:", cityStats);
 
         return Object.values(cityStats)
           .filter((city) => city.total > 0)
@@ -444,22 +329,22 @@ const Dashboard = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [tanahRes, yardipRes, koremRes] = await Promise.all([
+      const [tanahRes, yardipRes, koremRes, kabRes] = await Promise.all([
         axios.get(`${API_URL}/assets`),
         axios.get(`${API_URL}/yardip_assets`),
         axios.get(`${API_URL}/korem`),
+        axios.get("/data/kabupaten_kota.geojson"),
       ]);
 
       const assetsData = tanahRes.data;
       const yardipData = yardipRes.data;
       const koremData = koremRes.data;
-
-      console.log("Raw yardip data received:", yardipData.length, "items");
-      console.log("Sample yardip data:", yardipData.slice(0, 3));
+      const kabupatenGeoJSON = kabRes.data;
 
       setRawAssetsData(assetsData);
       setRawYardipData(yardipData);
       setKoremList(koremData);
+      setKabupatenData(kabupatenGeoJSON);
 
       // Default view: by Korem for tanah
       const tanahByKorem = processDataByKorem(assetsData, koremData);
@@ -515,14 +400,13 @@ const Dashboard = () => {
 
   // Handle filter change for yardip (province and city)
   const handleProvinceFilterChange = useCallback(
-    (provinceKey) => {
-      console.log("Province filter changed to:", provinceKey);
-      setSelectedProvince(provinceKey);
+    (provinceName) => {
+      setSelectedProvince(provinceName);
       setSelectedCity(""); // Reset city when province changes
 
-      if (provinceKey) {
+      if (provinceName) {
         // Show city data for selected province
-        const cityData = processYardipByCity(rawYardipData, provinceKey);
+        const cityData = processYardipByCity(rawYardipData, provinceName);
         setAsetYardipData(cityData);
       } else {
         // Show province data (default)
@@ -535,24 +419,19 @@ const Dashboard = () => {
 
   // Handle city filter change
   const handleCityFilterChange = useCallback(
-    (cityKey) => {
-      console.log("City filter changed to:", cityKey);
-      setSelectedCity(cityKey);
+    (cityName) => {
+      setSelectedCity(cityName);
 
-      if (selectedProvince && cityKey) {
-        // Show specific city data
+      if (selectedProvince) {
+        // Show specific city data or all cities in selected province
         const cityData = processYardipByCity(
           rawYardipData,
           selectedProvince,
-          cityKey
+          cityName || null
         );
         setAsetYardipData(cityData);
-      } else if (selectedProvince) {
-        // Show all cities in selected province
-        const cityData = processYardipByCity(rawYardipData, selectedProvince);
-        setAsetYardipData(cityData);
       } else {
-        // Show province data (default)
+        // This case should ideally not happen if city filter is disabled
         const provinceData = processYardipByProvince(rawYardipData);
         setAsetYardipData(provinceData);
       }
@@ -639,32 +518,10 @@ const Dashboard = () => {
     return acc;
   }, {});
 
-  console.log("Grand totals by category:", grandTotalByCategory);
-  console.log("Current filtered totals:", {
-    totalTanah,
-    totalTanahBangunan,
-    totalTanahGudangKantor,
-    totalRuko,
-  });
-
   const selectedKoremName = selectedKorem
     ? koremList.find((k) => k.id.toString() === selectedKorem.toString())
         ?.nama || "Unknown"
     : null;
-
-  const selectedProvinceName = selectedProvince
-    ? selectedProvince === "jateng"
-      ? "Jawa Tengah"
-      : selectedProvince === "diy"
-      ? "DI Yogyakarta"
-      : "Unknown"
-    : null;
-
-  const selectedCityName =
-    selectedCity && selectedProvince
-      ? kotaData[selectedProvince]?.find((c) => c.id === selectedCity)?.name ||
-        "Unknown"
-      : null;
 
   // Get available kodim for selected korem
   const availableKodim = selectedKorem
@@ -952,12 +809,11 @@ const Dashboard = () => {
                       <option value="">
                         Semua Provinsi (Tampilkan per Provinsi)
                       </option>
-                      <option value="jateng">
-                        Jawa Tengah (Tampilkan per Kota)
-                      </option>
-                      <option value="diy">
-                        DI Yogyakarta (Tampilkan per Kota)
-                      </option>
+                      {provinsiOptions.map((p) => (
+                        <option key={p.value} value={p.value}>
+                          {p.label} (Tampilkan per Kota)
+                        </option>
+                      ))}
                     </Form.Select>
                   </Col>
 
@@ -977,13 +833,11 @@ const Dashboard = () => {
                           ? "Semua Kota"
                           : "Pilih Provinsi dulu"}
                       </option>
-                      {selectedProvince &&
-                        kotaData[selectedProvince] &&
-                        kotaData[selectedProvince].map((city) => (
-                          <option key={city.id} value={city.id}>
-                            {city.name}
-                          </option>
-                        ))}
+                      {kotaOptions.map((city) => (
+                        <option key={city.value} value={city.value}>
+                          {city.label}
+                        </option>
+                      ))}
                     </Form.Select>
                   </Col>
 
@@ -1014,7 +868,6 @@ const Dashboard = () => {
                             className="mt-1"
                             onClick={() => {
                               handleProvinceFilterChange("");
-                              setSelectedCity("");
                             }}
                           >
                             Reset Semua

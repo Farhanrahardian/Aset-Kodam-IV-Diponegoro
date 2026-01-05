@@ -87,7 +87,7 @@
       "nama": "23",
       "korem_id": "2",
       "kodim": "Kodim 0732/Sleman",
-      "luas": 23836485.82,
+      "luas": 31062129.94,
       "kib_kode_barang": "23",
       "nomor_registrasi": "23",
       "alamat": "23",
@@ -97,7 +97,7 @@
       "pemilikan_sertifikat": "Ya",
       "keterangan_bukti_pemilikan": "23",
       "sertifikat_bidang": "2",
-      "sertifikat_luas": 23836485.82,
+      "sertifikat_luas": 31062129.94,
       "belum_sertifikat_bidang": "",
       "belum_sertifikat_luas": "",
       "keterangan": "23",
@@ -106,6 +106,10 @@
         "type": "Polygon",
         "coordinates": [
           [
+            [
+              110.346165,
+              -7.692114
+            ],
             [
               110.312591,
               -7.717093
@@ -119,8 +123,8 @@
               -7.691902
             ],
             [
-              110.312591,
-              -7.717093
+              110.346165,
+              -7.692114
             ]
           ]
         ]
