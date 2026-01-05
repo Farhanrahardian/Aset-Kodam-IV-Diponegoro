@@ -210,11 +210,16 @@ const Dashboard = () => {
     []
   );
 
+  // Fungsi untuk mengecek apakah kabupaten adalah area konservasi
+  const isConservationArea = (kabupatenName) => {
+    return kabupatenName === "Hutan" || kabupatenName === "Wadung Kedungombo";
+  };
+
   // Dynamic city options based on selected province
   const kotaOptions = useMemo(() => {
     if (!selectedProvince || !kabupatenData) return [];
     const kotaInProvinsi = kabupatenData.features
-      .filter((f) => f.properties.PROVINCE === selectedProvince)
+      .filter((f) => f.properties.PROVINCE === selectedProvince && !isConservationArea(f.properties.Kabupaten))
       .map((f) => f.properties.Kabupaten);
     const uniqueKota = [...new Set(kotaInProvinsi)];
     return uniqueKota
@@ -246,6 +251,11 @@ const Dashboard = () => {
     // Count yardip assets by province and category
     yardipData.forEach((asset) => {
       const provinceKey = determineProvince(asset);
+      const cityKey = determineCity(asset);
+
+      // Jangan proses jika merupakan wilayah konservasi
+      if (isConservationArea(cityKey)) return;
+
       const category = categorizeYardipAsset(asset);
 
       if (provinceKey && provinceStats[provinceKey]) {
@@ -257,7 +267,7 @@ const Dashboard = () => {
     return Object.values(provinceStats)
       .filter((province) => province.total > 0)
       .sort((a, b) => b.total - a.total);
-  }, []);
+  }, [isConservationArea]);
 
   // Process Yardip data by City within selected province
   const processYardipByCity = useCallback(
@@ -266,9 +276,12 @@ const Dashboard = () => {
         const assetProvince = determineProvince(asset);
         if (assetProvince !== selectedProvinceName) return false;
 
+        // Filter out conservation areas
+        const assetCity = determineCity(asset);
+        if (isConservationArea(assetCity)) return false;
+
         // If specific city is selected, filter by city too
         if (selectedCityName) {
-          const assetCity = determineCity(asset);
           return assetCity === selectedCityName;
         }
 
@@ -299,6 +312,9 @@ const Dashboard = () => {
 
         filteredData.forEach((asset) => {
           const cityName = determineCity(asset) || "Tidak Diketahui";
+          // Jika ini adalah wilayah konservasi, lewati
+          if (isConservationArea(cityName)) return;
+
           const category = categorizeYardipAsset(asset);
 
           if (!cityStats[cityName]) {
@@ -322,7 +338,7 @@ const Dashboard = () => {
           .slice(0, 15); // Limit to top 15 cities for better visualization
       }
     },
-    []
+    [isConservationArea]
   );
 
   // Fetch data for charts

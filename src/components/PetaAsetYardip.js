@@ -263,7 +263,19 @@ const PetaAsetYardip = ({
     });
   };
 
+  // Fungsi untuk mengecek apakah kabupaten adalah area konservasi
+  const isConservationArea = (feature) => {
+    const kabupatenName = feature?.properties?.Kabupaten;
+    return kabupatenName === "Hutan" || kabupatenName === "Wadung Kedungombo";
+  };
+
   const onEachKabupatenFeature = (feature, layer) => {
+    // Menonaktifkan interaksi untuk area konservasi
+    if (isConservationArea(feature)) {
+      // Tidak ada bindPopup atau event click untuk area konservasi
+      return;
+    }
+
     const { PROVINCE, Kabupaten } = feature.properties;
     layer.bindPopup(`<b>${Kabupaten}</b><br/>${PROVINCE}`);
     layer.on({
@@ -332,7 +344,7 @@ const PetaAsetYardip = ({
 
     if (view.type === "provinsi" && kabupatenData) {
       const featuresInView = kabupatenData.features.filter(
-        (f) => f.properties.PROVINCE === view.provinsi
+        (f) => f.properties.PROVINCE === view.provinsi && !isConservationArea(f)
       );
       labels = featuresInView
         .map((feature) => {
@@ -439,7 +451,7 @@ const PetaAsetYardip = ({
             data={{
               type: "FeatureCollection",
               features: kabupatenDataWithCount.features.filter(
-                (f) => f.properties.PROVINCE === view.provinsi
+                (f) => f.properties.PROVINCE === view.provinsi && !isConservationArea(f)
               ),
             }}
             style={kabupatenStyle}

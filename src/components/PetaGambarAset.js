@@ -14,7 +14,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
 import * as turf from "@turf/turf";
-import axios from "axios";
+import toast from "react-hot-toast"; // Pastikan toast diimpor
 import { normalizeKodimName } from "../utils/kodimUtils";
 
 // Fix for broken icons in Leaflet with Webpack
@@ -25,10 +25,9 @@ L.Icon.Default.mergeOptions({
   shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
 });
 
-// Define styles outside the component to prevent re-creation on re-renders
 // Helper function to generate a color from a string
 const stringToColor = (str) => {
-  if (!str) return "#000000"; // Default color for null or empty strings
+  if (!str) return "#000000";
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     hash = str.charCodeAt(i) + ((hash << 5) - hash);
@@ -41,6 +40,11 @@ const stringToColor = (str) => {
   return color;
 };
 
+const isConservationArea = (feature) => {
+  const kabupatenName = feature?.properties?.Kabupaten;
+  return kabupatenName === "Hutan" || kabupatenName === "Wadung Kedungombo";
+};
+
 const kodimStyle = {
   fillColor: "#f59e0b",
   weight: 2,
@@ -49,19 +53,24 @@ const kodimStyle = {
   fillOpacity: 0.5,
 };
 const selectedStyle = {
-  fillColor: "#1976d2", // Blue fill
-  fillOpacity: 0.2, // Highly transparent
-  weight: 4, // Thicker border
+  fillColor: "#1976d2",
+  fillOpacity: 0.2,
+  weight: 4,
   opacity: 1,
-  color: "#1976d2", // Blue border
+  color: "#1976d2",
+};
+const conservationStyle = {
+  fillColor: "#ff0000", // Red
+  fillOpacity: 0.5,
+  color: "#ff0000",
+  weight: 2,
+  dashArray: "5, 5",
 };
 
 const MapSearch = () => {
   const map = useMap();
-
   useEffect(() => {
     const provider = new OpenStreetMapProvider();
-
     const searchControl = new GeoSearchControl({
       provider: provider,
       style: "bar",
@@ -72,14 +81,11 @@ const MapSearch = () => {
       animateZoom: false,
       keepResult: true,
     });
-
     map.addControl(searchControl);
-
     return () => {
       map.removeControl(searchControl);
     };
   }, [map]);
-
   return null;
 };
 
@@ -92,10 +98,8 @@ const MapController = ({
   importedGeometry,
 }) => {
   const map = useMap();
-
   useEffect(() => {
     if (!koremBoundaries) return;
-
     const timer = setTimeout(() => {
       if (importedGeometry) {
         try {
@@ -106,7 +110,6 @@ const MapController = ({
         }
         return;
       }
-
       if (selectedKodim && kodimBoundaries) {
         const kodimFeature = kodimBoundaries.features.find((f) => {
           const featureName = normalizeKodimName(f.properties.listkodim_Kodim);
@@ -126,13 +129,11 @@ const MapController = ({
         }
         return;
       }
-
       if (selectedKorem && koremBoundaries) {
         const koremNameToSearch =
           selectedKorem.nama === "Kodim 0733/Kota Semarang"
             ? "Berdiri Sendiri"
             : selectedKorem.nama;
-
         const koremFeatures = koremBoundaries.features.filter(
           (f) => f.properties.listkodim_Korem === koremNameToSearch
         );
@@ -148,7 +149,6 @@ const MapController = ({
         }
         return;
       }
-
       try {
         const allKoremLayer = L.geoJSON(koremBoundaries);
         map.fitBounds(allKoremLayer.getBounds(), { animate: true });
@@ -156,10 +156,8 @@ const MapController = ({
         console.error("Error fitting bounds for all korems:", error);
       }
     }, 300);
-
     return () => clearTimeout(timer);
   }, [importedGeometry, selectedKorem, selectedKodim, koremBoundaries, kodimBoundaries, map]);
-
   return null;
 };
 
@@ -170,14 +168,13 @@ const PetaGambarAset = ({
   isLocationSelected,
   onLocationSelect,
   importedGeometry,
-  geoJsonKey, // Terima key prop
+  geoJsonKey,
   koremBoundaries,
   kodimBoundaries,
 }) => {
   const featureGroupRef = useRef(null);
   const selectedLayerRef = useRef(null);
   const [mapReady, setMapReady] = useState(true);
-
   const mapCenter = [-7.5, 110.0];
   const initialZoom = 8;
 
@@ -199,13 +196,13 @@ const PetaGambarAset = ({
     };
   }, []);
 
-
-
   const resetSelectedLayer = useCallback(() => {
     if (selectedLayerRef.current) {
       if (selectedLayerRef.current.feature && selectedLayerRef.current.feature.properties) {
         const properties = selectedLayerRef.current.feature.properties;
-        if (properties.listkodim_Kodim) {
+        if (isConservationArea(selectedLayerRef.current.feature)) {
+          selectedLayerRef.current.setStyle(conservationStyle);
+        } else if (properties.listkodim_Kodim) {
           selectedLayerRef.current.setStyle(kodimStyle);
         } else if (properties.listkodim_Korem) {
           const koremName = properties.listkodim_Korem;
@@ -224,6 +221,12 @@ const PetaGambarAset = ({
   }, []);
 
   const onKoremEachFeature = useCallback((feature, layer) => {
+    // Menonaktifkan interaksi untuk area konservasi
+    if (isConservationArea(feature)) {
+      // Tidak ada bindPopup atau event click untuk area konservasi
+      return;
+    }
+
     const koremName = feature.properties.listkodim_Korem;
     const displayKoremName = koremName === "Berdiri Sendiri" ? "Kodim 0733/Kota Semarang" : koremName;
     if (displayKoremName) {
@@ -242,6 +245,8 @@ const PetaGambarAset = ({
   }, [onLocationSelect]);
 
   const onKodimEachFeature = useCallback((feature, layer) => {
+    if (isConservationArea(feature)) return; // Seharusnya tidak terjadi, tapi untuk keamanan
+
     const kodimName = normalizeKodimName(feature.properties.listkodim_Kodim);
     const koremName = feature.properties.listkodim_Korem;
     const displayKodimName = kodimName.includes("Semarang") ? "Kodim 0733/Kota Semarang" : kodimName;
@@ -268,11 +273,25 @@ const PetaGambarAset = ({
   const handleCreated = (e) => {
     const { layerType, layer } = e;
     if (layerType === "polygon") {
-      const geojson = layer.toGeoJSON();
-      const area = turf.area(geojson);
+      const newPolygon = layer.toGeoJSON();
+      
+      // Validasi tumpang tindih dengan area konservasi
+      const conservationFeatures = koremBoundaries.features.filter(isConservationArea);
+      for (const conservationFeature of conservationFeatures) {
+        if (turf.intersect(newPolygon, conservationFeature)) {
+          toast.error("Aset tidak boleh tumpang tindih dengan area konservasi (hutan atau waduk).");
+          // Hapus layer yang baru digambar dari peta
+          if (featureGroupRef.current) {
+            featureGroupRef.current.removeLayer(layer);
+          }
+          return; // Hentikan proses
+        }
+      }
+
+      const area = turf.area(newPolygon);
       featureGroupRef.current.clearLayers();
       featureGroupRef.current.addLayer(layer);
-      onPolygonCreated({ geometry: geojson.geometry, area: area });
+      onPolygonCreated({ geometry: newPolygon.geometry, area: area });
     }
   };
 
@@ -301,30 +320,27 @@ const PetaGambarAset = ({
   };
 
   const filteredKodimData = useMemo(() => {
-    return selectedKorem && kodimBoundaries
-      ? {
-          ...kodimBoundaries,
-          features: kodimBoundaries.features.filter((feature) => {
-            const featureKoremName = feature.properties.listkodim_Korem;
-            const featureKodimName = normalizeKodimName(
-              feature.properties.listkodim_Kodim
-            );
-            const isKoremMatch =
-              selectedKorem.nama === "Kodim 0733/Kota Semarang"
-                ? featureKoremName === "Berdiri Sendiri"
-                : featureKoremName === selectedKorem.nama;
-            if (!isKoremMatch) return false;
-            if (selectedKodim && selectedKodim.nama) {
-              const searchName = selectedKodim.nama;
-              if (searchName === "Kodim 0733/Kota Semarang") {
-                return featureKodimName.includes("Semarang");
-              }
-              return featureKodimName === searchName;
-            }
-            return true;
-          }),
+    if (!selectedKorem || !kodimBoundaries) return null;
+    const nonConservationFeatures = kodimBoundaries.features.filter(f => !isConservationArea(f));
+    return {
+      ...kodimBoundaries,
+      features: nonConservationFeatures.filter((feature) => {
+        const featureKoremName = feature.properties.listkodim_Korem;
+        const featureKodimName = normalizeKodimName(feature.properties.listkodim_Kodim);
+        const isKoremMatch = selectedKorem.nama === "Kodim 0733/Kota Semarang"
+          ? featureKoremName === "Berdiri Sendiri"
+          : featureKoremName === selectedKorem.nama;
+        if (!isKoremMatch) return false;
+        if (selectedKodim && selectedKodim.nama) {
+          const searchName = selectedKodim.nama;
+          if (searchName === "Kodim 0733/Kota Semarang") {
+            return featureKodimName.includes("Semarang");
+          }
+          return featureKodimName === searchName;
         }
-      : null;
+        return true;
+      }),
+    };
   }, [selectedKorem, selectedKodim, kodimBoundaries]);
 
   return (
@@ -343,7 +359,6 @@ const PetaGambarAset = ({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         <MapSearch />
-
         {mapReady && (
           <MapController
             selectedKorem={selectedKorem}
@@ -354,11 +369,9 @@ const PetaGambarAset = ({
             importedGeometry={importedGeometry}
           />
         )}
-
         {importedGeometry && (
           <GeoJSON key={geoJsonKey} data={importedGeometry} style={{ color: "#00FFFF", weight: 4 }} />
         )}
-
         <LayersControl position="topright">
           <LayersControl.BaseLayer checked name="Street Map">
             <TileLayer
@@ -385,7 +398,10 @@ const PetaGambarAset = ({
           {!importedGeometry && !selectedKorem && koremBoundaries && mapReady && (
             <LayersControl.Overlay checked name="Area KOREM">
               <GeoJSON
-                data={koremBoundaries}
+                data={{
+                  ...koremBoundaries,
+                  features: koremBoundaries.features.filter(f => !isConservationArea(f))
+                }}
                 style={(feature) => {
                   const koremName = feature.properties.listkodim_Korem;
                   const color = stringToColor(koremName);
@@ -394,7 +410,7 @@ const PetaGambarAset = ({
                     weight: 2,
                     opacity: 1,
                     color: "white",
-                    fillOpacity: 0.5, // Increased opacity to make colors more visible
+                    fillOpacity: 0.5,
                   };
                 }}
                 onEachFeature={onKoremEachFeature}

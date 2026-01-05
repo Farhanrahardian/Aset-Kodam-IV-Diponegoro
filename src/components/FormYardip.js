@@ -284,6 +284,11 @@ const FormYardip = forwardRef(
       }
     };
 
+    // Fungsi untuk mengecek apakah kabupaten adalah area konservasi
+    const isConservationArea = (kabupatenName) => {
+      return kabupatenName === "Hutan" || kabupatenName === "Wadung Kedungombo";
+    };
+
     const handleKabupatenChange = (e) => {
       const selectedKabupaten = e.target.value;
       onLocationChange(selectedProvinceName, selectedKabupaten);
@@ -443,7 +448,7 @@ const FormYardip = forwardRef(
                             kabupatenData?.features
                               .filter(
                                 (f) =>
-                                  f.properties.PROVINCE === selectedProvinceName
+                                  f.properties.PROVINCE === selectedProvinceName && !isConservationArea(f.properties.Kabupaten)
                               )
                               .map((f) => (
                                 <option

@@ -267,10 +267,15 @@ const DataAsetYardipPage = () => {
     []
   );
 
+  // Fungsi untuk mengecek apakah kabupaten adalah area konservasi
+  const isConservationArea = (kabupatenName) => {
+    return kabupatenName === "Hutan" || kabupatenName === "Wadung Kedungombo";
+  };
+
   const kotaOptions = useMemo(() => {
     if (!view.provinsi || !kabupatenData) return [];
     const kotaInProvinsi = kabupatenData.features
-      .filter((f) => f.properties.PROVINCE === view.provinsi)
+      .filter((f) => f.properties.PROVINCE === view.provinsi && !isConservationArea(f.properties.Kabupaten))
       .map((f) => f.properties.Kabupaten);
     const uniqueKota = new Set(kotaInProvinsi);
     return Array.from(uniqueKota)

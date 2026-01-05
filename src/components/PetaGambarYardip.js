@@ -299,6 +299,12 @@ const PetaGambarYardip = ({
     }
   };
 
+  // Fungsi untuk mengecek apakah kabupaten adalah area konservasi
+  const isConservationArea = (feature) => {
+    const kabupatenName = feature?.properties?.Kabupaten;
+    return kabupatenName === "Hutan" || kabupatenName === "Wadung Kedungombo";
+  };
+
   const handleBackClick = () => {
     if (view.type === "kabupaten") {
       setView({ type: "provinsi", name: view.name, feature: null });
@@ -321,6 +327,12 @@ const PetaGambarYardip = ({
   };
 
   const onEachKabupatenFeature = (feature, layer) => {
+    // Menonaktifkan interaksi untuk area konservasi
+    if (isConservationArea(feature)) {
+      // Tidak ada bindPopup atau event click untuk area konservasi
+      return;
+    }
+
     const { PROVINCE, Kabupaten } = feature.properties;
     layer.bindPopup(`<b>${Kabupaten}</b><br/>${PROVINCE}`);
     layer.on({
@@ -405,7 +417,7 @@ const PetaGambarYardip = ({
             data={{
               type: "FeatureCollection",
               features: kabupatenData.features.filter(
-                (f) => f.properties.PROVINCE === view.name
+                (f) => f.properties.PROVINCE === view.name && !isConservationArea(f)
               ),
             }}
             style={getStyle}
@@ -413,7 +425,7 @@ const PetaGambarYardip = ({
           />
         )}
 
-        {view.type === "kabupaten" && view.feature && (
+        {view.type === "kabupaten" && view.feature && !isConservationArea(view.feature) && (
           <GeoJSON
             ref={geoJsonLayerRef}
             key={"kabupaten-selected-" + view.feature.properties.Kabupaten}
@@ -425,7 +437,7 @@ const PetaGambarYardip = ({
         <AssetsLayer />
 
         <FeatureGroup ref={featureGroupRef}>
-          {isDrawingEnabled && view.type === "kabupaten" && (
+          {isDrawingEnabled && view.type === "kabupaten" && !isConservationArea(view.feature) && (
             <EditControl
               position="topleft"
               onCreated={handleCreated}

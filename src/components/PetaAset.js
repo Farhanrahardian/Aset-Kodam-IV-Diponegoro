@@ -19,6 +19,13 @@ import { normalizeKodimName } from "../utils/kodimUtils";
 const defaultStyle = { color: "blue", weight: 2, fillOpacity: 0.1 };
 const kodimStyle = { color: "#2E7D32", weight: 2, fillOpacity: 0.2 };
 const selectedStyle = { color: "#FFC107", weight: 4, fillOpacity: 0.3 };
+const conservationStyle = {
+  fillColor: "#ff0000", // Red
+  fillOpacity: 0.5,
+  color: "#ff0000",
+  weight: 2,
+  dashArray: "5, 5",
+};
 
 // Helper function to generate a color from a string
 const stringToColor = (str) => {
@@ -53,6 +60,16 @@ const greenIcon = createIcon("green");
 const yellowIcon = createIcon("yellow");
 
 // --- HELPER FUNCTIONS ---
+const isConservationArea = (feature) => {
+  const kabupatenName = feature?.properties?.Kabupaten;
+  const kodimName = feature?.properties?.listkodim_Kodim;
+  const koremName = feature?.properties?.listkodim_Korem;
+
+  // Periksa berdasarkan nama kabupaten, kodim, atau korem
+  const areaName = kabupatenName || kodimName || koremName;
+  return areaName === "Hutan" || areaName === "Wadung Kedungombo";
+};
+
 const fitBoundsToAsset = (map, asset) => {
   try {
     const geometry = parseLocation(asset.lokasi);
@@ -485,6 +502,9 @@ const PetaAset = React.memo(
     const isSelected = (asset) => asetPilihan && asetPilihan.id === asset.id;
 
     const onEachKorem = (feature, layer) => {
+      if (isConservationArea(feature)) {
+        return; // Jangan tambahkan interaksi untuk area konservasi
+      }
       layer.bindPopup(feature.properties.listkodim_Korem);
       layer.on({
         click: () => {
@@ -526,6 +546,11 @@ const PetaAset = React.memo(
     };
 
     const onEachKodim = (feature, layer) => {
+      // Jangan tambahkan interaksi untuk area konservasi
+      if (isConservationArea(feature)) {
+        return;
+      }
+
       // Gunakan nama dinormalisasi untuk popup
       const normalizedKodimName = normalizeKodimName(
         feature.properties.listkodim_Kodim
@@ -574,11 +599,14 @@ const PetaAset = React.memo(
     let koremsToShow = null;
     if (koremData) {
       if (view.type === "nasional") {
-        koremsToShow = koremData;
+        koremsToShow = {
+          ...koremData,
+          features: koremData.features.filter(f => !isConservationArea(f))
+        };
       } else if (view.type === "korem") {
         // Only show the selected Korem
         const selectedFeature = koremData.features.find(
-          (f) => f.properties.listkodim_Korem === view.korem.listkodim_Korem
+          (f) => f.properties.listkodim_Korem === view.korem.listkodim_Korem && !isConservationArea(f)
         );
         koremsToShow = selectedFeature
           ? { ...koremData, features: [selectedFeature] }
@@ -604,7 +632,7 @@ const PetaAset = React.memo(
           kodimsToShow = {
             ...kodimData,
             features: kodimData.features.filter(
-              (f) => f.properties.listkodim_Korem === koremName
+              (f) => f.properties.listkodim_Korem === koremName && !isConservationArea(f)
             ),
           };
         }

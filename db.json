@@ -34,7 +34,7 @@
       "nama": "12",
       "korem_id": "5",
       "kodim": "Kodim 0733/Kota Semarang",
-      "luas": "12344",
+      "luas": "123",
       "kib_kode_barang": "1",
       "nomor_registrasi": "1",
       "alamat": "1234",
@@ -46,7 +46,7 @@
       "sertifikat_bidang": "1",
       "sertifikat_luas": "",
       "belum_sertifikat_bidang": "",
-      "belum_sertifikat_luas": "12344",
+      "belum_sertifikat_luas": "123",
       "keterangan": "1",
       "atas_nama_pemilik_sertifikat": "1",
       "lokasi": {
@@ -62,8 +62,8 @@
               -7.011221
             ],
             [
-              110.407275,
-              -7.022365
+              110.41655,
+              -7.001737
             ],
             [
               110.431842,

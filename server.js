@@ -442,9 +442,21 @@ app.delete("/assets/:id", (req, res) => {
 });
 
 // ===== YARDIP ASSETS =====
+const isConservationArea = (kabupatenName) => {
+  return kabupatenName === "Hutan" || kabupatenName === "Wadung Kedungombo";
+};
+
 app.put("/yardip_assets/:id", (req, res) => {
   const { id } = req.params;
   const updatedAsset = req.body;
+
+  // Validasi area konservasi
+  if (isConservationArea(updatedAsset.kabkota)) {
+    return res.status(400).json({
+      message: "Aset yardip tidak dapat disimpan di wilayah konservasi (Hutan atau Wadung Kedungombo)"
+    });
+  }
+
   const db = readDb();
   if (!db.yardip_assets) {
     return res
@@ -482,6 +494,28 @@ app.delete("/yardip_assets/:id", (req, res) => {
   db.yardip_assets.splice(assetIndex, 1);
   writeDb(db);
   res.status(200).json({ message: "Yardip asset deleted successfully" });
+});
+
+// Validasi area konservasi untuk POST request
+app.post('/yardip_assets', (req, res) => {
+  const newAsset = req.body;
+
+  // Validasi area konservasi
+  if (isConservationArea(newAsset.kabkota)) {
+    return res.status(400).json({
+      message: "Aset yardip tidak dapat ditambahkan di wilayah konservasi (Hutan atau Wadung Kedungombo)"
+    });
+  }
+
+  const db = readDb();
+  if (!db.yardip_assets) {
+    return res.status(404).json({ message: "Resource 'yardip_assets' not found" });
+  }
+  const newId = newAsset.id || `Y${Date.now()}`;
+  const createdAsset = { ...newAsset, id: newId };
+  db.yardip_assets.push(createdAsset);
+  writeDb(db);
+  res.status(201).json(createdAsset);
 });
 
 // ===== ERROR HANDLING =====
