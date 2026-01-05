@@ -274,17 +274,26 @@ const PetaGambarAset = ({
     const { layerType, layer } = e;
     if (layerType === "polygon") {
       const newPolygon = layer.toGeoJSON();
-      
+
       // Validasi tumpang tindih dengan area konservasi
       const conservationFeatures = koremBoundaries.features.filter(isConservationArea);
       for (const conservationFeature of conservationFeatures) {
-        if (turf.intersect(newPolygon, conservationFeature)) {
-          toast.error("Aset tidak boleh tumpang tindih dengan area konservasi (hutan atau waduk).");
-          // Hapus layer yang baru digambar dari peta
-          if (featureGroupRef.current) {
-            featureGroupRef.current.removeLayer(layer);
+        // Pastikan kedua geometri valid sebelum melakukan intersect
+        if (newPolygon && newPolygon.geometry && conservationFeature && conservationFeature.geometry) {
+          try {
+            const intersection = turf.intersect(newPolygon, conservationFeature);
+            if (intersection) {
+              toast.error("Aset tidak boleh tumpang tindih dengan area konservasi (hutan atau waduk).");
+              // Hapus layer yang baru digambar dari peta
+              if (featureGroupRef.current) {
+                featureGroupRef.current.removeLayer(layer);
+              }
+              return; // Hentikan proses
+            }
+          } catch (error) {
+            console.error("Error saat memeriksa tumpang tindih geometri:", error);
+            // Tetap lanjutkan proses jika terjadi error saat intersect
           }
-          return; // Hentikan proses
         }
       }
 
@@ -296,10 +305,18 @@ const PetaGambarAset = ({
   };
 
   const handleBackToKorem = () => {
+    // Hapus polygon yang telah digambar saat kembali ke level Korem
+    if (featureGroupRef.current) {
+      featureGroupRef.current.clearLayers();
+    }
     onLocationSelect && onLocationSelect("KOREM", null, null);
   };
 
   const handleBackToKoremView = () => {
+    // Hapus polygon yang telah digambar saat kembali ke level Korem
+    if (featureGroupRef.current) {
+      featureGroupRef.current.clearLayers();
+    }
     if (selectedKorem) {
       const koremName = selectedKorem.nama === "Kodim 0733/Kota Semarang" ? "Berdiri Sendiri" : selectedKorem.nama;
       onLocationSelect && onLocationSelect("KOREM", koremName, null);

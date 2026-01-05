@@ -90,6 +90,16 @@ const FormYardip = forwardRef(
       initialArea,
     ]);
 
+    // Update area when isPolygonCreated changes and initialArea is updated
+    useEffect(() => {
+      if (isPolygonCreated && initialArea > 0) {
+        setFormData(prev => ({
+          ...prev,
+          area: initialArea
+        }));
+      }
+    }, [isPolygonCreated, initialArea]);
+
     const bidangOptions = [
       "Tanah",
       "Tanah Bangunan",
@@ -466,19 +476,36 @@ const FormYardip = forwardRef(
                     <Form.Label>
                       Luas Area (dari Peta) <span className="text-danger">*</span>
                     </Form.Label>
-                    <InputGroup>
-                      <Form.Control
-                        type="number"
-                        step="0.01"
-                        name="area"
-                        value={formData.area || 0}
-                        onChange={handleAreaChange}
-                        placeholder="Area dari peta"
-                      />
-                      <InputGroup.Text>m²</InputGroup.Text>
-                    </InputGroup>
+                    {isPolygonCreated ? (
+                      <InputGroup>
+                        <Form.Control
+                          type="number"
+                          step="0.01"
+                          name="area"
+                          value={formData.area || 0}
+                          onChange={handleAreaChange}
+                          placeholder="Area dari peta"
+                        />
+                        <InputGroup.Text>m²</InputGroup.Text>
+                      </InputGroup>
+                    ) : (
+                      <InputGroup>
+                        <Form.Control
+                          type="number"
+                          step="0.01"
+                          name="area"
+                          value={0}
+                          onChange={handleAreaChange}
+                          placeholder="Area dari peta"
+                          disabled
+                        />
+                        <InputGroup.Text>m²</InputGroup.Text>
+                      </InputGroup>
+                    )}
                     <Form.Text className="text-muted">
-                      Nilai otomatis dari peta, dapat diedit manual jika diperlukan
+                      {isPolygonCreated
+                        ? "Nilai otomatis dari peta, dapat diedit manual jika diperlukan"
+                        : "Silakan buat poligon di peta terlebih dahulu untuk melihat luas area"}
                     </Form.Text>
                   </Form.Group>
                 </Card.Body>
