@@ -72,19 +72,35 @@ const TambahAsetPage = () => {
       setSelectedKodimId(kodimName);
 
       const koremData = koremList.find((k) => k.id === koremId);
-      const displayNama = koremData?.nama === "Berdiri Sendiri" ? "Kodim 0733/Kota Semarang" : koremData?.nama;
-      setSelectedKorem(koremData ? { id: koremData.id, nama: displayNama } : null);
+      const displayNama =
+        koremData?.nama === "Berdiri Sendiri"
+          ? "Kodim 0733/Kota Semarang"
+          : koremData?.nama;
+      setSelectedKorem(
+        koremData ? { id: koremData.id, nama: displayNama } : null
+      );
 
-      const isSemarangCase = kodimName === "Kodim 0733/Kota Semarang" || koremData?.nama === "Berdiri Sendiri";
+      const isSemarangCase =
+        kodimName === "Kodim 0733/Kota Semarang" ||
+        koremData?.nama === "Berdiri Sendiri";
 
       if (isSemarangCase) {
         setSelectedKodimId("Kodim 0733/Kota Semarang");
         const kodimFeature = kodimBoundaries?.features.find(
           (f) => f.properties.listkodim_Kodim === "Kodim 0733/Semarang (BS)"
         );
-        setSelectedKodim(kodimFeature ? { nama: "Kodim 0733/Kota Semarang", geometry: kodimFeature.geometry } : null);
+        setSelectedKodim(
+          kodimFeature
+            ? {
+                nama: "Kodim 0733/Kota Semarang",
+                geometry: kodimFeature.geometry,
+              }
+            : null
+        );
         setIsLocationSelected(true);
-        toast.success(`KODIM 0733/Kota Semarang dipilih. Silakan gambar area aset di peta.`); // Notifikasi untuk pemilihan Kodim Semarang
+        toast.success(
+          `KODIM 0733/Kota Semarang dipilih. Silakan gambar area aset di peta.`
+        ); // Notifikasi untuk pemilihan Kodim Semarang
       } else if (kodimName && kodimBoundaries) {
         const kodimFeature = kodimBoundaries.features.find((f) => {
           const featureName = normalizeKodimName(f.properties.listkodim_Kodim);
@@ -93,9 +109,15 @@ const TambahAsetPage = () => {
           }
           return featureName === kodimName;
         });
-        setSelectedKodim(kodimFeature ? { nama: kodimName, geometry: kodimFeature.geometry } : null);
+        setSelectedKodim(
+          kodimFeature
+            ? { nama: kodimName, geometry: kodimFeature.geometry }
+            : null
+        );
         setIsLocationSelected(true);
-        toast.success(`KODIM ${kodimName} dipilih. Silakan gambar area aset di peta.`); // Notifikasi untuk pemilihan Kodim umum
+        toast.success(
+          `KODIM ${kodimName} dipilih. Silakan gambar area aset di peta.`
+        ); // Notifikasi untuk pemilihan Kodim umum
       } else {
         setSelectedKodim(null);
         setIsLocationSelected(!!koremId);
@@ -104,7 +126,7 @@ const TambahAsetPage = () => {
     [kodimBoundaries, koremList]
   );
 
-    const handleAreaSelect = (type, koremName, kodimName) => {
+  const handleAreaSelect = (type, koremName, kodimName) => {
     setSelectionSource("map");
     if (type === "KOREM") {
       if (koremName === null) {
@@ -116,11 +138,15 @@ const TambahAsetPage = () => {
         return;
       }
 
-      if (koremName === "Berdiri Sendiri" || koremName === "Kodim 0733/Kota Semarang") {
+      if (
+        koremName === "Berdiri Sendiri" ||
+        koremName === "Kodim 0733/Kota Semarang"
+      ) {
         const matchingKorem = koremList.find(
-          (korem) => korem.nama === "Kodim 0733/Kota Semarang" || korem.id === "5"
+          (korem) =>
+            korem.nama === "Kodim 0733/Kota Semarang" || korem.id === "5"
         );
-        
+
         if (matchingKorem) {
           setSelectedKoremId(matchingKorem.id);
           setSelectedKorem({ id: matchingKorem.id, nama: matchingKorem.nama });
@@ -140,28 +166,37 @@ const TambahAsetPage = () => {
           (korem) => korem.nama.trim() === koremName.trim()
         );
       }
-      
+
       if (matchingKorem) {
         setSelectedKoremId(matchingKorem.id);
         setSelectedKorem({ id: matchingKorem.id, nama: matchingKorem.nama });
         setSelectedKodimId("");
         setSelectedKodim(null);
         setIsLocationSelected(true);
-        toast.success(`KOREM ${matchingKorem.nama} dipilih. Silakan pilih KODIM.`);
+        toast.success(
+          `KOREM ${matchingKorem.nama} dipilih. Silakan pilih KODIM.`
+        );
       } else {
         toast.error(`Data KOREM "${koremName}" yang sesuai tidak ditemukan.`);
         console.error("Could not find Korem with name:", koremName);
       }
     } else if (type === "KODIM") {
-      if (koremName === "Berdiri Sendiri" || koremName === "Kodim 0733/Kota Semarang") {
+      if (
+        koremName === "Berdiri Sendiri" ||
+        koremName === "Kodim 0733/Kota Semarang"
+      ) {
         const matchingKorem = koremList.find(
-          (korem) => korem.nama === "Kodim 0733/Kota Semarang" || korem.id === "5"
+          (korem) =>
+            korem.nama === "Kodim 0733/Kota Semarang" || korem.id === "5"
         );
-        
+
         if (matchingKorem) {
           setSelectedKoremId(matchingKorem.id);
           setSelectedKorem({ id: matchingKorem.id, nama: matchingKorem.nama });
-          if (kodimName.includes("Semarang") || kodimName === "Kodim 0733/Semarang (BS)") {
+          if (
+            kodimName.includes("Semarang") ||
+            kodimName === "Kodim 0733/Semarang (BS)"
+          ) {
             setSelectedKodimId("Kodim 0733/Kota Semarang");
             handleLocationChange(matchingKorem.id, "Kodim 0733/Kota Semarang");
           } else {
@@ -173,7 +208,7 @@ const TambahAsetPage = () => {
         const matchingKorem = koremList.find(
           (korem) => korem.nama.trim() === koremName.trim()
         );
-        
+
         if (matchingKorem) {
           setSelectedKoremId(matchingKorem.id);
           setSelectedKorem({ id: matchingKorem.id, nama: matchingKorem.nama });
@@ -181,11 +216,13 @@ const TambahAsetPage = () => {
           handleLocationChange(matchingKorem.id, kodimName);
         } else {
           setSelectedKodimId(kodimName);
-          toast.success(`KODIM ${kodimName} dipilih. Silakan gambar area aset.`);
+          toast.success(
+            `KODIM ${kodimName} dipilih. Silakan gambar area aset.`
+          );
         }
       }
     }
-  };;
+  };
 
   const handleDrawingCreated = (data) => {
     if (!data || !data.geometry) {
@@ -210,16 +247,26 @@ const TambahAsetPage = () => {
     setDrawnAsset({ geometry, area });
     setIsFormEnabled(true);
     setIsLocationSelected(true);
-    setGeoJsonKey(prevKey => prevKey + 1); // Inkrementasi key
+    setGeoJsonKey((prevKey) => prevKey + 1); // Inkrementasi key
   };
 
-  const handleSaveAsset = async (assetData, buktiPemilikanFile, assetPhotos) => {
+  const handleSaveAsset = async (
+    assetData,
+    buktiPemilikanFile,
+    assetPhotos
+  ) => {
     const toastId = toast.loading("Menyimpan data aset...");
+
+    // ✅ DEBUG: Cek data yang diterima dari form
+    console.log("🔍 Data dari FormAset:", assetData);
+    console.log("🔍 Luas dari form:", assetData.luas);
+    console.log("🔍 Luas dari polygon:", drawnAsset?.area);
 
     let buktiPemilikanUrl = assetData.bukti_pemilikan_url || "";
     let buktiPemilikanFilename = assetData.bukti_pemilikan_filename || "";
     let assetPhotoUrls = assetData.foto_aset || [];
 
+    // Upload bukti pemilikan (tetap sama)
     if (buktiPemilikanFile) {
       try {
         toast.loading("Mengupload bukti pemilikan...", { id: toastId });
@@ -241,11 +288,14 @@ const TambahAsetPage = () => {
       }
     }
 
+    // Upload foto aset (tetap sama)
     if (assetPhotos && assetPhotos.length > 0) {
       try {
-        toast.loading(`Mengupload ${assetPhotos.length} foto aset...`, { id: toastId });
+        toast.loading(`Mengupload ${assetPhotos.length} foto aset...`, {
+          id: toastId,
+        });
         const photosFormData = new FormData();
-        assetPhotos.forEach(photo => {
+        assetPhotos.forEach((photo) => {
           photosFormData.append("asset_photos", photo);
         });
 
@@ -253,19 +303,33 @@ const TambahAsetPage = () => {
           `${API_URL}/upload/asset-photos`,
           photosFormData
         );
-        
-        const newPhotoUrls = photosUploadRes.data.files.map(file => file.url);
+
+        const newPhotoUrls = photosUploadRes.data.files.map((file) => file.url);
         assetPhotoUrls = [...new Set([...assetPhotoUrls, ...newPhotoUrls])];
-        
+
         toast.loading("Foto aset berhasil diupload.", { id: toastId });
       } catch (err) {
-        // Menampilkan pesan error yang lebih spesifik
-        const errorMessage = err.response?.data?.error || "Gagal mengupload foto aset.";
+        const errorMessage =
+          err.response?.data?.error || "Gagal mengupload foto aset.";
         toast.error(errorMessage, { id: toastId });
-        console.error("Asset photos upload error:", err.response?.data || err.message);
+        console.error(
+          "Asset photos upload error:",
+          err.response?.data || err.message
+        );
         return;
       }
     }
+
+    // ✅ PERBAIKAN: Gunakan luas dari assetData (yang sudah diisi/diubah user di form)
+    // Hanya gunakan drawnAsset.area sebagai fallback jika assetData.luas tidak ada
+    const finalLuas =
+      assetData.luas && assetData.luas > 0
+        ? assetData.luas
+        : drawnAsset
+        ? drawnAsset.area || 0
+        : 0;
+
+    console.log("🔍 Luas final yang akan disimpan:", finalLuas);
 
     const assetPayload = {
       ...assetData,
@@ -273,11 +337,13 @@ const TambahAsetPage = () => {
       korem_id: selectedKoremId,
       kodim: selectedKodimId,
       lokasi: drawnAsset ? JSON.stringify(drawnAsset.geometry) : null,
-      luas: drawnAsset ? (drawnAsset.area || 0) : (assetData.luas || 0),
+      luas: finalLuas, // ✅ Gunakan luas yang sudah diperbaiki
       bukti_pemilikan_url: buktiPemilikanUrl,
       bukti_pemilikan_filename: buktiPemilikanFilename,
       foto_aset: assetPhotoUrls,
     };
+
+    console.log("🔍 Payload final yang akan dikirim ke API:", assetPayload);
 
     try {
       toast.loading("Menyimpan data aset ke database...", { id: toastId });
@@ -286,7 +352,8 @@ const TambahAsetPage = () => {
         return;
       }
 
-      await axios.post(`${API_URL}/assets`, assetPayload);
+      const response = await axios.post(`${API_URL}/assets`, assetPayload);
+      console.log("✅ Response dari server:", response.data);
 
       toast.success("Aset berhasil ditambahkan!", { id: toastId });
       setTimeout(() => {
@@ -320,8 +387,8 @@ const TambahAsetPage = () => {
                     <b>Alur Pengisian:</b>
                     <ol className="mb-0 ps-3">
                       <li>
-                        Pilih Wilayah Korem dan Kodim pada form di sebelah
-                        kanan atau klik area KOREM/KODIM di peta.
+                        Pilih Wilayah Korem dan Kodim pada form di sebelah kanan
+                        atau klik area KOREM/KODIM di peta.
                       </li>
                       <li>
                         Gunakan kontrol di pojok kanan atas peta untuk

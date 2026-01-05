@@ -350,6 +350,58 @@
       "foto_aset": [
         "/uploads/asset_photos-1767613022650.png"
       ]
+    },
+    {
+      "nama": "sadadacc",
+      "korem_id": "4",
+      "kodim": "Kodim 0727/Karanganyar",
+      "luas": "9999999",
+      "kib_kode_barang": "9999",
+      "nomor_registrasi": "9999",
+      "alamat": "nnnnnn",
+      "peruntukan": "nnnnnnn",
+      "status": "Aman",
+      "asal_milik": "nnnnnnn",
+      "pemilikan_sertifikat": "Ya",
+      "keterangan_bukti_pemilikan": "nnnnnnnn",
+      "sertifikat_bidang": "9",
+      "sertifikat_luas": "9999999",
+      "belum_sertifikat_bidang": "",
+      "belum_sertifikat_luas": "",
+      "keterangan": "nnnnnnn",
+      "atas_nama_pemilik_sertifikat": "nnnnnnnn",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.769808,-7.531544],[110.783536,-7.536311],[110.785595,-7.540738],[110.772897,-7.541249],[110.759169,-7.53563],[110.769808,-7.531544]]]}",
+      "id": "T1767615425842",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767615463933.jpeg",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767615463933.jpeg",
+      "foto_aset": []
+    },
+    {
+      "nama": "22",
+      "korem_id": "3",
+      "kodim": "Kodim 0719/Jepara",
+      "luas": 2222222,
+      "kib_kode_barang": "222",
+      "nomor_registrasi": "22",
+      "alamat": "22",
+      "peruntukan": "22",
+      "status": "Sengketa",
+      "asal_milik": "222",
+      "pemilikan_sertifikat": "Ya",
+      "keterangan_bukti_pemilikan": "22",
+      "sertifikat_bidang": "22",
+      "sertifikat_luas": "2222222",
+      "belum_sertifikat_bidang": "",
+      "belum_sertifikat_luas": "",
+      "keterangan": "22",
+      "atas_nama_pemilik_sertifikat": "22",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.459785,-5.842685],[110.432844,-5.849006],[110.455662,-5.854657],[110.465094,-5.849189],[110.46784,-5.840135],[110.459785,-5.842685]]]}",
+      "id": "T1767616139096",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767616139063.jpg",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767616139063.jpg",
+      "foto_aset": [
+        "/uploads/asset_photos-1767616139090.jpg"
+      ]
     }
   ],
   "yardip_assets": [

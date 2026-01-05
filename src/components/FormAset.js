@@ -251,6 +251,7 @@ const FormAset = forwardRef((props, ref) => {
     return formData.belum_sertifikat_luas;
   };
 
+  // 1. PERBAIKAN handleSave - pastikan menggunakan nilai dari formData, bukan initialArea
   const handleSave = () => {
     const newErrors = {};
     if (!formData.nama) newErrors.nama = "NUP tidak boleh kosong.";
@@ -263,11 +264,21 @@ const FormAset = forwardRef((props, ref) => {
       return;
     }
 
-    onSave(formData, buktiPemilikanFile, assetPhotos);
+    // PENTING: Pastikan luas yang dikirim adalah dari formData, bukan initialArea
+    const dataToSave = {
+      ...formData,
+      luas:
+        formData.pemilikan_sertifikat === "Ya"
+          ? parseFloat(formData.sertifikat_luas) || 0
+          : parseFloat(formData.belum_sertifikat_luas) || 0,
+    };
+
+    onSave(dataToSave, buktiPemilikanFile, assetPhotos);
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
     if (name === "korem_id") {
       const selectedKoremData = koremList.find((k) => k.id === value);
       let kodimValue = "";
@@ -291,11 +302,20 @@ const FormAset = forwardRef((props, ref) => {
         if (value === "Ya") {
           updatedData.sertifikat_luas = currentArea || "";
           updatedData.belum_sertifikat_luas = "";
+          updatedData.luas = currentArea || "";
         } else {
           updatedData.belum_sertifikat_luas = currentArea || "";
           updatedData.sertifikat_luas = "";
+          updatedData.luas = currentArea || "";
         }
         return updatedData;
+      });
+    } else if (name === "sertifikat_luas" || name === "belum_sertifikat_luas") {
+      // TAMBAHKAN: Update formData.luas juga saat user mengubah luas
+      setFormData({
+        ...formData,
+        [name]: value,
+        luas: value, // Sync ke field luas utama
       });
     } else {
       setFormData({ ...formData, [name]: value });
@@ -303,6 +323,7 @@ const FormAset = forwardRef((props, ref) => {
         onLocationChange?.(formData.korem_id, value);
       }
     }
+
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
@@ -557,9 +578,19 @@ const FormAset = forwardRef((props, ref) => {
   ]);
 
   useEffect(() => {
-    if (initialArea > 0) {
+    if (initialArea > 0 && !assetToEdit) {
       const areaValue = parseFloat(initialArea.toFixed(2));
       setFormData((prev) => {
+        // Hanya update jika field luas masih kosong/0
+        const shouldUpdate =
+          formData.pemilikan_sertifikat === "Ya"
+            ? !prev.sertifikat_luas || prev.sertifikat_luas === 0
+            : !prev.belum_sertifikat_luas || prev.belum_sertifikat_luas === 0;
+
+        if (!shouldUpdate) {
+          return prev; // Jangan update jika user sudah mengisi manual
+        }
+
         const updatedData = { ...prev };
         if (prev.pemilikan_sertifikat === "Ya") {
           updatedData.sertifikat_luas = areaValue;
@@ -572,7 +603,7 @@ const FormAset = forwardRef((props, ref) => {
         return updatedData;
       });
     }
-  }, [initialArea, formData.pemilikan_sertifikat]);
+  }, [initialArea, assetToEdit]);
 
   return (
     <Card>
