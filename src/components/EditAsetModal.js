@@ -127,13 +127,15 @@ const EditAsetModal = ({ show, onHide, asset, koremList, onSave }) => {
         }
       } else {
         console.log("Geometry not changed - keeping original data");
-        // Pastikan data luas dari form tetap digunakan
+        // Pastikan data luas dari form tetap digunakan dan disinkronkan ke 'luas' utama
         if (finalData.pemilikan_sertifikat === "Ya") {
+          finalData.luas = finalData.sertifikat_luas;
           console.log(
             "Using sertifikat_luas from form:",
             finalData.sertifikat_luas
           );
         } else {
+          finalData.luas = finalData.belum_sertifikat_luas;
           console.log(
             "Using belum_sertifikat_luas from form:",
             finalData.belum_sertifikat_luas

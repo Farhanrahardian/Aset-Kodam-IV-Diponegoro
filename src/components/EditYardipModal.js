@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Modal, Button, Row, Col, Form } from 'react-bootstrap';
 import { MapContainer, TileLayer, FeatureGroup, Polygon, useMap } from 'react-leaflet';
 import { EditControl } from 'react-leaflet-draw';
@@ -45,7 +45,7 @@ const EditYardipModal = ({ show, onHide, asset, onSave, provinsiData, kabupatenD
   const featureGroupRef = useRef();
   const [formData, setFormData] = useState(null);
   const [geometry, setGeometry] = useState(null);
-  const [manualArea, setManualArea] = useState(null); // NEW: Track manual area changes
+  const [geometryChanged, setGeometryChanged] = useState(false);
 
   // Effect to programmatically add/update the polygon layer for editing
   useEffect(() => {
@@ -67,28 +67,21 @@ const EditYardipModal = ({ show, onHide, asset, onSave, provinsiData, kabupatenD
     setFormData(prev => ({ ...prev, provinsi, kabkota: kabupaten }));
   };
 
-  // NEW: Handler for manual area changes from form
-  const handleManualAreaChange = (newArea) => {
-    setManualArea(newArea);
-    setFormData(prev => ({ ...prev, area: newArea }));
-  };
-
   useEffect(() => {
     if (asset) {
       const locationData = parseLocation(asset.lokasi);
       let initialGeometry = null;
       if (locationData && locationData.type === "Polygon") {
-        // Convert GeoJSON coords [lng, lat] to Leaflet LatLng [lat, lng]
         const latLngs = locationData.coordinates[0].map(coord => [coord[1], coord[0]]);
         initialGeometry = { type: "Polygon", coordinates: [latLngs] };
       }
       setGeometry(initialGeometry);
       setFormData({ ...asset, lokasi: initialGeometry });
-      setManualArea(asset.area); // Initialize manual area with existing area
+      setGeometryChanged(false); // Reset flag on asset change
     } else {
       setFormData(null);
       setGeometry(null);
-      setManualArea(null);
+      setGeometryChanged(false);
     }
   }, [asset]);
 
@@ -97,30 +90,20 @@ const EditYardipModal = ({ show, onHide, asset, onSave, provinsiData, kabupatenD
       const { formData: latestFormData } = formRef.current.getFormData();
       let finalData = { ...latestFormData };
 
-      if (geometry) {
-        // Convert Leaflet LatLng [lat, lng] back to GeoJSON coords [lng, lat] for saving
+      // If geometry was changed, recalculate area and location from the map polygon
+      if (geometryChanged && geometry) {
         const geoJsonForSave = {
           type: "Polygon",
           coordinates: [geometry.coordinates[0].map(latLng => [latLng[1], latLng[0]])]
         };
+        const calculatedArea = turf.area(geoJsonForSave);
         
-        // Use manual area if set, otherwise calculate from geometry
-        let finalArea;
-        if (manualArea !== null) {
-          finalArea = manualArea;
-        } else {
-          const calculatedArea = turf.area(geoJsonForSave);
-          finalArea = parseFloat(calculatedArea.toFixed(2));
-        }
-        
-        finalData.area = finalArea;
+        finalData.area = parseFloat(calculatedArea.toFixed(2));
         finalData.lokasi = JSON.stringify(geoJsonForSave);
-      } else if (manualArea !== null) {
-        // If no geometry but manual area was changed
-        finalData.area = manualArea;
       }
+      // If geometry was NOT changed, the `latestFormData` (including any manual area changes) is used as is.
       
-      console.log("Saving data:", finalData); // Debug log
+      console.log("Saving data:", finalData);
       onSave(finalData);
     }
   };
@@ -133,16 +116,7 @@ const EditYardipModal = ({ show, onHide, asset, onSave, provinsiData, kabupatenD
         const latLngs = geoJSON.geometry.coordinates[0].map(coord => [coord[1], coord[0]]);
         const newGeometry = { type: "Polygon", coordinates: [latLngs] };
         setGeometry(newGeometry);
-
-        // Calculate new area from edited polygon
-        const area = turf.area(geoJSON.geometry);
-        const calculatedArea = parseFloat(area.toFixed(2));
-        
-        // Update both manual area and form data
-        setManualArea(calculatedArea);
-        setFormData(prev => ({...prev, area: calculatedArea}));
-        
-        toast.success(`Poligon berhasil diedit. Luas baru: ${calculatedArea.toLocaleString('id-ID')} m²`);
+        setGeometryChanged(true); // Set flag to true
       }
     });
   };
@@ -156,18 +130,14 @@ const EditYardipModal = ({ show, onHide, asset, onSave, provinsiData, kabupatenD
       const latLngs = geoJSON.geometry.coordinates[0].map(coord => [coord[1], coord[0]]);
       const newGeometry = { type: "Polygon", coordinates: [latLngs] };
       setGeometry(newGeometry);
-
-      const area = turf.area(geoJSON.geometry);
-      const calculatedArea = parseFloat(area.toFixed(2));
-      
-      setManualArea(calculatedArea);
-      setFormData(prev => ({...prev, area: calculatedArea}));
-      
-      toast.success(`Poligon baru berhasil dibuat. Luas: ${calculatedArea.toLocaleString('id-ID')} m²`);
+      setGeometryChanged(true); // Set flag to true
     }
   };
 
-  const mapCenter = geometry ? L.geoJSON(geometry).getBounds().getCenter() : [-7.5, 110.0];
+  const mapCenter = geometry ? L.geoJSON({
+    type: 'Polygon',
+    coordinates: [geometry.coordinates[0].map(latLng => [latLng[1], latLng[0]])]
+  }).getBounds().getCenter() : [-7.5, 110.0];
 
   return (
     <Modal show={show} onHide={onHide} size="xl" centered>
@@ -194,7 +164,6 @@ const EditYardipModal = ({ show, onHide, asset, onSave, provinsiData, kabupatenD
                   kabupatenData={kabupatenData}
                   onLocationChange={handleLocationChange}
                   isPolygonCreated={true}
-                  onManualAreaChange={handleManualAreaChange} // NEW: Pass handler
                 />
               )}
             </div>
@@ -230,11 +199,16 @@ const EditYardipModal = ({ show, onHide, asset, onSave, provinsiData, kabupatenD
               </FeatureGroup>
             </MapContainer>
             <Form.Text className="mt-2 d-block">
-              Gunakan kontrol di pojok kanan atas peta untuk membuat atau mengedit poligon.
-              {manualArea && (
-                <div className="mt-2">
-                  <strong>Luas saat ini:</strong> {manualArea.toLocaleString('id-ID')} m²
-                </div>
+              {geometryChanged && (
+                <span className="text-warning fw-bold">
+                  ⚠️ Poligon telah diubah. Luas akan diperbarui saat menyimpan.
+                </span>
+              )}
+              {!geometryChanged && (
+                <span>
+                  Gunakan kontrol di pojok kanan atas peta untuk membuat atau
+                  mengedit poligon.
+                </span>
               )}
             </Form.Text>
           </Col>
