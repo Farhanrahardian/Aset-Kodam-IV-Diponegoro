@@ -29,15 +29,19 @@ const LaporanYardipPage = () => {
   const [selectedBidang, setSelectedBidang] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [filteredAssets, setFilteredAssets] = useState([]);
-
+  const [kabupatenGeoData, setKabupatenGeoData] = useState(null);
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const assetsRes = await axios.get(`${API_URL}/yardip_assets`);
-        const assetsData = assetsRes.data || [];
+        const [assetsRes, kabGeoRes] = await Promise.all([
+          axios.get(`${API_URL}/yardip_assets`),
+          axios.get("/data/kabupaten_kota.geojson"), // Load GeoJSON kabupaten
+        ]);
 
+        const assetsData = assetsRes.data || [];
         setAssets(assetsData);
+        setKabupatenGeoData(kabGeoRes.data); // Simpan data GeoJSON
 
         // Extract unique bidang for filter
         const uniqueBidang = [
@@ -47,13 +51,21 @@ const LaporanYardipPage = () => {
 
         // Extract unique provinsi for filter
         const uniqueProvinsi = [
-          ...new Set(assetsData.map((asset) => asset.provinsi).filter(Boolean)),
+          ...new Set(
+            assetsData
+              .map((asset) => asset.provinsi)
+              .filter((provinsi) => provinsi && provinsi.trim() !== "")
+          ),
         ];
         setProvinsiList(uniqueProvinsi);
 
-        // Extract unique kabupaten for filter
+        // Extract unique kabupaten for filter (dari assets yang ada)
         const uniqueKabupaten = [
-          ...new Set(assetsData.map((asset) => asset.kabkota).filter(Boolean)),
+          ...new Set(
+            assetsData
+              .map((asset) => asset.kabkota)
+              .filter((kabkota) => kabkota && kabkota.trim() !== "")
+          ),
         ];
         setKabupatenList(uniqueKabupaten);
 
@@ -106,16 +118,21 @@ const LaporanYardipPage = () => {
 
   // Get kabupaten list based on selected provinsi
   const getKabupatenForSelectedProvinsi = () => {
-    if (!selectedProvinsi) return kabupatenList;
-    return assets
-      .filter((asset) => asset.provinsi === selectedProvinsi)
-      .map((asset) => asset.kabkota)
-      .filter(
-        (kabkota, index, arr) => kabkota && arr.indexOf(kabkota) === index
-      )
-      .sort();
-  };
+    if (!selectedProvinsi || !kabupatenGeoData) {
+      return kabupatenList.filter((kab) => kab && kab.trim() !== "");
+    }
 
+    // Ambil SEMUA kabupaten dari GeoJSON berdasarkan provinsi yang dipilih
+    const allKabupatenInProvinsi = kabupatenGeoData.features
+      .filter((feature) => feature.properties.PROVINCE === selectedProvinsi)
+      .map((feature) => feature.properties.Kabupaten)
+      .filter((kabupaten) => kabupaten && kabupaten.trim() !== "");
+
+    // Hilangkan duplikat dan sort
+    const uniqueKabupaten = [...new Set(allKabupatenInProvinsi)].sort();
+
+    return uniqueKabupaten;
+  };
   const handleProvinsiChange = (e) => {
     setSelectedProvinsi(e.target.value);
     setSelectedKabupaten(""); // Reset kabupaten when provinsi changes

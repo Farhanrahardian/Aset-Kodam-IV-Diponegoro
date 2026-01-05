@@ -147,7 +147,10 @@ const TabelAsetYardip = ({
   return (
     <div style={{ width: "100%", minWidth: "1200px" }}>
       <Table striped bordered hover style={{ marginBottom: 0 }}>
-        <thead className="table-dark">
+        <thead
+          className="table-dark"
+          style={{ position: "sticky", top: 0, zIndex: 10 }}
+        >
           <tr>
             <th>Pengelola</th>
             <th>Bidang</th>
@@ -275,7 +278,11 @@ const DataAsetYardipPage = () => {
   const kotaOptions = useMemo(() => {
     if (!view.provinsi || !kabupatenData) return [];
     const kotaInProvinsi = kabupatenData.features
-      .filter((f) => f.properties.PROVINCE === view.provinsi && !isConservationArea(f.properties.Kabupaten))
+      .filter(
+        (f) =>
+          f.properties.PROVINCE === view.provinsi &&
+          !isConservationArea(f.properties.Kabupaten)
+      )
       .map((f) => f.properties.Kabupaten);
     const uniqueKota = new Set(kotaInProvinsi);
     return Array.from(uniqueKota)

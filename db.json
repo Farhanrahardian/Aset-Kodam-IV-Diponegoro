@@ -92,59 +92,6 @@
       ]
     },
     {
-      "nama": "23",
-      "korem_id": "2",
-      "kodim": "Kodim 0732/Sleman",
-      "luas": 31062129.94,
-      "kib_kode_barang": "23",
-      "nomor_registrasi": "23",
-      "alamat": "23",
-      "peruntukan": "gudang",
-      "status": "Aman",
-      "asal_milik": "Adera",
-      "pemilikan_sertifikat": "Ya",
-      "keterangan_bukti_pemilikan": "23",
-      "sertifikat_bidang": "2",
-      "sertifikat_luas": 31062129.94,
-      "belum_sertifikat_bidang": "",
-      "belum_sertifikat_luas": "",
-      "keterangan": "23",
-      "atas_nama_pemilik_sertifikat": "12",
-      "lokasi": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              110.346165,
-              -7.692114
-            ],
-            [
-              110.312591,
-              -7.717093
-            ],
-            [
-              110.38817,
-              -7.741601
-            ],
-            [
-              110.393667,
-              -7.691902
-            ],
-            [
-              110.346165,
-              -7.692114
-            ]
-          ]
-        ]
-      },
-      "id": "T1758880939284",
-      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1760002490216.pdf",
-      "bukti_pemilikan_filename": "bukti_pemilikan-1760002490216.pdf",
-      "foto_aset": [
-        "/uploads/asset_photos-1758880939197.mp4"
-      ]
-    },
-    {
       "nama": "1098812441",
       "korem_id": "5",
       "kodim": "Kodim 0733/Kota Semarang",
@@ -291,6 +238,118 @@
         "/uploads/asset_photos-1767532869608.jpeg",
         "/uploads/asset_photos-1767532869610.png"
       ]
+    },
+    {
+      "nama": "12",
+      "korem_id": "3",
+      "kodim": "Kodim 0714/Salatiga",
+      "luas": 142015280.34494072,
+      "kib_kode_barang": "1.21.21.212.121.",
+      "nomor_registrasi": "1",
+      "alamat": "ada",
+      "peruntukan": "Kantor Badan Pemerintahan",
+      "status": "Aman",
+      "asal_milik": "ada",
+      "pemilikan_sertifikat": "Ya",
+      "keterangan_bukti_pemilikan": "Sertifikar A3",
+      "sertifikat_bidang": "1",
+      "sertifikat_luas": "11111",
+      "belum_sertifikat_bidang": "",
+      "belum_sertifikat_luas": "",
+      "keterangan": "ada",
+      "atas_nama_pemilik_sertifikat": "12",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.461235,-7.172625],[110.520265,-7.235326],[110.416619,-7.279622],[110.348666,-7.253727],[110.365826,-7.221698],[110.391908,-7.172624],[110.461235,-7.172625]]]}",
+      "id": "T1767611758139",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767611758097.jpeg",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767611758097.jpeg",
+      "foto_aset": [
+        "/uploads/asset_photos-1767611758126.jpeg",
+        "/uploads/asset_photos-1767611758127.jpeg",
+        "/uploads/asset_photos-1767611758130.jpg"
+      ]
+    },
+    {
+      "nama": "11",
+      "korem_id": "4",
+      "kodim": "Kodim 0727/Karanganyar",
+      "luas": "9999999",
+      "kib_kode_barang": "22",
+      "nomor_registrasi": "22",
+      "alamat": "ss",
+      "peruntukan": "ss",
+      "status": "Sengketa",
+      "asal_milik": "ada",
+      "pemilikan_sertifikat": "Ya",
+      "keterangan_bukti_pemilikan": "Sertifikar A3a",
+      "sertifikat_bidang": "12",
+      "sertifikat_luas": "9999999",
+      "belum_sertifikat_bidang": "",
+      "belum_sertifikat_luas": "",
+      "keterangan": "ss",
+      "atas_nama_pemilik_sertifikat": "pemerinta RI",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.777157,-7.528118],[110.784021,-7.540377],[110.774962,-7.537155],[110.772045,-7.531877],[110.777157,-7.528118]]]}",
+      "id": "T1767611938726",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767611938644.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767611938644.pdf",
+      "foto_aset": [
+        "/uploads/asset_photos-1767611938681.png",
+        "/uploads/asset_photos-1767611938719.jpg",
+        "/uploads/asset_photos-1767611938722.jpg"
+      ]
+    },
+    {
+      "nama": "Admin",
+      "korem_id": "2",
+      "kodim": "Kodim 0707/Wonosobo",
+      "luas": "1111111555555",
+      "kib_kode_barang": "1",
+      "nomor_registrasi": "adada1211dasd",
+      "alamat": "adad",
+      "peruntukan": "Kantor Badan Pemerintahan",
+      "status": "Sengketa",
+      "asal_milik": "prabowo",
+      "pemilikan_sertifikat": "Ya",
+      "keterangan_bukti_pemilikan": "Sertifikat PDF 123",
+      "sertifikat_bidang": "22",
+      "sertifikat_luas": "1111111555555",
+      "belum_sertifikat_bidang": "",
+      "belum_sertifikat_luas": "",
+      "keterangan": "adada",
+      "atas_nama_pemilik_sertifikat": "yazna",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[109.913285,-7.289807],[109.95241,-7.365437],[109.810326,-7.390643],[109.861119,-7.291852],[109.913285,-7.289807]]]}",
+      "id": "T1767612276118",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767612276100.jpg",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767612276100.jpg",
+      "foto_aset": [
+        "/uploads/asset_photos-1767612276113.jpg"
+      ]
+    },
+    {
+      "nama": "Admin 99",
+      "korem_id": "2",
+      "kodim": "Kodim 0706/Temanggung",
+      "luas": "155455",
+      "kib_kode_barang": "1.21.21.212.121.",
+      "nomor_registrasi": "adada1211dasd",
+      "alamat": "jjjjjjjj",
+      "peruntukan": "jjjjjj",
+      "status": "Aman",
+      "asal_milik": "Adera",
+      "pemilikan_sertifikat": "Ya",
+      "keterangan_bukti_pemilikan": "Sertifikar A3",
+      "sertifikat_bidang": "99",
+      "sertifikat_luas": "155455",
+      "belum_sertifikat_bidang": "",
+      "belum_sertifikat_luas": "",
+      "keterangan": "jjjjjjj",
+      "atas_nama_pemilik_sertifikat": "yazna 99",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.069185,-7.139248],[110.217447,-7.219673],[110.222938,-7.306898],[110.145375,-7.345735],[110.03212,-7.317118],[110.010841,-7.251703],[109.990249,-7.214221],[110.014273,-7.180144],[110.048593,-7.14402],[110.060948,-7.138567],[110.069185,-7.139248]]]}",
+      "id": "T1767613022655",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767613022612.png",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767613022612.png",
+      "foto_aset": [
+        "/uploads/asset_photos-1767613022650.png"
+      ]
     }
   ],
   "yardip_assets": [
@@ -338,7 +397,7 @@
       "status": "Dimiliki/Dikuasai",
       "keterangan": "Demak kota wali",
       "provinsi": "Jawa Tengah",
-      "area": 1244422,
+      "area": 11111111111111110000,
       "id": "Y1758870110178",
       "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.638778425209,-6.895487921176379],[110.6388656138207,-6.895475890877474],[110.6389211124259,-6.895444568532849],[110.6389849053732,-6.895386474663875],[110.6390268093408,-6.895310985776788],[110.6392096893087,-6.894419771675315],[110.6391914643929,-6.894336625037236],[110.6391516550536,-6.894276705156061],[110.6390858576367,-6.894216492354121],[110.6390528870201,-6.894195224622904],[110.6383055975942,-6.894049392729912],[110.6381934781632,-6.894075668283491],[110.6381596979556,-6.894112530989591],[110.6381129884459,-6.894139173807611],[110.6380716924536,-6.894189304031177],[110.6378788693741,-6.895106863241169],[110.6378975521044,-6.895181014956513],[110.6379232724061,-6.895232713456909],[110.6379663325729,-6.895276903375494],[110.6380117049712,-6.895308719363243],[110.638778425209,-6.895487921176379]]]}",
       "type": "yardip",
@@ -446,6 +505,57 @@
       "type": "yardip",
       "created_at": "2026-01-04T10:47:08.741Z",
       "updated_at": "2026-01-04T10:47:08.741Z"
+    },
+    {
+      "pengelola": "Admin",
+      "bidang": "Tanah Bangunan",
+      "kabkota": "Grobogan",
+      "kecamatan": "ada",
+      "kelurahan": "Disasar",
+      "peruntukan": "asas",
+      "status": "Dimiliki/Dikuasai",
+      "keterangan": "ada",
+      "provinsi": "Jawa Tengah",
+      "area": 12455.82,
+      "id": "Y1767597941319",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.868427,-7.0853],[111.067521,-7.111204],[111.029075,-7.228437],[110.817633,-7.150725],[110.868427,-7.0853]]]}",
+      "type": "yardip",
+      "created_at": "2026-01-05T07:25:41.319Z",
+      "updated_at": "2026-01-05T07:25:41.319Z"
+    },
+    {
+      "pengelola": "Yayasan Rumpun Diponegoro",
+      "bidang": "Tanah Gudang Kantor",
+      "kabkota": "Gunung Kidul",
+      "kecamatan": "bonang",
+      "kelurahan": "smganta",
+      "peruntukan": "Kantor Badan Pemerintahan",
+      "status": "Tidak Dimiliki/Tidak Dikuasai",
+      "keterangan": "ada",
+      "provinsi": "Daerah Istimewa Yogyakarta",
+      "area": 8888888888,
+      "id": "Y1767612130439",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.518245,-7.855923],[110.669281,-7.919886],[110.647312,-8.115795],[110.467441,-8.098113],[110.494903,-7.967511],[110.541587,-7.906278],[110.518245,-7.855923]]]}",
+      "type": "yardip",
+      "created_at": "2026-01-05T11:22:10.439Z",
+      "updated_at": "2026-01-05T11:22:10.439Z"
+    },
+    {
+      "pengelola": "yazna",
+      "bidang": "Tanah Bangunan",
+      "kabkota": "Cilacap",
+      "kecamatan": "bonang",
+      "kelurahan": "moro",
+      "peruntukan": "bcjhcs",
+      "status": "Tidak Dimiliki/Tidak Dikuasai",
+      "keterangan": "777",
+      "provinsi": "Jawa Tengah",
+      "area": 7777777,
+      "id": "Y1767612946914",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[108.695924,-7.25008],[108.857945,-7.305956],[108.873049,-7.390439],[108.859318,-7.519857],[108.790665,-7.420413],[108.770069,-7.330485],[108.722012,-7.311407],[108.695924,-7.25008]]]}",
+      "type": "yardip",
+      "created_at": "2026-01-05T11:35:46.914Z",
+      "updated_at": "2026-01-05T11:35:46.914Z"
     }
   ],
   "korem": [
