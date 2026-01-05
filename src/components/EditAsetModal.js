@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Modal, Button, Row, Col, Form } from "react-bootstrap";
 import {
   MapContainer,
@@ -164,9 +164,6 @@ const EditAsetModal = ({ show, onHide, asset, koremList, onSave }) => {
         ]);
         setGeometry({ type: "Polygon", coordinates: [latLngs] });
         setGeometryChanged(true);
-        toast.success(
-          "Poligon berhasil diedit. Luas akan diperbarui saat menyimpan."
-        );
       }
     });
   };
@@ -181,10 +178,16 @@ const EditAsetModal = ({ show, onHide, asset, koremList, onSave }) => {
       ]);
       setGeometry({ type: "Polygon", coordinates: [latLngs] });
       setGeometryChanged(true);
-      toast.success("Poligon baru berhasil dibuat.");
+      toast("Poligon baru dibuat. Jangan lupa klik 'Simpan Perubahan'.");
       featureGroupRef.current.removeLayer(layer);
     }
   };
+
+  const handleEditStop = useCallback(() => {
+    if (geometryChanged) {
+      toast("Poligon diubah. Luas akan diperbarui saat menyimpan.");
+    }
+  }, [geometryChanged]);
 
   const mapCenter = geometry
     ? getCentroid({
@@ -238,6 +241,7 @@ const EditAsetModal = ({ show, onHide, asset, koremList, onSave }) => {
                   position="topright"
                   onEdited={onEdited}
                   onCreated={onCreated}
+                  onEditStop={handleEditStop}
                   draw={{
                     rectangle: false,
                     circle: false,
