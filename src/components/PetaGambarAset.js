@@ -414,7 +414,7 @@ const PetaGambarAset = ({
           )}
         </LayersControl>
         <FeatureGroup ref={featureGroupRef}>
-          {isLocationSelected && !importedGeometry && (
+          {selectedKodim && !importedGeometry && (
             <EditControl
               position="topleft"
               onCreated={handleCreated}

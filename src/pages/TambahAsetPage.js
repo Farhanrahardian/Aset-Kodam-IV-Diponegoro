@@ -64,15 +64,6 @@ const TambahAsetPage = () => {
   }, []);
 
   const prevIsLocationSelected = useRef(false);
-  useEffect(() => {
-    if (isLocationSelected && !prevIsLocationSelected.current) {
-      if (selectedKodim || (selectedKorem && selectedKorem.kodim && selectedKorem.kodim.length === 0)) {
-         toast.success("Lokasi dipilih! Silakan gambar area aset di peta.");
-      }
-    }
-    prevIsLocationSelected.current = isLocationSelected;
-  }, [isLocationSelected, selectedKorem, selectedKodim]);
-
 
   const handleLocationChange = useCallback(
     (koremId, kodimName) => {
@@ -93,6 +84,7 @@ const TambahAsetPage = () => {
         );
         setSelectedKodim(kodimFeature ? { nama: "Kodim 0733/Kota Semarang", geometry: kodimFeature.geometry } : null);
         setIsLocationSelected(true);
+        toast.success(`KODIM 0733/Kota Semarang dipilih. Silakan gambar area aset di peta.`); // Notifikasi untuk pemilihan Kodim Semarang
       } else if (kodimName && kodimBoundaries) {
         const kodimFeature = kodimBoundaries.features.find((f) => {
           const featureName = normalizeKodimName(f.properties.listkodim_Kodim);
@@ -103,6 +95,7 @@ const TambahAsetPage = () => {
         });
         setSelectedKodim(kodimFeature ? { nama: kodimName, geometry: kodimFeature.geometry } : null);
         setIsLocationSelected(true);
+        toast.success(`KODIM ${kodimName} dipilih. Silakan gambar area aset di peta.`); // Notifikasi untuk pemilihan Kodim umum
       } else {
         setSelectedKodim(null);
         setIsLocationSelected(!!koremId);
