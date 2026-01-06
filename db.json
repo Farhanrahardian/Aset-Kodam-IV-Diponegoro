@@ -56,6 +56,34 @@
       "foto_aset": [
         "/uploads/asset_photos-1767684262231.png"
       ]
+    },
+    {
+      "nama": "545454",
+      "korem_id": "4",
+      "kodim": "Kodim 0724/Boyolali",
+      "luas": 101030357.39,
+      "kib_kode_barang": "1.21.21.212.121",
+      "nomor_registrasi": "1",
+      "alamat": "demak",
+      "peruntukan": "Kantor Badan Pemerintahan",
+      "status": "Aman",
+      "asal_milik": "Suharto",
+      "pemilikan_sertifikat": "Ya",
+      "keterangan_bukti_pemilikan": "Sertifikat PDF 123",
+      "sertifikat_bidang": "2",
+      "sertifikat_luas": 101030357.39,
+      "belum_sertifikat_bidang": "",
+      "belum_sertifikat_luas": "",
+      "keterangan": "ada",
+      "atas_nama_pemilik_sertifikat": "pemerinta RI",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.641704,-7.27552],[110.773492,-7.339532],[110.711716,-7.429405],[110.666414,-7.339532],[110.641704,-7.27552]]]}",
+      "id": "T1767684390523",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767684390468.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767684390468.pdf",
+      "foto_aset": [
+        "/uploads/asset_photos-1767684390489.png",
+        "/uploads/asset_photos-1767684390490.png"
+      ]
     }
   ],
   "yardip_assets": [],
