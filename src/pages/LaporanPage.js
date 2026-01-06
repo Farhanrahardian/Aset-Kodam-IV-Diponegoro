@@ -638,8 +638,10 @@ const LaporanPage = () => {
                   className="form-select-lg"
                 >
                   <option value="">Semua Status</option>
-                  <option value="Aman">Aman</option>
-                  <option value="Sengketa">Sengketa</option>
+                  <option value="Dimiliki/Dikuasai">Dimiliki/Dikuasai</option>
+                  <option value="TIdak Dimiliki/Dikuasai">
+                    TIdak Dimiliki/Dikuasai
+                  </option>
                 </Form.Select>
               </Form.Group>
             </Col>
@@ -733,11 +735,12 @@ const LaporanPage = () => {
                       <i className="fas fa-shield-alt fa-2x mb-2"></i>
                       <h3 className="mb-1">
                         {
-                          filteredAssets.filter((a) => a.status === "Aman")
-                            .length
+                          filteredAssets.filter(
+                            (a) => a.status === "Dimiliki/Dikuasai"
+                          ).length
                         }
                       </h3>
-                      <small>Aman</small>
+                      <small>Dimiliki/Dikuasai</small>
                     </Card.Body>
                   </Card>
                 </Col>
@@ -747,11 +750,12 @@ const LaporanPage = () => {
                       <i className="fas fa-exclamation-triangle fa-2x mb-2"></i>
                       <h3 className="mb-1">
                         {
-                          filteredAssets.filter((a) => a.status === "Sengketa")
-                            .length
+                          filteredAssets.filter(
+                            (a) => a.status === "TIdak Dimiliki/Dikuasai"
+                          ).length
                         }
                       </h3>
-                      <small>Sengketa</small>
+                      <small>TIdak Dimiliki/Dikuasai</small>
                     </Card.Body>
                   </Card>
                 </Col>
@@ -824,9 +828,10 @@ const LaporanPage = () => {
                                       <td>
                                         <span
                                           className={`badge ${
-                                            asset.status === "Aman"
+                                            asset.status === "Dimiliki/Dikuasai"
                                               ? "bg-success"
-                                              : asset.status === "Sengketa"
+                                              : asset.status ===
+                                                "TIdak Dimiliki/Dikuasai"
                                               ? "bg-danger"
                                               : "bg-secondary"
                                           }`}

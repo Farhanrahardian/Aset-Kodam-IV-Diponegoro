@@ -72,8 +72,8 @@ const FormAset = forwardRef((props, ref) => {
   const [coordsError, setCoordsError] = useState("");
 
   const statusOptions = [
-    { value: "Aman", label: "Aman" },
-    { value: "Sengketa", label: "Sengketa" },
+    { value: "Dimiliki/Dikuasai", label: "Dimiliki/Dikuasai" },
+    { value: "TIdak Dimiliki/Dikuasai", label: "TIdak Dimiliki/Dikuasai" },
   ];
 
   useImperativeHandle(ref, () => ({

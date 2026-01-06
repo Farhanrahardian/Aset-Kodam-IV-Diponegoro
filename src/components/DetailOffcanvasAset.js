@@ -34,13 +34,13 @@ const getStatusBadgeVariant = (status) => {
 
   const statusLower = status.toLowerCase().trim();
 
-  // Status Aman = Hijau
-  if (statusLower.includes("aman")) {
+  // Status Dimiliki/Dikuasai = Hijau
+  if (statusLower.includes("Dimiliki/Dikuasai")) {
     return "success";
   }
 
-  // Status Sengketa = Merah
-  if (statusLower.includes("sengketa")) {
+  // Status TIdak Dimiliki/Dikuasai = Merah
+  if (statusLower.includes("TIdak Dimiliki/Dikuasai")) {
     return "danger";
   }
 
@@ -538,8 +538,6 @@ const DetailOffcanvasAset = ({
                 </div>
               </Card.Body>
             </Card>
-
-
 
             {/* Asset Photos Card */}
             {aset.foto_aset &&

@@ -70,9 +70,9 @@ const isVideoFile = (filename) => {
 
 const getStatusBadgeClass = (status) => {
   switch (status) {
-    case "Aman":
+    case "Dimiliki/Dikuasai":
       return "bg-success";
-    case "Sengketa":
+    case "TIdak Dimiliki/Dikuasai":
       return "bg-danger";
     default:
       return "bg-light text-dark";
@@ -244,8 +244,8 @@ const FilterPanelTop = ({
   // FilterPanelTop implementation remains the same
   const statusOptions = [
     { value: "", label: "Semua Status" },
-    { value: "Aman", label: "Aman" },
-    { value: "Sengketa", label: "Sengketa" },
+    { value: "Dimiliki/Dikuasai", label: "Dimiliki/Dikuasai" },
+    { value: "TIdak Dimiliki/Dikuasai", label: "TIdak Dimiliki/Dikuasai" },
   ];
 
   // Handle special case for "Berdiri Sendiri" Korem
@@ -1738,21 +1738,25 @@ const DataAsetTanahPage = () => {
                     <div className="border-end">
                       <h5 className="text-success">
                         {
-                          filteredAssets.filter((a) => a.status === "Aman")
-                            .length
+                          filteredAssets.filter(
+                            (a) => a.status === "Dimiliki/Dikuasai"
+                          ).length
                         }
                       </h5>
-                      <small className="text-muted">Aman</small>
+                      <small className="text-muted">Dimiliki/Dikuasai</small>
                     </div>
                   </Col>
                   <Col md={4}>
                     <h5 className="text-danger">
                       {
-                        filteredAssets.filter((a) => a.status === "Sengketa")
-                          .length
+                        filteredAssets.filter(
+                          (a) => a.status === "TIdak Dimiliki/Dikuasai"
+                        ).length
                       }
                     </h5>
-                    <small className="text-muted">Sengketa</small>
+                    <small className="text-muted">
+                      TIdak Dimiliki/Dikuasai
+                    </small>
                   </Col>
                 </Row>
               </Card.Body>
