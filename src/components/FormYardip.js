@@ -20,6 +20,20 @@ import toast from "react-hot-toast";
 import { kml } from "@tmcw/togeojson";
 import { DOMParser } from "xmldom";
 
+const initialYardipState = {
+  pengelola: "",
+  bidang: "",
+  kabkota: "",
+  kecamatan: "",
+  kelurahan: "",
+  peruntukan: "",
+  status: "",
+  keterangan: "",
+  provinsi: "",
+  area: 0,
+  id: null,
+};
+
 const FormYardip = forwardRef(
   (
     {
@@ -42,7 +56,7 @@ const FormYardip = forwardRef(
     },
     ref
   ) => {
-    const [formData, setFormData] = useState({});
+    const [formData, setFormData] = useState(initialYardipState);
     const [errors, setErrors] = useState({});
     const [inputMethod, setInputMethod] = useState("draw");
     const [coordsText, setCoordsText] = useState("");
@@ -56,31 +70,18 @@ const FormYardip = forwardRef(
     useEffect(() => {
       if (isEditMode && assetToEdit) {
         setFormData({
-          pengelola: assetToEdit.pengelola || "",
-          bidang: assetToEdit.bidang || "",
-          kabkota: assetToEdit.kabkota || "",
-          kecamatan: assetToEdit.kecamatan || "",
-          kelurahan: assetToEdit.kelurahan || "",
-          peruntukan: assetToEdit.peruntukan || "",
-          status: assetToEdit.status || "",
-          keterangan: assetToEdit.keterangan || "",
-          provinsi: assetToEdit.provinsi || selectedProvinceName,
-          area: assetToEdit.area || initialArea,
-          id: assetToEdit.id,
+          ...initialYardipState, // Ensure all keys are present
+          ...assetToEdit,
+          area: assetToEdit.area || initialArea || 0,
         });
       } else {
-        setFormData({
-          pengelola: "",
-          bidang: "",
-          kabkota: selectedKabupatenName || "",
-          kecamatan: "",
-          kelurahan: "",
-          peruntukan: "",
-          status: "",
-          keterangan: "",
+        // For new assets, update based on map selection
+        setFormData((prev) => ({
+          ...initialYardipState,
           provinsi: selectedProvinceName || "",
-          area: initialArea,
-        });
+          kabkota: selectedKabupatenName || "",
+          area: initialArea || 0,
+        }));
       }
     }, [
       assetToEdit,
@@ -178,16 +179,7 @@ const FormYardip = forwardRef(
     );
 
     const handleReset = useCallback(() => {
-      setFormData({
-        pengelola: "",
-        bidang: "",
-        kabkota: "",
-        kecamatan: "",
-        kelurahan: "",
-        peruntukan: "",
-        status: "",
-        keterangan: "",
-      });
+      setFormData(initialYardipState);
       setErrors({});
     }, []);
 
