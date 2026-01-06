@@ -29,7 +29,35 @@
       "role": "admin"
     }
   ],
-  "assets": [],
+  "assets": [
+    {
+      "nama": "123",
+      "korem_id": "1",
+      "kodim": "Kodim 0702/Purbalingga",
+      "luas": 6334445.98,
+      "kib_kode_barang": "123",
+      "nomor_registrasi": "123",
+      "alamat": "123",
+      "peruntukan": "123",
+      "status": "Aman",
+      "asal_milik": "123",
+      "pemilikan_sertifikat": "Ya",
+      "keterangan_bukti_pemilikan": "123",
+      "sertifikat_bidang": "123",
+      "sertifikat_luas": 6334445.98,
+      "belum_sertifikat_bidang": "",
+      "belum_sertifikat_luas": "",
+      "keterangan": "123",
+      "atas_nama_pemilik_sertifikat": "123",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[109.270685,-7.246193],[109.274805,-7.26867],[109.311892,-7.251642],[109.289228,-7.245511],[109.270685,-7.246193]]]}",
+      "id": "T1767684262258",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767684262194.png",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767684262194.png",
+      "foto_aset": [
+        "/uploads/asset_photos-1767684262231.png"
+      ]
+    }
+  ],
   "yardip_assets": [],
   "korem": [
     {
