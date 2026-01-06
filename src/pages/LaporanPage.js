@@ -11,6 +11,7 @@ import {
 } from "react-bootstrap";
 import axios from "axios";
 import ExcelJS from "exceljs";
+import toast from "react-hot-toast";
 
 const API_URL = "http://localhost:3001";
 
@@ -155,7 +156,7 @@ const LaporanPage = () => {
   // Function untuk export ke XLSX menggunakan ExcelJS dengan grouping
   const exportToExcel = async () => {
     if (filteredAssets.length === 0) {
-      alert("Tidak ada data untuk diekspor!");
+      toast.error("Tidak ada data untuk diekspor!");
       return;
     }
 
@@ -526,10 +527,10 @@ const LaporanPage = () => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      alert("File Excel berhasil didownload.");
+      toast.success("File Excel berhasil didownload.");
     } catch (error) {
       console.error("Error exporting to Excel:", error);
-      alert(`Gagal mengekspor data ke Excel: ${error.message}`);
+      toast.error(`Gagal mengekspor data ke Excel: ${error.message}`);
     } finally {
       setExporting(false);
     }
