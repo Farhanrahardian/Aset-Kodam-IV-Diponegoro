@@ -53,8 +53,14 @@ const EditMapController = ({ geometry }) => {
   return null;
 };
 
-const EditAsetModal = ({ show, onHide, asset, koremList, onSave }) => {
-  const [formData, setFormData] = useState(null);
+const EditAsetModal = ({
+  show,
+  onHide,
+  asset,
+  koremList,
+  onSave,
+  isSaving,
+}) => {
   const [geometry, setGeometry] = useState(null);
   const [geometryChanged, setGeometryChanged] = useState(false);
   const featureGroupRef = useRef();
@@ -62,7 +68,6 @@ const EditAsetModal = ({ show, onHide, asset, koremList, onSave }) => {
 
   useEffect(() => {
     if (asset) {
-      setFormData({ ...asset });
       const locationData = parseLocation(asset.lokasi);
       if (locationData && locationData.type === "Polygon") {
         const latLngs = locationData.coordinates[0].map((coord) => [
@@ -76,7 +81,6 @@ const EditAsetModal = ({ show, onHide, asset, koremList, onSave }) => {
         setGeometryChanged(false);
       }
     } else {
-      setFormData(null);
       setGeometry(null);
       setGeometryChanged(false);
     }
@@ -214,10 +218,10 @@ const EditAsetModal = ({ show, onHide, asset, koremList, onSave }) => {
                 paddingRight: "15px",
               }}
             >
-              {formData && (
+              {asset && (
                 <FormAset
                   ref={formAsetRef}
-                  assetToEdit={formData}
+                  assetToEdit={asset}
                   koremList={koremList}
                   onCancel={onHide}
                   isEditMode={true}
@@ -277,11 +281,22 @@ const EditAsetModal = ({ show, onHide, asset, koremList, onSave }) => {
         </Row>
       </Modal.Body>
       <Modal.Footer>
-        <Button variant="secondary" onClick={onHide}>
+        <Button variant="secondary" onClick={onHide} disabled={isSaving}>
           Batal
         </Button>
-        <Button variant="primary" onClick={handleSave}>
-          Simpan Perubahan
+        <Button variant="primary" onClick={handleSave} disabled={isSaving}>
+          {isSaving ? (
+            <>
+              <span
+                className="spinner-border spinner-border-sm"
+                role="status"
+                aria-hidden="true"
+              ></span>
+              <span className="ms-2">Menyimpan...</span>
+            </>
+          ) : (
+            "Simpan Perubahan"
+          )}
         </Button>
       </Modal.Footer>
     </Modal>

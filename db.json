@@ -34,7 +34,7 @@
       "nama": "12",
       "korem_id": "5",
       "kodim": "Kodim 0733/Kota Semarang",
-      "luas": "123",
+      "luas": 23758843.29,
       "kib_kode_barang": "1",
       "nomor_registrasi": "1",
       "alamat": "1234",
@@ -46,7 +46,7 @@
       "sertifikat_bidang": "1",
       "sertifikat_luas": "",
       "belum_sertifikat_bidang": "",
-      "belum_sertifikat_luas": "123",
+      "belum_sertifikat_luas": 23758843.29,
       "keterangan": "1",
       "atas_nama_pemilik_sertifikat": "1",
       "lokasi": {
@@ -62,8 +62,8 @@
               -7.011221
             ],
             [
-              110.41655,
-              -7.001737
+              110.405383,
+              -7.042982
             ],
             [
               110.431842,
@@ -81,14 +81,13 @@
         ]
       },
       "id": "T1758820282871",
-      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767536552035.pdf",
-      "bukti_pemilikan_filename": "bukti_pemilikan-1767536552035.pdf",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767668077554.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767668077554.pdf",
       "foto_aset": [
-        "/uploads/asset_photos-1767536624476.png",
-        "/uploads/asset_photos-1767536624544.png",
-        "/uploads/asset_photos-1767536649403.png",
         "/uploads/asset_photos-1767536649405.jpg",
-        "/uploads/asset_photos-1767536649407.png"
+        "/uploads/asset_photos-1767668161690.jpg",
+        "/uploads/asset_photos-1767668161695.jpg",
+        "/uploads/asset_photos-1767668161704.jpg"
       ]
     },
     {
@@ -150,18 +149,21 @@
         ]
       },
       "id": "T1758905069016",
-      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1758905068748.jpg",
-      "bukti_pemilikan_filename": "bukti_pemilikan-1758905068748.jpg",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767669056009.png",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767669056009.png",
       "foto_aset": [
         "/uploads/asset_photos-1758905069000.jpg",
-        "/uploads/asset_photos-1758905132835.mp4"
+        "/uploads/asset_photos-1758905132835.mp4",
+        "/uploads/asset_photos-1767668998936.png",
+        "/uploads/asset_photos-1767669032970.png",
+        "/uploads/asset_photos-1767669032974.png"
       ]
     },
     {
       "nama": "2123",
       "korem_id": "2",
       "kodim": "Kodim 0705/Magelang",
-      "luas": 72196657.37366919,
+      "luas": 72196657.37,
       "kib_kode_barang": "",
       "nomor_registrasi": "",
       "alamat": "a",
@@ -178,10 +180,11 @@
       "atas_nama_pemilik_sertifikat": "a",
       "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.170052,-7.452507],[110.185168,-7.553223],[110.288231,-7.460674],[110.170052,-7.452507]]]}",
       "id": "T1767521562388",
-      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767521562376.jpeg",
-      "bukti_pemilikan_filename": "bukti_pemilikan-1767521562376.jpeg",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767668364161.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767668364161.pdf",
       "foto_aset": [
-        "/uploads/asset_photos-1767521562382.jpeg"
+        "/uploads/asset_photos-1767521562382.jpeg",
+        "/uploads/asset_photos-1767668638199.png"
       ]
     },
     {

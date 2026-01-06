@@ -991,6 +991,8 @@ const DataAsetTanahPage = () => {
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingAsset, setEditingAsset] = useState(null);
+  const [editModalKey, setEditModalKey] = useState(Date.now());
+  const [isSaving, setIsSaving] = useState(false);
 
   const [showOffcanvas, setShowOffcanvas] = useState(false);
   const [assetForOffcanvas, setAssetForOffcanvas] = useState(null);
@@ -1510,6 +1512,7 @@ const DataAsetTanahPage = () => {
 
   const handleEditAsset = (asset) => {
     setEditingAsset(asset);
+    setEditModalKey(Date.now()); // Set a new key to force re-mount
     setShowEditModal(true);
   };
 
@@ -1523,82 +1526,98 @@ const DataAsetTanahPage = () => {
     buktiPemilikanFile,
     assetPhotos
   ) => {
+    setIsSaving(true);
     const toastId = toast.loading("Menyimpan perubahan...");
-    const { id } = assetData;
-    let updatedData = { ...assetData };
-
-    // 1. Upload Bukti Pemilikan
-    if (buktiPemilikanFile) {
-      try {
-        toast.loading("Mengupload bukti pemilikan...", { id: toastId });
-        const formData = new FormData();
-        formData.append("bukti_pemilikan", buktiPemilikanFile);
-        const uploadRes = await axios.post(
-          `${API_URL}/upload/bukti-pemilikan`,
-          formData
-        );
-        updatedData.bukti_pemilikan_url = uploadRes.data.url;
-        updatedData.bukti_pemilikan_filename = uploadRes.data.filename;
-      } catch (err) {
-        const message =
-          err.response?.data?.message || "Gagal mengupload bukti pemilikan.";
-        toast.error(message, { id: toastId });
-        console.error(
-          "Upload error (bukti pemilikan):",
-          err.response?.data || err
-        );
-        return; // Stop execution if upload fails
-      }
-    }
-
-    // 2. Upload Foto/Video Aset
-    if (assetPhotos && assetPhotos.length > 0) {
-      try {
-        toast.loading(`Mengupload ${assetPhotos.length} file aset...`, {
-          id: toastId,
-        });
-        const photosFormData = new FormData();
-        assetPhotos.forEach((photo) => {
-          photosFormData.append("asset_photos", photo);
-        });
-        const photosUploadRes = await axios.post(
-          `${API_URL}/upload/asset-photos`,
-          photosFormData
-        );
-        const newPhotoUrls = photosUploadRes.data.files.map((file) => file.url);
-        updatedData.foto_aset = [
-          ...(updatedData.foto_aset || []),
-          ...newPhotoUrls,
-        ];
-      } catch (err) {
-        const message =
-          err.response?.data?.message ||
-          "Gagal mengupload file aset. File mungkin terlalu besar.";
-        toast.error(message, { id: toastId });
-        console.error(
-          "Upload error (asset photos/videos):",
-          err.response?.data || err
-        );
-        return; // Stop execution if upload fails
-      }
-    }
-
-    // 3. Update Asset Data in DB
     try {
-      toast.loading("Menyimpan data ke database...", { id: toastId });
-      await axios.put(`${API_URL}/assets/${id}`, updatedData);
+      const { id } = assetData;
+      let updatedData = { ...assetData };
 
-      toast.success("Aset berhasil diperbarui!", { id: toastId });
-      // handleCloseEditModal();  <-- COMMENT ATAU HAPUS BARIS INI
+      // 1. Upload Bukti Pemilikan
+      if (buktiPemilikanFile) {
+        try {
+          toast.loading("Mengupload bukti pemilikan...", { id: toastId });
+          const formData = new FormData();
+          formData.append("bukti_pemilikan", buktiPemilikanFile);
+          const uploadRes = await axios.post(
+            `${API_URL}/upload/bukti-pemilikan`,
+            formData
+          );
+          updatedData.bukti_pemilikan_url = uploadRes.data.url;
+          updatedData.bukti_pemilikan_filename = uploadRes.data.filename;
+        } catch (err) {
+          const message =
+            err.response?.data?.message || "Gagal mengupload bukti pemilikan.";
+          toast.error(message, { id: toastId });
+          console.error(
+            "Upload error (bukti pemilikan):",
+            err.response?.data || err
+          );
+          return; // Stop execution if upload fails
+        }
+      }
 
-      // Refresh data aset yang sedang di-edit agar form menampilkan data terbaru
-      const refreshedAsset = await axios.get(`${API_URL}/assets/${id}`);
-      setEditingAsset(refreshedAsset.data);
+      // 2. Upload Foto/Video Aset
+      if (assetPhotos && assetPhotos.length > 0) {
+        try {
+          toast.loading(`Mengupload ${assetPhotos.length} file aset...`, {
+            id: toastId,
+          });
+          const photosFormData = new FormData();
+          assetPhotos.forEach((photo) => {
+            photosFormData.append("asset_photos", photo);
+          });
 
-      fetchData(); // Refresh semua data di background
-    } catch (err) {
-      toast.error("Gagal menyimpan data aset ke database.", { id: toastId });
-      console.error("DB save error:", err.response?.data || err);
+          console.log(
+            "--- DEBUG: Mengirim Foto Aset ---",
+            assetPhotos,
+            Array.from(photosFormData.entries())
+          );
+
+          const photosUploadRes = await axios.post(
+            `${API_URL}/upload/asset-photos`,
+            photosFormData
+          );
+          const newPhotoUrls = photosUploadRes.data.files.map(
+            (file) => file.url
+          );
+          updatedData.foto_aset = [
+            ...(updatedData.foto_aset || []),
+            ...newPhotoUrls,
+          ];
+        } catch (err) {
+          const message =
+            err.response?.data?.message ||
+            "Gagal mengupload file aset. File mungkin terlalu besar.";
+          toast.error(message, { id: toastId });
+          console.error(
+            "Upload error (asset photos/videos):",
+            err.response?.data || err
+          );
+          return; // Stop execution if upload fails
+        }
+      }
+
+      // 3. Update Asset Data in DB
+      try {
+        toast.loading("Menyimpan data ke database...", { id: toastId });
+        await axios.put(`${API_URL}/assets/${id}`, updatedData);
+
+        toast.success("Aset berhasil diperbarui!", { id: toastId });
+        // handleCloseEditModal();  <-- COMMENT ATAU HAPUS BARIS INI
+
+        // Refresh data aset yang sedang di-edit agar form menampilkan data terbaru
+        const refreshedAsset = await axios.get(`${API_URL}/assets/${id}`);
+        setEditingAsset(refreshedAsset.data);
+        setEditModalKey(Date.now()); // Force a remount to clear file inputs and show new state
+
+        fetchData(); // Refresh semua data di background
+      } catch (err) {
+        toast.error("Gagal menyimpan data aset ke database.", { id: toastId });
+        console.error("DB save error:", err.response?.data || err);
+      }
+    } finally {
+      setIsSaving(false);
+      // We don't need to dismiss the main toast here as it's handled by success/error cases
     }
   };
 
@@ -1753,11 +1772,13 @@ const DataAsetTanahPage = () => {
       />
 
       <EditAsetModal
+        key={editModalKey}
         show={showEditModal}
         onHide={handleCloseEditModal}
         asset={editingAsset}
         koremList={koremList}
         onSave={handleSaveAsset}
+        isSaving={isSaving}
       />
 
       <DetailOffcanvasAset

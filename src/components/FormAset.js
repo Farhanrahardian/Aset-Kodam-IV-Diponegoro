@@ -17,6 +17,7 @@ import {
 } from "react-bootstrap";
 import toast from "react-hot-toast";
 import axios from "axios";
+import Swal from "sweetalert2";
 import { kml } from "@tmcw/togeojson";
 import { DOMParser } from "xmldom";
 import { normalizeKodimName } from "../utils/kodimUtils";
@@ -86,53 +87,64 @@ const FormAset = forwardRef((props, ref) => {
       return;
     }
 
-    const confirmDelete = window.confirm(
-      "Apakah Anda yakin ingin menghapus bukti pemilikan ini?"
-    );
-    if (!confirmDelete) return;
+    Swal.fire({
+      title: "Apakah Anda yakin?",
+      text: "Anda tidak akan dapat mengembalikan bukti pemilikan ini!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Ya, hapus!",
+      cancelButtonText: "Batal",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        const toastId = toast.loading("Menghapus bukti pemilikan...");
 
-    const toastId = toast.loading("Menghapus bukti pemilikan...");
+        try {
+          console.log("Deleting bukti pemilikan:", {
+            url: formData.bukti_pemilikan_url,
+            assetId: assetToEdit.id,
+          });
 
-    try {
-      console.log("Deleting bukti pemilikan:", {
-        url: formData.bukti_pemilikan_url,
-        assetId: assetToEdit.id,
-      });
+          const response = await axios.delete(
+            `${API_URL}/delete-bukti-pemilikan`,
+            {
+              data: {
+                buktiPemilikanUrl: formData.bukti_pemilikan_url,
+                assetId: assetToEdit.id,
+              },
+              headers: {
+                "Content-Type": "application/json",
+              },
+            }
+          );
 
-      const response = await axios.delete(`${API_URL}/delete-bukti-pemilikan`, {
-        data: {
-          buktiPemilikanUrl: formData.bukti_pemilikan_url,
-          assetId: assetToEdit.id,
-        },
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+          console.log("Delete response:", response.data);
 
-      console.log("Delete response:", response.data);
+          // Update state
+          setFormData((prev) => ({
+            ...prev,
+            bukti_pemilikan_url: null,
+            bukti_pemilikan_filename: null,
+          }));
 
-      // Update state
-      setFormData((prev) => ({
-        ...prev,
-        bukti_pemilikan_url: null,
-        bukti_pemilikan_filename: null,
-      }));
+          toast.success("Bukti pemilikan berhasil dihapus!", { id: toastId });
+        } catch (error) {
+          console.error("Error deleting bukti pemilikan:", {
+            message: error.message,
+            response: error.response?.data,
+            status: error.response?.status,
+          });
 
-      toast.success("Bukti pemilikan berhasil dihapus!", { id: toastId });
-    } catch (error) {
-      console.error("Error deleting bukti pemilikan:", {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-      });
-
-      const errorMsg =
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        error.message ||
-        "Gagal menghapus bukti pemilikan.";
-      toast.error(errorMsg, { id: toastId });
-    }
+          const errorMsg =
+            error.response?.data?.error ||
+            error.response?.data?.message ||
+            error.message ||
+            "Gagal menghapus bukti pemilikan.";
+          toast.error(errorMsg, { id: toastId });
+        }
+      }
+    });
   };
 
   const handleRemovePhoto = async (mediaUrl) => {
@@ -141,52 +153,60 @@ const FormAset = forwardRef((props, ref) => {
       return;
     }
 
-    const confirmDelete = window.confirm(
-      "Apakah Anda yakin ingin menghapus foto ini?"
-    );
-    if (!confirmDelete) return;
+    Swal.fire({
+      title: "Apakah Anda yakin?",
+      text: "Anda tidak akan dapat mengembalikan foto ini!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Ya, hapus!",
+      cancelButtonText: "Batal",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        const toastId = toast.loading("Menghapus foto...");
 
-    const toastId = toast.loading("Menghapus foto...");
+        try {
+          console.log("Deleting photo:", {
+            url: mediaUrl,
+            assetId: assetToEdit.id,
+          });
 
-    try {
-      console.log("Deleting photo:", {
-        url: mediaUrl,
-        assetId: assetToEdit.id,
-      });
+          const response = await axios.delete(`${API_URL}/delete-asset-photo`, {
+            data: {
+              photoUrl: mediaUrl,
+              assetId: assetToEdit.id,
+            },
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
 
-      const response = await axios.delete(`${API_URL}/delete-asset-photo`, {
-        data: {
-          photoUrl: mediaUrl,
-          assetId: assetToEdit.id,
-        },
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+          console.log("Delete photo response:", response.data);
 
-      console.log("Delete photo response:", response.data);
+          // Update state dengan data baru
+          setFormData((prev) => ({
+            ...prev,
+            foto_aset: prev.foto_aset.filter((url) => url !== mediaUrl),
+          }));
 
-      // Update state dengan data baru
-      setFormData((prev) => ({
-        ...prev,
-        foto_aset: prev.foto_aset.filter((url) => url !== mediaUrl),
-      }));
+          toast.success("Foto berhasil dihapus!", { id: toastId });
+        } catch (error) {
+          console.error("Error deleting photo:", {
+            message: error.message,
+            response: error.response?.data,
+            status: error.response?.status,
+          });
 
-      toast.success("Foto berhasil dihapus!", { id: toastId });
-    } catch (error) {
-      console.error("Error deleting photo:", {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-      });
-
-      const errorMsg =
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        error.message ||
-        "Gagal menghapus foto.";
-      toast.error(errorMsg, { id: toastId });
-    }
+          const errorMsg =
+            error.response?.data?.error ||
+            error.response?.data?.message ||
+            error.message ||
+            "Gagal menghapus foto.";
+          toast.error(errorMsg, { id: toastId });
+        }
+      }
+    });
   };
 
   // FILE CHANGE HANDLERS
