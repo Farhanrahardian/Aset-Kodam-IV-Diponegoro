@@ -485,7 +485,7 @@ const Dashboard = () => {
             <Card.Header className="bg-primary text-white border-0">
               <Card.Title className="mb-0">Data Aset BMN KODAM</Card.Title>
             </Card.Header>
-            <Card.Body>
+            <Card.Body className="d-flex flex-column justify-content-between">
               {/* Filters */}
               <div className="mb-3 p-3 bg-light rounded">
                 <Row className="align-items-center">
@@ -590,7 +590,7 @@ const Dashboard = () => {
               <ResponsiveContainer width="100%" height={chartHeight}>
                 <BarChart
                   data={asetTanahData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 30 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis
@@ -598,7 +598,8 @@ const Dashboard = () => {
                     tick={{ fontSize: 9 }}
                     angle={-45}
                     textAnchor="end"
-                    height={80}
+                    height={100}
+                    interval={0}
                   />
                   <YAxis tick={{ fontSize: 10 }} />
                   <Tooltip />
@@ -608,7 +609,7 @@ const Dashboard = () => {
                 </BarChart>
               </ResponsiveContainer>
 
-              <div className="text-center mt-3">
+              <div className="text-center mt-auto">
                 <Button
                   variant="primary"
                   onClick={() => navigate("/data-aset-tanah")}
@@ -626,7 +627,7 @@ const Dashboard = () => {
             <Card.Header className="bg-success text-white border-0">
               <Card.Title className="mb-0">Data Aset Yardip KODAM</Card.Title>
             </Card.Header>
-            <Card.Body>
+            <Card.Body className="d-flex flex-column justify-content-between">
               {/* Filters */}
               <div className="mb-3 p-3 bg-light rounded">
                 <Row className="align-items-center">
@@ -746,7 +747,7 @@ const Dashboard = () => {
               <ResponsiveContainer width="100%" height={chartHeight}>
                 <BarChart
                   data={asetYardipData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 30 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis
@@ -754,7 +755,8 @@ const Dashboard = () => {
                     tick={{ fontSize: 9 }}
                     angle={-45}
                     textAnchor="end"
-                    height={80}
+                    height={100}
+                    interval={0}
                   />
                   <YAxis tick={{ fontSize: 10 }} />
                   <Tooltip />
@@ -765,7 +767,7 @@ const Dashboard = () => {
                 </BarChart>
               </ResponsiveContainer>
 
-              <div className="text-center mt-3">
+              <div className="text-center mt-auto">
                 <Button
                   variant="success"
                   onClick={() => navigate("/data-aset-yardip")}
