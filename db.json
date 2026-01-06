@@ -29,63 +29,7 @@
       "role": "admin"
     }
   ],
-  "assets": [
-    {
-      "nama": "123",
-      "korem_id": "1",
-      "kodim": "Kodim 0702/Purbalingga",
-      "luas": 6334445.98,
-      "kib_kode_barang": "123",
-      "nomor_registrasi": "123",
-      "alamat": "123",
-      "peruntukan": "123",
-      "status": "Aman",
-      "asal_milik": "123",
-      "pemilikan_sertifikat": "Ya",
-      "keterangan_bukti_pemilikan": "123",
-      "sertifikat_bidang": "123",
-      "sertifikat_luas": 6334445.98,
-      "belum_sertifikat_bidang": "",
-      "belum_sertifikat_luas": "",
-      "keterangan": "123",
-      "atas_nama_pemilik_sertifikat": "123",
-      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[109.270685,-7.246193],[109.274805,-7.26867],[109.311892,-7.251642],[109.289228,-7.245511],[109.270685,-7.246193]]]}",
-      "id": "T1767684262258",
-      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767684262194.png",
-      "bukti_pemilikan_filename": "bukti_pemilikan-1767684262194.png",
-      "foto_aset": [
-        "/uploads/asset_photos-1767684262231.png"
-      ]
-    },
-    {
-      "nama": "545454",
-      "korem_id": "4",
-      "kodim": "Kodim 0724/Boyolali",
-      "luas": 101030357.39,
-      "kib_kode_barang": "1.21.21.212.121",
-      "nomor_registrasi": "1",
-      "alamat": "demak",
-      "peruntukan": "Kantor Badan Pemerintahan",
-      "status": "Aman",
-      "asal_milik": "Suharto",
-      "pemilikan_sertifikat": "Ya",
-      "keterangan_bukti_pemilikan": "Sertifikat PDF 123",
-      "sertifikat_bidang": "2",
-      "sertifikat_luas": 101030357.39,
-      "belum_sertifikat_bidang": "",
-      "belum_sertifikat_luas": "",
-      "keterangan": "ada",
-      "atas_nama_pemilik_sertifikat": "pemerinta RI",
-      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.641704,-7.27552],[110.773492,-7.339532],[110.711716,-7.429405],[110.666414,-7.339532],[110.641704,-7.27552]]]}",
-      "id": "T1767684390523",
-      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767684390468.pdf",
-      "bukti_pemilikan_filename": "bukti_pemilikan-1767684390468.pdf",
-      "foto_aset": [
-        "/uploads/asset_photos-1767684390489.png",
-        "/uploads/asset_photos-1767684390490.png"
-      ]
-    }
-  ],
+  "assets": [],
   "yardip_assets": [],
   "korem": [
     {
