@@ -105,7 +105,7 @@ const TambahAsetPage = () => {
         const kodimFeature = kodimBoundaries.features.find((f) => {
           const featureName = normalizeKodimName(f.properties.listkodim_Kodim);
           if (kodimName === "Kodim 0717/Grobogan") {
-            return featureName === "Kodim 0717/Purwodadi";
+            return featureName === "Kodim 0717/Grobogan";
           }
           return featureName === kodimName;
         });
