@@ -35,12 +35,12 @@ const getStatusBadgeVariant = (status) => {
   const statusLower = status.toLowerCase().trim();
 
   // Status Dimiliki/Dikuasai = Hijau
-  if (statusLower.includes("Dimiliki/Dikuasai")) {
+  if (statusLower.includes("dimiliki/dikuasai")) {
     return "success";
   }
 
   // Status TIdak Dimiliki/Dikuasai = Merah
-  if (statusLower.includes("TIdak Dimiliki/Dikuasai")) {
+  if (statusLower.includes("tidak dimiliki/dikuasai")) {
     return "danger";
   }
 
