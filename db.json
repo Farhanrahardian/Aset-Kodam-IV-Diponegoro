@@ -1025,81 +1025,6 @@
       "foto_aset": []
     },
     {
-      "nama": "81",
-      "korem_id": "1",
-      "kodim": "Kodim 0713/Brebes",
-      "luas": 5725,
-      "kib_kode_barang": "2010104001",
-      "nomor_registrasi": "30713028",
-      "alamat": "Jl. P Diponegoro  \nKel.  Brebes  \nKec.  Brebes  \nKab. Brebes  \nJawa Tengah",
-      "peruntukan": "Kodim 0713/ Brebes",
-      "status": "Dimiliki/Dikuasai",
-      "asal_milik": "Penyerahan Pemda ",
-      "pemilikan_sertifikat": "Ya",
-      "keterangan_bukti_pemilikan": "SHP No.90  tanggal   15-06-2002",
-      "sertifikat_bidang": "1",
-      "sertifikat_luas": "5725",
-      "belum_sertifikat_bidang": "",
-      "belum_sertifikat_luas": "",
-      "keterangan": "",
-      "atas_nama_pemilik_sertifikat": "Pemerintah Repubik Indonesia c.q.Kementerian Pertahanan Republik Indonesia",
-      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[108.872004,-6.929095],[108.826718,-7.062754],[108.888471,-7.072299],[108.872004,-6.929095]]]}",
-      "id": "T1767754318866",
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": "",
-      "foto_aset": []
-    },
-    {
-      "nama": "82",
-      "korem_id": "1",
-      "kodim": "Kodim 0713/Brebes",
-      "luas": 450,
-      "kib_kode_barang": "2010104001",
-      "nomor_registrasi": "30713033",
-      "alamat": "Jl. Raya Losari \nKel. Losari Lor \nKec. Losari  \nKab Brebes  \nJawa Tengah",
-      "peruntukan": "Koramil 05/ 0713 Losari & Rds Danramil",
-      "status": "Dimiliki/Dikuasai",
-      "asal_milik": "Hasil Kompensasi  Dr Bpk Abdullah",
-      "pemilikan_sertifikat": "Ya",
-      "keterangan_bukti_pemilikan": "SHP No. 09   tanggal  06-12-2010",
-      "sertifikat_bidang": "1",
-      "sertifikat_luas": "450",
-      "belum_sertifikat_bidang": "",
-      "belum_sertifikat_luas": "",
-      "keterangan": "",
-      "atas_nama_pemilik_sertifikat": "Pemerintah Repubik Indonesia c.q.Kementerian Pertahanan Republik Indonesia",
-      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[108.830835,-7.024115],[108.830835,-7.210914],[108.792411,-7.060935],[108.830835,-7.024115]]]}",
-      "id": "T1767754466833",
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": "",
-      "foto_aset": []
-    },
-    {
-      "nama": "99",
-      "korem_id": "1",
-      "kodim": "Kodim 0713/Brebes",
-      "luas": 1400,
-      "kib_kode_barang": "2010104001",
-      "nomor_registrasi": "30713011",
-      "alamat": "Jl. Raya Bulakamba \nKel. Bulakamba \nKec. Bulakamba \nKab Brebes  \nJawa Tengah",
-      "peruntukan": "Makoramil 0713/07 Bulakamba",
-      "status": "Dimiliki/Dikuasai",
-      "asal_milik": "Hibah pemda Brebes",
-      "pemilikan_sertifikat": "Ya",
-      "keterangan_bukti_pemilikan": "SHP No. 00013   tanggal  06-05-2020",
-      "sertifikat_bidang": "1",
-      "sertifikat_luas": "1400",
-      "belum_sertifikat_bidang": "",
-      "belum_sertifikat_luas": "",
-      "keterangan": "",
-      "atas_nama_pemilik_sertifikat": "Pemerintah Repubik Indonesia c.q.Kementerian Pertahanan Republik Indonesia",
-      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[108.951596,-7.102298],[108.891218,-7.100918],[108.885728,-7.20181],[108.951596,-7.102298]]]}",
-      "id": "T1767754540209",
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": "",
-      "foto_aset": []
-    },
-    {
       "nama": "83",
       "korem_id": "1",
       "kodim": "Kodim 0736/Batang",
@@ -1175,10 +1100,173 @@
       "foto_aset": []
     },
     {
+      "nama": "81",
+      "korem_id": "1",
+      "kodim": "Kodim 0713/Brebes",
+      "luas": 5725,
+      "kib_kode_barang": "2010104001",
+      "nomor_registrasi": "30713028",
+      "alamat": "Jl. P Diponegoro  \nKel.  Brebes  \nKec.  Brebes  \nKab. Brebes  \nJawa Tengah",
+      "peruntukan": "Kodim 0713/ Brebes",
+      "status": "Dimiliki/Dikuasai",
+      "asal_milik": "Penyerahan Pemda ",
+      "pemilikan_sertifikat": "Ya",
+      "keterangan_bukti_pemilikan": "SHP No.90  tanggal   15-06-2002",
+      "sertifikat_bidang": "1",
+      "sertifikat_luas": "5725",
+      "belum_sertifikat_bidang": "",
+      "belum_sertifikat_luas": "",
+      "keterangan": "",
+      "atas_nama_pemilik_sertifikat": "Pemerintah Repubik Indonesia c.q.Kementerian Pertahanan Republik Indonesia",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[109.037644,-6.8707],[109.037666,-6.87054],[109.037832,-6.870593],[109.037773,-6.870796],[109.037644,-6.8707]]]}",
+      "id": "T1767760177390",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767760177363.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767760177363.pdf",
+      "foto_aset": [
+        "/uploads/asset_photos-1767760177379.jpg",
+        "/uploads/asset_photos-1767760177380.jpg"
+      ]
+    },
+    {
+      "nama": "82",
+      "korem_id": "1",
+      "kodim": "Kodim 0713/Brebes",
+      "luas": 450,
+      "kib_kode_barang": "2010104001",
+      "nomor_registrasi": "30713033",
+      "alamat": "Jl. Raya Losari \nKel. Losari Lor \nKec. Losari  \nKab Brebes  \nJawa Tengah",
+      "peruntukan": "Koramil 05/ 0713 Losari & Rds Danramil",
+      "status": "Dimiliki/Dikuasai",
+      "asal_milik": "Hasil Kompensasi  Dr Bpk Abdullah",
+      "pemilikan_sertifikat": "Ya",
+      "keterangan_bukti_pemilikan": "SHP No. 09   tanggal  06-12-2010",
+      "sertifikat_bidang": "1",
+      "sertifikat_luas": "450",
+      "belum_sertifikat_bidang": "",
+      "belum_sertifikat_luas": "",
+      "keterangan": "",
+      "atas_nama_pemilik_sertifikat": "Pemerintah Repubik Indonesia c.q.Kementerian Pertahanan Republik Indonesia",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[108.827563,-6.857394],[108.827424,-6.857708],[108.827483,-6.857751],[108.827445,-6.857852],[108.827692,-6.85798],[108.827756,-6.857863],[108.827547,-6.857761],[108.827692,-6.857452],[108.827563,-6.857394]]]}",
+      "id": "T1767760662173",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767760662154.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767760662154.pdf",
+      "foto_aset": [
+        "/uploads/asset_photos-1767760662163.png"
+      ]
+    },
+    {
+      "nama": "99",
+      "korem_id": "1",
+      "kodim": "Kodim 0713/Brebes",
+      "luas": 1400,
+      "kib_kode_barang": "2010104001",
+      "nomor_registrasi": "30713011",
+      "alamat": "Jl. Raya Bulakamba \nKel. Bulakamba \nKec. Bulakamba \nKab Brebes  \nJawa Tengah",
+      "peruntukan": "Makoramil 0713/07 Bulakamba",
+      "status": "Dimiliki/Dikuasai",
+      "asal_milik": "Hibah pemda Brebes",
+      "pemilikan_sertifikat": "Ya",
+      "keterangan_bukti_pemilikan": "SHP No. 00013   tanggal  06-05-2020",
+      "sertifikat_bidang": "1",
+      "sertifikat_luas": "1400",
+      "belum_sertifikat_bidang": "",
+      "belum_sertifikat_luas": "",
+      "keterangan": "",
+      "atas_nama_pemilik_sertifikat": "Pemerintah Repubik Indonesia c.q.Kementerian Pertahanan Republik Indonesia",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[108.94999,-6.874421],[108.949974,-6.874517],[108.950156,-6.87457],[108.950204,-6.874469],[108.94999,-6.874421]]]}",
+      "id": "T1767761089841",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767761089816.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767761089816.pdf",
+      "foto_aset": [
+        "/uploads/asset_photos-1767761089830.png"
+      ]
+    },
+    {
+      "nama": "83",
+      "korem_id": "1",
+      "kodim": "Kodim 0736/Batang",
+      "luas": 5835,
+      "kib_kode_barang": "2010104001",
+      "nomor_registrasi": "30736001",
+      "alamat": "Jl. Jnd. Sudirman No. 41 \nKel. Kasepuhan            \nKec. Batang\nKab. Batang \nJawa Tengah",
+      "peruntukan": "Ma.Kodim- 0736/Batang",
+      "status": "Dimiliki/Dikuasai",
+      "asal_milik": "Penukaran",
+      "pemilikan_sertifikat": "Ya",
+      "keterangan_bukti_pemilikan": "SHP  No. 1  tanggal  22-05-1980",
+      "sertifikat_bidang": "1",
+      "sertifikat_luas": "5835",
+      "belum_sertifikat_bidang": "",
+      "belum_sertifikat_luas": "",
+      "keterangan": "",
+      "atas_nama_pemilik_sertifikat": "Pemerintah Repubik Indonesia c.q.Kementerian Pertahanan Republik Indonesia",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[109.720788,-6.90089],[109.720788,-6.900991],[109.720884,-6.900959],[109.720874,-6.900874],[109.720788,-6.90089]]]}",
+      "id": "T1767761455325",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767761455312.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767761455312.pdf",
+      "foto_aset": [
+        "/uploads/asset_photos-1767761455321.jpg"
+      ]
+    },
+    {
+      "nama": "100",
+      "korem_id": "1",
+      "kodim": "Kodim 0736/Batang",
+      "luas": 1806,
+      "kib_kode_barang": "2010104001",
+      "nomor_registrasi": "30736006",
+      "alamat": "Jl. Raya Wonotunggal \nKel. Wonotunggal \nKec. Wonotunggal      \nKab. Batang\nJawa Tengah",
+      "peruntukan": "Makoramil 0736/08 Wonotunggal",
+      "status": "Dimiliki/Dikuasai",
+      "asal_milik": "Penyerahan Pemda",
+      "pemilikan_sertifikat": "Ya",
+      "keterangan_bukti_pemilikan": "SHP No. 71      tanggal , 30-08-2019 ",
+      "sertifikat_bidang": "1",
+      "sertifikat_luas": "1806",
+      "belum_sertifikat_bidang": "",
+      "belum_sertifikat_luas": "",
+      "keterangan": "",
+      "atas_nama_pemilik_sertifikat": "Pemerintah Republik Indonesia  c.q. Kementerian Pertahanan RI  berkedudukan di Jakarta ",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[109.755583,-7.00371],[109.755591,-7.003793],[109.755744,-7.003801],[109.755731,-7.003713],[109.755583,-7.00371]]]}",
+      "id": "T1767761713135",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767761713120.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767761713120.pdf",
+      "foto_aset": [
+        "/uploads/asset_photos-1767761713128.jpg"
+      ]
+    },
+    {
+      "nama": "101",
+      "korem_id": "1",
+      "kodim": "Kodim 0736/Batang",
+      "luas": 624.99,
+      "kib_kode_barang": "2010104001",
+      "nomor_registrasi": "30736013",
+      "alamat": "Jln. Raya Tulis           \nKel. Simbangdesa      \nKec. Tulis\nKab. Batang\nJawa Tengah",
+      "peruntukan": "Makoramil 0736/12 Tulis",
+      "status": "Dimiliki/Dikuasai",
+      "asal_milik": "Penyerahan Pemda",
+      "pemilikan_sertifikat": "Ya",
+      "keterangan_bukti_pemilikan": "SHP No.00036   tanggal  06-02-2018",
+      "sertifikat_bidang": "1",
+      "sertifikat_luas": "624.99",
+      "belum_sertifikat_bidang": "",
+      "belum_sertifikat_luas": "",
+      "keterangan": "",
+      "atas_nama_pemilik_sertifikat": "Pemerintah Republik Indonesia  c.q. Kementerian Pertahanan RI  berkedudukan di Jakarta ",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[109.809392,-6.946457],[109.809853,-6.945753],[109.80996,-6.945828],[109.809939,-6.946084],[109.809821,-6.946339],[109.809682,-6.946201],[109.809499,-6.94651],[109.809392,-6.946457]]]}",
+      "id": "T1767761882780",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767761882757.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767761882757.pdf",
+      "foto_aset": [
+        "/uploads/asset_photos-1767761882773.jpg"
+      ]
+    },
+    {
       "nama": "1",
       "korem_id": "2",
       "kodim": "Kodim 0705/Magelang",
-      "luas": 214922,
+      "luas": 214923,
       "kib_kode_barang": "2010104001",
       "nomor_registrasi": "30705001",
       "alamat": "Jl. Magelang-Smg Kel. Jambe Wangi Kec. Secang, Kab. Magelang, Prop Jateng  ",
@@ -1188,41 +1276,45 @@
       "pemilikan_sertifikat": "Ya",
       "keterangan_bukti_pemilikan": "SHP No.  08 tanggal 14-5-2003",
       "sertifikat_bidang": "1",
-      "sertifikat_luas": "214922",
+      "sertifikat_luas": "214923",
       "belum_sertifikat_bidang": "",
       "belum_sertifikat_luas": "",
       "keterangan": "",
       "atas_nama_pemilik_sertifikat": "Pemerintah Republik Indonesia  c.q. Kementerian Pertahanan RI  berkedudukan di Jakarta ",
-      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.113509,-7.459139],[110.215058,-7.636222],[110.231526,-7.50546],[110.113509,-7.459139]]]}",
-      "id": "T1767754894456",
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": "",
-      "foto_aset": []
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.246188,-7.391529],[110.246135,-7.391646],[110.246242,-7.391726],[110.246338,-7.391625],[110.246188,-7.391529]]]}",
+      "id": "T1767762236570",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767762236547.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767762236547.pdf",
+      "foto_aset": [
+        "/uploads/asset_photos-1767762236562.jpg"
+      ]
     },
     {
       "nama": "3",
       "korem_id": "2",
       "kodim": "Kodim 0705/Magelang",
-      "luas": 56976.98,
+      "luas": 56977,
       "kib_kode_barang": "2010104001",
       "nomor_registrasi": "30705003-1",
       "alamat": "Jl. Pahlawan Kel. Potrobangsan Kec. Magelang Utara Kab. Magelang, Prop Jateng  ",
       "peruntukan": "Kantor Secaba Rindam",
       "status": "Dimiliki/Dikuasai",
-      "asal_milik": "eks belanda",
+      "asal_milik": "Eks Belanda  ",
       "pemilikan_sertifikat": "Ya",
       "keterangan_bukti_pemilikan": "SHP No. 00045   tanggal  20-11-2006",
       "sertifikat_bidang": "1",
-      "sertifikat_luas": "56976.98",
+      "sertifikat_luas": "56977",
       "belum_sertifikat_bidang": "",
       "belum_sertifikat_luas": "",
       "keterangan": "",
       "atas_nama_pemilik_sertifikat": "Pemerintah Republik Indonesia  c.q. Kementerian Pertahanan RI  berkedudukan di Jakarta ",
-      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.088807,-7.431888],[110.110764,-7.498648],[110.140954,-7.475488],[110.088807,-7.431888]]]}",
-      "id": "T1767754989312",
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": "",
-      "foto_aset": []
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.221936,-7.458261],[110.221894,-7.458362],[110.221985,-7.458404],[110.222033,-7.458282],[110.221936,-7.458261]]]}",
+      "id": "T1767762416978",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767762416957.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767762416957.pdf",
+      "foto_aset": [
+        "/uploads/asset_photos-1767762416967.png"
+      ]
     },
     {
       "nama": "9",
@@ -1234,7 +1326,7 @@
       "alamat": "Jl. dr. Koesen Hirohoesodo Kel. Potrobangsan  Kec. Magelang Utara  Kota Magelang, Prov. Jateng  ",
       "peruntukan": "Makodim 0705/Mgl, masjid, Koperasi, Mess Eka Data (Rindam) Mess Anggini (Mabes TNI)",
       "status": "Dimiliki/Dikuasai",
-      "asal_milik": "eks belanda",
+      "asal_milik": "Eks Belanda  ",
       "pemilikan_sertifikat": "Ya",
       "keterangan_bukti_pemilikan": "SHP No.  00041  tanggal 20-11-2006",
       "sertifikat_bidang": "1",
@@ -1243,11 +1335,13 @@
       "belum_sertifikat_luas": "",
       "keterangan": "",
       "atas_nama_pemilik_sertifikat": "Pemerintah Republik Indonesia  c.q. Kementerian Pertahanan RI  berkedudukan di Jakarta ",
-      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.162911,-7.453689],[110.182123,-7.528619],[110.239752,-7.500013],[110.162911,-7.453689]]]}",
-      "id": "T1767755071032",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.221298,-7.467766],[110.22118,-7.467947],[110.221293,-7.468048],[110.221432,-7.467861],[110.221298,-7.467766]]]}",
+      "id": "T1767762648910",
       "bukti_pemilikan_url": "",
       "bukti_pemilikan_filename": "",
-      "foto_aset": []
+      "foto_aset": [
+        "/uploads/asset_photos-1767762648893.png"
+      ]
     },
     {
       "nama": "10",
@@ -1259,7 +1353,7 @@
       "alamat": "Jl. Kesatrian Kulon Kel. Wates  Kec. Magelang Utara  Kota Magelang, Prov. Jateng  ",
       "peruntukan": "Dodik Belanegara, Rst Tk II Subdenzibang 012/Iv,  Rds Armed 3",
       "status": "Dimiliki/Dikuasai",
-      "asal_milik": "eks belanda",
+      "asal_milik": "Eks Belanda  ",
       "pemilikan_sertifikat": "Ya",
       "keterangan_bukti_pemilikan": "SHP No. 00016 tanggal  15-9-2009",
       "sertifikat_bidang": "1",
@@ -1268,11 +1362,13 @@
       "belum_sertifikat_luas": "",
       "keterangan": "",
       "atas_nama_pemilik_sertifikat": "Pemerintah Republik Indonesia  c.q. Kementerian Pertahanan RI  berkedudukan di Jakarta ",
-      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.201335,-7.54996],[110.206824,-7.590823],[110.239759,-7.574478],[110.201335,-7.54996]]]}",
-      "id": "T1767755162259",
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": "",
-      "foto_aset": []
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.219756,-7.469443],[110.219949,-7.469214],[110.220072,-7.469326],[110.21986,-7.469531],[110.219756,-7.469443]]]}",
+      "id": "T1767762919464",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767762919444.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767762919444.pdf",
+      "foto_aset": [
+        "/uploads/asset_photos-1767762919453.png"
+      ]
     },
     {
       "nama": "1",
@@ -1284,7 +1380,7 @@
       "alamat": "Jl. Cawang  Kec. Magelang Utara, Prop Jateng  ",
       "peruntukan": "Tmp Bulurejo Cawang Kodim 0705/Mgl",
       "status": "Dimiliki/Dikuasai",
-      "asal_milik": "eks belanda",
+      "asal_milik": "Eks Belanda  ",
       "pemilikan_sertifikat": "Ya",
       "keterangan_bukti_pemilikan": "SHP No. 63  tanggal  16-12-2003",
       "sertifikat_bidang": "1",
@@ -1293,11 +1389,13 @@
       "belum_sertifikat_luas": "",
       "keterangan": "",
       "atas_nama_pemilik_sertifikat": "Pemerintah Republik Indonesia  c.q. Kementerian Pertahanan RI  berkedudukan di Jakarta ",
-      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.141093,-7.475865],[110.15756,-7.524909],[110.198729,-7.492214],[110.141093,-7.475865]]]}",
-      "id": "T1767755245288",
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": "",
-      "foto_aset": []
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.204116,-7.501546],[110.203891,-7.501844],[110.204164,-7.502079],[110.204405,-7.501829],[110.204116,-7.501546]]]}",
+      "id": "T1767763436858",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767763436840.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767763436840.pdf",
+      "foto_aset": [
+        "/uploads/asset_photos-1767763436850.png"
+      ]
     },
     {
       "nama": "2",
@@ -1309,7 +1407,7 @@
       "alamat": "Jl. Cawang Kel. Jurangombo  Kec. Magelang Utara Kab. Magelang, Prop Jateng  ",
       "peruntukan": "Tmp Kodim 0705/Mgl",
       "status": "Dimiliki/Dikuasai",
-      "asal_milik": "eks belanda",
+      "asal_milik": "Eks Belanda  ",
       "pemilikan_sertifikat": "Ya",
       "keterangan_bukti_pemilikan": "SHP No. 62  tanggal  16-12-2003",
       "sertifikat_bidang": "1",
@@ -1318,36 +1416,40 @@
       "belum_sertifikat_luas": "",
       "keterangan": "",
       "atas_nama_pemilik_sertifikat": "Pemerintah Republik Indonesia  c.q. Kementerian Pertahanan RI  berkedudukan di Jakarta ",
-      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.195846,-7.50773],[110.212314,-7.616701],[110.213686,-7.496832],[110.195846,-7.50773]]]}",
-      "id": "T1767755310875",
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": "",
-      "foto_aset": []
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.206563,-7.49124],[110.206316,-7.491144],[110.206284,-7.491602],[110.206477,-7.491602],[110.206563,-7.49124]]]}",
+      "id": "T1767763693729",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767763693707.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767763693707.pdf",
+      "foto_aset": [
+        "/uploads/asset_photos-1767763693717.png"
+      ]
     },
     {
       "nama": "19",
       "korem_id": "2",
       "kodim": "Kodim 0705/Magelang",
-      "luas": 712659.99,
+      "luas": 712660,
       "kib_kode_barang": "2010104001",
       "nomor_registrasi": "30705051",
       "alamat": "Jl. Gatot Subroto Kel. Jurang Ombo Kec. Mgl Selatan Kota Magelang, Prop Jateng   ",
       "peruntukan": "Gedung Ktr Kestrian Akmil",
       "status": "Dimiliki/Dikuasai",
-      "asal_milik": "eks belanda Th. 1950",
+      "asal_milik": "Eks Belanda  Th.1950",
       "pemilikan_sertifikat": "Ya",
       "keterangan_bukti_pemilikan": "SHP No.00040  tanggal  27-3-2003",
       "sertifikat_bidang": "1",
-      "sertifikat_luas": "712659.99",
+      "sertifikat_luas": "712660",
       "belum_sertifikat_bidang": "",
       "belum_sertifikat_luas": "",
       "keterangan": "",
       "atas_nama_pemilik_sertifikat": "Pemerintah Republik Indonesia  c.q. Kementerian Pertahanan RI  berkedudukan di Jakarta ",
-      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.164283,-7.471401],[110.193102,-7.572208],[110.258972,-7.53543],[110.164283,-7.471401]]]}",
-      "id": "T1767755389607",
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": "",
-      "foto_aset": []
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.212151,-7.495106],[110.211819,-7.495659],[110.21213,-7.495776],[110.21243,-7.495287],[110.212151,-7.495106]]]}",
+      "id": "T1767764084509",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767764084484.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767764084484.pdf",
+      "foto_aset": [
+        "/uploads/asset_photos-1767764084497.png"
+      ]
     },
     {
       "nama": "1",
@@ -1368,17 +1470,19 @@
       "belum_sertifikat_luas": "",
       "keterangan": "",
       "atas_nama_pemilik_sertifikat": "Pemerintah Republik Indonesia  c.q. Kementerian Pertahanan RI  berkedudukan di Jakarta ",
-      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.15605,-7.440064],[110.179379,-7.617155],[110.280928,-7.581743],[110.15605,-7.440064]]]}",
-      "id": "T1767755464338",
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": "",
-      "foto_aset": []
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.20813,-7.51663],[110.208302,-7.516481],[110.208387,-7.51662],[110.20813,-7.51663]]]}",
+      "id": "T1767764557957",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767764557932.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767764557932.pdf",
+      "foto_aset": [
+        "/uploads/asset_photos-1767764557950.png"
+      ]
     },
     {
       "nama": "21",
       "korem_id": "2",
       "kodim": "Kodim 0706/Temanggung",
-      "luas": 1690,
+      "luas": 1689.99,
       "kib_kode_barang": "2010104001",
       "nomor_registrasi": "30706002",
       "alamat": "Jl. Magelang Smg Kel. Prinsurat Kec. Pringsurat Kab. Temanggung, Prop Jateng  ",
@@ -1388,22 +1492,24 @@
       "pemilikan_sertifikat": "Ya",
       "keterangan_bukti_pemilikan": "SHP No.42 tanggal  29-4-2002",
       "sertifikat_bidang": "1",
-      "sertifikat_luas": "1690",
+      "sertifikat_luas": "1689.99",
       "belum_sertifikat_bidang": "",
       "belum_sertifikat_luas": "",
       "keterangan": "",
       "atas_nama_pemilik_sertifikat": "Pemerintah Republik Indonesia c.q. Kementerian Pertahanan Republik Indonesia  ",
-      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.052883,-7.270697],[110.062487,-7.326581],[110.098166,-7.318404],[110.052883,-7.270697]]]}",
-      "id": "T1767755538032",
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": "",
-      "foto_aset": []
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.287704,-7.357822],[110.287715,-7.357961],[110.287795,-7.357961],[110.287779,-7.357822],[110.287704,-7.357822]]]}",
+      "id": "T1767764775130",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767764775107.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767764775107.pdf",
+      "foto_aset": [
+        "/uploads/asset_photos-1767764775123.png"
+      ]
     },
     {
       "nama": "22",
       "korem_id": "2",
       "kodim": "Kodim 0706/Temanggung",
-      "luas": 3214,
+      "luas": "3214",
       "kib_kode_barang": "2010104001",
       "nomor_registrasi": "30706004",
       "alamat": "Jl. Diponegoro No. 39 Kel/Kec. Temanggung  Kab. Temanggung, Prop Jateng  ",
@@ -1418,11 +1524,13 @@
       "belum_sertifikat_luas": "",
       "keterangan": "",
       "atas_nama_pemilik_sertifikat": "Pemerintah Republik Indonesia c.q. Kementerian Pertahanan Republik Indonesia  ",
-      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.077747,-7.186722],[110.088725,-7.297135],[110.202626,-7.305313],[110.077747,-7.186722]]]}",
-      "id": "T1767755607760",
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": "",
-      "foto_aset": []
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.178636,-7.312706],[110.178636,-7.312844],[110.178872,-7.312844],[110.178872,-7.312684],[110.178636,-7.312706]]]}",
+      "id": "T1767765085618",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767765085597.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767765085597.pdf",
+      "foto_aset": [
+        "/uploads/asset_photos-1767765085606.png"
+      ]
     },
     {
       "nama": "157",
@@ -1443,11 +1551,13 @@
       "belum_sertifikat_luas": "",
       "keterangan": "",
       "atas_nama_pemilik_sertifikat": "Pemerintah Republik Indonesia  c.q. Kementerian Pertahanan Republik Indonesia   ",
-      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.268496,-7.312127],[110.120288,-7.282142],[110.125777,-7.248066],[110.268496,-7.312127]]]}",
-      "id": "T1767755680017",
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": "",
-      "foto_aset": []
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.084953,-7.11732],[110.084942,-7.117512],[110.085403,-7.117725],[110.085371,-7.117416],[110.084953,-7.11732]]]}",
+      "id": "T1767765306169",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767765306145.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767765306145.pdf",
+      "foto_aset": [
+        "/uploads/asset_photos-1767765306162.jpg"
+      ]
     },
     {
       "nama": "158",
@@ -1468,11 +1578,13 @@
       "belum_sertifikat_luas": "",
       "keterangan": "",
       "atas_nama_pemilik_sertifikat": "Pemerintah Republik Indonesia  c.q. Kementerian Pertahanan Republik Indonesia   ",
-      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.099704,-7.249429],[110.099704,-7.309401],[110.173807,-7.314853],[110.099704,-7.249429]]]}",
-      "id": "T1767755752504",
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": "",
-      "foto_aset": []
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.150922,-7.191628],[110.150906,-7.191713],[110.151013,-7.191756],[110.151013,-7.19166],[110.150922,-7.191628]]]}",
+      "id": "T1767765458793",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767765458776.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767765458776.pdf",
+      "foto_aset": [
+        "/uploads/asset_photos-1767765458788.jpg"
+      ]
     },
     {
       "nama": "23",
@@ -1493,11 +1605,13 @@
       "belum_sertifikat_luas": "",
       "keterangan": "",
       "atas_nama_pemilik_sertifikat": "Pemerintah Republik Indonesia  c.q. Kementerian Pertahanan RI berkedudukan di Jakarta    ",
-      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[109.8786,-7.386988],[109.873111,-7.451029],[109.954076,-7.451029],[109.8786,-7.386988]]]}",
-      "id": "T1767755830143",
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": "",
-      "foto_aset": []
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[109.902808,-7.35593],[109.902937,-7.355696],[109.903258,-7.355823],[109.903097,-7.356079],[109.902808,-7.35593]]]}",
+      "id": "T1767765686985",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767765686961.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767765686961.pdf",
+      "foto_aset": [
+        "/uploads/asset_photos-1767765686977.png"
+      ]
     },
     {
       "nama": "165",
@@ -1518,11 +1632,13 @@
       "belum_sertifikat_luas": "",
       "keterangan": "",
       "atas_nama_pemilik_sertifikat": "Pemerintah Republik Indonesia  c.q. Kementerian Pertahanan RI",
-      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[109.811358,-7.386988],[109.826453,-7.493264],[109.921141,-7.515062],[109.811358,-7.386988]]]}",
-      "id": "T1767755903919",
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": "",
-      "foto_aset": []
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[109.8092,-7.550235],[109.809203,-7.550573],[109.809297,-7.550557],[109.809281,-7.550243],[109.8092,-7.550235]]]}",
+      "id": "T1767765946633",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767765946613.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767765946613.pdf",
+      "foto_aset": [
+        "/uploads/asset_photos-1767765946628.png"
+      ]
     },
     {
       "nama": "166",
@@ -1543,11 +1659,13 @@
       "belum_sertifikat_luas": "",
       "keterangan": "",
       "atas_nama_pemilik_sertifikat": "Pemerintah Republik Indonesia  c.q. Kementerian Pertahanan RI",
-      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[109.831943,-7.370635],[109.874484,-7.494627],[109.932109,-7.453754],[109.831943,-7.370635]]]}",
-      "id": "T1767755964408",
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": "",
-      "foto_aset": []
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[109.854735,-7.417957],[109.854757,-7.418212],[109.854872,-7.418189],[109.854878,-7.417934],[109.854735,-7.417957]]]}",
+      "id": "T1767766304271",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767766304246.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767766304246.pdf",
+      "foto_aset": [
+        "/uploads/asset_photos-1767766304262.png"
+      ]
     },
     {
       "nama": "167",
@@ -1568,17 +1686,19 @@
       "belum_sertifikat_luas": "",
       "keterangan": "",
       "atas_nama_pemilik_sertifikat": "Pemerintah Republik Indonesia  c.q. Kementerian Pertahanan RI",
-      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[109.886834,-7.361096],[109.901929,-7.423779],[109.945842,-7.422416],[109.886834,-7.361096]]]}",
-      "id": "T1767756040666",
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": "",
-      "foto_aset": []
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[109.921706,-7.510501],[109.921706,-7.510618],[109.921979,-7.510602],[109.921974,-7.510491],[109.921706,-7.510501]]]}",
+      "id": "T1767766519925",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767766519844.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767766519844.pdf",
+      "foto_aset": [
+        "/uploads/asset_photos-1767766519900.png"
+      ]
     },
     {
       "nama": "3",
       "korem_id": "2",
       "kodim": "Kodim 0707/Wonosobo",
-      "luas": 4816,
+      "luas": "4816",
       "kib_kode_barang": "2010312001",
       "nomor_registrasi": "30707020",
       "alamat": "Kel. Rojoimo Kec. Wonosobo  Kab. Wonosobo, Prop Jateng  ",
@@ -1586,18 +1706,20 @@
       "status": "Dimiliki/Dikuasai",
       "asal_milik": " Hibah/Wakaf  Th.1950, bukti tdak ada (terbit SHP Pemda)",
       "pemilikan_sertifikat": "Tidak",
-      "keterangan_bukti_pemilikan": "",
-      "sertifikat_bidang": "",
+      "keterangan_bukti_pemilikan": "tidak ada ",
+      "sertifikat_bidang": "1",
       "sertifikat_luas": "",
-      "belum_sertifikat_bidang": "1",
+      "belum_sertifikat_bidang": "",
       "belum_sertifikat_luas": "4816",
       "keterangan": "",
       "atas_nama_pemilik_sertifikat": "",
-      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[109.879972,-7.348831],[109.873111,-7.441492],[109.96231,-7.441492],[109.89644,-7.357008],[109.879972,-7.348831]]]}",
-      "id": "T1767756115466",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[109.922576,-7.361119],[109.922576,-7.360975],[109.922313,-7.360911],[109.922265,-7.361199],[109.922887,-7.361358],[109.922876,-7.361114],[109.922758,-7.361066],[109.922742,-7.361188],[109.922576,-7.361119]]]}",
+      "id": "T1767766685100",
       "bukti_pemilikan_url": "",
       "bukti_pemilikan_filename": "",
-      "foto_aset": []
+      "foto_aset": [
+        "/uploads/asset_photos-1767766685093.png"
+      ]
     },
     {
       "nama": "28",
@@ -1609,7 +1731,7 @@
       "alamat": "Jl. Urip Sumoharjo, Kec. Purworejo  Kab. Purworejo, Prop Jateng",
       "peruntukan": "Makodim 0708/Pwj, Subdenpom, Rumdis Subdenpom, Rumdis Dandim, Rumdis Kasdim",
       "status": "Dimiliki/Dikuasai",
-      "asal_milik": "Eks Belanda",
+      "asal_milik": "Ex Belanda",
       "pemilikan_sertifikat": "Ya",
       "keterangan_bukti_pemilikan": "SHP No.  00080  tanggal  26-2-2013",
       "sertifikat_bidang": "1",
@@ -1618,11 +1740,13 @@
       "belum_sertifikat_luas": "",
       "keterangan": "",
       "atas_nama_pemilik_sertifikat": "Pemerintah Republik Indonesia  c.q. Kementerian Pertahanan RI  berkedudukan di Jakarta    ",
-      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[109.890997,-7.63157],[109.901976,-7.702383],[109.97608,-7.69966],[109.890997,-7.63157]]]}",
-      "id": "T1767756201418",
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": "",
-      "foto_aset": []
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.01163,-7.711791],[110.011672,-7.711731],[110.011784,-7.71183],[110.011669,-7.711923],[110.011648,-7.711874],[110.011692,-7.711843],[110.01163,-7.711791]]]}",
+      "id": "T1767767104037",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767767104018.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767767104018.pdf",
+      "foto_aset": [
+        "/uploads/asset_photos-1767767104027.png"
+      ]
     },
     {
       "nama": "29",
@@ -1634,20 +1758,22 @@
       "alamat": "Jl. Letjen Suprapto, Kec. Purworejo  Kab. Purworejo, Prop Jateng",
       "peruntukan": "Kompi B Yonif 412/6  R",
       "status": "Dimiliki/Dikuasai",
-      "asal_milik": "Ex belanda",
+      "asal_milik": "Ex Belanda",
       "pemilikan_sertifikat": "Ya",
-      "keterangan_bukti_pemilikan": "SHP No. 49 tanggal  10-03-2014",
+      "keterangan_bukti_pemilikan": "SHP No. 49         tanggal  10-03-2014",
       "sertifikat_bidang": "1",
       "sertifikat_luas": "64764",
       "belum_sertifikat_bidang": "",
       "belum_sertifikat_luas": "",
       "keterangan": "",
       "atas_nama_pemilik_sertifikat": "Pemerintah Republik Indonesia  c.q. Kementerian Pertahanan Republik Indonesia ",
-      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[109.841595,-7.566647],[109.855318,-7.668794],[109.889625,-7.585716],[109.855318,-7.569371],[109.841595,-7.566647]]]}",
-      "id": "T1767756271239",
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": "",
-      "foto_aset": []
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.010106,-7.707566],[110.01017,-7.707321],[110.010277,-7.707385],[110.01017,-7.707577],[110.010106,-7.707566]]]}",
+      "id": "T1767767265594",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767767265529.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767767265529.pdf",
+      "foto_aset": [
+        "/uploads/asset_photos-1767767265540.png"
+      ]
     },
     {
       "nama": "31",
@@ -1668,11 +1794,13 @@
       "belum_sertifikat_luas": "",
       "keterangan": "",
       "atas_nama_pemilik_sertifikat": "Pemerintah Republik Indonesia  c.q. Kementerian Pertahanan Republik Indonesia ",
-      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[109.915699,-7.654722],[109.915699,-7.717362],[110.02411,-7.721447],[109.915699,-7.654722]]]}",
-      "id": "T1767756355090",
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": "",
-      "foto_aset": []
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.009644,-7.716697],[110.009606,-7.716793],[110.009746,-7.716844],[110.009762,-7.716689],[110.009644,-7.716697]]]}",
+      "id": "T1767767450225",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767767450207.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767767450207.pdf",
+      "foto_aset": [
+        "/uploads/asset_photos-1767767450217.png"
+      ]
     },
     {
       "nama": "131",
@@ -1693,11 +1821,13 @@
       "belum_sertifikat_luas": "",
       "keterangan": "",
       "atas_nama_pemilik_sertifikat": "Pemerintah RI  c.q. Kementerian Pertahanan RI berkedudukan di Jakarta    ",
-      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[109.436506,-7.612539],[109.506493,-7.703782],[109.536683,-7.668377],[109.436506,-7.612539]]]}",
-      "id": "T1767756420953",
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": "",
-      "foto_aset": []
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[109.517095,-7.59835],[109.517299,-7.598457],[109.517406,-7.598276],[109.51717,-7.598159],[109.517095,-7.59835]]]}",
+      "id": "T1767767639537",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767767639517.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767767639517.pdf",
+      "foto_aset": [
+        "/uploads/asset_photos-1767767639531.png"
+      ]
     },
     {
       "nama": "6",
@@ -1711,15 +1841,15 @@
       "status": "Dimiliki/Dikuasai",
       "asal_milik": "Eks Belanda  Th.1950",
       "pemilikan_sertifikat": "Tidak",
-      "keterangan_bukti_pemilikan": "",
+      "keterangan_bukti_pemilikan": "belum",
       "sertifikat_bidang": "",
       "sertifikat_luas": "",
       "belum_sertifikat_bidang": "1",
       "belum_sertifikat_luas": "1063",
       "keterangan": "",
       "atas_nama_pemilik_sertifikat": "",
-      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[109.550406,-7.598919],[109.543545,-7.653397],[109.587458,-7.642502],[109.550406,-7.598919]]]}",
-      "id": "T1767756495593",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[109.51789,-7.608465],[109.518083,-7.608539],[109.518018,-7.608678],[109.517804,-7.608667],[109.51789,-7.608465]]]}",
+      "id": "T1767767854355",
       "bukti_pemilikan_url": "",
       "bukti_pemilikan_filename": "",
       "foto_aset": []
@@ -1742,12 +1872,14 @@
       "belum_sertifikat_bidang": "",
       "belum_sertifikat_luas": "",
       "keterangan": "",
-      "atas_nama_pemilik_sertifikat": "Pemerintah RI  c.q. Kementerian Pertahanan RI berkedudukan di Jakarta",
-      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[109.566875,-7.612993],[109.566875,-7.677002],[109.595693,-7.677002],[109.576481,-7.627975],[109.566875,-7.612993]]]}",
-      "id": "T1767756573006",
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": "",
-      "foto_aset": []
+      "atas_nama_pemilik_sertifikat": "Pemerintah RI  c.q. Kementerian Pertahanan RI berkedudukan di Jakarta    ",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[109.709661,-7.690755],[109.709693,-7.690914],[109.709881,-7.690829],[109.709806,-7.690691],[109.709661,-7.690755]]]}",
+      "id": "T1767768042081",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767768042047.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767768042047.pdf",
+      "foto_aset": [
+        "/uploads/asset_photos-1767768042061.png"
+      ]
     },
     {
       "nama": "7",
@@ -1768,11 +1900,13 @@
       "belum_sertifikat_luas": "",
       "keterangan": "",
       "atas_nama_pemilik_sertifikat": "Pemerintah RI  c.q. Kementerian Pertahanan RI berkedudukan di Jakarta    ",
-      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[109.472186,-7.61027],[109.503738,-7.664771],[109.547651,-7.66477],[109.472186,-7.61027]]]}",
-      "id": "T1767756631398",
-      "bukti_pemilikan_url": "",
-      "bukti_pemilikan_filename": "",
-      "foto_aset": []
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[109.656632,-7.663467],[109.656628,-7.663573],[109.656688,-7.663567],[109.656683,-7.663472],[109.656632,-7.663467]]]}",
+      "id": "T1767768186457",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1767768186436.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1767768186436.pdf",
+      "foto_aset": [
+        "/uploads/asset_photos-1767768186445.png"
+      ]
     }
   ],
   "yardip_assets": [],
