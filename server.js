@@ -90,6 +90,18 @@ const uploadBuktiPemilikan = multer({
   },
 });
 
+const uploadFotoTampakAtas = multer({
+  storage: storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) {
+      cb(null, true);
+    } else {
+      cb(new Error("File foto tampak atas harus berupa gambar"), false);
+    }
+  },
+});
+
 // ===== UPLOAD ENDPOINTS (must be before body parser) =====
 app.post(
   "/upload/bukti-pemilikan",
@@ -121,6 +133,21 @@ app.post(
     res.json({
       message: "Files uploaded successfully",
       files: files,
+    });
+  }
+);
+
+app.post(
+  "/upload/foto-tampak-atas",
+  uploadFotoTampakAtas.single("foto_tampak_atas"),
+  (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded." });
+    }
+    res.json({
+      message: "File uploaded successfully",
+      filename: req.file.filename,
+      url: `/uploads/${req.file.filename}`,
     });
   }
 );
@@ -236,6 +263,45 @@ app.delete("/delete-asset-photo", (req, res) => {
     console.error("❌ Error deleting asset photo:", error);
     res.status(500).json({
       error: "Gagal menghapus foto aset",
+      details: error.message,
+    });
+  }
+});
+
+app.delete("/delete-foto-tampak-atas", (req, res) => {
+  try {
+    const { fileUrl, assetId } = req.body;
+    if (!fileUrl || !assetId) {
+      return res
+        .status(400)
+        .json({ error: "URL file dan Asset ID diperlukan" });
+    }
+
+    const db = readDb();
+    const assetIndex = db.assets.findIndex(
+      (asset) => String(asset.id) === String(assetId)
+    );
+
+    if (assetIndex === -1) {
+      return res.status(404).json({ error: "Asset tidak ditemukan" });
+    }
+
+    // Delete file from filesystem
+    const fileDeleted = deleteFileFromUploads(fileUrl);
+
+    // Update database
+    db.assets[assetIndex].gambar_tampak_atas_url = null;
+    db.assets[assetIndex].gambar_tampak_atas_filename = null;
+    writeDb(db);
+
+    res.json({
+      success: true,
+      message: "Foto tampak atas berhasil dihapus",
+      fileDeleted: fileDeleted,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: "Gagal menghapus foto tampak atas",
       details: error.message,
     });
   }
@@ -430,6 +496,9 @@ app.delete("/assets/:id", (req, res) => {
   // Delete files
   if (assetToDelete.bukti_pemilikan_url) {
     deleteFileFromUploads(assetToDelete.bukti_pemilikan_url);
+  }
+  if (assetToDelete.gambar_tampak_atas_url) {
+    deleteFileFromUploads(assetToDelete.gambar_tampak_atas_url);
   }
   if (assetToDelete.foto_aset && Array.isArray(assetToDelete.foto_aset)) {
     assetToDelete.foto_aset.forEach((fotoUrl) => {

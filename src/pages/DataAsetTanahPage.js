@@ -720,6 +720,63 @@ const DetailModalAset = ({
                           <td>{asset.atas_nama_pemilik_sertifikat}</td>
                         </tr>
                       )}
+                      {asset.gambar_tampak_atas_url && (
+                        <tr>
+                          <td>
+                            <strong>Foto Tampak Atas:</strong>
+                          </td>
+                          <td>
+                            <div className="d-flex align-items-center gap-2">
+                              <div
+                                style={{
+                                  width: "60px",
+                                  height: "60px",
+                                  border: "1px solid #ddd",
+                                  borderRadius: "4px",
+                                  overflow: "hidden",
+                                }}
+                              >
+                                <img
+                                  src={
+                                    asset.gambar_tampak_atas_url.startsWith(
+                                      "http"
+                                    )
+                                      ? asset.gambar_tampak_atas_url
+                                      : `${API_URL}${asset.gambar_tampak_atas_url}`
+                                  }
+                                  alt="Preview Tampak Atas"
+                                  style={{
+                                    width: "100%",
+                                    height: "100%",
+                                    objectFit: "cover",
+                                  }}
+                                />
+                              </div>
+                              <div>
+                                <div>{asset.gambar_tampak_atas_filename}</div>
+                                <Button
+                                  variant="link"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleShowImagePreview(
+                                      asset.gambar_tampak_atas_url.startsWith(
+                                        "http"
+                                      )
+                                        ? asset.gambar_tampak_atas_url
+                                        : `${API_URL}${asset.gambar_tampak_atas_url}`,
+                                      "Foto Tampak Atas",
+                                      true // This will prevent loading the gallery
+                                    )
+                                  }
+                                  className="p-0"
+                                >
+                                  Lihat Aset Tampak Atas
+                                </Button>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
                       <tr>
                         <td>
                           <strong>Koordinat:</strong>
@@ -1524,7 +1581,8 @@ const DataAsetTanahPage = () => {
   const handleSaveAsset = async (
     assetData,
     buktiPemilikanFile,
-    assetPhotos
+    assetPhotos,
+    gambarTampakAtasFile
   ) => {
     setIsSaving(true);
     const toastId = toast.loading("Menyimpan perubahan...");
@@ -1597,7 +1655,32 @@ const DataAsetTanahPage = () => {
         }
       }
 
-      // 3. Update Asset Data in DB
+      // 3. Upload Gambar Tampak Atas
+      if (gambarTampakAtasFile) {
+        try {
+          toast.loading("Mengupload foto tampak atas...", { id: toastId });
+          const formData = new FormData();
+          formData.append("foto_tampak_atas", gambarTampakAtasFile);
+          const uploadRes = await axios.post(
+            `${API_URL}/upload/foto-tampak-atas`,
+            formData
+          );
+          updatedData.gambar_tampak_atas_url = uploadRes.data.url;
+          updatedData.gambar_tampak_atas_filename = uploadRes.data.filename;
+        } catch (err) {
+          const message =
+            err.response?.data?.message ||
+            "Gagal mengupload foto tampak atas.";
+          toast.error(message, { id: toastId });
+          console.error(
+            "Upload error (foto tampak atas):",
+            err.response?.data || err
+          );
+          return;
+        }
+      }
+
+      // 4. Update Asset Data in DB
       try {
         toast.loading("Menyimpan data ke database...", { id: toastId });
         await axios.put(`${API_URL}/assets/${id}`, updatedData);

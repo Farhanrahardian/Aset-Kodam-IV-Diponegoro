@@ -66,6 +66,7 @@ const FormAset = forwardRef((props, ref) => {
   const [kodimList, setKodimList] = useState([]);
   const [buktiPemilikanFile, setBuktiPemilikanFile] = useState(null);
   const [assetPhotos, setAssetPhotos] = useState([]);
+  const [gambarTampakAtasFile, setGambarTampakAtasFile] = useState(null);
   const [kmlFileName, setKmlFileName] = useState("");
   const [inputMethod, setInputMethod] = useState("draw");
   const [coordsText, setCoordsText] = useState("");
@@ -77,7 +78,12 @@ const FormAset = forwardRef((props, ref) => {
   ];
 
   useImperativeHandle(ref, () => ({
-    getFormData: () => ({ formData, buktiPemilikanFile, assetPhotos }),
+    getFormData: () => ({
+      formData,
+      buktiPemilikanFile,
+      assetPhotos,
+      gambarTampakAtasFile,
+    }),
   }));
 
   // DELETE HANDLERS - Perbaikan
@@ -209,6 +215,50 @@ const FormAset = forwardRef((props, ref) => {
     });
   };
 
+  const handleDeleteFotoTampakAtas = async () => {
+    if (!formData.gambar_tampak_atas_url || !assetToEdit?.id) {
+      toast.error("Tidak ada foto tampak atas untuk dihapus.");
+      return;
+    }
+
+    Swal.fire({
+      title: "Apakah Anda yakin?",
+      text: "Anda tidak akan dapat mengembalikan foto ini!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Ya, hapus!",
+      cancelButtonText: "Batal",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        const toastId = toast.loading("Menghapus foto tampak atas...");
+
+        try {
+          await axios.delete(`${API_URL}/delete-foto-tampak-atas`, {
+            data: {
+              fileUrl: formData.gambar_tampak_atas_url,
+              assetId: assetToEdit.id,
+            },
+          });
+
+          setFormData((prev) => ({
+            ...prev,
+            gambar_tampak_atas_url: null,
+            gambar_tampak_atas_filename: null,
+          }));
+
+          toast.success("Foto tampak atas berhasil dihapus!", { id: toastId });
+        } catch (error) {
+          toast.error(
+            error.response?.data?.error || "Gagal menghapus foto tampak atas.",
+            { id: toastId }
+          );
+        }
+      }
+    });
+  };
+
   // FILE CHANGE HANDLERS
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -260,6 +310,20 @@ const FormAset = forwardRef((props, ref) => {
         }
       }
       setAssetPhotos(files);
+    }
+  };
+
+  const handleGambarTampakAtasChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxSize) {
+        toast.error(
+          `File foto aset tampak atas melebihi ukuran maksimal 10MB: ${file.name}`
+        );
+        return;
+      }
+      setGambarTampakAtasFile(file);
     }
   };
 
@@ -1138,6 +1202,71 @@ const FormAset = forwardRef((props, ref) => {
                     {isEditMode
                       ? "Upload file baru untuk menambah media (maks. 50MB per file)."
                       : "Format: JPG, PNG, MP4, MOV, WEBM (Maks. 50MB per file, 5 file maksimal)"}
+                  </Form.Text>
+                </Form.Group>
+
+                {/* FOTO ASET TAMPAK ATAS */}
+                <Form.Group className="mb-3">
+                  <Form.Label>Foto Aset Tampak Atas</Form.Label>
+                  {isEditMode && formData.gambar_tampak_atas_url && (
+                    <div className="mb-2">
+                      <Card body>
+                        <div className="d-flex justify-content-between align-items-center">
+                          <div>
+                            <Image
+                              src={
+                                formData.gambar_tampak_atas_url.startsWith(
+                                  "http"
+                                )
+                                  ? formData.gambar_tampak_atas_url
+                                  : `${API_URL}${formData.gambar_tampak_atas_url}`
+                              }
+                              alt="Preview Tampak Atas"
+                              style={{
+                                height: "50px",
+                                marginRight: "10px",
+                                cursor: "pointer",
+                              }}
+                              fluid
+                              onClick={() =>
+                                window.open(
+                                  formData.gambar_tampak_atas_url.startsWith(
+                                    "http"
+                                  )
+                                    ? formData.gambar_tampak_atas_url
+                                    : `${API_URL}${formData.gambar_tampak_atas_url}`,
+                                  "_blank"
+                                )
+                              }
+                            />
+                            <span className="ms-2 fst-italic">
+                              {formData.gambar_tampak_atas_filename}
+                            </span>
+                          </div>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={handleDeleteFotoTampakAtas}
+                          >
+                            Hapus
+                          </Button>
+                        </div>
+                      </Card>
+                    </div>
+                  )}
+                  <Form.Control
+                    type="file"
+                    name="gambar_tampak_atas_file"
+                    onChange={handleGambarTampakAtasChange}
+                    accept=".jpg,.jpeg,.png"
+                    disabled={
+                      isEditMode && !!formData.gambar_tampak_atas_url
+                    }
+                  />
+                  <Form.Text className="text-muted">
+                    {isEditMode
+                      ? "Hapus gambar yang ada jika ingin menggantinya."
+                      : "Format: JPG, JPEG, PNG (Maks. 10MB)"}
                   </Form.Text>
                 </Form.Group>
 

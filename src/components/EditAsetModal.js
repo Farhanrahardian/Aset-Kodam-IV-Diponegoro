@@ -92,6 +92,7 @@ const EditAsetModal = ({
         formData: latestFormData,
         buktiPemilikanFile,
         assetPhotos,
+        gambarTampakAtasFile,
       } = formAsetRef.current.getFormData();
 
       console.log("=== SAVE DEBUG ===");
@@ -150,7 +151,7 @@ const EditAsetModal = ({
       console.log("Final data to be saved:", finalData);
       console.log("=== END SAVE DEBUG ===");
 
-      onSave(finalData, buktiPemilikanFile, assetPhotos);
+      onSave(finalData, buktiPemilikanFile, assetPhotos, gambarTampakAtasFile);
     } else {
       toast.error("Tidak ada data untuk disimpan.");
     }

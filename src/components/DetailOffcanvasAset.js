@@ -481,6 +481,61 @@ const DetailOffcanvasAset = ({
                           <td>{aset.atas_nama_pemilik_sertifikat}</td>
                         </tr>
                       )}
+                      {aset.gambar_tampak_atas_url && (
+                        <tr>
+                          <td>
+                            <strong>Foto Tampak Atas:</strong>
+                          </td>
+                          <td>
+                            <div className="d-flex align-items-center gap-2">
+                              <div
+                                style={{
+                                  width: "40px",
+                                  height: "40px",
+                                  border: "1px solid #ddd",
+                                  borderRadius: "4px",
+                                  overflow: "hidden",
+                                }}
+                              >
+                                <img
+                                  src={
+                                    aset.gambar_tampak_atas_url.startsWith(
+                                      "http"
+                                    )
+                                      ? aset.gambar_tampak_atas_url
+                                      : `${API_URL}${aset.gambar_tampak_atas_url}`
+                                  }
+                                  alt="Preview Tampak Atas"
+                                  style={{
+                                    width: "100%",
+                                    height: "100%",
+                                    objectFit: "cover",
+                                  }}
+                                />
+                              </div>
+                              <div>
+                                <div style={{ fontSize: "0.8em" }}>
+                                  {aset.gambar_tampak_atas_filename}
+                                </div>
+                                <Button
+                                  variant="link"
+                                  size="sm"
+                                  onClick={() =>
+                                    handlePreviewMedia(
+                                      aset.gambar_tampak_atas_url,
+                                      "Foto Tampak Atas"
+                                    )
+                                  }
+                                  className="p-0"
+                                  style={{ fontSize: "0.7em" }}
+                                >
+                                  Lihat Aset Tampak Atas
+                                </Button>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
                       <tr>
                         <td>
                           <strong>Koordinat:</strong>

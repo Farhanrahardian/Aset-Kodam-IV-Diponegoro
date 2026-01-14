@@ -253,7 +253,8 @@ const TambahAsetPage = () => {
   const handleSaveAsset = async (
     assetData,
     buktiPemilikanFile,
-    assetPhotos
+    assetPhotos,
+    gambarTampakAtasFile
   ) => {
     const toastId = toast.loading("Menyimpan data aset...");
 
@@ -320,6 +321,33 @@ const TambahAsetPage = () => {
       }
     }
 
+    let gambarTampakAtasUrl = assetData.gambar_tampak_atas_url || "";
+    let gambarTampakAtasFilename = assetData.gambar_tampak_atas_filename || "";
+
+    if (gambarTampakAtasFile) {
+      try {
+        toast.loading("Mengupload foto tampak atas...", { id: toastId });
+        const tampakAtasFormData = new FormData();
+        tampakAtasFormData.append("foto_tampak_atas", gambarTampakAtasFile);
+
+        const uploadRes = await axios.post(
+          `${API_URL}/upload/foto-tampak-atas`,
+          tampakAtasFormData
+        );
+
+        gambarTampakAtasUrl = uploadRes.data.url;
+        gambarTampakAtasFilename = uploadRes.data.filename;
+        toast.loading(`Foto tampak atas berhasil diupload.`, { id: toastId });
+      } catch (err) {
+        toast.error("Gagal mengupload foto tampak atas.", { id: toastId });
+        console.error(
+          "Foto tampak atas upload error:",
+          err.response?.data || err.message
+        );
+        return;
+      }
+    }
+
     // ✅ PERBAIKAN: Gunakan luas dari assetData (yang sudah diisi/diubah user di form)
     // Hanya gunakan drawnAsset.area sebagai fallback jika assetData.luas tidak ada
     const finalLuas =
@@ -341,6 +369,8 @@ const TambahAsetPage = () => {
       bukti_pemilikan_url: buktiPemilikanUrl,
       bukti_pemilikan_filename: buktiPemilikanFilename,
       foto_aset: assetPhotoUrls,
+      gambar_tampak_atas_url: gambarTampakAtasUrl,
+      gambar_tampak_atas_filename: gambarTampakAtasFilename,
     };
 
     console.log("🔍 Payload final yang akan dikirim ke API:", assetPayload);
