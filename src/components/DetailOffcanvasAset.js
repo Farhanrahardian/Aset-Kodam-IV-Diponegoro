@@ -23,6 +23,7 @@ import {
   FaCertificate,
   FaGlobe,
   FaLayerGroup,
+  FaImage,
 } from "react-icons/fa";
 import PetaAset from "./PetaAset";
 
@@ -481,61 +482,6 @@ const DetailOffcanvasAset = ({
                           <td>{aset.atas_nama_pemilik_sertifikat}</td>
                         </tr>
                       )}
-                      {aset.gambar_tampak_atas_url && (
-                        <tr>
-                          <td>
-                            <strong>Foto Tampak Atas:</strong>
-                          </td>
-                          <td>
-                            <div className="d-flex align-items-center gap-2">
-                              <div
-                                style={{
-                                  width: "40px",
-                                  height: "40px",
-                                  border: "1px solid #ddd",
-                                  borderRadius: "4px",
-                                  overflow: "hidden",
-                                }}
-                              >
-                                <img
-                                  src={
-                                    aset.gambar_tampak_atas_url.startsWith(
-                                      "http"
-                                    )
-                                      ? aset.gambar_tampak_atas_url
-                                      : `${API_URL}${aset.gambar_tampak_atas_url}`
-                                  }
-                                  alt="Preview Tampak Atas"
-                                  style={{
-                                    width: "100%",
-                                    height: "100%",
-                                    objectFit: "cover",
-                                  }}
-                                />
-                              </div>
-                              <div>
-                                <div style={{ fontSize: "0.8em" }}>
-                                  {aset.gambar_tampak_atas_filename}
-                                </div>
-                                <Button
-                                  variant="link"
-                                  size="sm"
-                                  onClick={() =>
-                                    handlePreviewMedia(
-                                      aset.gambar_tampak_atas_url,
-                                      "Foto Tampak Atas"
-                                    )
-                                  }
-                                  className="p-0"
-                                  style={{ fontSize: "0.7em" }}
-                                >
-                                  Lihat Aset Tampak Atas
-                                </Button>
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
                       <tr>
                         <td>
                           <strong>Koordinat:</strong>
@@ -657,6 +603,49 @@ const DetailOffcanvasAset = ({
                   </Card.Body>
                 </Card>
               )}
+
+            {/* Tampak Atas Card */}
+            {aset.gambar_tampak_atas_url && (
+              <Card className="mb-3 shadow-sm">
+                <Card.Header className="bg-info text-white">
+                  <FaImage className="me-2" /> Foto Aset Tampak Atas
+                </Card.Header>
+                <Card.Body>
+                  <Row>
+                    <Col md={4} className="mb-3">
+                      <Card
+                        onClick={() =>
+                          handlePreviewMedia(
+                            aset.gambar_tampak_atas_url,
+                            "Foto Aset Tampak Atas"
+                          )
+                        }
+                        className="h-100"
+                        style={{
+                          cursor: "pointer",
+                          border: "1px solid #ddd",
+                        }}
+                      >
+                        <Card.Img
+                          variant="top"
+                          src={
+                            aset.gambar_tampak_atas_url.startsWith("http")
+                              ? aset.gambar_tampak_atas_url
+                              : `${API_URL}${aset.gambar_tampak_atas_url}`
+                          }
+                          alt="Foto Aset Tampak Atas"
+                          style={{
+                            height: "100px",
+                            width: "100%",
+                            objectFit: "cover",
+                          }}
+                        />
+                      </Card>
+                    </Col>
+                  </Row>
+                </Card.Body>
+              </Card>
+            )}
 
             {/* Geographic Information Card */}
             {hasValidLocation && (
