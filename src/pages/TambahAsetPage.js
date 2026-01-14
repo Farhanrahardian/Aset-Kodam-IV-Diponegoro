@@ -326,7 +326,7 @@ const TambahAsetPage = () => {
 
     if (gambarTampakAtasFile) {
       try {
-        toast.loading("Mengupload foto tampak atas...", { id: toastId });
+        toast.loading("Mengupload foto aset tampak atas...", { id: toastId });
         const tampakAtasFormData = new FormData();
         tampakAtasFormData.append("foto_tampak_atas", gambarTampakAtasFile);
 
@@ -337,11 +337,11 @@ const TambahAsetPage = () => {
 
         gambarTampakAtasUrl = uploadRes.data.url;
         gambarTampakAtasFilename = uploadRes.data.filename;
-        toast.loading(`Foto tampak atas berhasil diupload.`, { id: toastId });
+        toast.loading("Foto aset tampak atas berhasil diupload.", { id: toastId });
       } catch (err) {
-        toast.error("Gagal mengupload foto tampak atas.", { id: toastId });
+        toast.error("Gagal mengupload foto aset tampak atas.", { id: toastId });
         console.error(
-          "Foto tampak atas upload error:",
+          "Foto aset tampak atas upload error:",
           err.response?.data || err.message
         );
         return;

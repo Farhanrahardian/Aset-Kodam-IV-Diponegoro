@@ -723,7 +723,7 @@ const DetailModalAset = ({
                       {asset.gambar_tampak_atas_url && (
                         <tr>
                           <td>
-                            <strong>Foto Tampak Atas:</strong>
+                            <strong>Foto Aset Tampak Atas:</strong>
                           </td>
                           <td>
                             <div className="d-flex align-items-center gap-2">
@@ -758,17 +758,16 @@ const DetailModalAset = ({
                                   variant="link"
                                   size="sm"
                                   onClick={() =>
-                                    handleShowImagePreview(
-                                      asset.gambar_tampak_atas_url.startsWith(
-                                        "http"
-                                      )
-                                        ? asset.gambar_tampak_atas_url
-                                        : `${API_URL}${asset.gambar_tampak_atas_url}`,
-                                      "Foto Tampak Atas",
-                                      true // This will prevent loading the gallery
-                                    )
-                                  }
-                                  className="p-0"
+                                                                        handleShowImagePreview(
+                                                                          asset.gambar_tampak_atas_url.startsWith(
+                                                                            "http"
+                                                                          )
+                                                                            ? asset.gambar_tampak_atas_url
+                                                                            : `${API_URL}${asset.gambar_tampak_atas_url}`,
+                                                                          "Foto Aset Tampak Atas", // Changed from "Foto Tampak Atas"
+                                                                          true // This will prevent loading the gallery
+                                                                        )
+                                                                      }                                  className="p-0"
                                 >
                                   Lihat Aset Tampak Atas
                                 </Button>

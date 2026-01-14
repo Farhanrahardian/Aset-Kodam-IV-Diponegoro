@@ -88,8 +88,8 @@
         "/uploads/asset_photos-1767695145757.jpg",
         "/uploads/asset_photos-1767695145766.jpg"
       ],
-      "gambar_tampak_atas_url": "/uploads/foto_tampak_atas-1768368844989.jpg",
-      "gambar_tampak_atas_filename": "foto_tampak_atas-1768368844989.jpg"
+      "gambar_tampak_atas_url": "/uploads/foto_tampak_atas-1768372061588.jpg",
+      "gambar_tampak_atas_filename": "foto_tampak_atas-1768372061588.jpg"
     },
     {
       "nama": "271",
@@ -4423,6 +4423,66 @@
         "/uploads/asset_photos-1767781900844.png",
         "/uploads/asset_photos-1767781900866.png"
       ]
+    },
+    {
+      "nama": "1",
+      "korem_id": "4",
+      "kodim": "Kodim 0735/Surakarta",
+      "luas": 14043.09,
+      "kib_kode_barang": "1",
+      "nomor_registrasi": "1",
+      "alamat": "1",
+      "peruntukan": "1",
+      "status": "Dimiliki/Dikuasai",
+      "asal_milik": "1",
+      "pemilikan_sertifikat": "Ya",
+      "keterangan_bukti_pemilikan": "1",
+      "sertifikat_bidang": "1",
+      "sertifikat_luas": 14043.09,
+      "belum_sertifikat_bidang": "",
+      "belum_sertifikat_luas": "",
+      "keterangan": "1",
+      "atas_nama_pemilik_sertifikat": "1",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.8049625099769,-7.565173494102877,0],[110.8047699535853,-7.566377137309638,0],[110.8056834713766,-7.566638993478271,0],[110.805861575985,-7.565417691622523,0],[110.8049625099769,-7.565173494102877,0]]]}",
+      "id": "T1768370050892",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1768370050771.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1768370050771.pdf",
+      "foto_aset": [
+        "/uploads/asset_photos-1768370050798.jpg",
+        "/uploads/asset_photos-1768370050800.jpg"
+      ],
+      "gambar_tampak_atas_url": "",
+      "gambar_tampak_atas_filename": ""
+    },
+    {
+      "nama": "1",
+      "korem_id": "4",
+      "kodim": "Kodim 0735/Surakarta",
+      "luas": 14043.09,
+      "kib_kode_barang": "1",
+      "nomor_registrasi": "1",
+      "alamat": "1",
+      "peruntukan": "1",
+      "status": "Dimiliki/Dikuasai",
+      "asal_milik": "1",
+      "pemilikan_sertifikat": "Ya",
+      "keterangan_bukti_pemilikan": "1",
+      "sertifikat_bidang": "1",
+      "sertifikat_luas": 14043.09,
+      "belum_sertifikat_bidang": "",
+      "belum_sertifikat_luas": "",
+      "keterangan": "",
+      "atas_nama_pemilik_sertifikat": "1",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.8049625099769,-7.565173494102877,0],[110.8047699535853,-7.566377137309638,0],[110.8056834713766,-7.566638993478271,0],[110.805861575985,-7.565417691622523,0],[110.8049625099769,-7.565173494102877,0]]]}",
+      "id": "T1768370376028",
+      "bukti_pemilikan_url": "/uploads/bukti_pemilikan-1768370375968.pdf",
+      "bukti_pemilikan_filename": "bukti_pemilikan-1768370375968.pdf",
+      "foto_aset": [
+        "/uploads/asset_photos-1768370375982.jpg",
+        "/uploads/asset_photos-1768370375990.jpg"
+      ],
+      "gambar_tampak_atas_url": "/uploads/foto_tampak_atas-1768370376020.jpg",
+      "gambar_tampak_atas_filename": "foto_tampak_atas-1768370376020.jpg"
     }
   ],
   "yardip_assets": [],
