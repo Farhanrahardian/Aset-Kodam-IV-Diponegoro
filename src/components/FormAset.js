@@ -86,10 +86,25 @@ const FormAset = forwardRef((props, ref) => {
     }),
   }));
 
+  // TAMBAHKAN fungsi helper dulu (letakkan di atas handleDeleteBuktiPemilikan)
+  const extractFilename = (url) => {
+    if (!url) return null;
+    // URL format: /uploads/filename.ext
+    const parts = url.split("/");
+    return parts[parts.length - 1];
+  };
   // DELETE HANDLERS - Perbaikan
   const handleDeleteBuktiPemilikan = async () => {
-    if (!formData.bukti_pemilikan_url || !assetToEdit?.id) {
+    if (!formData.bukti_pemilikan_url) {
       toast.error("Tidak ada bukti pemilikan untuk dihapus.");
+      return;
+    }
+
+    // EKSTRAK FILENAME dari URL
+    const filename = extractFilename(formData.bukti_pemilikan_url);
+
+    if (!filename) {
+      toast.error("Nama file tidak valid");
       return;
     }
 
@@ -107,22 +122,11 @@ const FormAset = forwardRef((props, ref) => {
         const toastId = toast.loading("Menghapus bukti pemilikan...");
 
         try {
-          console.log("Deleting bukti pemilikan:", {
-            url: formData.bukti_pemilikan_url,
-            assetId: assetToEdit.id,
-          });
+          console.log("Deleting bukti pemilikan:", filename);
 
+          // PANGGIL ENDPOINT YANG BENAR
           const response = await axios.delete(
-            `${API_URL}/delete-bukti-pemilikan`,
-            {
-              data: {
-                buktiPemilikanUrl: formData.bukti_pemilikan_url,
-                assetId: assetToEdit.id,
-              },
-              headers: {
-                "Content-Type": "application/json",
-              },
-            }
+            `${API_URL}/upload/bukti-pemilikan/${filename}` // ✅ BENAR
           );
 
           console.log("Delete response:", response.data);
@@ -136,15 +140,10 @@ const FormAset = forwardRef((props, ref) => {
 
           toast.success("Bukti pemilikan berhasil dihapus!", { id: toastId });
         } catch (error) {
-          console.error("Error deleting bukti pemilikan:", {
-            message: error.message,
-            response: error.response?.data,
-            status: error.response?.status,
-          });
+          console.error("Error deleting bukti pemilikan:", error);
 
           const errorMsg =
             error.response?.data?.error ||
-            error.response?.data?.message ||
             error.message ||
             "Gagal menghapus bukti pemilikan.";
           toast.error(errorMsg, { id: toastId });
@@ -154,8 +153,16 @@ const FormAset = forwardRef((props, ref) => {
   };
 
   const handleRemovePhoto = async (mediaUrl) => {
-    if (!assetToEdit?.id) {
-      toast.error("Tidak dapat menghapus foto.");
+    if (!mediaUrl) {
+      toast.error("URL foto tidak valid");
+      return;
+    }
+
+    // EKSTRAK FILENAME dari URL
+    const filename = extractFilename(mediaUrl);
+
+    if (!filename) {
+      toast.error("Nama file tidak valid");
       return;
     }
 
@@ -173,24 +180,16 @@ const FormAset = forwardRef((props, ref) => {
         const toastId = toast.loading("Menghapus foto...");
 
         try {
-          console.log("Deleting photo:", {
-            url: mediaUrl,
-            assetId: assetToEdit.id,
-          });
+          console.log("Deleting asset photo:", filename);
 
-          const response = await axios.delete(`${API_URL}/delete-asset-photo`, {
-            data: {
-              photoUrl: mediaUrl,
-              assetId: assetToEdit.id,
-            },
-            headers: {
-              "Content-Type": "application/json",
-            },
-          });
+          // PANGGIL ENDPOINT YANG BENAR
+          const response = await axios.delete(
+            `${API_URL}/upload/asset-photos/${filename}` // ✅ BENAR
+          );
 
           console.log("Delete photo response:", response.data);
 
-          // Update state dengan data baru
+          // Update state - remove photo dari array
           setFormData((prev) => ({
             ...prev,
             foto_aset: prev.foto_aset.filter((url) => url !== mediaUrl),
@@ -198,15 +197,10 @@ const FormAset = forwardRef((props, ref) => {
 
           toast.success("Foto berhasil dihapus!", { id: toastId });
         } catch (error) {
-          console.error("Error deleting photo:", {
-            message: error.message,
-            response: error.response?.data,
-            status: error.response?.status,
-          });
+          console.error("Error deleting photo:", error);
 
           const errorMsg =
             error.response?.data?.error ||
-            error.response?.data?.message ||
             error.message ||
             "Gagal menghapus foto.";
           toast.error(errorMsg, { id: toastId });
@@ -216,8 +210,16 @@ const FormAset = forwardRef((props, ref) => {
   };
 
   const handleDeleteFotoTampakAtas = async () => {
-    if (!formData.gambar_tampak_atas_url || !assetToEdit?.id) {
+    if (!formData.gambar_tampak_atas_url) {
       toast.error("Tidak ada foto aset tampak atas untuk dihapus.");
+      return;
+    }
+
+    // EKSTRAK FILENAME dari URL
+    const filename = extractFilename(formData.gambar_tampak_atas_url);
+
+    if (!filename) {
+      toast.error("Nama file tidak valid");
       return;
     }
 
@@ -235,25 +237,33 @@ const FormAset = forwardRef((props, ref) => {
         const toastId = toast.loading("Menghapus foto aset tampak atas...");
 
         try {
-          await axios.delete(`${API_URL}/delete-foto-tampak-atas`, {
-            data: {
-              fileUrl: formData.gambar_tampak_atas_url,
-              assetId: assetToEdit.id,
-            },
-          });
+          console.log("Deleting foto tampak atas:", filename);
 
+          // PANGGIL ENDPOINT YANG BENAR
+          const response = await axios.delete(
+            `${API_URL}/upload/foto-tampak-atas/${filename}` // ✅ BENAR
+          );
+
+          console.log("Delete response:", response.data);
+
+          // Update state
           setFormData((prev) => ({
             ...prev,
             gambar_tampak_atas_url: null,
             gambar_tampak_atas_filename: null,
           }));
 
-          toast.success("Foto aset tampak atas berhasil dihapus!", { id: toastId });
+          toast.success("Foto aset tampak atas berhasil dihapus!", {
+            id: toastId,
+          });
         } catch (error) {
-          toast.error(
-            error.response?.data?.error || "Gagal menghapus foto aset tampak atas.",
-            { id: toastId }
-          );
+          console.error("Error deleting foto tampak atas:", error);
+
+          const errorMsg =
+            error.response?.data?.error ||
+            error.message ||
+            "Gagal menghapus foto aset tampak atas.";
+          toast.error(errorMsg, { id: toastId });
         }
       }
     });
@@ -1259,9 +1269,7 @@ const FormAset = forwardRef((props, ref) => {
                     name="gambar_tampak_atas_file"
                     onChange={handleGambarTampakAtasChange}
                     accept=".jpg,.jpeg,.png"
-                    disabled={
-                      isEditMode && !!formData.gambar_tampak_atas_url
-                    }
+                    disabled={isEditMode && !!formData.gambar_tampak_atas_url}
                   />
                   <Form.Text className="text-muted">
                     {isEditMode

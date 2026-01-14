@@ -4485,7 +4485,42 @@
       "gambar_tampak_atas_filename": "foto_tampak_atas-1768370376020.jpg"
     }
   ],
-  "yardip_assets": [],
+  "yardip_assets": [
+    {
+      "pengelola": "Tes Yardip 1",
+      "bidang": "Tanah",
+      "kabkota": "Gunung Kidul",
+      "kecamatan": "Demak",
+      "kelurahan": "Disasar",
+      "peruntukan": "Kantor Badan Pemerintahan",
+      "status": "Dimiliki/Dikuasai",
+      "keterangan": "ada",
+      "provinsi": "Daerah Istimewa Yogyakarta",
+      "area": 18340836.27505429,
+      "id": "Y1768376173265",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.622597,-7.888586],[110.662416,-7.902195],[110.645939,-7.936215],[110.608866,-7.921247],[110.622597,-7.888586]]]}",
+      "type": "yardip",
+      "created_at": "2026-01-14T07:36:13.265Z",
+      "updated_at": "2026-01-14T07:36:13.265Z"
+    },
+    {
+      "pengelola": "Tes Yardip 2",
+      "bidang": "Ruko",
+      "kabkota": "Jepara",
+      "kecamatan": "bonang",
+      "kelurahan": "moro",
+      "peruntukan": "Kantor Badan Pemerintahan",
+      "status": "Tidak Dimiliki/Tidak Dikuasai",
+      "keterangan": "ada",
+      "provinsi": "Jawa Tengah",
+      "area": 87945894.83345002,
+      "id": "Y1768376225671",
+      "lokasi": "{\"type\":\"Polygon\",\"coordinates\":[[[110.783135,-6.488892],[110.851788,-6.499813],[110.84355,-6.59536],[110.752928,-6.562603],[110.783135,-6.488892]]]}",
+      "type": "yardip",
+      "created_at": "2026-01-14T07:37:05.671Z",
+      "updated_at": "2026-01-14T07:37:05.671Z"
+    }
+  ],
   "korem": [
     {
       "id": "1",

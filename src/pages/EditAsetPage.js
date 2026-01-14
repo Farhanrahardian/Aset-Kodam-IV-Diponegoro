@@ -35,10 +35,47 @@ const EditAsetPage = () => {
     fetchData();
   }, [id]);
 
+  // TAMBAHKAN: Helper function untuk extract filename dari URL
+  const extractFilename = (url) => {
+    if (!url) return null;
+    // URL format: /uploads/filename.ext
+    const parts = url.split("/");
+    return parts[parts.length - 1];
+  };
+
+  // TAMBAHKAN: Function untuk delete file lama
+  const deleteOldFile = async (fileUrl, fileType) => {
+    if (!fileUrl) return;
+
+    const filename = extractFilename(fileUrl);
+    if (!filename) return;
+
+    try {
+      let endpoint = "";
+
+      if (fileType === "bukti_pemilikan") {
+        endpoint = `${API_URL}/upload/bukti-pemilikan/${filename}`;
+      } else if (fileType === "foto_tampak_atas") {
+        endpoint = `${API_URL}/upload/foto-tampak-atas/${filename}`;
+      } else if (fileType === "asset_photo") {
+        endpoint = `${API_URL}/upload/asset-photos/${filename}`;
+      }
+
+      if (endpoint) {
+        await axios.delete(endpoint);
+        console.log(`✅ Old file deleted: ${filename}`);
+      }
+    } catch (err) {
+      console.warn(`⚠️ Failed to delete old file: ${filename}`, err.message);
+      // Don't throw error, just warn - file might already be deleted
+    }
+  };
+
   const handleSaveAsset = async (
     assetData,
     buktiPemilikanFile,
-    assetPhotos
+    assetPhotos,
+    gambarTampakAtasFile // TAMBAHKAN parameter ini jika belum ada
   ) => {
     const toastId = toast.loading("Menyimpan perubahan...");
 
@@ -46,6 +83,7 @@ const EditAsetPage = () => {
     console.log("Received assetData:", assetData);
     console.log("buktiPemilikanFile:", buktiPemilikanFile);
     console.log("assetPhotos:", assetPhotos);
+    console.log("gambarTampakAtasFile:", gambarTampakAtasFile);
 
     let updatedData = { ...assetData };
 
@@ -53,6 +91,10 @@ const EditAsetPage = () => {
     if (buktiPemilikanFile) {
       try {
         toast.loading("Mengupload bukti pemilikan baru...", { id: toastId });
+
+        // TAMBAHKAN: Delete old file first
+        await deleteOldFile(asset.bukti_pemilikan_url, "bukti_pemilikan");
+
         const formData = new FormData();
         formData.append("bukti_pemilikan", buktiPemilikanFile);
         const uploadRes = await axios.post(
@@ -69,12 +111,45 @@ const EditAsetPage = () => {
       }
     }
 
-    // 2. Upload new Asset Photos if they exist
+    // 2. Upload new Gambar Tampak Atas if it exists
+    if (gambarTampakAtasFile) {
+      try {
+        toast.loading("Mengupload foto tampak atas baru...", { id: toastId });
+
+        // TAMBAHKAN: Delete old file first
+        await deleteOldFile(asset.gambar_tampak_atas_url, "foto_tampak_atas");
+
+        const formData = new FormData();
+        formData.append("foto_tampak_atas", gambarTampakAtasFile);
+        const uploadRes = await axios.post(
+          `${API_URL}/upload/foto-tampak-atas`,
+          formData
+        );
+        updatedData.gambar_tampak_atas_url = uploadRes.data.url;
+        updatedData.gambar_tampak_atas_filename = uploadRes.data.filename;
+        console.log("Foto tampak atas uploaded:", uploadRes.data);
+      } catch (err) {
+        toast.error("Gagal mengupload foto tampak atas baru.", { id: toastId });
+        console.error("File upload error:", err);
+        return;
+      }
+    }
+
+    // 3. Upload new Asset Photos if they exist
     if (assetPhotos && assetPhotos.length > 0) {
       try {
         toast.loading(`Mengupload ${assetPhotos.length} foto aset baru...`, {
           id: toastId,
         });
+
+        // Note: Untuk foto aset, biasanya kita append bukan replace
+        // Jika ingin replace semua, delete old photos dulu:
+        // if (asset.foto_aset && asset.foto_aset.length > 0) {
+        //   for (const photoUrl of asset.foto_aset) {
+        //     await deleteOldFile(photoUrl, 'asset_photo');
+        //   }
+        // }
+
         const photosFormData = new FormData();
         assetPhotos.forEach((photo) => {
           photosFormData.append("asset_photos", photo);
@@ -100,17 +175,11 @@ const EditAsetPage = () => {
       }
     }
 
-    // 3. Save the final updated asset data
+    // 4. Save the final updated asset data
     try {
       toast.loading("Menyimpan data ke database...", { id: toastId });
 
       console.log("Final data being sent to server:", updatedData);
-      console.log("Luas data:", {
-        luas: updatedData.luas,
-        sertifikat_luas: updatedData.sertifikat_luas,
-        belum_sertifikat_luas: updatedData.belum_sertifikat_luas,
-        pemilikan_sertifikat: updatedData.pemilikan_sertifikat,
-      });
 
       await axios.put(`${API_URL}/assets/${id}`, updatedData);
       toast.success("Aset berhasil diperbarui!", { id: toastId });

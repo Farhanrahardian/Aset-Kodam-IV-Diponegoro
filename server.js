@@ -1,622 +1,773 @@
+require("dotenv").config();
 const express = require("express");
+const mysql = require("mysql2/promise");
 const cors = require("cors");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const bcrypt = require("bcrypt");
 
 const app = express();
-const port = 3001;
-const dbPath = path.join(__dirname, "db.json");
+const PORT = process.env.BACKEND_PORT || 3001;
 
-// ===== HELPER FUNCTIONS =====
-const readDb = () => {
-  const dbRaw = fs.readFileSync(dbPath);
-  return JSON.parse(dbRaw);
-};
-
-const writeDb = (data) => {
-  fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
-};
-
-const deleteFileFromUploads = (fileUrl) => {
-  try {
-    if (!fileUrl) return false;
-
-    const filename = path.basename(fileUrl);
-    const filePath = path.join(__dirname, "public", "uploads", filename);
-
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-      console.log(`✅ File deleted: ${filename}`);
-      return true;
-    } else {
-      console.log(`⚠️  File not found: ${filename}`);
-      return false;
-    }
-  } catch (error) {
-    console.error(`❌ Error deleting file: ${error.message}`);
-    return false;
-  }
-};
-
-// ===== MIDDLEWARE =====
+// Middleware
 app.use(cors());
-app.use(express.static("public"));
+app.use(express.json());
+app.use("/uploads", express.static("uploads"));
 
-// ===== MULTER CONFIGURATION =====
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const dir = "public/uploads/";
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
+// Database connection pool
+const pool = mysql.createPool({
+  host: process.env.DB_HOST || "localhost",
+  user: process.env.DB_USER || "root",
+  password: process.env.DB_PASSWORD || "",
+  database: process.env.DB_NAME || "asset_management",
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+});
+
+// Test koneksi
+pool
+  .getConnection()
+  .then((connection) => {
+    console.log("✅ Database MySQL connected");
+    connection.release();
+  })
+  .catch((err) => {
+    console.error("❌ Database connection failed:", err.message);
+  });
+
+// ==================== ASSETS ENDPOINTS ====================
+
+// GET all assets
+app.get("/assets", async (req, res) => {
+  try {
+    const [assets] = await pool.query(`
+      SELECT a.*, 
+             GROUP_CONCAT(DISTINCT f.foto_url ORDER BY f.urutan) as foto_urls,
+             k.nama as korem_nama
+      FROM assets a
+      LEFT JOIN foto_aset f ON a.id = f.asset_id
+      LEFT JOIN korem k ON a.korem_id = k.id
+      GROUP BY a.id
+      ORDER BY a.created_at DESC
+    `);
+
+    const formattedAssets = assets.map((asset) => ({
+      ...asset,
+      foto_aset: asset.foto_urls ? asset.foto_urls.split(",") : [],
+      foto_urls: undefined,
+      lokasi: asset.lokasi ? JSON.parse(asset.lokasi) : null,
+    }));
+
+    res.json(formattedAssets);
+  } catch (error) {
+    console.error("Error getting assets:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET single asset by ID
+app.get("/assets/:id", async (req, res) => {
+  try {
+    const [assets] = await pool.query(
+      `
+      SELECT a.*, 
+             GROUP_CONCAT(DISTINCT f.foto_url ORDER BY f.urutan) as foto_urls,
+             k.nama as korem_nama
+      FROM assets a
+      LEFT JOIN foto_aset f ON a.id = f.asset_id
+      LEFT JOIN korem k ON a.korem_id = k.id
+      WHERE a.id = ?
+      GROUP BY a.id
+    `,
+      [req.params.id]
+    );
+
+    if (assets.length === 0) {
+      return res.status(404).json({ error: "Asset not found" });
     }
-    cb(null, dir);
+
+    const asset = {
+      ...assets[0],
+      foto_aset: assets[0].foto_urls ? assets[0].foto_urls.split(",") : [],
+      foto_urls: undefined,
+      lokasi: assets[0].lokasi ? JSON.parse(assets[0].lokasi) : null,
+    };
+
+    res.json(asset);
+  } catch (error) {
+    console.error("Error getting asset:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST new asset
+app.post("/assets", async (req, res) => {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const assetData = req.body;
+    const id = assetData.id || "T" + Date.now();
+
+    await connection.query(
+      `
+      INSERT INTO assets (
+          id, nama, korem_id, kodim, luas, kib_kode_barang,
+          nomor_registrasi, alamat, peruntukan, status,
+          asal_milik, pemilikan_sertifikat, keterangan_bukti_pemilikan,
+          sertifikat_bidang, sertifikat_luas, belum_sertifikat_bidang,
+          belum_sertifikat_luas, keterangan, atas_nama_pemilik_sertifikat,
+          lokasi, bukti_pemilikan_url, bukti_pemilikan_filename,
+          gambar_tampak_atas_url, gambar_tampak_atas_filename
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+      [
+        id,
+        assetData.nama,
+        assetData.korem_id,
+        assetData.kodim,
+        assetData.luas,
+        assetData.kib_kode_barang,
+        assetData.nomor_registrasi,
+        assetData.alamat,
+        assetData.peruntukan,
+        assetData.status,
+        assetData.asal_milik,
+        assetData.pemilikan_sertifikat,
+        assetData.keterangan_bukti_pemilikan,
+        assetData.sertifikat_bidang,
+        assetData.sertifikat_luas,
+        assetData.belum_sertifikat_bidang,
+        assetData.belum_sertifikat_luas,
+        assetData.keterangan,
+        assetData.atas_nama_pemilik_sertifikat,
+        assetData.lokasi ? assetData.lokasi : null,
+        assetData.bukti_pemilikan_url || null,
+        assetData.bukti_pemilikan_filename || null,
+        assetData.gambar_tampak_atas_url || null,
+        assetData.gambar_tampak_atas_filename || null,
+      ]
+    );
+
+    // Insert foto aset
+    if (assetData.foto_aset && assetData.foto_aset.length > 0) {
+      for (let i = 0; i < assetData.foto_aset.length; i++) {
+        await connection.query(
+          "INSERT INTO foto_aset (asset_id, foto_url, urutan) VALUES (?, ?, ?)",
+          [id, assetData.foto_aset[i], i]
+        );
+      }
+    }
+
+    await connection.commit();
+    res.status(201).json({ message: "Asset created successfully", id });
+  } catch (error) {
+    await connection.rollback();
+    console.error("Error creating asset:", error);
+    res.status(500).json({ error: error.message });
+  } finally {
+    connection.release();
+  }
+});
+
+// PUT update asset
+app.put("/assets/:id", async (req, res) => {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const assetData = req.body;
+    const { id } = req.params;
+
+    console.log("=== UPDATE ASSET ===");
+    console.log("Asset ID:", id);
+
+    // PENTING: Convert lokasi object ke JSON string
+    const lokasiJSON = assetData.lokasi
+      ? JSON.stringify(assetData.lokasi)
+      : null;
+
+    await connection.query(
+      `
+      UPDATE assets SET
+          nama = ?, korem_id = ?, kodim = ?, luas = ?, kib_kode_barang = ?,
+          nomor_registrasi = ?, alamat = ?, peruntukan = ?, status = ?,
+          asal_milik = ?, pemilikan_sertifikat = ?, keterangan_bukti_pemilikan = ?,
+          sertifikat_bidang = ?, sertifikat_luas = ?, belum_sertifikat_bidang = ?,
+          belum_sertifikat_luas = ?, keterangan = ?, atas_nama_pemilik_sertifikat = ?,
+          lokasi = ?, bukti_pemilikan_url = ?, bukti_pemilikan_filename = ?,
+          gambar_tampak_atas_url = ?, gambar_tampak_atas_filename = ?,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+      `,
+      [
+        assetData.nama,
+        assetData.korem_id,
+        assetData.kodim,
+        assetData.luas,
+        assetData.kib_kode_barang,
+        assetData.nomor_registrasi,
+        assetData.alamat,
+        assetData.peruntukan,
+        assetData.status,
+        assetData.asal_milik,
+        assetData.pemilikan_sertifikat,
+        assetData.keterangan_bukti_pemilikan,
+        assetData.sertifikat_bidang,
+        assetData.sertifikat_luas,
+        assetData.belum_sertifikat_bidang,
+        assetData.belum_sertifikat_luas,
+        assetData.keterangan,
+        assetData.atas_nama_pemilik_sertifikat,
+        lokasiJSON, // ← Gunakan JSON string, bukan object
+        assetData.bukti_pemilikan_url || null,
+        assetData.bukti_pemilikan_filename || null,
+        assetData.gambar_tampak_atas_url || null,
+        assetData.gambar_tampak_atas_filename || null,
+        id,
+      ]
+    );
+
+    // Update foto aset jika ada
+    if (assetData.foto_aset && assetData.foto_aset.length > 0) {
+      await connection.query("DELETE FROM foto_aset WHERE asset_id = ?", [id]);
+
+      for (let i = 0; i < assetData.foto_aset.length; i++) {
+        await connection.query(
+          "INSERT INTO foto_aset (asset_id, foto_url, urutan) VALUES (?, ?, ?)",
+          [id, assetData.foto_aset[i], i]
+        );
+      }
+    }
+
+    await connection.commit();
+    res.json({ message: "Asset updated successfully" });
+  } catch (error) {
+    await connection.rollback();
+    console.error("Error updating asset:", error);
+    res.status(500).json({ error: error.message });
+  } finally {
+    connection.release();
+  }
+});
+
+// DELETE asset
+app.delete("/assets/:id", async (req, res) => {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const { id } = req.params;
+
+    // Hapus foto aset terlebih dahulu
+    await connection.query("DELETE FROM foto_aset WHERE asset_id = ?", [id]);
+
+    // Hapus asset
+    await connection.query("DELETE FROM assets WHERE id = ?", [id]);
+
+    await connection.commit();
+    res.json({ message: "Asset deleted successfully" });
+  } catch (error) {
+    await connection.rollback();
+    console.error("Error deleting asset:", error);
+    res.status(500).json({ error: error.message });
+  } finally {
+    connection.release();
+  }
+});
+
+// ==================== KOREM ENDPOINTS ====================
+
+app.get("/korem", async (req, res) => {
+  try {
+    const [korem] = await pool.query("SELECT * FROM korem");
+
+    const koremWithKodim = await Promise.all(
+      korem.map(async (k) => {
+        const [kodim] = await pool.query(
+          "SELECT nama FROM kodim WHERE korem_id = ?",
+          [k.id]
+        );
+        return {
+          ...k,
+          kodim: kodim.map((kod) => kod.nama),
+        };
+      })
+    );
+
+    res.json(koremWithKodim);
+  } catch (error) {
+    console.error("Error getting korem:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== YARDIP ASSETS ENDPOINTS ====================
+
+// GET all yardip assets
+app.get("/yardip_assets", async (req, res) => {
+  try {
+    const [assets] = await pool.query(
+      "SELECT * FROM yardip_assets ORDER BY created_at DESC"
+    );
+
+    const formattedAssets = assets.map((asset) => ({
+      ...asset,
+      lokasi: asset.lokasi ? JSON.parse(asset.lokasi) : null,
+    }));
+
+    res.json(formattedAssets);
+  } catch (error) {
+    console.error("Error getting yardip assets:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET single yardip asset by ID
+app.get("/yardip_assets/:id", async (req, res) => {
+  try {
+    const [assets] = await pool.query(
+      "SELECT * FROM yardip_assets WHERE id = ?",
+      [req.params.id]
+    );
+
+    if (assets.length === 0) {
+      return res.status(404).json({ error: "Yardip asset not found" });
+    }
+
+    const asset = {
+      ...assets[0],
+      lokasi: assets[0].lokasi ? JSON.parse(assets[0].lokasi) : null,
+    };
+
+    res.json(asset);
+  } catch (error) {
+    console.error("Error getting yardip asset:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST new yardip asset
+app.post("/yardip_assets", async (req, res) => {
+  try {
+    const assetData = req.body;
+    const id = assetData.id || "Y" + Date.now();
+
+    console.log("=== CREATE YARDIP ASSET ===");
+    console.log("Data:", assetData);
+
+    // PENTING: Convert lokasi object ke JSON string
+    const lokasiJSON = assetData.lokasi
+      ? JSON.stringify(assetData.lokasi)
+      : null;
+
+    await pool.query(
+      `
+      INSERT INTO yardip_assets (
+          id, pengelola, bidang, provinsi, kabkota, 
+          kecamatan, kelurahan, peruntukan, status, 
+          keterangan, area, lokasi, type
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+      [
+        id,
+        assetData.pengelola,
+        assetData.bidang,
+        assetData.provinsi || null, // ← Gunakan provinsi varchar
+        assetData.kabkota,
+        assetData.kecamatan,
+        assetData.kelurahan,
+        assetData.peruntukan,
+        assetData.status,
+        assetData.keterangan,
+        assetData.area,
+        lokasiJSON, // ← Convert ke JSON string
+        assetData.type || "yardip",
+      ]
+    );
+
+    res.status(201).json({ message: "Yardip asset created successfully", id });
+  } catch (error) {
+    console.error("Error creating yardip asset:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT update yardip asset
+app.put("/yardip_assets/:id", async (req, res) => {
+  try {
+    const assetData = req.body;
+    const { id } = req.params;
+
+    console.log("=== UPDATE YARDIP ASSET ===");
+    console.log("Asset ID:", id);
+    console.log("Asset Data:", assetData);
+
+    // PENTING: Convert lokasi object ke JSON string
+    const lokasiJSON = assetData.lokasi
+      ? JSON.stringify(assetData.lokasi)
+      : null;
+
+    // PERBAIKAN: Hapus provinsi_id dan kota_id, gunakan provinsi varchar saja
+    await pool.query(
+      `
+      UPDATE yardip_assets SET
+          pengelola = ?, bidang = ?, provinsi = ?, kabkota = ?,
+          kecamatan = ?, kelurahan = ?, peruntukan = ?, status = ?,
+          keterangan = ?, area = ?, lokasi = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+      `,
+      [
+        assetData.pengelola,
+        assetData.bidang,
+        assetData.provinsi || null, // ← Gunakan provinsi, bukan provinsi_id
+        assetData.kabkota,
+        assetData.kecamatan,
+        assetData.kelurahan,
+        assetData.peruntukan,
+        assetData.status,
+        assetData.keterangan,
+        assetData.area,
+        lokasiJSON, // ← Convert ke JSON string
+        id,
+      ]
+    );
+
+    res.json({ message: "Yardip asset updated successfully" });
+  } catch (error) {
+    console.error("Error updating yardip asset:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE yardip asset
+app.delete("/yardip_assets/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await pool.query("DELETE FROM yardip_assets WHERE id = ?", [id]);
+
+    res.json({ message: "Yardip asset deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting yardip asset:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== USERS ENDPOINTS ====================
+
+// GET all users
+app.get("/users", async (req, res) => {
+  try {
+    const [users] = await pool.query("SELECT * FROM users");
+    res.json(users);
+  } catch (error) {
+    console.error("Error getting users:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST new user
+app.post("/users", async (req, res) => {
+  try {
+    const { username, password, name, role } = req.body;
+
+    console.log("=== CREATE USER ===");
+    console.log("Data:", { username, name, role });
+
+    // Validasi
+    if (!username || !password || !name || !role) {
+      return res.status(400).json({
+        message: "Semua field wajib diisi",
+      });
+    }
+
+    // Validasi NRP (18 digit)
+    if (username.length !== 18 || !/^\d+$/.test(username)) {
+      return res.status(400).json({
+        message: "NRP (Username) harus berupa 18 digit angka",
+      });
+    }
+
+    // Validasi password
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({
+        message:
+          "Password minimal 8 karakter dan harus mengandung huruf dan angka",
+      });
+    }
+
+    // Cek apakah username sudah ada
+    const [existing] = await pool.query(
+      "SELECT * FROM users WHERE username = ?",
+      [username]
+    );
+
+    if (existing.length > 0) {
+      return res.status(400).json({
+        message: "Username sudah digunakan",
+      });
+    }
+
+    // Hash password
+    const bcrypt = require("bcrypt");
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Insert user baru (TANPA ID, biarkan auto-increment)
+    const [result] = await pool.query(
+      "INSERT INTO users (username, password, name, role) VALUES (?, ?, ?, ?)",
+      [username, hashedPassword, name, role]
+    );
+
+    res.status(201).json({
+      message: "User created successfully",
+      id: result.insertId,
+    });
+  } catch (error) {
+    console.error("Error creating user:", error);
+    res.status(500).json({
+      message: error.message || "Gagal membuat user",
+    });
+  }
+});
+
+// ✅ ENDPOINT: Edit User (PUT)
+app.put("/users/:id", async (req, res) => {
+  const { id } = req.params;
+  const { username, password, name, role } = req.body;
+
+  try {
+    // Validasi input
+    if (!name || !role) {
+      return res.status(400).json({
+        message: "Nama dan role wajib diisi",
+      });
+    }
+
+    // Validasi password (jika diisi)
+    if (password) {
+      const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
+      if (!passwordRegex.test(password)) {
+        return res.status(400).json({
+          message:
+            "Password minimal 8 karakter dan harus mengandung huruf dan angka",
+        });
+      }
+    }
+
+    // Build query UPDATE
+    let query = "UPDATE users SET name = ?, role = ?";
+    let params = [name, role];
+
+    // Jika password diisi, hash dan update juga
+    if (password) {
+      const bcrypt = require("bcrypt");
+      const hashedPassword = await bcrypt.hash(password, 10);
+      query += ", password = ?";
+      params.push(hashedPassword);
+    }
+
+    query += " WHERE id = ?";
+    params.push(id);
+
+    // Execute query dengan MySQL pool
+    const [result] = await pool.query(query, params);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        message: "User tidak ditemukan",
+      });
+    }
+
+    res.json({
+      message: "User berhasil diupdate",
+      id: id,
+    });
+  } catch (error) {
+    console.error("Error updating user:", error);
+    res.status(500).json({
+      message: error.message || "Gagal mengupdate user",
+    });
+  }
+});
+
+// ✅ ENDPOINT: Hapus User (DELETE)
+app.delete("/users/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Cek apakah user yang akan dihapus ada
+    const [users] = await pool.query("SELECT * FROM users WHERE id = ?", [id]);
+
+    if (users.length === 0) {
+      return res.status(404).json({
+        message: "User tidak ditemukan",
+      });
+    }
+
+    // Hapus user
+    const [result] = await pool.query("DELETE FROM users WHERE id = ?", [id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(500).json({
+        message: "Gagal menghapus user",
+      });
+    }
+
+    res.json({
+      message: "User berhasil dihapus",
+      id: id,
+    });
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    res.status(500).json({
+      message: error.message || "Gagal menghapus user",
+    });
+  }
+});
+// ==================== UPLOAD ENDPOINTS ====================
+
+// Setup multer untuk upload
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = "./uploads";
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
   },
-  filename: function (req, file, cb) {
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     cb(
       null,
-      file.fieldname + "-" + Date.now() + path.extname(file.originalname)
+      file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname)
     );
   },
 });
 
-const uploadAssetPhotos = multer({
-  storage: storage,
-  limits: { fileSize: 50 * 1024 * 1024, files: 5 },
-  fileFilter: (req, file, cb) => {
-    if (
-      file.mimetype.startsWith("image/") ||
-      file.mimetype.startsWith("video/")
-    ) {
-      cb(null, true);
-    } else {
-      cb(new Error("File foto aset harus berupa gambar atau video"), false);
-    }
-  },
-});
+const upload = multer({ storage: storage });
 
-const uploadBuktiPemilikan = multer({
-  storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    if (
-      file.mimetype.startsWith("image/") ||
-      file.mimetype === "application/pdf"
-    ) {
-      cb(null, true);
-    } else {
-      cb(new Error("File bukti pemilikan harus berupa gambar atau PDF"), false);
-    }
-  },
-});
-
-const uploadFotoTampakAtas = multer({
-  storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith("image/")) {
-      cb(null, true);
-    } else {
-      cb(new Error("File foto tampak atas harus berupa gambar"), false);
-    }
-  },
-});
-
-// ===== UPLOAD ENDPOINTS (must be before body parser) =====
 app.post(
   "/upload/bukti-pemilikan",
-  uploadBuktiPemilikan.single("bukti_pemilikan"),
+  upload.single("bukti_pemilikan"),
   (req, res) => {
     if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded." });
+      return res.status(400).json({ error: "No file uploaded" });
     }
+    console.log("Bukti pemilikan uploaded:", req.file.filename);
     res.json({
-      message: "File uploaded successfully",
-      filename: req.file.filename,
       url: `/uploads/${req.file.filename}`,
+      filename: req.file.filename,
     });
   }
 );
 
 app.post(
   "/upload/asset-photos",
-  uploadAssetPhotos.array("asset_photos", 5),
+  upload.array("asset_photos", 10),
   (req, res) => {
-    console.log("--- DEBUG: Menerima Foto Aset ---", req.files);
     if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ message: "No files uploaded." });
+      return res.status(400).json({ error: "No files uploaded" });
     }
     const files = req.files.map((file) => ({
-      filename: file.filename,
       url: `/uploads/${file.filename}`,
+      filename: file.filename,
     }));
-    res.json({
-      message: "Files uploaded successfully",
-      files: files,
-    });
+    console.log(`${files.length} asset photos uploaded`);
+    res.json({ files });
   }
 );
 
 app.post(
   "/upload/foto-tampak-atas",
-  uploadFotoTampakAtas.single("foto_tampak_atas"),
+  upload.single("foto_tampak_atas"),
   (req, res) => {
     if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded." });
+      return res.status(400).json({ error: "No file uploaded" });
     }
+    console.log("Foto tampak atas uploaded:", req.file.filename);
     res.json({
-      message: "File uploaded successfully",
-      filename: req.file.filename,
       url: `/uploads/${req.file.filename}`,
+      filename: req.file.filename,
     });
   }
 );
+// ==================== DELETE FILE ENDPOINTS ====================
 
-// Body parser (must be AFTER upload endpoints)
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ limit: "50mb", extended: true }));
-
-// ===== DELETE ENDPOINTS FOR FILES =====
-app.delete("/delete-bukti-pemilikan", (req, res) => {
+// DELETE bukti pemilikan
+app.delete("/upload/bukti-pemilikan/:filename", (req, res) => {
   try {
-    const { buktiPemilikanUrl, assetId } = req.body;
-    console.log("🗑️  DELETE bukti pemilikan request:", {
-      buktiPemilikanUrl,
-      assetId,
-      body: req.body,
-    });
+    const { filename } = req.params;
+    const filePath = path.join(__dirname, "uploads", filename);
 
-    if (!buktiPemilikanUrl || !assetId) {
-      console.log("❌ Missing required fields");
-      return res.status(400).json({
-        error: "URL bukti pemilikan dan Asset ID diperlukan",
-      });
-    }
+    console.log("Deleting bukti pemilikan:", filename);
 
-    const db = readDb();
-    const assetIndex = db.assets.findIndex(
-      (asset) => String(asset.id) === String(assetId)
-    );
-
-    if (assetIndex === -1) {
-      console.log("❌ Asset not found:", assetId);
-      return res.status(404).json({ error: "Asset tidak ditemukan" });
-    }
-
-    console.log("✅ Asset found:", db.assets[assetIndex].nama);
-
-    // Delete file from filesystem
-    const fileDeleted = deleteFileFromUploads(buktiPemilikanUrl);
-    console.log("File deletion result:", fileDeleted);
-
-    // Update database
-    db.assets[assetIndex].bukti_pemilikan_url = null;
-    db.assets[assetIndex].bukti_pemilikan_filename = null;
-    writeDb(db);
-
-    console.log("✅ Bukti pemilikan deleted successfully");
-    res.json({
-      success: true,
-      message: "Bukti pemilikan berhasil dihapus",
-      fileDeleted: fileDeleted,
-    });
-  } catch (error) {
-    console.error("❌ Error deleting bukti pemilikan:", error);
-    res.status(500).json({
-      error: "Gagal menghapus bukti pemilikan",
-      details: error.message,
-    });
-  }
-});
-
-app.delete("/delete-asset-photo", (req, res) => {
-  try {
-    const { photoUrl, assetId } = req.body;
-    console.log("🗑️  DELETE asset photo request:", {
-      photoUrl,
-      assetId,
-      body: req.body,
-    });
-
-    if (!photoUrl || !assetId) {
-      console.log("❌ Missing required fields");
-      return res.status(400).json({
-        error: "URL foto dan Asset ID diperlukan",
-      });
-    }
-
-    const db = readDb();
-    const assetIndex = db.assets.findIndex(
-      (asset) => String(asset.id) === String(assetId)
-    );
-
-    if (assetIndex === -1) {
-      console.log("❌ Asset not found:", assetId);
-      return res.status(404).json({ error: "Asset tidak ditemukan" });
-    }
-
-    const asset = db.assets[assetIndex];
-    console.log("✅ Asset found:", asset.nama);
-    console.log("Current foto_aset:", asset.foto_aset);
-
-    let fotoAsetArray = asset.foto_aset || [];
-
-    // Delete file from filesystem
-    const fileDeleted = deleteFileFromUploads(photoUrl);
-    console.log("File deletion result:", fileDeleted);
-
-    // Remove URL from array
-    const updatedFotoAset = fotoAsetArray.filter((url) => url !== photoUrl);
-    console.log("Updated foto_aset:", updatedFotoAset);
-
-    db.assets[assetIndex].foto_aset = updatedFotoAset;
-    writeDb(db);
-
-    console.log("✅ Asset photo deleted successfully");
-    res.json({
-      success: true,
-      message: "Foto aset berhasil dihapus",
-      fileDeleted: fileDeleted,
-      updatedFotoAset: updatedFotoAset,
-    });
-  } catch (error) {
-    console.error("❌ Error deleting asset photo:", error);
-    res.status(500).json({
-      error: "Gagal menghapus foto aset",
-      details: error.message,
-    });
-  }
-});
-
-app.delete("/delete-foto-tampak-atas", (req, res) => {
-  try {
-    const { fileUrl, assetId } = req.body;
-    if (!fileUrl || !assetId) {
-      return res
-        .status(400)
-        .json({ error: "URL file dan Asset ID diperlukan" });
-    }
-
-    const db = readDb();
-    const assetIndex = db.assets.findIndex(
-      (asset) => String(asset.id) === String(assetId)
-    );
-
-    if (assetIndex === -1) {
-      return res.status(404).json({ error: "Asset tidak ditemukan" });
-    }
-
-    // Delete file from filesystem
-    const fileDeleted = deleteFileFromUploads(fileUrl);
-
-    // Update database
-    db.assets[assetIndex].gambar_tampak_atas_url = null;
-    db.assets[assetIndex].gambar_tampak_atas_filename = null;
-    writeDb(db);
-
-    res.json({
-      success: true,
-      message: "Foto tampak atas berhasil dihapus",
-      fileDeleted: fileDeleted,
-    });
-  } catch (error) {
-    res.status(500).json({
-      error: "Gagal menghapus foto tampak atas",
-      details: error.message,
-    });
-  }
-});
-
-// ===== USER MANAGEMENT =====
-app.post("/login", (req, res) => {
-  const { username, password } = req.body;
-  const db = readDb();
-  const user = db.users.find(
-    (u) => u.username === username && u.password === password
-  );
-
-  if (user) {
-    res.json({
-      message: "Login successful",
-      user: {
-        id: user.id,
-        username: user.username,
-        name: user.name,
-        role: user.role,
-      },
-    });
-  } else {
-    res.status(401).json({ message: "Invalid username or password" });
-  }
-});
-
-app.get("/api/users", (req, res) => {
-  const db = readDb();
-  res.json(
-    db.users.map((u) => ({
-      id: u.id,
-      username: u.username,
-      role: u.role,
-      name: u.name,
-    }))
-  );
-});
-
-app.post("/api/users", (req, res) => {
-  const { username, password, role, name } = req.body;
-  if (!username || !password || !role || !name) {
-    return res.status(400).json({ message: "Semua field wajib diisi" });
-  }
-
-  if (username.length !== 18 || !/^\d+$/.test(username)) {
-    return res
-      .status(400)
-      .json({ message: "NRP (Username) harus berupa 18 digit angka." });
-  }
-
-  const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
-  if (!passwordRegex.test(password)) {
-    return res.status(400).json({
-      message:
-        "Password minimal 8 karakter dan harus mengandung huruf dan angka.",
-    });
-  }
-
-  const db = readDb();
-  if (db.users.some((u) => u.username === username)) {
-    return res.status(409).json({ message: "Username already exists" });
-  }
-
-  const newUser = { id: `u${Date.now()}`, username, password, name, role };
-  db.users.push(newUser);
-  writeDb(db);
-  res.status(201).json({
-    id: newUser.id,
-    username: newUser.username,
-    role: newUser.role,
-    name: newUser.name,
-  });
-});
-
-app.put("/api/users/:id", (req, res) => {
-  const { id } = req.params;
-  const { role, password, name } = req.body;
-  const db = readDb();
-  const userIndex = db.users.findIndex((u) => u.id === id);
-
-  if (userIndex === -1) {
-    return res.status(404).json({ message: "User not found" });
-  }
-
-  if (role) db.users[userIndex].role = role;
-  if (name) db.users[userIndex].name = name;
-
-  if (password) {
-    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
-    if (!passwordRegex.test(password)) {
-      return res.status(400).json({
-        message:
-          "Password minimal 8 karakter dan harus mengandung huruf dan angka.",
-      });
-    }
-    db.users[userIndex].password = password;
-  }
-
-  writeDb(db);
-  res.json({ message: "User updated successfully", user: db.users[userIndex] });
-});
-
-app.delete("/api/users/:id", (req, res) => {
-  const { id } = req.params;
-  const db = readDb();
-  const initialLength = db.users.length;
-  db.users = db.users.filter((u) => u.id !== id);
-
-  if (db.users.length === initialLength) {
-    return res.status(404).json({ message: "User not found" });
-  }
-
-  writeDb(db);
-  res.status(200).json({ message: "User deleted successfully" });
-});
-
-// ===== GENERIC JSON-SERVER ROUTES =====
-app.get("/:resource", (req, res) => {
-  const { resource } = req.params;
-  const db = readDb();
-  const data = db[resource];
-  if (data) {
-    res.json(data);
-  } else {
-    res.status(404).json({ message: `Resource '${resource}' not found` });
-  }
-});
-
-app.get("/:resource/:id", (req, res) => {
-  const { resource, id } = req.params;
-  const db = readDb();
-  const data = db[resource];
-  if (data) {
-    const item = data.find((item) => item.id == id);
-    if (item) {
-      res.json(item);
+    // Cek apakah file exists
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      console.log("✅ File deleted:", filename);
+      res.json({ message: "File deleted successfully", filename });
     } else {
-      res.status(404).json({ message: "Item not found" });
+      console.log("⚠️ File not found:", filename);
+      res.status(404).json({ error: "File not found" });
     }
-  } else {
-    res.status(404).json({ message: `Resource '${resource}' not found` });
+  } catch (error) {
+    console.error("Error deleting bukti pemilikan:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 
-app.post("/:resource", (req, res) => {
-  const { resource } = req.params;
-  const db = readDb();
-  if (db[resource]) {
-    const newItem = req.body;
-    db[resource].push(newItem);
-    writeDb(db);
-    res.status(201).json(newItem);
-  } else {
-    res.status(404).json({ message: `Resource '${resource}' not found` });
-  }
-});
+// DELETE foto aset (single photo)
+app.delete("/upload/asset-photos/:filename", (req, res) => {
+  try {
+    const { filename } = req.params;
+    const filePath = path.join(__dirname, "uploads", filename);
 
-app.put("/assets/:id", (req, res) => {
-  const { id } = req.params;
-  const updatedAsset = req.body;
-  const db = readDb();
-  if (!db.assets) {
-    return res.status(404).json({ message: "Resource 'assets' not found" });
-  }
-  const assetIndex = db.assets.findIndex(
-    (asset) => String(asset.id) === String(id)
-  );
-  if (assetIndex === -1) {
-    return res.status(404).json({ message: "Asset not found" });
-  }
-  db.assets[assetIndex] = { ...db.assets[assetIndex], ...updatedAsset };
-  writeDb(db);
-  res.json(db.assets[assetIndex]);
-});
+    console.log("Deleting asset photo:", filename);
 
-app.delete("/assets/:id", (req, res) => {
-  const { id } = req.params;
-  const db = readDb();
-  if (!db.assets) {
-    return res.status(404).json({ message: "Resource 'assets' not found" });
-  }
-  const assetIndex = db.assets.findIndex(
-    (asset) => String(asset.id) === String(id)
-  );
-  if (assetIndex === -1) {
-    return res.status(404).json({ message: "Asset not found" });
-  }
-  const assetToDelete = db.assets[assetIndex];
-
-  // Delete files
-  if (assetToDelete.bukti_pemilikan_url) {
-    deleteFileFromUploads(assetToDelete.bukti_pemilikan_url);
-  }
-  if (assetToDelete.gambar_tampak_atas_url) {
-    deleteFileFromUploads(assetToDelete.gambar_tampak_atas_url);
-  }
-  if (assetToDelete.foto_aset && Array.isArray(assetToDelete.foto_aset)) {
-    assetToDelete.foto_aset.forEach((fotoUrl) => {
-      deleteFileFromUploads(fotoUrl);
-    });
-  }
-
-  db.assets.splice(assetIndex, 1);
-  writeDb(db);
-  res.status(200).json({ message: "Asset deleted successfully" });
-});
-
-// ===== YARDIP ASSETS =====
-const isConservationArea = (kabupatenName) => {
-  return kabupatenName === "Hutan" || kabupatenName === "Wadung Kedungombo";
-};
-
-app.put("/yardip_assets/:id", (req, res) => {
-  const { id } = req.params;
-  const updatedAsset = req.body;
-
-  // Validasi area konservasi
-  if (isConservationArea(updatedAsset.kabkota)) {
-    return res.status(400).json({
-      message: "Aset yardip tidak dapat disimpan di wilayah konservasi (Hutan atau Wadung Kedungombo)"
-    });
-  }
-
-  const db = readDb();
-  if (!db.yardip_assets) {
-    return res
-      .status(404)
-      .json({ message: "Resource 'yardip_assets' not found" });
-  }
-  const assetIndex = db.yardip_assets.findIndex(
-    (asset) => String(asset.id) === String(id)
-  );
-  if (assetIndex === -1) {
-    return res.status(404).json({ message: "Yardip asset not found" });
-  }
-  db.yardip_assets[assetIndex] = {
-    ...db.yardip_assets[assetIndex],
-    ...updatedAsset,
-  };
-  writeDb(db);
-  res.json(db.yardip_assets[assetIndex]);
-});
-
-app.delete("/yardip_assets/:id", (req, res) => {
-  const { id } = req.params;
-  const db = readDb();
-  if (!db.yardip_assets) {
-    return res
-      .status(404)
-      .json({ message: "Resource 'yardip_assets' not found" });
-  }
-  const assetIndex = db.yardip_assets.findIndex(
-    (asset) => String(asset.id) === String(id)
-  );
-  if (assetIndex === -1) {
-    return res.status(404).json({ message: "Yardip asset not found" });
-  }
-  db.yardip_assets.splice(assetIndex, 1);
-  writeDb(db);
-  res.status(200).json({ message: "Yardip asset deleted successfully" });
-});
-
-// Validasi area konservasi untuk POST request
-app.post('/yardip_assets', (req, res) => {
-  const newAsset = req.body;
-
-  // Validasi area konservasi
-  if (isConservationArea(newAsset.kabkota)) {
-    return res.status(400).json({
-      message: "Aset yardip tidak dapat ditambahkan di wilayah konservasi (Hutan atau Wadung Kedungombo)"
-    });
-  }
-
-  const db = readDb();
-  if (!db.yardip_assets) {
-    return res.status(404).json({ message: "Resource 'yardip_assets' not found" });
-  }
-  const newId = newAsset.id || `Y${Date.now()}`;
-  const createdAsset = { ...newAsset, id: newId };
-  db.yardip_assets.push(createdAsset);
-  writeDb(db);
-  res.status(201).json(createdAsset);
-});
-
-// ===== ERROR HANDLING =====
-app.use((error, req, res, next) => {
-  if (error instanceof multer.MulterError) {
-    if (error.code === "LIMIT_FILE_SIZE") {
-      return res.status(400).json({
-        message:
-          "File terlalu besar. Maksimal 50MB untuk foto/video aset dan 10MB untuk bukti pemilikan.",
-      });
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      console.log("✅ File deleted:", filename);
+      res.json({ message: "File deleted successfully", filename });
+    } else {
+      console.log("⚠️ File not found:", filename);
+      res.status(404).json({ error: "File not found" });
     }
-    if (error.code === "LIMIT_FILE_COUNT") {
-      return res.status(400).json({
-        message: "Terlalu banyak file yang diupload. Maksimal 5 file.",
-      });
-    }
-    return res.status(400).json({ message: error.message });
-  } else if (error) {
-    return res
-      .status(500)
-      .json({ message: error.message || "Terjadi kesalahan pada server." });
+  } catch (error) {
+    console.error("Error deleting asset photo:", error);
+    res.status(500).json({ error: error.message });
   }
-  next();
 });
 
-// ===== START SERVER =====
-app.listen(port, () => {
-  console.log(`\n🚀 Server running at http://localhost:${port}`);
-  console.log(
-    `📁 Uploads directory: ${path.join(__dirname, "public/uploads")}`
-  );
-  console.log(`💾 Database: ${dbPath}`);
-  console.log(`✅ Ready to accept requests!\n`);
+// DELETE foto tampak atas
+app.delete("/upload/foto-tampak-atas/:filename", (req, res) => {
+  try {
+    const { filename } = req.params;
+    const filePath = path.join(__dirname, "uploads", filename);
+
+    console.log("Deleting foto tampak atas:", filename);
+
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      console.log("✅ File deleted:", filename);
+      res.json({ message: "File deleted successfully", filename });
+    } else {
+      console.log("⚠️ File not found:", filename);
+      res.status(404).json({ error: "File not found" });
+    }
+  } catch (error) {
+    console.error("Error deleting foto tampak atas:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+// ==================== START SERVER ====================
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });

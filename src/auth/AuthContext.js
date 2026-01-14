@@ -1,13 +1,15 @@
+import React, { createContext, useState, useContext } from "react";
+import axios from "axios";
 
-import React, { createContext, useState, useContext } from 'react';
-import axios from 'axios';
+// ✅ UBAH: Ganti port dari 3000 ke 3001
+const API_URL = "http://localhost:3001";
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     // Cek jika ada data user di localStorage saat aplikasi pertama kali dimuat
-    const storedUser = localStorage.getItem('user');
+    const storedUser = localStorage.getItem("user");
     try {
       return storedUser ? JSON.parse(storedUser) : null;
     } catch (error) {
@@ -17,20 +19,28 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password) => {
     try {
-      // Ambil semua user dari db.json
-      const response = await axios.get('http://localhost:3001/users');
+      // ✅ UBAH: Ganti endpoint ke MySQL server
+      const response = await axios.get(`${API_URL}/users`);
       const users = response.data;
+
       // Cari user yang cocok
-      const foundUser = users.find(u => u.username === username && u.password === password);
+      const foundUser = users.find(
+        (u) => u.username === username && u.password === password
+      );
 
       if (foundUser) {
-        const userData = { id: foundUser.id, username: foundUser.username, name: foundUser.name, role: foundUser.role };
+        const userData = {
+          id: foundUser.id,
+          username: foundUser.username,
+          name: foundUser.name,
+          role: foundUser.role,
+        };
         setUser(userData);
         // Simpan data user di localStorage
-        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem("user", JSON.stringify(userData));
         return true;
       } else {
-        throw new Error('Username atau password salah.');
+        throw new Error("Username atau password salah.");
       }
     } catch (error) {
       console.error("Login failed:", error);
@@ -41,7 +51,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setUser(null);
     // Hapus data user dari localStorage
-    localStorage.removeItem('user');
+    localStorage.removeItem("user");
   };
 
   const value = { user, login, logout };
