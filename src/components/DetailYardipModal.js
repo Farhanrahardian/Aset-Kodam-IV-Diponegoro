@@ -1,57 +1,44 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Modal, Button, Row, Col, Card, Table } from "react-bootstrap";
-import {
-  MapContainer,
-  TileLayer,
-  Polygon,
-  useMap,
-  LayersControl,
-} from "react-leaflet";
-import L from "leaflet";
-
 import { parseLocation } from "../utils/locationUtils";
-
-// A simplified zoom controller for the detail map
-const DetailMapController = ({ geometry }) => {
-  const map = useMap();
-  React.useEffect(() => {
-    if (map && geometry) {
-      try {
-        // Create a GeoJSON object with correct coordinate order for bounds calculation
-        const geoJsonForBounds = {
-          type: "Polygon",
-          coordinates: [
-            geometry.coordinates[0].map((latLng) => [latLng[1], latLng[0]]),
-          ],
-        };
-        const layer = L.geoJSON(geoJsonForBounds);
-        const bounds = layer.getBounds();
-        if (bounds.isValid()) {
-          map.fitBounds(bounds, { padding: [20, 20] });
-        }
-      } catch (e) {
-        console.error("Could not fit bounds for detail map", e);
-      }
-    }
-  }, [map, geometry]);
-  return null;
-};
+import PetaAsetYardip from "./PetaAsetYardip";
 
 const DetailYardipModal = ({ show, onHide, asset }) => {
+  const [provinsiData, setProvinsiData] = useState(null);
+  const [kabupatenData, setKabupatenData] = useState(null);
+
+  // Load geojson data
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [provRes, kabRes] = await Promise.all([
+          fetch("/data/provinsi.geojson"),
+          fetch("/data/kabupaten_kota.geojson")
+        ]);
+
+        const provData = await provRes.json();
+        const kabData = await kabRes.json();
+
+        setProvinsiData(provData);
+        setKabupatenData(kabData);
+      } catch (error) {
+        console.error("Error loading geojson data:", error);
+      }
+    };
+
+    if (show && asset) {
+      const locationData = parseLocation(asset.lokasi);
+      const hasValidLocation = locationData && locationData.type === "Polygon";
+      if (hasValidLocation) {
+        loadData();
+      }
+    }
+  }, [show, asset]);
+
   if (!asset) return null;
 
   const locationData = parseLocation(asset.lokasi);
   const hasValidLocation = locationData && locationData.type === "Polygon";
-
-  let mapGeometry = null;
-  if (hasValidLocation) {
-    // Convert GeoJSON [lng, lat] to Leaflet [lat, lng] for rendering
-    const latLngs = locationData.coordinates[0].map((coord) => [
-      coord[1],
-      coord[0],
-    ]);
-    mapGeometry = { type: "Polygon", coordinates: [latLngs] };
-  }
 
   const getStatusBadgeClass = (status) => {
     switch (status) {
@@ -64,16 +51,23 @@ const DetailYardipModal = ({ show, onHide, asset }) => {
     }
   };
 
-  const getPolygonStyleByStatus = (status) => {
-    switch (status) {
-      case "Dimiliki/Dikuasai":
-        return { color: "#28a745", weight: 2, fillOpacity: 0.6 }; // Green
-      case "Tidak Dimiliki/Tidak Dikuasai":
-        return { color: "#dc3545", weight: 2, fillOpacity: 0.6 }; // Red
-      default:
-        return { color: "#ffc107", weight: 2, fillOpacity: 0.6 }; // Yellow for Lain-lain
-    }
-  };
+  // Prepare asset data for the map
+  const assetForMap = hasValidLocation
+    ? {
+        id: asset.id || `temp-${Date.now()}`,
+        pengelola: asset.pengelola || "Unknown",
+        lokasi: asset.lokasi, // Pass original data, PetaAsetYardip will parse it
+        area: Number(asset.area) || 0,
+        status: asset.status || "",
+        provinsi: asset.provinsi || "",
+        kabkota: asset.kabkota || "",
+        kecamatan: asset.kecamatan || "",
+        kelurahan: asset.kelurahan || "",
+        peruntukan: asset.peruntukan || "",
+        keterangan: asset.keterangan || "",
+        type: "aset",
+      }
+    : null;
 
   return (
     <Modal show={show} onHide={onHide} size="xl" centered>
@@ -176,34 +170,30 @@ const DetailYardipModal = ({ show, onHide, asset }) => {
               </Card.Header>
               <Card.Body className="p-0">
                 <div style={{ height: "100%", minHeight: "400px" }}>
-                  {hasValidLocation ? (
-                    <MapContainer
-                      key={asset.id} // Ensure map re-renders when asset changes
-                      center={[-7.5, 110.0]}
-                      zoom={8}
-                      style={{ height: "100%", width: "100%" }}
-                      scrollWheelZoom={false}
-                    >
-                      <LayersControl position="topright">
-                        <LayersControl.BaseLayer checked name="Street Map">
-                          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                        </LayersControl.BaseLayer>
-                        <LayersControl.BaseLayer name="Satelit">
-                          <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" />
-                        </LayersControl.BaseLayer>
-                      </LayersControl>
-
-                      <Polygon
-                        positions={mapGeometry.coordinates[0]}
-                        pathOptions={getPolygonStyleByStatus(asset.status)}
-                      />
-                      <DetailMapController geometry={mapGeometry} />
-                    </MapContainer>
+                  {hasValidLocation && provinsiData && kabupatenData ? (
+                    <PetaAsetYardip
+                      assets={assetForMap ? [assetForMap] : []}
+                      provinsiData={provinsiData}
+                      kabupatenData={kabupatenData}
+                      mode="detail"
+                    />
                   ) : (
-                    <div className="d-flex justify-content-center align-items-center h-100">
-                      <p className="text-muted">
-                        Lokasi poligon tidak tersedia.
-                      </p>
+                    <div className="d-flex align-items-center justify-content-center h-100 text-muted">
+                      <div className="text-center">
+                        <i className="fas fa-map-marker-alt fa-3x mb-3"></i>
+                        <p>Lokasi tidak tersedia</p>
+                        {!hasValidLocation && asset.lokasi && (
+                          <div className="mt-2">
+                            <small className="text-danger">
+                              Data lokasi tidak valid atau rusak
+                            </small>
+                            <br />
+                            <small className="text-muted">
+                              Format: {typeof asset.lokasi}
+                            </small>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>

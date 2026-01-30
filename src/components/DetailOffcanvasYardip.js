@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Offcanvas, Badge, Card, Row, Col } from "react-bootstrap";
 import {
   FaBuilding,
@@ -6,16 +6,8 @@ import {
   FaInfoCircle,
   FaGlobe,
 } from "react-icons/fa";
-import {
-  MapContainer,
-  TileLayer,
-  Polygon,
-  useMap,
-  LayersControl,
-} from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
 import { parseLocation } from "../utils/locationUtils";
+import PetaAsetYardip from "./PetaAsetYardip";
 
 // Helper untuk mendapatkan warna badge berdasarkan status
 const getStatusBadgeVariant = (status) => {
@@ -29,56 +21,42 @@ const getStatusBadgeVariant = (status) => {
   }
 };
 
-const getPolygonStyleByStatus = (status) => {
-  switch (status) {
-    case "Dimiliki/Dikuasai":
-      return { color: "#28a745", weight: 2, fillOpacity: 0.6 }; // Green
-    case "Tidak Dimiliki/Tidak Dikuasai":
-      return { color: "#dc3545", weight: 2, fillOpacity: 0.6 }; // Red
-    default:
-      return { color: "#ffc107", weight: 2, fillOpacity: 0.6 }; // Yellow for Lain-lain
-  }
-};
+const DetailOffcanvasYardip = ({ show, handleClose, asetYardip }) => {
+  const [provinsiData, setProvinsiData] = useState(null);
+  const [kabupatenData, setKabupatenData] = useState(null);
 
-// Map Controller for auto-zooming
-const DetailMapController = ({ geometry }) => {
-  const map = useMap();
-  React.useEffect(() => {
-    if (map && geometry) {
+  // Load geojson data when offcanvas is shown
+  useEffect(() => {
+    const loadData = async () => {
       try {
-        const geoJsonForBounds = {
-          type: "Polygon",
-          coordinates: [
-            geometry.coordinates[0].map((latLng) => [latLng[1], latLng[0]]),
-          ],
-        };
-        const layer = L.geoJSON(geoJsonForBounds);
-        const bounds = layer.getBounds();
-        if (bounds.isValid()) {
-          map.fitBounds(bounds, { padding: [20, 20] });
-        }
-      } catch (e) {
-        console.error("Could not fit bounds for detail map", e);
+        const [provRes, kabRes] = await Promise.all([
+          fetch("/data/provinsi.geojson"),
+          fetch("/data/kabupaten_kota.geojson")
+        ]);
+
+        const provData = await provRes.json();
+        const kabData = await kabRes.json();
+
+        setProvinsiData(provData);
+        setKabupatenData(kabData);
+      } catch (error) {
+        console.error("Error loading geojson data:", error);
+      }
+    };
+
+    if (show && asetYardip) {
+      const locationData = parseLocation(asetYardip.lokasi);
+      const hasValidLocation = locationData && locationData.type === "Polygon";
+      if (hasValidLocation) {
+        loadData();
       }
     }
-  }, [map, geometry]);
-  return null;
-};
+  }, [show, asetYardip]);
 
-const DetailOffcanvasYardip = ({ show, handleClose, asetYardip }) => {
   if (!asetYardip) return null;
 
   const locationData = parseLocation(asetYardip.lokasi);
   const hasValidLocation = locationData && locationData.type === "Polygon";
-
-  let mapGeometry = null;
-  if (hasValidLocation) {
-    const latLngs = locationData.coordinates[0].map((coord) => [
-      coord[1],
-      coord[0],
-    ]);
-    mapGeometry = { type: "Polygon", coordinates: [latLngs] };
-  }
 
   return (
     <Offcanvas
@@ -99,40 +77,35 @@ const DetailOffcanvasYardip = ({ show, handleClose, asetYardip }) => {
       </Offcanvas.Header>
 
       <Offcanvas.Body style={{ padding: 0 }}>
-        {/* Mini Map Preview dengan Layer Control */}
+        {/* Mini Map Preview */}
         <div style={{ height: "250px", width: "100%" }}>
-          {hasValidLocation ? (
-            <MapContainer
-              key={`map-detail-${asetYardip.id}`}
-              center={[-7.5, 110.0]}
-              zoom={10}
-              style={{ height: "100%", width: "100%" }}
-              scrollWheelZoom={true}
-            >
-              <LayersControl position="topright">
-                <LayersControl.BaseLayer checked name="Street Map">
-                  <TileLayer
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    attribution="&copy; OpenStreetMap contributors"
-                  />
-                </LayersControl.BaseLayer>
-                <LayersControl.BaseLayer name="Satelit">
-                  <TileLayer
-                    url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                    attribution="&copy; Esri"
-                  />
-                </LayersControl.BaseLayer>
-              </LayersControl>
-
-              <Polygon
-                positions={mapGeometry.coordinates[0]}
-                pathOptions={getPolygonStyleByStatus(asetYardip.status)}
-              />
-              <DetailMapController geometry={mapGeometry} />
-            </MapContainer>
+          {hasValidLocation && provinsiData && kabupatenData ? (
+            <PetaAsetYardip
+              assets={[
+                {
+                  id: asetYardip.id,
+                  pengelola: asetYardip.pengelola,
+                  lokasi: asetYardip.lokasi,
+                  area: asetYardip.area,
+                  status: asetYardip.status,
+                  provinsi: asetYardip.provinsi,
+                  kabkota: asetYardip.kabkota,
+                  kecamatan: asetYardip.kecamatan,
+                  kelurahan: asetYardip.kelurahan,
+                  peruntukan: asetYardip.peruntukan,
+                  keterangan: asetYardip.keterangan,
+                  type: "aset",
+                }
+              ]}
+              provinsiData={provinsiData}
+              kabupatenData={kabupatenData}
+              mode="detail"
+            />
           ) : (
             <div className="d-flex justify-content-center align-items-center h-100 bg-light">
-              <p className="text-muted">Lokasi poligon tidak tersedia.</p>
+              <p className="text-muted">
+                {hasValidLocation ? "Memuat peta..." : "Lokasi poligon tidak tersedia."}
+              </p>
             </div>
           )}
         </div>
@@ -298,8 +271,8 @@ const DetailOffcanvasYardip = ({ show, handleClose, asetYardip }) => {
                       <td>
                         {asetYardip.created_at
                           ? new Date(asetYardip.created_at).toLocaleString(
-                              "id-ID"
-                            )
+                            "id-ID"
+                          )
                           : "-"}
                       </td>
                     </tr>
@@ -352,8 +325,8 @@ const DetailOffcanvasYardip = ({ show, handleClose, asetYardip }) => {
                       <span className="text-success">
                         {asetYardip.area
                           ? `${Number(asetYardip.area).toLocaleString(
-                              "id-ID"
-                            )} m²`
+                            "id-ID"
+                          )} m²`
                           : "Tidak tersedia"}
                       </span>
                     </div>

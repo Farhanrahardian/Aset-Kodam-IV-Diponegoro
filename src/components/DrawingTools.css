@@ -1,0 +1,64 @@
+.drawing-tools-container {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drawing-tool-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100px;
+  padding: 10px;
+  border: 1px solid #d1d5db; /* gray-300 */
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #374151; /* gray-700 */
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  min-height: 40px;
+}
+
+.drawing-tool-button:hover {
+  background-color: #f9fafb; /* gray-50 */
+  border-color: #9ca3af; /* gray-400 */
+}
+
+.drawing-tool-button.active {
+  background-color: #eff6ff; /* blue-50 */
+  color: #2563eb; /* blue-600 */
+  border-color: #93c5fd; /* blue-300 */
+}
+
+.drawing-tool-button.delete-button {
+  background-color: #dc3545; /* red-600 */
+  color: white;
+  border-color: #dc3545; /* red-600 */
+}
+
+.drawing-tool-button.delete-button:hover {
+  background-color: #c82333; /* darker red */
+  border-color: #bd2130; /* darker red */
+}
+
+.drawing-tool-button svg {
+  width: 20px;
+  height: 20px;
+}
+
+.drawing-tool-button span {
+  flex-grow: 1;
+  text-align: center;
+}
+
+/* Menyesuaikan tampilan tombol agar seragam dengan tombol di peta */
+.drawing-tools-container .drawing-tool-button {
+  width: auto;
+  min-width: 100px;
+  padding: 10px 15px;
+}

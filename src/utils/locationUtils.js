@@ -36,14 +36,19 @@ export const parseLocation = (lokasiData) => {
     parsedData = lokasiData;
   }
 
+  // Case 1: It's a valid GeoJSON Polygon object.
   if (parsedData && parsedData.type === 'Polygon' && Array.isArray(parsedData.coordinates)) {
-    // This is the new, correct format (a GeoJSON Polygon object)
     return parsedData;
-  } else if (Array.isArray(parsedData)) {
-    // This handles the old format (an array of coordinates)
+  }
+  // Case 2: It's just an array of coordinates (old format).
+  else if (Array.isArray(parsedData)) {
     return { type: 'Polygon', coordinates: parsedData };
   }
-  
+  // Case 3: It's an object with a 'coordinates' property but no 'type'.
+  else if (parsedData && parsedData.coordinates && Array.isArray(parsedData.coordinates)) {
+    return { type: 'Polygon', coordinates: parsedData.coordinates };
+  }
+
   console.warn("Format lokasi tidak didukung:", lokasiData);
   return null;
 };
@@ -62,7 +67,7 @@ export const getCentroid = (geometry) => {
     x += coord[0];
     y += coord[1];
   }
-  // Hati-hati, format Leaflet adalah [lat, lng], sedangkan GeoJSON/Turf [lng, lat]
-  // Fungsi ini mengembalikan [lat, lng] untuk Leaflet
+  // Hati-hati, format Google Maps Marker adalah {lat, lng}, sedangkan GeoJSON/Turf [lng, lat]
+  // Fungsi ini mengembalikan [lat, lng] untuk Google Maps Marker
   return [y / coords.length, x / coords.length];
 };

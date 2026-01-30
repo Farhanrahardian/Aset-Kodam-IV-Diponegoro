@@ -290,13 +290,14 @@ const FilterPanelTop = ({
                   console.log("Kodim selected:", e.target.value);
                   onSelectKodim(e.target.value);
                 }}
+                disabled={!selectedKorem}
               >
-                <option value="">Semua Kodim</option>
-                {filteredKodimForFilter.map((kodim) => {
+                <option value="">Pilih Kodim</option>
+                {filteredKodimForFilter.map((kodim, index) => {
                   // Normalisasi nama kodim untuk ditampilkan
                   const normalizedKodimName = normalizeKodimName(kodim.nama);
                   return (
-                    <option key={kodim.id} value={normalizedKodimName}>
+                    <option key={`${kodim.id}-${index}`} value={normalizedKodimName}>
                       {normalizedKodimName}
                     </option>
                   );
@@ -380,20 +381,25 @@ const DetailModalAset = ({
   const locationData = parseLocation(asset.lokasi);
   const hasValidLocation = locationData && getCentroid(locationData) !== null;
 
+  // Calculate centroid for display
+  const centroid = hasValidLocation ? getCentroid(locationData) : null;
+  const centroidLat = centroid ? centroid[0].toFixed(6) : "N/A";
+  const centroidLng = centroid ? centroid[1].toFixed(6) : "N/A";
+
   const assetForMap = hasValidLocation
     ? {
-        id: asset.id || `temp-${Date.now()}`,
-        nama: asset.nama || "Unknown",
-        kodim: asset.kodim || "",
-        lokasi: asset.lokasi, // Pass original data, PetaAset will parse it
-        luas: Number(asset.luas) || 0,
-        status: asset.status || "",
-        alamat: asset.alamat || "",
-        peruntukan: asset.peruntukan || asset.fungsi || "",
-        keterangan: asset.keterangan || "",
-        pemilikan_sertifikat: asset.pemilikan_sertifikat || "Tidak", // Add this line
-        type: "aset",
-      }
+      id: asset.id || `temp-${Date.now()}`,
+      nama: asset.nama || "Unknown",
+      kodim: asset.kodim || "",
+      lokasi: asset.lokasi, // Pass original data, PetaAset will parse it
+      luas: Number(asset.luas) || 0,
+      status: asset.status || "",
+      alamat: asset.alamat || "",
+      peruntukan: asset.peruntukan || asset.fungsi || "",
+      keterangan: asset.keterangan || "",
+      pemilikan_sertifikat: asset.pemilikan_sertifikat || "Tidak", // Add this line
+      type: "aset",
+    }
     : null;
 
   const korem = koremList.find((k) => k.id == asset.korem_id);
@@ -521,6 +527,18 @@ const DetailModalAset = ({
                       </tr>
                       <tr>
                         <td>
+                          <strong>Status Sertifikat:</strong>
+                        </td>
+                        <td>
+                          {asset.pemilikan_sertifikat === "Ya" ? (
+                            <span className="badge bg-success">Bersertifikat</span>
+                          ) : (
+                            <span className="badge bg-danger">Tidak Bersertifikat</span>
+                          )}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
                           <strong>KIB/Kode Barang:</strong>
                         </td>
                         <td>
@@ -567,20 +585,50 @@ const DetailModalAset = ({
                           </span>
                         </td>
                       </tr>
-                      <tr>
-                        <td>
-                          <strong>Sertifikat:</strong>
-                        </td>
-                        <td>
-                          {asset.pemilikan_sertifikat === "Ya" ? (
-                            <span className="badge bg-success">Ya</span>
-                          ) : (
-                            <span className="badge bg-warning text-dark">
-                              Tidak
-                            </span>
-                          )}
-                        </td>
-                      </tr>
+                      {asset.pemilikan_sertifikat === "Ya" && (
+                        <tr>
+                          <td>
+                            <strong>Jumlah Bidang Bersertifikat:</strong>
+                          </td>
+                          <td>
+                            {asset.sertifikat_bidang || "N/A"}
+                          </td>
+                        </tr>
+                      )}
+                      {asset.pemilikan_sertifikat === "Ya" && (
+                        <tr>
+                          <td>
+                            <strong>Luas Bersertifikat:</strong>
+                          </td>
+                          <td>
+                            {asset.sertifikat_luas
+                              ? parseFloat(asset.sertifikat_luas).toLocaleString("id-ID") + " m²"
+                              : "N/A"}
+                          </td>
+                        </tr>
+                      )}
+                      {asset.pemilikan_sertifikat === "Tidak" && (
+                        <tr>
+                          <td>
+                            <strong>Jumlah Bidang Belum Bersertifikat:</strong>
+                          </td>
+                          <td>
+                            {asset.belum_sertifikat_bidang || "N/A"}
+                          </td>
+                        </tr>
+                      )}
+                      {asset.pemilikan_sertifikat === "Tidak" && (
+                        <tr>
+                          <td>
+                            <strong>Luas Belum Bersertifikat:</strong>
+                          </td>
+                          <td>
+                            {asset.belum_sertifikat_luas
+                              ? parseFloat(asset.belum_sertifikat_luas).toLocaleString("id-ID") + " m²"
+                              : "N/A"}
+                          </td>
+                        </tr>
+                      )}
                       <tr>
                         <td>
                           <strong>Bukti Pemilikan:</strong>
@@ -758,16 +806,16 @@ const DetailModalAset = ({
                                   variant="link"
                                   size="sm"
                                   onClick={() =>
-                                                                        handleShowImagePreview(
-                                                                          asset.gambar_tampak_atas_url.startsWith(
-                                                                            "http"
-                                                                          )
-                                                                            ? asset.gambar_tampak_atas_url
-                                                                            : `${API_URL}${asset.gambar_tampak_atas_url}`,
-                                                                          "Foto Aset Tampak Atas", // Changed from "Foto Tampak Atas"
-                                                                          true // This will prevent loading the gallery
-                                                                        )
-                                                                      }                                  className="p-0"
+                                    handleShowImagePreview(
+                                      asset.gambar_tampak_atas_url.startsWith(
+                                        "http"
+                                      )
+                                        ? asset.gambar_tampak_atas_url
+                                        : `${API_URL}${asset.gambar_tampak_atas_url}`,
+                                      "Foto Aset Tampak Atas", // Changed from "Foto Tampak Atas"
+                                      true // This will prevent loading the gallery
+                                    )
+                                  } className="p-0"
                                 >
                                   Lihat Aset Tampak Atas
                                 </Button>
@@ -781,45 +829,9 @@ const DetailModalAset = ({
                           <strong>Koordinat:</strong>
                         </td>
                         <td>
-                          {hasValidLocation && locationData ? (
+                          {hasValidLocation && centroid ? (
                             <div>
-                              <small className="text-muted">
-                                Polygon dengan{" "}
-                                {locationData.coordinates[0]?.length || 0} titik
-                              </small>
-                              <details className="mt-1">
-                                <summary
-                                  style={{
-                                    cursor: "pointer",
-                                    fontSize: "0.85em",
-                                  }}
-                                >
-                                  Lihat koordinat
-                                </summary>
-                                <div
-                                  style={{
-                                    maxHeight: "100px",
-                                    overflowY: "auto",
-                                    fontSize: "0.8em",
-                                  }}
-                                >
-                                  {locationData.coordinates[0] ? (
-                                    locationData.coordinates[0].map(
-                                      (coord, idx) => (
-                                        <div key={idx}>
-                                          {idx + 1}: [
-                                          {coord[0]?.toFixed(6) || "N/A"},{" "}
-                                          {coord[1]?.toFixed(6) || "N/A"}]
-                                        </div>
-                                      )
-                                    )
-                                  ) : (
-                                    <span className="text-muted">
-                                      Format koordinat tidak valid
-                                    </span>
-                                  )}
-                                </div>
-                              </details>
+                              Lat: {centroidLat}, Lng: {centroidLng}
                             </div>
                           ) : (
                             <span className="text-muted">Tidak tersedia</span>
@@ -868,64 +880,35 @@ const DetailModalAset = ({
                   </div>
                 </div>
 
-                {hasValidLocation && assetForMap && (
-                  <div className="card-footer bg-light">
-                    <small className="text-muted">
-                      <i className="fas fa-info-circle me-1"></i>
-                      Peta menampilkan area yang telah digambar untuk aset ini
-                    </small>
-                  </div>
-                )}
               </div>
-            </Col>
-          </Row>
-
-          {hasValidLocation && assetForMap && (
-            <Row className="mt-3">
-              <Col md={12}>
-                <div className="card">
-                  <div className="card-header bg-warning text-dark">
-                    <h6 className="mb-0">Informasi Geografis</h6>
-                  </div>
-                  <div className="card-body">
-                    <Row>
-                      <Col md={4}>
-                        <strong>Tipe Geometri:</strong>
-                        <br />
-                        <span className="text-muted">Polygon</span>
-                      </Col>
-                      <Col md={4}>
-                        <strong>Jumlah Koordinat:</strong>
-                        <br />
-                        <span className="text-muted">
-                          {locationData.coordinates[0]
-                            ? locationData.coordinates[0].length
-                            : 0}{" "}
-                          titik
-                        </span>
-                      </Col>
-                      <Col md={4}>
-                        <strong>Status Sertifikat:</strong>
-                        <br />
-                        <span
-                          className={`text-muted ${
-                            asset.pemilikan_sertifikat === "Ya"
-                              ? "text-success"
-                              : "text-warning"
-                          }`}
-                        >
-                          {asset.pemilikan_sertifikat === "Ya"
-                            ? "Bersertifikat"
-                            : "Tidak Bersertifikat"}
-                        </span>
-                      </Col>
-                    </Row>
-                  </div>
-                </div>
-              </Col>
-            </Row>
-          )}
-        </Modal.Body>
+                        </Col>
+                      </Row>
+            
+                      {hasValidLocation && assetForMap && (
+                        <Row className="mt-3">
+                          <Col md={12}>
+                            <div className="card">
+                              <div className="card-header bg-warning text-dark">
+                                <h6 className="mb-0">Informasi Geografis</h6>
+                              </div>
+                              <div className="card-body">
+                                <Row>
+                                  <Col md={12}>
+                                    <strong>Luas Total:</strong>
+                                    <br />
+                                    <span className="text-muted">
+                                      {asset.luas
+                                        ? parseFloat(asset.luas).toLocaleString("id-ID") + " m²"
+                                        : "N/A"}
+                                    </span>
+                                  </Col>
+                                </Row>
+                              </div>
+                            </div>
+                          </Col>
+                        </Row>
+                      )}
+                    </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={onHide}>
             Tutup
@@ -1100,7 +1083,9 @@ const DataAsetTanahPage = () => {
             setKodimList(kodimObjects);
           } else if (selectedKoremData.kodim) {
             // For regular Korems with Kodim list
-            const kodimObjects = selectedKoremData.kodim.map((kName) => ({
+            // Remove duplicates by creating a Set of normalized names
+            const uniqueKodimNames = [...new Set(selectedKoremData.kodim)];
+            const kodimObjects = uniqueKodimNames.map((kName) => ({
               id: kName,
               nama: normalizeKodimName(kName),
             }));
@@ -1126,15 +1111,8 @@ const DataAsetTanahPage = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      // Use Promise.all to fetch all data concurrently
-      const [
-        assetsRes,
-        koremRes,
-        koremGeoJSONRes,
-        kodimGeoJSONRes,
-        koremGeoJSONSimplifiedRes,
-        kodimGeoJSONSimplifiedRes,
-      ] = await Promise.all([
+      // Use Promise.allSettled to fetch all data concurrently and handle failures individually
+      const results = await Promise.allSettled([
         axios.get(`${API_URL}/assets`),
         axios.get(`${API_URL}/korem`),
         axios.get(`/data/korem.geojson`),
@@ -1143,33 +1121,113 @@ const DataAsetTanahPage = () => {
         axios.get(`/data/Kodim_simplified.geojson`),
       ]);
 
-      setAssets(assetsRes.data);
-      setKoremList(koremRes.data);
-      setKoremGeoJSON(koremGeoJSONRes.data);
-      setKodimGeoJSON(kodimGeoJSONRes.data);
-      setKoremGeoJSONSimplified(koremGeoJSONSimplifiedRes.data);
-      setKodimGeoJSONSimplified(kodimGeoJSONSimplifiedRes.data);
+      const [
+        assetsResult,
+        koremResult,
+        koremGeoJSONResult,
+        kodimGeoJSONResult,
+        koremGeoJSONSimplifiedResult,
+        kodimGeoJSONSimplifiedResult,
+      ] = results;
 
-      const allKodims = koremRes.data.flatMap((korem) => {
-        // Handle special case for "Berdiri Sendiri" Korem
-        if (korem.nama === "Kodim 0733/Kota Semarang") {
-          return [
-            {
-              id: "Kodim 0733/Kota Semarang",
-              nama: "Kodim 0733/Kota Semarang",
-              korem_id: korem.id,
-            },
-          ];
+      const errors = [];
+
+      // Handle Assets
+      if (assetsResult.status === "fulfilled") {
+        setAssets(assetsResult.value.data);
+      } else {
+        const msg = assetsResult.reason?.message || "Unknown error";
+        console.error("Failed to fetch assets:", assetsResult.reason);
+        errors.push(`Assets (${msg})`);
+      }
+
+      // Handle Korem List
+      if (koremResult.status === "fulfilled") {
+        setKoremList(koremResult.value.data);
+      } else {
+        const msg = koremResult.reason?.message || "Unknown error";
+        console.error("Failed to fetch Korem list:", koremResult.reason);
+        errors.push(`Korem List (${msg})`);
+      }
+
+      // Handle Korem GeoJSON
+      if (koremGeoJSONResult.status === "fulfilled") {
+        setKoremGeoJSON(koremGeoJSONResult.value.data);
+      } else {
+        const msg = koremGeoJSONResult.reason?.message || "Unknown error";
+        console.error("Failed to fetch Korem GeoJSON:", koremGeoJSONResult.reason);
+        errors.push(`Korem GeoJSON (${msg})`);
+      }
+
+      // Handle Kodim GeoJSON
+      if (kodimGeoJSONResult.status === "fulfilled") {
+        setKodimGeoJSON(kodimGeoJSONResult.value.data);
+      } else {
+        const msg = kodimGeoJSONResult.reason?.message || "Unknown error";
+        console.error("Failed to fetch Kodim GeoJSON:", kodimGeoJSONResult.reason);
+        errors.push(`Kodim GeoJSON (${msg})`);
+      }
+
+      // Handle Simplified Korem GeoJSON
+      if (koremGeoJSONSimplifiedResult.status === "fulfilled") {
+        setKoremGeoJSONSimplified(koremGeoJSONSimplifiedResult.value.data);
+      } else {
+        console.warn(
+          "Failed to fetch simplified Korem GeoJSON, using original if available:",
+          koremGeoJSONSimplifiedResult.reason
+        );
+        // Fallback to original if simplified fails
+        if (koremGeoJSONResult.status === "fulfilled") {
+          setKoremGeoJSONSimplified(koremGeoJSONResult.value.data);
+        } else {
+          // Optional: add to errors if critical, but simplified is optimization
+          // errors.push("Korem Simplified GeoJSON");
         }
-        // For regular Korems with Kodim list
-        return korem.kodim
-          ? korem.kodim.map((k) => ({
+      }
+
+      // Handle Simplified Kodim GeoJSON
+      if (kodimGeoJSONSimplifiedResult.status === "fulfilled") {
+        setKodimGeoJSONSimplified(kodimGeoJSONSimplifiedResult.value.data);
+      } else {
+        console.warn(
+          "Failed to fetch simplified Kodim GeoJSON, using original if available:",
+          kodimGeoJSONSimplifiedResult.reason
+        );
+        // Fallback to original if simplified fails
+        if (kodimGeoJSONResult.status === "fulfilled") {
+          setKodimGeoJSONSimplified(kodimGeoJSONResult.value.data);
+        }
+      }
+
+      if (errors.length > 0) {
+        setError(`Gagal memuat data: ${errors.join(", ")}. Pastikan backend berjalan dan file ada.`);
+      } else {
+        setError(null);
+      }
+
+      let allKodims = [];
+      if (koremResult.status === "fulfilled") {
+        allKodims = koremResult.value.data.flatMap((korem) => {
+          // Handle special case for "Berdiri Sendiri" Korem
+          if (korem.nama === "Kodim 0733/Kota Semarang") {
+            return [
+              {
+                id: "Kodim 0733/Kota Semarang",
+                nama: "Kodim 0733/Kota Semarang",
+                korem_id: korem.id,
+              },
+            ];
+          }
+          // For regular Korems with Kodim list
+          return korem.kodim
+            ? [...new Set(korem.kodim)].map((k) => ({
               id: k,
               nama: normalizeKodimName(k),
               korem_id: korem.id,
             }))
-          : [];
-      });
+            : [];
+        });
+      }
       console.log("All Kodims:", allKodims);
       setAllKodimList(allKodims);
       setError(null);
@@ -1420,11 +1478,22 @@ const DataAsetTanahPage = () => {
 
   const handleKoremChange = (korem) => {
     setSelectedKorem(korem || null);
-    setSelectedKodim("");
+
     if (korem) {
       fetchKodim(korem.id);
+
+      // Handle special case for "Kodim 0733/Kota Semarang" - directly select the kodim
+      if (korem.nama === "Kodim 0733/Kota Semarang" || korem.nama === "Berdiri Sendiri") {
+        // Wait for kodimList to be updated before selecting the kodim
+        setTimeout(() => {
+          setSelectedKodim("Kodim 0733/Kota Semarang");
+        }, 0);
+      } else {
+        setSelectedKodim("");
+      }
     } else {
       setKodimList([]);
+      setSelectedKodim("");
     }
   };
 
@@ -1756,6 +1825,11 @@ const DataAsetTanahPage = () => {
                 onMapKodimSelect={handleMapKodimSelect}
                 onMapBack={handleMapBack}
               />
+              {/* Debug Info */}
+              <div className="d-none">
+                Korem Data: {koremDataForMap ? "Available" : "Missing"} ({koremDataForMap?.features?.length || 0})
+                Kodim Data: {kodimDataForMap ? "Available" : "Missing"} ({kodimDataForMap?.features?.length || 0})
+              </div>
             </Card.Body>
           </Card>
 

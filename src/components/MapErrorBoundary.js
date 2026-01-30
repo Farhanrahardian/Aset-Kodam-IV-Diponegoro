@@ -4,8 +4,8 @@ import { Alert, Button } from 'react-bootstrap';
 class MapErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { 
-      hasError: false, 
+    this.state = {
+      hasError: false,
       error: null,
       errorInfo: null,
       retryCount: 0
@@ -25,7 +25,7 @@ class MapErrorBoundary extends React.Component {
 
     // Log error untuk debugging
     if (window.console && window.console.error) {
-      console.error('Leaflet Error Details:', {
+      console.error('Google Maps Error Details:', {
         message: error.message,
         stack: error.stack,
         componentStack: errorInfo.componentStack
@@ -48,10 +48,10 @@ class MapErrorBoundary extends React.Component {
   };
 
   handleRefresh = () => {
-    // Clear any Leaflet-related data dari localStorage
+    // Clear any Google Maps related data dari localStorage
     try {
       Object.keys(localStorage).forEach(key => {
-        if (key.includes('leaflet') || key.includes('map')) {
+        if (key.includes('google') || key.includes('maps') || key.includes('map')) {
           localStorage.removeItem(key);
         }
       });
@@ -64,13 +64,14 @@ class MapErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasError) {
-      const isLeafletError = this.state.error?.message?.includes('_leaflet_pos') || 
-                            this.state.error?.message?.includes('leaflet') ||
-                            this.state.error?.stack?.includes('leaflet');
+      const isMapError = this.state.error?.message?.includes('google') ||
+        this.state.error?.message?.includes('maps') ||
+        this.state.error?.stack?.includes('google') ||
+        this.state.error?.stack?.includes('@react-google-maps');
 
       return (
-        <div className="d-flex align-items-center justify-content-center" 
-             style={{ height: this.props.height || '400px', width: '100%' }}>
+        <div className="d-flex align-items-center justify-content-center"
+          style={{ height: this.props.height || '400px', width: '100%' }}>
           <div className="text-center p-4">
             <Alert variant="danger">
               <Alert.Heading>
@@ -78,9 +79,9 @@ class MapErrorBoundary extends React.Component {
                 Error pada Peta
               </Alert.Heading>
               <p className="mb-3">
-                {isLeafletError ? (
+                {isMapError ? (
                   <>
-                    Terjadi kesalahan pada komponen peta Leaflet. Ini biasanya disebabkan oleh:
+                    Terjadi kesalahan pada komponen Google Maps. Ini biasanya disebabkan oleh:
                   </>
                 ) : (
                   <>
@@ -88,13 +89,13 @@ class MapErrorBoundary extends React.Component {
                   </>
                 )}
               </p>
-              
-              {isLeafletError && (
+
+              {isMapError && (
                 <ul className="text-start mb-3">
-                  <li>Perubahan state yang terlalu cepat</li>
+                  <li>API Key tidak valid atau tidak di-setup</li>
+                  <li>Google Maps API belum di-enable di Google Cloud</li>
                   <li>Komponen peta di-unmount sebelum selesai loading</li>
-                  <li>Konflik dengan library JavaScript lain</li>
-                  <li>Browser cache yang corrupt</li>
+                  <li>Koneksi internet bermasalah</li>
                 </ul>
               )}
 
@@ -104,11 +105,11 @@ class MapErrorBoundary extends React.Component {
                     Detail Error (untuk developer)
                   </summary>
                   <div className="mt-2 p-2 bg-light rounded text-start">
-                    <strong>Error:</strong> {this.state.error?.message}<br/>
-                    <strong>Retry Count:</strong> {this.state.retryCount}<br/>
+                    <strong>Error:</strong> {this.state.error?.message}<br />
+                    <strong>Retry Count:</strong> {this.state.retryCount}<br />
                     {this.state.error?.stack && (
                       <>
-                        <strong>Stack:</strong> 
+                        <strong>Stack:</strong>
                         <pre className="small mt-1" style={{ fontSize: '0.7em' }}>
                           {this.state.error.stack.substring(0, 500)}...
                         </pre>
@@ -119,19 +120,19 @@ class MapErrorBoundary extends React.Component {
               </div>
 
               <hr />
-              
+
               <div className="d-flex gap-2 justify-content-center flex-wrap">
-                <Button 
-                  variant="primary" 
+                <Button
+                  variant="primary"
                   onClick={this.handleRetry}
                   disabled={this.state.retryCount >= 3}
                 >
                   <i className="fas fa-redo me-1"></i>
                   Coba Lagi {this.state.retryCount > 0 && `(${this.state.retryCount}/3)`}
                 </Button>
-                
-                <Button 
-                  variant="secondary" 
+
+                <Button
+                  variant="secondary"
                   onClick={this.handleRefresh}
                 >
                   <i className="fas fa-refresh me-1"></i>
@@ -139,8 +140,8 @@ class MapErrorBoundary extends React.Component {
                 </Button>
 
                 {this.props.onFallback && (
-                  <Button 
-                    variant="outline-secondary" 
+                  <Button
+                    variant="outline-secondary"
                     onClick={this.props.onFallback}
                   >
                     <i className="fas fa-list me-1"></i>

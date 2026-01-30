@@ -587,27 +587,38 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              <ResponsiveContainer width="100%" height={chartHeight}>
-                <BarChart
-                  data={asetTanahData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 30 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis
-                    dataKey="name"
-                    tick={{ fontSize: 9 }}
-                    angle={-45}
-                    textAnchor="end"
-                    height={100}
-                    interval={0}
-                  />
-                  <YAxis tick={{ fontSize: 10 }} />
-                  <Tooltip />
-                  <Bar dataKey="bersertifikat" fill="#4285f4" />
-                  <Bar dataKey="tidakBersertifikat" fill="#ea4335" />
-                  <Bar dataKey="total" fill="#34a853" />
-                </BarChart>
-              </ResponsiveContainer>
+              {/* Chart - Only render when data is available */}
+              {!loading && asetTanahData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={chartHeight}>
+                  <BarChart
+                    data={asetTanahData}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 30 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fontSize: 9 }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={100}
+                      interval={0}
+                    />
+                    <YAxis tick={{ fontSize: 10 }} />
+                    <Tooltip />
+                    <Bar dataKey="bersertifikat" fill="#4285f4" />
+                    <Bar dataKey="tidakBersertifikat" fill="#ea4335" />
+                    <Bar dataKey="total" fill="#34a853" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="d-flex align-items-center justify-content-center" style={{ height: chartHeight }}>
+                  <div className="text-center text-muted">
+                    <p className="mb-0">
+                      {loading ? "Memuat data..." : "Tidak ada data untuk ditampilkan"}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div className="text-center mt-auto">
                 <Button
@@ -744,28 +755,39 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              <ResponsiveContainer width="100%" height={chartHeight}>
-                <BarChart
-                  data={asetYardipData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 30 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis
-                    dataKey="name"
-                    tick={{ fontSize: 9 }}
-                    angle={-45}
-                    textAnchor="end"
-                    height={100}
-                    interval={0}
-                  />
-                  <YAxis tick={{ fontSize: 10 }} />
-                  <Tooltip />
-                  <Bar dataKey="tanah" fill="#34a853" />
-                  <Bar dataKey="tanahBangunan" fill="#4285f4" />
-                  <Bar dataKey="tanahGudangKantor" fill="#fbbc04" />
-                  <Bar dataKey="ruko" fill="#ea4335" />
-                </BarChart>
-              </ResponsiveContainer>
+              {/* Chart - Only render when data is available */}
+              {!loading && asetYardipData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={chartHeight}>
+                  <BarChart
+                    data={asetYardipData}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 30 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fontSize: 9 }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={100}
+                      interval={0}
+                    />
+                    <YAxis tick={{ fontSize: 10 }} />
+                    <Tooltip />
+                    <Bar dataKey="tanah" fill="#34a853" />
+                    <Bar dataKey="tanahBangunan" fill="#4285f4" />
+                    <Bar dataKey="tanahGudangKantor" fill="#fbbc04" />
+                    <Bar dataKey="ruko" fill="#ea4335" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="d-flex align-items-center justify-content-center" style={{ height: chartHeight }}>
+                  <div className="text-center text-muted">
+                    <p className="mb-0">
+                      {loading ? "Memuat data..." : "Tidak ada data untuk ditampilkan"}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div className="text-center mt-auto">
                 <Button

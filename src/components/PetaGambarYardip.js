@@ -1,465 +1,702 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
-import {
-  MapContainer,
-  TileLayer,
-  FeatureGroup,
-  GeoJSON,
-  useMap,
-  LayersControl,
-} from "react-leaflet";
-import { GeoSearchControl, OpenStreetMapProvider } from "leaflet-geosearch";
-import "leaflet-geosearch/dist/geosearch.css";
-import { EditControl } from "react-leaflet-draw";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-import "leaflet-draw/dist/leaflet.draw.css";
+// PetaGambarYardip.js - Google Maps version (similar to PetaGambarAset.js but for Yardip assets)
+import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { GoogleMap, useJsApiLoader, Polygon, DrawingManager, Autocomplete } from "@react-google-maps/api";
 import * as turf from "@turf/turf";
-import axios from "axios";
+import toast from "react-hot-toast";
+import Swal from "sweetalert2";
+import DrawingTools from "./DrawingTools";
 
-// Fix for broken icons
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: require("leaflet/dist/images/marker-icon.png"),
-  iconUrl: require("leaflet/dist/images/marker-icon.png"),
-  shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
-});
+const libraries = ["drawing", "places", "geometry"];
 
-// --- STYLING ---
-const provinceStyles = {
-  "Jawa Tengah": {
-    fillColor: "#2E7D32",
-    color: "black",
-    weight: 1,
-    fillOpacity: 0.5,
-  },
-  "Daerah Istimewa Yogyakarta": {
-    fillColor: "#FFC107",
-    color: "black",
-    weight: 1,
-    fillOpacity: 0.5,
-  },
-};
-const kabupatenStyle = {
-  fillColor: "#0d6efd",
-  color: "white",
-  weight: 2,
-  fillOpacity: 0.5,
-};
-const selectedStyle = { color: "#ffc107", weight: 4, fillOpacity: 0.3 };
+// Helper: Convert GeoJSON to Google Maps paths
+const geoJsonToGooglePaths = (coordinates, type) => {
+  if (!coordinates || !coordinates.length) return [];
+  const ringToPath = (ring) =>
+    ring
+      .filter(
+        (coord) =>
+          Array.isArray(coord) &&
+          coord.length >= 2 &&
+          !isNaN(coord[0]) &&
+          !isNaN(coord[1])
+      )
+      .map((coord) => ({ lat: Number(coord[1]), lng: Number(coord[0]) }));
 
-const MapSearch = () => {
-  const map = useMap();
-
-  useEffect(() => {
-    const provider = new OpenStreetMapProvider();
-
-    const searchControl = new GeoSearchControl({
-      provider: provider,
-      style: "bar",
-      showMarker: true,
-      showPopup: false,
-      autoClose: true,
-      retainZoomLevel: false,
-      animateZoom: false,
-      keepResult: true,
-    });
-
-    map.addControl(searchControl);
-
-    return () => {
-      map.removeControl(searchControl);
-    };
-  }, [map]);
-
-  return null;
+  return type === "MultiPolygon"
+    ? coordinates.flatMap((polygon) => polygon.map(ringToPath))
+    : coordinates.map(ringToPath);
 };
 
-// --- MAIN COMPONENT ---
+// Helper: Convert Google Maps Path to GeoJSON
+const googlePathToGeoJson = (path) => {
+  const coordinates = path.getArray().map((latLng) => [latLng.lng(), latLng.lat()]);
+  if (
+    coordinates.length > 0 &&
+    (coordinates[0][0] !== coordinates[coordinates.length - 1][0] ||
+      coordinates[0][1] !== coordinates[coordinates.length - 1][1])
+  ) {
+    coordinates.push([...coordinates[0]]);
+  }
+  return [coordinates];
+};
+
 const PetaGambarYardip = ({
   onPolygonCreated,
+  selectedProvinsi,
+  selectedKabupaten,
   onLocationSelect,
-  isDrawingEnabled,
-  assets,
-  newlyDrawnGeometry,
   provinsiData,
   kabupatenData,
-  mapNavigationTrigger, // NEW: prop for form-controlled navigation
+  importedGeometry,
+  geoJsonKey,
 }) => {
-  const [view, setView] = useState({
-    type: "nasional",
-    name: null,
-    feature: null,
+  const [map, setMap] = useState(null);
+  const [drawingManager, setDrawingManager] = useState(null);
+  const [drawnPolygon, setDrawnPolygon] = useState(null);
+
+  useEffect(() => {
+    console.log("drawnPolygon state changed to:", drawnPolygon);
+  }, [drawnPolygon]);
+  const [provinsiPolygons, setProvinsiPolygons] = useState([]);
+  const [kabupatenPolygons, setKabupatenPolygons] = useState([]);
+  const [autocomplete, setAutocomplete] = useState(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+
+  const drawingManagerRef = useRef(null);
+  const mapCenter = useMemo(() => ({ lat: -7.5, lng: 110.0 }), []);
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || "",
+    libraries,
   });
 
-  const featureGroupRef = useRef(null);
-  const geoJsonLayerRef = useRef(null);
+  const onLoadDrawingManager = useCallback((dm) => {
+    drawingManagerRef.current = dm;
+    setDrawingManager(dm);
+  }, []);
 
-  // NEW: Effect to handle form-triggered navigation
+  // Inject custom styles for the new layout
   useEffect(() => {
-    if (mapNavigationTrigger && provinsiData && kabupatenData) {
-      const { type, name } = mapNavigationTrigger;
-
-      if (type === "provinsi") {
-        // Find the province and navigate to it
-        const provinceFeature = provinsiData.features.find(
-          (f) => f.properties.PROVINCE === name
-        );
-        if (provinceFeature) {
-          setView({ type: "provinsi", name: name, feature: null });
-        }
-      } else if (type === "kabupaten") {
-        // Find the kabupaten and navigate to it
-        const kabupatenFeature = kabupatenData.features.find(
-          (f) => f.properties.Kabupaten === name
-        );
-        if (kabupatenFeature) {
-          setView({
-            type: "kabupaten",
-            name: kabupatenFeature.properties.PROVINCE,
-            feature: kabupatenFeature,
-          });
-        }
+    const style = document.createElement("style");
+    style.textContent = `
+      .map-controls-wrapper {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none; /* Allows clicks to pass through to the map */
       }
-    }
-  }, [mapNavigationTrigger, provinsiData, kabupatenData]);
+      .map-controls-wrapper > * {
+        pointer-events: auto; /* Re-enable pointer events for controls */
+      }
+      .top-left-controls {
+        position: absolute;
+        top: 15px;
+        left: 15px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .top-center-controls {
+        position: absolute;
+        top: 15px;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+      .top-right-controls {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+      }
+      .left-bottom-controls {
+        position: absolute;
+        bottom: 15px;
+        left: 15px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .zoom-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      .bottom-center-controls {
+        position: absolute;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+      .control-button {
+        background-color: white;
+        border: 1px solid #d1d5db; /* gray-300 */
+        border-radius: 8px;
+        padding: 10px 15px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 40px;
+      }
+      .control-button:hover {
+        background-color: #f9fafb; /* gray-50 */
+        border-color: #9ca3af; /* gray-400 */
+      }
+      .search-input {
+        width: 350px;
+        padding: 10px 15px;
+        border-radius: 8px;
+        border: 1px solid #d1d5db; /* gray-300 */
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        font-size: 14px;
+      }
+      .delete-button {
+        background-color: #dc3545; /* red-600 */
+        color: white;
+        border-color: #dc3545; /* red-600 */
+      }
+      .delete-button:hover {
+        background-color: #c82333; /* darker red */
+        border-color: #bd2130; /* darker red */
+      }
+      .map-type-controls select {
+        background-color: white;
+        border: 1px solid #d1d5db; /* gray-300 */
+        border-radius: 8px;
+        padding: 10px 15px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        transition: all 0.2s;
+        min-width: 100px;
+        min-height: 40px;
+        color: #374151;
+      }
 
-  // Effect to draw imported geometry
+      .map-type-controls select:hover {
+        background-color: #f9fafb; /* gray-50 */
+        border-color: #9ca3af; /* gray-400 */
+      }
+      .drawing-tools-container {
+        margin-top: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        position: relative;
+        z-index: 9999;
+      }
+      .icon-button {
+        background-color: white;
+        border: 1px solid #d1d5db; /* gray-300 */
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-width: 40px;
+        min-height: 40px;
+        width: 40px;
+      }
+      .icon-button:hover {
+        background-color: #f9fafb; /* gray-50 */
+        border-color: #9ca3af; /* gray-400 */
+      }
+      .icon-button.delete-button {
+        background-color: #dc3545; /* red-600 */
+        color: white;
+        border-color: #dc3545; /* red-600 */
+      }
+      .icon-button.delete-button:hover {
+        background-color: #c82333; /* darker red */
+        border-color: #bd2130; /* darker red */
+      }
+    `;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
+
+  // Fit bounds to selected area or imported geometry
   useEffect(() => {
-    const featureGroup = featureGroupRef.current;
-    if (featureGroup) {
-      featureGroup.clearLayers();
-      if (newlyDrawnGeometry && newlyDrawnGeometry.type === "Polygon") {
-        try {
-          // Convert GeoJSON [lng, lat] to Leaflet [lat, lng]
-          const latLngs = newlyDrawnGeometry.coordinates[0].map((coord) => [
-            coord[1],
-            coord[0],
-          ]);
-          const newLayer = L.polygon(latLngs, {
-            color: "#ff0000", // Style it like the drawn polygon
-          });
-          featureGroup.addLayer(newLayer);
-        } catch (e) {
-          console.error("Error adding newly drawn geometry to map:", e);
-        }
-      }
-    }
-  }, [newlyDrawnGeometry]);
+    if (!map || !provinsiData) return;
+    const timer = setTimeout(() => {
+      if (drawnPolygon && !importedGeometry) return;
+      const bounds = new window.google.maps.LatLngBounds();
+      let hasValidBounds = false;
 
-  // --- ZOOM CONTROLLER COMPONENT ---
-  const ZoomController = ({
-    view,
-    newlyDrawnGeometry,
-    mapNavigationTrigger,
-  }) => {
-    const map = useMap();
-
-    useEffect(() => {
-      const zoomToFeature = () => {
-        let bounds = null;
-
-        // Prioritize zooming to the newly drawn geometry
-        if (newlyDrawnGeometry) {
-          try {
-            const drawnLayer = L.geoJSON(newlyDrawnGeometry);
-            bounds = drawnLayer.getBounds();
-          } catch (e) {
-            console.error("Error creating bounds for newly drawn geometry:", e);
+      const extendBoundsWithCoords = (coords) => {
+        if (!Array.isArray(coords)) return;
+        if (coords.length >= 2 && typeof coords[0] === 'number' && typeof coords[1] === 'number') {
+          if (!isNaN(coords[0]) && !isNaN(coords[1])) {
+            bounds.extend({ lat: coords[1], lng: coords[0] });
+            hasValidBounds = true;
           }
+          return;
         }
-
-        // If no drawn geometry, fallback to the GeoJSON layer (province/kabupaten)
-        if ((!bounds || !bounds.isValid()) && geoJsonLayerRef.current) {
-          try {
-            bounds = geoJsonLayerRef.current.getBounds();
-          } catch (e) {
-            console.error("Error creating bounds from geoJsonLayerRef", e);
-          }
-        }
-
-        // NEW: Handle form-triggered navigation with specific bounds
-        if (
-          (!bounds || !bounds.isValid()) &&
-          mapNavigationTrigger &&
-          provinsiData &&
-          kabupatenData
-        ) {
-          const { type, name } = mapNavigationTrigger;
-          try {
-            if (type === "provinsi") {
-              const provinceFeature = provinsiData.features.find(
-                (f) => f.properties.PROVINCE === name
-              );
-              if (provinceFeature) {
-                const layer = L.geoJSON(provinceFeature);
-                bounds = layer.getBounds();
-              }
-            } else if (type === "kabupaten") {
-              const kabupatenFeature = kabupatenData.features.find(
-                (f) => f.properties.Kabupaten === name
-              );
-              if (kabupatenFeature) {
-                const layer = L.geoJSON(kabupatenFeature);
-                bounds = layer.getBounds();
-              }
-            }
-          } catch (e) {
-            console.error("Error creating bounds for form navigation:", e);
-          }
-        }
-
-        if (bounds && bounds.isValid()) {
-          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16, animate: true });
-        } else if (view.type === "nasional") {
-          // Fallback to default view if no bounds are valid
-          map.setView([-7.5, 110.0], 8);
-        }
+        coords.forEach(item => extendBoundsWithCoords(item));
       };
 
-      // Delay to ensure layers are rendered
-      const timer = setTimeout(zoomToFeature, 200);
-
-      return () => clearTimeout(timer);
-    }, [map, view, newlyDrawnGeometry, mapNavigationTrigger]);
-
-    return null;
-  };
-
-  const getAssetCenter = (asset) => {
-    try {
-      let lokasi =
-        typeof asset.lokasi === "string"
-          ? JSON.parse(asset.lokasi)
-          : asset.lokasi;
-      if (!lokasi) return null;
-      const polygon = turf.polygon(
-        lokasi.type === "Polygon" ? lokasi.coordinates : lokasi
-      );
-      const centroid = turf.centroid(polygon);
-      return [
-        centroid.geometry.coordinates[1],
-        centroid.geometry.coordinates[0],
-      ];
-    } catch (e) {
-      return null;
-    }
-  };
-
-  // --- RENDER EXISTING ASSETS ---
-  const AssetsLayer = () => {
-    const map = useMap();
-
-    useEffect(() => {
-      if (!assets || assets.length === 0) return;
-
-      const assetLayers = L.layerGroup();
-
-      assets.forEach((asset) => {
-        try {
-          let lokasi =
-            typeof asset.lokasi === "string"
-              ? JSON.parse(asset.lokasi)
-              : asset.lokasi;
-          if (lokasi) {
-            const assetLayer = L.geoJSON(lokasi, {
-              style: { color: "#00ff00", weight: 2, opacity: 0.7 },
-            }).bindPopup(
-              `<b>${asset.pengelola || "Aset"}</b><br/>Status: ${
-                asset.status || "N/A"
-              }`
-            );
-            assetLayers.addLayer(assetLayer);
-          }
-        } catch (e) {
-          console.error("Error parsing asset location:", e);
-        }
-      });
-
-      assetLayers.addTo(map);
-
-      return () => {
-        map.removeLayer(assetLayers);
-      };
-    }, [map, assets]);
-
-    return null;
-  };
-
-  // --- EVENT HANDLERS ---
-  const handleCreated = (e) => {
-    const { layerType, layer } = e;
-    if (layerType === "polygon") {
-      const geojson = layer.toGeoJSON();
-      const area = turf.area(geojson);
-      featureGroupRef.current.clearLayers();
-      featureGroupRef.current.addLayer(layer);
-      if (onPolygonCreated) {
-        onPolygonCreated({ geometry: geojson.geometry, area: area });
+      if (importedGeometry?.coordinates) {
+        extendBoundsWithCoords(importedGeometry.coordinates);
+        if (hasValidBounds) map.fitBounds(bounds, { padding: 50 });
+        return;
       }
+
+      if (selectedKabupaten && kabupatenData) {
+        const kabupatenFeature = kabupatenData.features.find((f) =>
+          f.properties.Kabupaten === selectedKabupaten
+        );
+
+        if (kabupatenFeature?.geometry?.coordinates) {
+          extendBoundsWithCoords(kabupatenFeature.geometry.coordinates);
+          if (hasValidBounds) map.fitBounds(bounds);
+          return;
+        }
+      }
+
+      if (selectedProvinsi && provinsiData) {
+        const provinsiFeature = provinsiData.features.find((f) =>
+          f.properties.PROVINCE === selectedProvinsi
+        );
+
+        if (provinsiFeature?.geometry?.coordinates) {
+          extendBoundsWithCoords(provinsiFeature.geometry.coordinates);
+          if (hasValidBounds) map.fitBounds(bounds);
+          return;
+        }
+      }
+
+      if (provinsiData.features.length > 0) {
+        provinsiData.features.forEach(feature => {
+          extendBoundsWithCoords(feature?.geometry?.coordinates);
+        });
+        if (hasValidBounds) map.fitBounds(bounds);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [map, selectedProvinsi, selectedKabupaten, importedGeometry, provinsiData, kabupatenData, drawnPolygon]);
+
+  // Helper function to convert string to color
+  const stringToColor = (str) => {
+    if (!str) return "#000000";
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
     }
+    let color = "#";
+    for (let i = 0; i < 3; i++) {
+      const value = (hash >> (i * 8)) & 0xff;
+      color += ("00" + value.toString(16)).substr(-2);
+    }
+    return color;
   };
 
-  // Fungsi untuk mengecek apakah kabupaten adalah area konservasi
+  // Check if area is conservation area
   const isConservationArea = (feature) => {
     const kabupatenName = feature?.properties?.Kabupaten;
     return kabupatenName === "Hutan" || kabupatenName === "Wadung Kedungombo";
   };
 
-  const handleBackClick = () => {
-    if (view.type === "kabupaten") {
-      setView({ type: "provinsi", name: view.name, feature: null });
-      if (onLocationSelect) onLocationSelect("provinsi", view.name);
-    } else if (view.type === "provinsi") {
-      setView({ type: "nasional", name: null, feature: null });
-      if (onLocationSelect) onLocationSelect("nasional", null);
-    }
+  // Define styles
+  const provinsiStyle = {
+    fillColor: "#3b82f6",
+    fillOpacity: 0.35,
+    strokeColor: "#000000",
+    strokeWeight: 3,
+    strokeOpacity: 1,
   };
 
-  const onEachProvinceFeature = (feature, layer) => {
-    const provinceName = feature.properties.PROVINCE;
-    layer.bindPopup(`<b>${provinceName}</b>`);
-    layer.on({
-      click: () => {
-        setView({ type: "provinsi", name: provinceName, feature: null });
-        if (onLocationSelect) onLocationSelect("provinsi", provinceName);
-      },
-    });
+  const kabupatenStyle = {
+    fillColor: "#fb923c",
+    fillOpacity: 0.4,
+    strokeColor: "#ea580c",
+    strokeWeight: 3,
+    strokeOpacity: 1,
   };
 
-  const onEachKabupatenFeature = (feature, layer) => {
-    // Menonaktifkan interaksi untuk area konservasi
-    if (isConservationArea(feature)) {
-      // Tidak ada bindPopup atau event click untuk area konservasi
+  const selectedStyle = {
+    fillColor: "#3b82f6",
+    fillOpacity: 0.5,
+    strokeColor: "#1e40af",
+    strokeWeight: 4,
+    strokeOpacity: 1,
+  };
+
+  // Render Provinsi boundaries
+  useEffect(() => {
+    if (!map || !provinsiData || selectedProvinsi) {
+      setProvinsiPolygons([]);
       return;
     }
+    const polygons = provinsiData.features
+      .filter(f => !isConservationArea(f))
+      .map((feature, index) => ({
+        id: `provinsi-${index}`,
+        paths: geoJsonToGooglePaths(feature.geometry.coordinates, feature.geometry.type),
+        options: {
+          fillColor: stringToColor(feature.properties.PROVINCE),
+          fillOpacity: 0.35,
+          strokeColor: "#000000",
+          strokeWeight: 3,
+          strokeOpacity: 1,
+        },
+        feature,
+      }));
+    setProvinsiPolygons(polygons);
+  }, [map, provinsiData, selectedProvinsi]);
 
-    const { PROVINCE, Kabupaten } = feature.properties;
-    layer.bindPopup(`<b>${Kabupaten}</b><br/>${PROVINCE}`);
-    layer.on({
-      click: () => {
-        setView({ type: "kabupaten", name: PROVINCE, feature: feature });
-        if (onLocationSelect) onLocationSelect("kabupaten", Kabupaten);
-      },
+  // Render Kabupaten boundaries
+  useEffect(() => {
+    console.log("Rendering Kabupaten boundaries");
+    console.log("selectedProvinsi:", selectedProvinsi);
+    console.log("selectedKabupaten:", selectedKabupaten);
+    console.log("drawnPolygon:", drawnPolygon);
+
+    if (!map || !kabupatenData || !selectedProvinsi) {
+      console.log("Clearing kabupaten polygons");
+      setKabupatenPolygons([]);
+      return;
+    }
+    const filteredFeatures = kabupatenData.features.filter(feature => {
+      if (isConservationArea(feature)) return false;
+      const featureProvinsiName = feature.properties.PROVINCE;
+      const isProvinsiMatch = selectedProvinsi === featureProvinsiName;
+      if (!isProvinsiMatch) return false;
+      if (selectedKabupaten) {
+        return feature.properties.Kabupaten === selectedKabupaten;
+      }
+      return true;
+    });
+    console.log("Filtered features count:", filteredFeatures.length);
+    const polygons = filteredFeatures.map((feature, index) => ({
+      id: `kabupaten-${index}`,
+      paths: geoJsonToGooglePaths(feature.geometry.coordinates, feature.geometry.type),
+      options: selectedKabupaten && feature.properties.Kabupaten === selectedKabupaten ? selectedStyle : kabupatenStyle,
+      feature,
+      isSelected: selectedKabupaten && feature.properties.Kabupaten === selectedKabupaten,
+    }));
+    setKabupatenPolygons(polygons);
+    console.log("Kabupaten polygons set:", polygons.length);
+  }, [map, kabupatenData, selectedProvinsi, selectedKabupaten]);
+
+  const handlePolygonUpdate = useCallback((polygon) => {
+    const path = polygon.getPath();
+    const coordinates = googlePathToGeoJson(path);
+    const polyFeature = turf.polygon(coordinates);
+
+    // Check if polygon overlaps with conservation areas
+    if (provinsiData) {
+      const conservationFeatures = provinsiData.features.filter(isConservationArea);
+      for (const c of conservationFeatures) {
+        if (turf.intersect(turf.featureCollection([polyFeature, c]))) {
+          toast.error("Aset tidak boleh tumpang tindih dengan area konservasi!");
+          return;
+        }
+      }
+    }
+
+    onPolygonCreated({ geometry: polyFeature.geometry, area: turf.area(polyFeature) });
+  }, [provinsiData, onPolygonCreated]);
+
+  const handlePolygonComplete = useCallback((polygon) => {
+    setIsDrawing(false);
+    const path = polygon.getPath();
+    const coordinates = googlePathToGeoJson(path);
+    const polyFeature = turf.polygon(coordinates);
+
+    // Check if polygon overlaps with conservation areas
+    if (provinsiData) {
+      const conservationFeatures = provinsiData.features.filter(isConservationArea);
+      for (const c of conservationFeatures) {
+        if (turf.intersect(turf.featureCollection([polyFeature, c]))) {
+          toast.error("Aset tumpang tindih dengan area konservasi.");
+          polygon.setMap(null);
+          return;
+        }
+      }
+    }
+
+    if (drawnPolygon) drawnPolygon.setMap(null);
+    setDrawnPolygon(polygon);
+    onPolygonCreated({ geometry: polyFeature.geometry, area: turf.area(polyFeature) });
+
+    polygon.setEditable(true);
+    polygon.setDraggable(true);
+    ['set_at', 'insert_at', 'remove_at'].forEach(evt => path.addListener(evt, () => handlePolygonUpdate(polygon)));
+    polygon.addListener('dragend', () => handlePolygonUpdate(polygon));
+  }, [drawnPolygon, onPolygonCreated, handlePolygonUpdate, provinsiData]);
+
+  const handleProvinsiClick = useCallback((feature) => {
+    if (isConservationArea(feature)) {
+      toast.error("Area konservasi tidak dapat dipilih.");
+      return;
+    }
+    // Hapus polygon saat memilih provinsi baru
+    if (drawnPolygon) {
+      drawnPolygon.setMap(null);
+      setDrawnPolygon(null);
+      onPolygonCreated(null);
+    }
+    setIsDrawing(false);
+    onLocationSelect?.("provinsi", feature.properties.PROVINCE);
+  }, [onLocationSelect, drawnPolygon]);
+
+  const handleKabupatenClick = useCallback((feature) => {
+    if (isConservationArea(feature)) {
+      toast.error("Area konservasi tidak dapat dipilih.");
+      return;
+    }
+    // Hapus polygon saat memilih kabupaten baru
+    if (drawnPolygon) {
+      drawnPolygon.setMap(null);
+      setDrawnPolygon(null);
+      onPolygonCreated(null);
+    }
+    setIsDrawing(false);
+    onLocationSelect?.("kabupaten", feature.properties.Kabupaten);
+  }, [onLocationSelect, drawnPolygon]);
+
+  const handleToggleDrawing = () => {
+    if (!selectedKabupaten) {
+      toast.error("Pilih wilayah Kabupaten/Kota sebelum menggambar.");
+      return;
+    }
+    if (drawnPolygon) {
+      toast.error("Hapus polygon yang sudah ada terlebih dahulu.");
+      return;
+    }
+    setIsDrawing(prev => !prev);
+  };
+
+  const handleDeleteClick = () => {
+    console.log("handleDeleteClick called");
+    console.log("Current drawnPolygon state:", drawnPolygon);
+    Swal.fire({
+      title: "Apakah Anda yakin?",
+      text: "Data yang dihapus tidak dapat dikembalikan!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Ya, hapus!",
+      cancelButtonText: "Batal",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        if (drawnPolygon) {
+          console.log("Removing polygon from map and resetting state");
+          drawnPolygon.setMap(null);
+          setDrawnPolygon(null);
+          onPolygonCreated(null);
+          setIsDrawing(false);
+          console.log("Polygon deleted successfully");
+        }
+      }
     });
   };
 
-  const getStyle = (feature) => {
-    if (
-      view.type === "kabupaten" &&
-      view.feature?.properties.Kabupaten === feature.properties.Kabupaten
-    ) {
-      return selectedStyle;
+  const onPlaceChanged = () => {
+    const place = autocomplete?.getPlace();
+    if (place?.geometry?.location) {
+      map.panTo(place.geometry.location);
+      map.setZoom(15);
     }
-    return kabupatenStyle;
   };
 
-  const buttonStyle = {
-    position: "absolute",
-    top: "10px",
-    left: "50px",
-    zIndex: 1000,
-    padding: "8px 12px",
-    backgroundColor: "white",
-    border: "2px solid rgba(0,0,0,0.2)",
-    borderRadius: "4px",
-    cursor: "pointer",
-  };
+  useEffect(() => {
+    // Jangan aktifkan drawing mode jika sudah ada polygon yang dibuat atau jika tidak sedang menggambar
+    if (drawingManager) {
+      if (drawnPolygon || !isDrawing) {
+        drawingManager.setDrawingMode(null); // Matikan drawing mode
+      } else {
+        drawingManager.setDrawingMode(window.google.maps.drawing.OverlayType.POLYGON); // Aktifkan drawing mode
+      }
+    }
+  }, [isDrawing, drawingManager, drawnPolygon]);
 
-  if (!provinsiData || !kabupatenData) {
-    return <div>Memuat data peta...</div>;
-  }
+  if (loadError) return <div className="alert alert-danger">Error loading Google Maps.</div>;
+  if (!isLoaded) return <div className="spinner-border text-primary" />;
 
   return (
     <div style={{ position: "relative", height: "100%", width: "100%" }}>
-      {view.type !== "nasional" && (
-        <button onClick={handleBackClick} style={buttonStyle}>
-          Kembali
-        </button>
-      )}
-      <MapContainer
-        center={[-7.5, 110.0]}
+      <GoogleMap
+        center={mapCenter}
         zoom={8}
-        style={{ height: "100%", width: "100%" }}
+        mapContainerStyle={{ height: "100%", width: "100%" }}
+        options={{
+          streetViewControl: false,
+          fullscreenControl: false, // Nonaktifkan kontrol fullscreen
+          mapTypeControl: false, // Nonaktifkan kontrol bawaan
+          zoomControl: false, // Nonaktifkan kontrol zoom default
+          panControl: false,
+          scaleControl: false,
+          rotateControl: false,
+          clickableIcons: false, // Nonaktifkan ikon yang bisa diklik
+          drawingControl: false,
+          keyboardShortcuts: false, // Nonaktifkan shortcut keyboard
+          gestureHandling: 'greedy', // Ubah cara penanganan gestur
+          disableDefaultUI: true, // Nonaktifkan semua UI default
+        }}
+        onLoad={setMap}
       >
-        <MapSearch />
-        <ZoomController
-          view={view}
-          newlyDrawnGeometry={newlyDrawnGeometry}
-          mapNavigationTrigger={mapNavigationTrigger}
-        />
+        <div className="map-controls-wrapper">
+          <div className="top-left-controls">
+            {selectedProvinsi && (
+              <button
+                onClick={() => {
+                  console.log("Back button clicked");
+                  console.log("Current drawnPolygon state:", drawnPolygon);
+                  // Hapus polygon saat kembali ke pemilihan provinsi
+                  if (drawnPolygon) {
+                    console.log("Removing polygon from map and resetting state");
+                    drawnPolygon.setMap(null);
+                    setDrawnPolygon(null);
+                    onPolygonCreated(null);
+                  }
+                  setIsDrawing(false);
+                  // Kembali ke pemilihan provinsi
+                  console.log("Navigating back to province selection");
+                  onLocationSelect?.("provinsi", null);
+                }}
+                className="control-button"
+              >
+                ← Kembali
+              </button>
+            )}
+            {selectedKabupaten && !importedGeometry && (
+              <>
+                {!drawnPolygon && (
+                  <DrawingTools
+                    isDrawing={isDrawing}
+                    onToggleDrawing={handleToggleDrawing}
+                  />
+                )}
+                {drawnPolygon && (
+                  <div className="drawing-tools-container">
+                    <button
+                      onClick={handleDeleteClick}
+                      className="icon-button delete-button"
+                      title="Hapus Polygon"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
 
-        <LayersControl position="topright">
-          <LayersControl.BaseLayer checked name="Street Map">
-            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          </LayersControl.BaseLayer>
-          <LayersControl.BaseLayer name="Satelit">
-            <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" />
-          </LayersControl.BaseLayer>
-        </LayersControl>
+          <div className="top-center-controls">
+            {!importedGeometry && !drawnPolygon && !isDrawing && (
+              <Autocomplete onLoad={setAutocomplete} onPlaceChanged={onPlaceChanged}>
+                <input type="text" placeholder="Cari lokasi..." className="search-input" />
+              </Autocomplete>
+            )}
+          </div>
 
-        {!newlyDrawnGeometry && view.type === "nasional" && (
-          <GeoJSON
-            ref={geoJsonLayerRef}
-            key="provinsi-layer"
-            data={provinsiData}
-            style={(feature) =>
-              provinceStyles[feature.properties.PROVINCE] ||
-              provinceStyles.default
-            }
-            onEachFeature={onEachProvinceFeature}
+          <div className="top-right-controls">
+            {/* Kontrol tipe peta buatan sendiri */}
+            <div className="map-type-controls">
+              <select
+                className="control-button"
+                onChange={(e) => {
+                  if (map) {
+                    map.setMapTypeId(e.target.value);
+                  }
+                }}
+                defaultValue="roadmap"
+              >
+                <option value="roadmap">Peta</option>
+                <option value="satellite">Satelit</option>
+                <option value="hybrid">Hybrid</option>
+                <option value="terrain">Terrain</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="left-bottom-controls">
+            <div className="zoom-controls">
+              <button
+                className="control-button"
+                onClick={() => map && map.setZoom(map.getZoom() + 1)}
+                title="Zoom In"
+              >
+                +
+              </button>
+              <button
+                className="control-button"
+                onClick={() => map && map.setZoom(map.getZoom() - 1)}
+                title="Zoom Out"
+              >
+                -
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {importedGeometry?.coordinates && (
+          <Polygon
+            paths={geoJsonToGooglePaths(importedGeometry.coordinates)}
+            options={{ fillColor: "#00FFFF", fillOpacity: 0.4, strokeColor: "#00FFFF", strokeWeight: 4 }}
           />
         )}
 
-        {!newlyDrawnGeometry && view.type === "provinsi" && (
-          <GeoJSON
-            ref={geoJsonLayerRef}
-            key={"kabupaten-layer-" + view.name}
-            data={{
-              type: "FeatureCollection",
-              features: kabupatenData.features.filter(
-                (f) => f.properties.PROVINCE === view.name && !isConservationArea(f)
-              ),
+        {!importedGeometry && !selectedProvinsi && provinsiPolygons.map(p => (
+          <Polygon key={p.id} paths={p.paths} options={p.options} onClick={() => handleProvinsiClick(p.feature)} />
+        ))}
+
+        {!importedGeometry && selectedProvinsi && kabupatenPolygons.map(p => (
+          <Polygon
+            key={p.id}
+            paths={p.paths}
+            options={p.options}
+            onClick={() => !p.isSelected && handleKabupatenClick(p.feature)}
+          />
+        ))}
+
+        {selectedKabupaten && !importedGeometry && !drawnPolygon && (
+          <DrawingManager
+            onLoad={onLoadDrawingManager}
+            onPolygonComplete={handlePolygonComplete}
+            options={{
+              drawingControl: false,
+              polygonOptions: {
+                fillColor: "#ff0000",
+                fillOpacity: 0.3, // Kurangi opacity untuk memastikan batas kabupaten tetap terlihat
+                strokeWeight: 2,
+                strokeColor: "#ff0000",
+                editable: true,
+                draggable: true,
+              },
             }}
-            style={getStyle}
-            onEachFeature={onEachKabupatenFeature}
           />
         )}
-
-        {view.type === "kabupaten" && view.feature && !isConservationArea(view.feature) && (
-          <GeoJSON
-            ref={geoJsonLayerRef}
-            key={"kabupaten-selected-" + view.feature.properties.Kabupaten}
-            data={view.feature}
-            style={getStyle}
-          />
-        )}
-
-        <AssetsLayer />
-
-        <FeatureGroup ref={featureGroupRef}>
-          {isDrawingEnabled && view.type === "kabupaten" && !isConservationArea(view.feature) && (
-            <EditControl
-              position="topleft"
-              onCreated={handleCreated}
-              draw={{
-                rectangle: false,
-                circle: false,
-                circlemarker: false,
-                marker: false,
-                polyline: false,
-                polygon: {
-                  allowIntersection: false,
-                  showArea: true,
-                  shapeOptions: { color: "#ff0000" },
-                },
-              }}
-              edit={{ remove: true, edit: true }}
-            />
-          )}
-        </FeatureGroup>
-      </MapContainer>
+      </GoogleMap>
     </div>
   );
 };
 
-export default PetaGambarYardip;
+export default React.memo(PetaGambarYardip);

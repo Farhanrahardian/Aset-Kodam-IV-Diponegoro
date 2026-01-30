@@ -11,7 +11,12 @@ const app = express();
 const PORT = process.env.BACKEND_PORT || 3001;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: '*', // Allow all origins
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  preflightContinue: false,
+  optionsSuccessStatus: 204
+}));
 app.use(express.json());
 app.use("/uploads", express.static("uploads"));
 

@@ -55,24 +55,30 @@ const AsetByKoremChart = () => {
     <Card className="chart-card h-100">
       <Card.Body>
         <Card.Title>Jumlah Aset Tiap Korem</Card.Title>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={asetByKorem} layout="vertical">
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              type="number"
-              tickFormatter={(value) => Math.floor(value)}
-              allowDecimals={false}
-            />
-            <YAxis
-              dataKey="name"
-              type="category"
-              width={180} // Menyesuaikan lebar untuk menghindari tabrakan
-              tick={{ fontSize: 12 }}
-            />
-            <Tooltip formatter={(value) => Math.floor(value)} />
-            <Bar dataKey="jumlah" fill="#82ca9d" name="Jumlah Aset" />
-          </BarChart>
-        </ResponsiveContainer>
+        {asetByKorem.length > 0 ? (
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={asetByKorem} layout="vertical">
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                type="number"
+                tickFormatter={(value) => Math.floor(value)}
+                allowDecimals={false}
+              />
+              <YAxis
+                dataKey="name"
+                type="category"
+                width={180} // Menyesuaikan lebar untuk menghindari tabrakan
+                tick={{ fontSize: 12 }}
+              />
+              <Tooltip formatter={(value) => Math.floor(value)} />
+              <Bar dataKey="jumlah" fill="#82ca9d" name="Jumlah Aset" />
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="d-flex align-items-center justify-content-center" style={{ height: 300 }}>
+            <p className="text-muted mb-0">Tidak ada data untuk ditampilkan</p>
+          </div>
+        )}
       </Card.Body>
     </Card>
   );

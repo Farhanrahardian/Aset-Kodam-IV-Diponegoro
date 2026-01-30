@@ -129,20 +129,6 @@ const TabelAsetYardip = ({
         return "bg-info";
     }
   };
-  const getBidangBadgeClass = (bidang) => {
-    switch (bidang?.toLowerCase()) {
-      case "tanah":
-        return "bg-warning";
-      case "tanah gudang kantor":
-        return "bg-primary";
-      case "tanah bangunan":
-        return "bg-info";
-      case "ruko":
-        return "bg-success";
-      default:
-        return "bg-secondary";
-    }
-  };
 
   return (
     <div style={{ width: "100%", minWidth: "1200px" }}>
@@ -165,11 +151,7 @@ const TabelAsetYardip = ({
           {assets.map((asset) => (
             <tr key={asset.id}>
               <td>{asset.pengelola || "-"}</td>
-              <td>
-                <span className={`badge ${getBidangBadgeClass(asset.bidang)}`}>
-                  {asset.bidang || "-"}
-                </span>
-              </td>
+              <td>{asset.bidang || "-"}</td>
               <td>{asset.provinsi || "-"}</td>
               <td>{asset.kabkota || "-"}</td>
               <td>

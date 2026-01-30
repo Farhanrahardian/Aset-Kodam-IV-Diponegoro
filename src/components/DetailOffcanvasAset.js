@@ -26,23 +26,31 @@ import {
   FaImage,
 } from "react-icons/fa";
 import PetaAset from "./PetaAset";
+import { getCentroid } from "../utils/locationUtils";
 
 const API_URL = "http://localhost:3001";
 
 // Helper untuk mendapatkan warna badge berdasarkan status
 const getStatusBadgeVariant = (status) => {
-  if (!status) return "secondary";
+  if (!status) {
+    return "secondary";
+  }
 
   const statusLower = status.toLowerCase().trim();
 
-  // Status Dimiliki/Dikuasai = Hijau
-  if (statusLower.includes("dimiliki/dikuasai")) {
-    return "success";
+  // Status Tidak Dimiliki/Dikuasai = Merah (cek dulu agar tidak tertangkap oleh kondisi positif)
+  if (statusLower.includes("tidak dimiliki/dikuasai") ||
+      statusLower.includes("tidak dimiliki") ||
+      statusLower.includes("tidak dikuasai") ||
+      statusLower.includes("belum dimiliki")) {
+    return "danger";
   }
 
-  // Status TIdak Dimiliki/Dikuasai = Merah
-  if (statusLower.includes("tidak dimiliki/dikuasai")) {
-    return "danger";
+  // Status Dimiliki/Dikuasai = Hijau
+  if (statusLower.includes("dimiliki/dikuasai") ||
+      statusLower.includes("dimiliki") ||
+      statusLower.includes("dikuasai")) {
+    return "success";
   }
 
   // Default jika tidak ada match
@@ -236,6 +244,12 @@ const DetailOffcanvasAset = ({
   const validatedLocation = validateLocationData(aset);
   const hasValidLocation = validatedLocation !== null;
 
+  // Get centroid for display
+  const geometryForCentroid = hasValidLocation ? { type: 'Polygon', coordinates: validatedLocation } : null;
+  const centroid = geometryForCentroid ? getCentroid(geometryForCentroid) : null;
+  const centroidLat = centroid ? centroid[0].toFixed(6) : "N/A";
+  const centroidLng = centroid ? centroid[1].toFixed(6) : "N/A";
+
   // Get korem and kodim info
   const korem = koremList.find((k) => k.id == aset.korem_id);
   const kodim = allKodimList.find(
@@ -249,7 +263,7 @@ const DetailOffcanvasAset = ({
   const hasValidImage = imageUrl && isImageFile(filename);
   const hasPdf = imageUrl && isPdfFile(filename);
 
-  // Helper function to determine which area to display based on certificate status
+  // Helper function to determine which area to display based on certificate status (for compatibility)
   const renderLuasInfo = (asset) => {
     const hasSertifikat = asset.pemilikan_sertifikat === "Ya";
     const sertifikatLuas = parseFloat(asset.sertifikat_luas) || 0;
@@ -260,30 +274,47 @@ const DetailOffcanvasAset = ({
       return {
         label: "Luas Bersertifikat",
         value: `${sertifikatLuas.toLocaleString("id-ID")} m²`,
-        className: "text-success",
+        className: "text-dark",
       };
     } else if (!hasSertifikat && belumSertifikatLuas > 0) {
       return {
         label: "Luas Tidak Bersertifikat",
         value: `${belumSertifikatLuas.toLocaleString("id-ID")} m²`,
-        className: "text-warning",
+        className: "text-dark",
       };
     } else if (petaLuas > 0) {
       return {
-        label: "Luas",
+        label: "Luas Total",
         value: `${petaLuas.toLocaleString("id-ID")} m²`,
-        className: "text-muted",
+        className: "text-dark",
       };
     }
 
     return {
-      label: "Luas",
+      label: "Luas Total",
       value: "-",
-      className: "text-muted",
+      className: "text-dark",
     };
   };
 
   const luasInfo = renderLuasInfo(aset);
+
+  // Status umum (dimiliki/dikuasai atau tidak)
+  const statusUmum = aset.status || "Status Tidak Diketahui";
+
+  // Status sertifikat berdasarkan field pemilikan_sertifikat
+  const sertifikatStatus = aset.pemilikan_sertifikat === "Ya"
+    ? "Bersertifikat"
+    : aset.pemilikan_sertifikat === "Tidak"
+      ? "Tidak Bersertifikat"
+      : "Status Sertifikat Tidak Diketahui";
+
+  // Warna badge untuk status umum
+  const statusUmumColor = getStatusBadgeVariant(aset.status);
+
+  // Warna badge untuk status sertifikat
+  const sertifikatColor = aset.pemilikan_sertifikat === "Ya" ? "success" :
+                         aset.pemilikan_sertifikat === "Tidak" ? "danger" : "secondary";
 
   return (
     <>
@@ -335,8 +366,11 @@ const DetailOffcanvasAset = ({
                     NUP (Nomor Urut Pendaftaran)
                   </small>
                   <div className="mt-2">
-                    <Badge bg={getStatusBadgeVariant(aset.status)} pill>
-                      {aset.status || "Status Tidak Diketahui"}
+                    <Badge bg={statusUmumColor} pill className="me-2">
+                      {statusUmum}
+                    </Badge>
+                    <Badge bg={sertifikatColor} pill>
+                      {sertifikatStatus}
                     </Badge>
                   </div>
                 </div>
@@ -374,16 +408,6 @@ const DetailOffcanvasAset = ({
                           <strong>Peruntukan:</strong>
                         </td>
                         <td>{aset.peruntukan || aset.fungsi || "-"}</td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <strong>Status:</strong>
-                        </td>
-                        <td>
-                          <Badge bg={getStatusBadgeVariant(aset.status)}>
-                            {aset.status || "-"}
-                          </Badge>
-                        </td>
                       </tr>
                       <tr>
                         <td>
@@ -487,47 +511,9 @@ const DetailOffcanvasAset = ({
                           <strong>Koordinat:</strong>
                         </td>
                         <td>
-                          {hasValidLocation && validatedLocation ? (
+                          {hasValidLocation && centroid ? (
                             <div>
-                              <small className="text-muted">
-                                Polygon dengan{" "}
-                                {Array.isArray(validatedLocation)
-                                  ? validatedLocation[0]?.length || 0
-                                  : 0}{" "}
-                                titik
-                              </small>
-                              <details className="mt-1">
-                                <summary
-                                  style={{
-                                    cursor: "pointer",
-                                    fontSize: "0.8em",
-                                  }}
-                                >
-                                  Lihat koordinat
-                                </summary>
-                                <div
-                                  style={{
-                                    maxHeight: "100px",
-                                    overflowY: "auto",
-                                    fontSize: "0.7em",
-                                  }}
-                                >
-                                  {Array.isArray(validatedLocation) &&
-                                  validatedLocation[0] ? (
-                                    validatedLocation[0].map((coord, idx) => (
-                                      <div key={idx}>
-                                        {idx + 1}: [
-                                        {coord[0]?.toFixed(6) || "N/A"},{" "}
-                                        {coord[1]?.toFixed(6) || "N/A"}]
-                                      </div>
-                                    ))
-                                  ) : (
-                                    <span className="text-muted">
-                                      Format koordinat tidak valid
-                                    </span>
-                                  )}
-                                </div>
-                              </details>
+                              Lat: {centroidLat}, Lng: {centroidLng}
                             </div>
                           ) : (
                             <span className="text-muted">Tidak tersedia</span>
@@ -648,54 +634,7 @@ const DetailOffcanvasAset = ({
             )}
 
             {/* Geographic Information Card */}
-            {hasValidLocation && (
-              <Card className="mb-3 shadow-sm">
-                <Card.Header className="bg-warning text-dark">
-                  <FaGlobe className="me-2" /> Informasi Geografis
-                </Card.Header>
-                <Card.Body>
-                  <Row>
-                    <Col sm={6}>
-                      <div className="mb-2">
-                        <strong>Tipe Geometri:</strong>
-                        <br />
-                        <span className="text-muted">Polygon</span>
-                      </div>
-                    </Col>
-                    <Col sm={6}>
-                      <div className="mb-2">
-                        <strong>Jumlah Koordinat:</strong>
-                        <br />
-                        <span className="text-muted">
-                          {Array.isArray(validatedLocation) &&
-                          validatedLocation[0]
-                            ? validatedLocation[0].length
-                            : 0}{" "}
-                          titik
-                        </span>
-                      </div>
-                    </Col>
-                    <Col sm={12}>
-                      <div className="mb-0">
-                        <strong>Status Sertifikat:</strong>
-                        <br />
-                        <span
-                          className={
-                            aset.pemilikan_sertifikat === "Ya"
-                              ? "text-success"
-                              : "text-warning"
-                          }
-                        >
-                          {aset.pemilikan_sertifikat === "Ya"
-                            ? "Bersertifikat"
-                            : "Tidak Bersertifikat"}
-                        </span>
-                      </div>
-                    </Col>
-                  </Row>
-                </Card.Body>
-              </Card>
-            )}
+
 
             {/* Additional Information */}
             {aset.keterangan && (

@@ -305,8 +305,7 @@ const FormAset = forwardRef((props, ref) => {
 
         if (totalFileCount > 5) {
           toast.error(
-            `Total file foto aset tidak boleh melebihi 5. Anda saat ini memiliki ${existingPhotoCount} file dan mencoba menambahkan ${newFileCount} file. Maksimal ${
-              5 - existingPhotoCount
+            `Total file foto aset tidak boleh melebihi 5. Anda saat ini memiliki ${existingPhotoCount} file dan mencoba menambahkan ${newFileCount} file. Maksimal ${5 - existingPhotoCount
             } file dapat ditambahkan.`
           );
           return;
@@ -462,8 +461,8 @@ const FormAset = forwardRef((props, ref) => {
           ? normalizeKodimName(foundKodim.listkodim_Kodim)
           : koremNameInGeoJSON === "Berdiri Sendiri" ||
             koremNameInGeoJSON === "Kodim 0733/Kota Semarang"
-          ? "Kodim 0733/Kota Semarang"
-          : koremNameInGeoJSON;
+            ? "Kodim 0733/Kota Semarang"
+            : koremNameInGeoJSON;
 
         if (koremIdToSet) {
           setFormData((prev) => ({
@@ -632,11 +631,13 @@ const FormAset = forwardRef((props, ref) => {
         (k) => k.id === formData.korem_id
       );
       if (selectedKoremData) {
+        // Deduplicate Kodim names just in case
+        const distinctKodims = [...new Set(selectedKoremData.kodim || [])];
         const kodimObjects =
-          selectedKoremData.kodim?.map((kName) => ({
+          distinctKodims.map((kName) => ({
             id: kName,
             nama: kName,
-          })) || [];
+          }));
         setKodimList(kodimObjects);
         if (!assetToEdit) {
           if (
@@ -649,7 +650,7 @@ const FormAset = forwardRef((props, ref) => {
           } else if (kodimObjects.length === 0) {
             const newKodim =
               selectedKoremData.nama === "Berdiri Sendiri" ||
-              selectedKoremData.nama === "Kodim 0733/Kota Semarang"
+                selectedKoremData.nama === "Kodim 0733/Kota Semarang"
                 ? "Kodim 0733/Kota Semarang"
                 : selectedKoremData.nama;
             setFormData((prev) => ({ ...prev, kodim: newKodim }));
@@ -750,8 +751,8 @@ const FormAset = forwardRef((props, ref) => {
                       required
                     >
                       <option value="">-- Pilih Kodim --</option>
-                      {kodimList.map((kodim) => (
-                        <option key={kodim.id} value={kodim.id}>
+                      {kodimList.map((kodim, index) => (
+                        <option key={`${kodim.id}-${index}`} value={kodim.id}>
                           {kodim.nama}
                         </option>
                       ))}

@@ -27,10 +27,10 @@ const TambahAsetYardipPage = () => {
   });
   const [isDrawingEnabled, setIsDrawingEnabled] = useState(false);
   const [drawnAsset, setDrawnAsset] = useState(null);
-  
+
   // NEW: Separate state for manual area editing
   const [manualArea, setManualArea] = useState(null);
-  
+
   const [error, setError] = useState(null);
   const [yardipAssets, setYardipAssets] = useState([]);
   const [provinsiData, setProvinsiData] = useState(null);
@@ -112,7 +112,18 @@ const TambahAsetYardipPage = () => {
   }, []);
 
   const handleDrawingCreated = useCallback((data) => {
-    setDrawnAsset(data);
+    // Handle deletion (data is null)
+    if (data === null) {
+      setDrawnAsset(null);
+      toast.success("Gambar berhasil dihapus.");
+      return;
+    }
+
+    if (!data || !data.geometry) {
+      toast.error("Data gambar tidak valid.");
+      return;
+    }
+    setDrawnAsset({ ...data, source: 'manual' });
     setManualArea(data.area); // Set initial manual area from calculated area
     toast.success(`Area seluas ${data.area.toFixed(2)} m² berhasil digambar.`);
   }, []);
@@ -144,7 +155,7 @@ const TambahAsetYardipPage = () => {
             provinsi: containingProv,
             kabupaten: containingKab,
           });
-          setDrawnAsset({ geometry, area });
+          setDrawnAsset({ geometry, area, source: 'import' });
           setManualArea(area);
           toast.success(
             `Poligon berhasil diimpor! Lokasi: ${containingKab}, ${containingProv}.`
@@ -153,13 +164,13 @@ const TambahAsetYardipPage = () => {
           toast.error(
             "Tidak dapat menentukan lokasi poligon. Pastikan poligon berada di dalam wilayah yang didukung."
           );
-          setDrawnAsset({ geometry, area });
+          setDrawnAsset({ geometry, area, source: 'import' });
           setManualArea(area);
         }
       } catch (e) {
         toast.error("Terjadi kesalahan saat menganalisis poligon.");
         console.error("Polygon analysis error:", e);
-        setDrawnAsset({ geometry, area });
+        setDrawnAsset({ geometry, area, source: 'import' });
         setManualArea(area);
       }
     },
@@ -280,10 +291,10 @@ const TambahAsetYardipPage = () => {
                 kabupatenData={kabupatenData}
                 onLocationSelect={handleLocationSelect}
                 onPolygonCreated={handleDrawingCreated}
-                isDrawingEnabled={isDrawingEnabled}
-                assets={yardipAssets}
-                newlyDrawnGeometry={drawnAsset ? drawnAsset.geometry : null}
-                mapNavigationTrigger={mapNavigationTrigger}
+                selectedProvinsi={selectedLocation.provinsi}
+                selectedKabupaten={selectedLocation.kabupaten}
+                importedGeometry={drawnAsset && drawnAsset.source === 'import' ? drawnAsset.geometry : null}
+                geoJsonKey={0}
               />
             </MapErrorBoundary>
           </div>

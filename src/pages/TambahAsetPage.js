@@ -64,9 +64,18 @@ const TambahAsetPage = () => {
   }, []);
 
   const prevIsLocationSelected = useRef(false);
+  const currentSelectionRef = useRef({ koremId: "", kodimName: "" }); // Add ref to track selection for toast suppression
 
   const handleLocationChange = useCallback(
     (koremId, kodimName) => {
+      // Suppress redundant toasts if selection hasn't changed
+      const isSameSelection =
+        currentSelectionRef.current.koremId === koremId &&
+        currentSelectionRef.current.kodimName === kodimName;
+
+      // Update ref immediately
+      currentSelectionRef.current = { koremId, kodimName };
+
       setSelectionSource("form");
       setSelectedKoremId(koremId);
       setSelectedKodimId(kodimName);
@@ -92,15 +101,17 @@ const TambahAsetPage = () => {
         setSelectedKodim(
           kodimFeature
             ? {
-                nama: "Kodim 0733/Kota Semarang",
-                geometry: kodimFeature.geometry,
-              }
+              nama: "Kodim 0733/Kota Semarang",
+              geometry: kodimFeature.geometry,
+            }
             : null
         );
         setIsLocationSelected(true);
-        toast.success(
-          `KODIM 0733/Kota Semarang dipilih. Silakan gambar area aset di peta.`
-        ); // Notifikasi untuk pemilihan Kodim Semarang
+        if (!isSameSelection) {
+          toast.success(
+            `KODIM 0733/Kota Semarang dipilih. Silakan gambar area aset di peta.`
+          );
+        }
       } else if (kodimName && kodimBoundaries) {
         const kodimFeature = kodimBoundaries.features.find((f) => {
           const featureName = normalizeKodimName(f.properties.listkodim_Kodim);
@@ -115,9 +126,11 @@ const TambahAsetPage = () => {
             : null
         );
         setIsLocationSelected(true);
-        toast.success(
-          `KODIM ${kodimName} dipilih. Silakan gambar area aset di peta.`
-        ); // Notifikasi untuk pemilihan Kodim umum
+        if (!isSameSelection) {
+          toast.success(
+            `KODIM ${kodimName} dipilih. Silakan gambar area aset di peta.`
+          );
+        }
       } else {
         setSelectedKodim(null);
         setIsLocationSelected(!!koremId);
@@ -224,19 +237,27 @@ const TambahAsetPage = () => {
     }
   };
 
-  const handleDrawingCreated = (data) => {
+  const handleDrawingCreated = useCallback((data) => {
+    // Handle deletion (data is null)
+    if (data === null) {
+      setDrawnAsset(null);
+      setImportedGeometry(null);
+      toast.success("Gambar berhasil dihapus.");
+      return;
+    }
+
     if (!data || !data.geometry) {
       toast.error("Data gambar tidak valid.");
       return;
     }
-    setDrawnAsset(data);
+    setDrawnAsset({ ...data, source: 'manual' });
     setImportedGeometry(null);
     setIsFormEnabled(true);
     setIsLocationSelected(true);
     toast.success(
       `Polygon berhasil digambar! Luas: ${data.area.toFixed(2)} m²`
     );
-  };
+  }, []);
 
   const handleKmlImport = (geometry) => {
     if (!geometry) return;
@@ -244,7 +265,7 @@ const TambahAsetPage = () => {
     const area = turf.area(feature);
 
     setImportedGeometry(geometry);
-    setDrawnAsset({ geometry, area });
+    setDrawnAsset({ geometry, area, source: 'import' });
     setIsFormEnabled(true);
     setIsLocationSelected(true);
     setGeoJsonKey((prevKey) => prevKey + 1); // Inkrementasi key
@@ -354,8 +375,8 @@ const TambahAsetPage = () => {
       assetData.luas && assetData.luas > 0
         ? assetData.luas
         : drawnAsset
-        ? drawnAsset.area || 0
-        : 0;
+          ? drawnAsset.area || 0
+          : 0;
 
     console.log("🔍 Luas final yang akan disimpan:", finalLuas);
 
@@ -438,7 +459,7 @@ const TambahAsetPage = () => {
                       koremList={koremList}
                       koremBoundaries={koremBoundaries}
                       kodimBoundaries={kodimBoundaries}
-                      importedGeometry={importedGeometry} // Pass prop ke peta
+                      importedGeometry={drawnAsset && drawnAsset.source === 'import' ? drawnAsset.geometry : importedGeometry} // Conditional imported geometry
                       geoJsonKey={geoJsonKey} // Pass key ke peta
                     />
                   </div>

@@ -1,41 +1,35 @@
-import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import React, {
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import {
-  MapContainer,
-  TileLayer,
-  FeatureGroup,
-  GeoJSON,
-  useMap,
-  LayersControl,
-} from "react-leaflet";
-import { GeoSearchControl, OpenStreetMapProvider } from "leaflet-geosearch";
-import "leaflet-geosearch/dist/geosearch.css";
-import { EditControl } from "react-leaflet-draw";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-import "leaflet-draw/dist/leaflet.draw.css";
+  GoogleMap,
+  useJsApiLoader,
+  Polygon,
+  DrawingManager,
+  Autocomplete,
+} from "@react-google-maps/api";
 import * as turf from "@turf/turf";
-import toast from "react-hot-toast"; // Pastikan toast diimpor
+import toast from "react-hot-toast";
+import Swal from "sweetalert2";
 import { normalizeKodimName } from "../utils/kodimUtils";
+import DrawingTools from "./DrawingTools";
 
-// Fix for broken icons in Leaflet with Webpack
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: require("leaflet/dist/images/marker-icon-2x.png"),
-  iconUrl: require("leaflet/dist/images/marker-icon.png"),
-  shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
-});
+const libraries = ["drawing", "places", "geometry"];
 
-// Helper function to generate a color from a string
 const stringToColor = (str) => {
   if (!str) return "#000000";
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     hash = str.charCodeAt(i) + ((hash << 5) - hash);
   }
-  let color = '#';
+  let color = "#";
   for (let i = 0; i < 3; i++) {
-    const value = (hash >> (i * 8)) & 0xFF;
-    color += ('00' + value.toString(16)).substr(-2);
+    const value = (hash >> (i * 8)) & 0xff;
+    color += ("00" + value.toString(16)).substr(-2);
   }
   return color;
 };
@@ -46,449 +40,813 @@ const isConservationArea = (feature) => {
 };
 
 const kodimStyle = {
-  fillColor: "#f59e0b",
-  weight: 2,
-  opacity: 1,
-  color: "white",
-  fillOpacity: 0.5,
+  fillColor: "#fb923c",
+  fillOpacity: 0.4,
+  strokeColor: "#ea580c",
+  strokeWeight: 3,
+  strokeOpacity: 1,
 };
+
 const selectedStyle = {
-  fillColor: "#1976d2",
-  fillOpacity: 0.2,
-  weight: 4,
-  opacity: 1,
-  color: "#1976d2",
-};
-const conservationStyle = {
-  fillColor: "#ff0000", // Red
+  fillColor: "#3b82f6",
   fillOpacity: 0.5,
-  color: "#ff0000",
-  weight: 2,
-  dashArray: "5, 5",
+  strokeColor: "#1e40af",
+  strokeWeight: 4,
+  strokeOpacity: 1,
 };
 
-const MapSearch = () => {
-  const map = useMap();
-  useEffect(() => {
-    const provider = new OpenStreetMapProvider();
-    const searchControl = new GeoSearchControl({
-      provider: provider,
-      style: "bar",
-      showMarker: true,
-      showPopup: false,
-      autoClose: true,
-      retainZoomLevel: false,
-      animateZoom: false,
-      keepResult: true,
-    });
-    map.addControl(searchControl);
-    return () => {
-      map.removeControl(searchControl);
-    };
-  }, [map]);
-  return null;
+const geoJsonToGooglePaths = (coordinates, type) => {
+  if (!coordinates || !coordinates.length) return [];
+  const ringToPath = (ring) =>
+    ring
+      .filter(
+        (coord) =>
+          Array.isArray(coord) &&
+          coord.length >= 2 &&
+          !isNaN(coord[0]) &&
+          !isNaN(coord[1])
+      )
+      .map((coord) => ({ lat: Number(coord[1]), lng: Number(coord[0]) }));
+
+  return type === "MultiPolygon"
+    ? coordinates.flatMap((polygon) => polygon.map(ringToPath))
+    : coordinates.map(ringToPath);
 };
 
-const MapController = ({
-  selectedKorem,
-  selectedKodim,
-  koremBoundaries,
-  kodimBoundaries,
-  resetSelectedLayer,
-  importedGeometry,
-}) => {
-  const map = useMap();
-  useEffect(() => {
-    if (!koremBoundaries) return;
-    const timer = setTimeout(() => {
-      if (importedGeometry) {
-        try {
-          const layer = L.geoJSON(importedGeometry);
-          map.fitBounds(layer.getBounds(), { padding: [50, 50], animate: true });
-        } catch (e) {
-          console.error("Error fitting bounds to imported geometry:", e);
-        }
-        return;
-      }
-      if (selectedKodim && kodimBoundaries) {
-        const kodimFeature = kodimBoundaries.features.find((f) => {
-          const featureName = normalizeKodimName(f.properties.listkodim_Kodim);
-          const searchName = selectedKodim.nama;
-          if (searchName === "Kodim 0733/Kota Semarang") {
-            return f.properties.listkodim_Korem === "Berdiri Sendiri";
-          }
-          return featureName === searchName;
-        });
-        if (kodimFeature) {
-          try {
-            const layer = L.geoJSON(kodimFeature);
-            map.fitBounds(layer.getBounds(), { animate: true });
-          } catch (error) {
-            console.error("Error fitting bounds for kodim:", error);
-          }
-        }
-        return;
-      }
-      if (selectedKorem && koremBoundaries) {
-        const koremNameToSearch =
-          selectedKorem.nama === "Kodim 0733/Kota Semarang"
-            ? "Berdiri Sendiri"
-            : selectedKorem.nama;
-        const koremFeatures = koremBoundaries.features.filter(
-          (f) => f.properties.listkodim_Korem === koremNameToSearch
-        );
-        if (koremFeatures.length > 0) {
-          try {
-            const featureGroup = L.featureGroup(
-              koremFeatures.map((f) => L.geoJSON(f))
-            );
-            map.fitBounds(featureGroup.getBounds(), { animate: true });
-          } catch (error) {
-            console.error("Error fitting bounds for korem:", error);
-          }
-        }
-        return;
-      }
-      try {
-        const allKoremLayer = L.geoJSON(koremBoundaries);
-        map.fitBounds(allKoremLayer.getBounds(), { animate: true });
-      } catch (error) {
-        console.error("Error fitting bounds for all korems:", error);
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [importedGeometry, selectedKorem, selectedKodim, koremBoundaries, kodimBoundaries, map]);
-  return null;
+const googlePathToGeoJson = (path) => {
+  const coordinates = path.getArray().map((latLng) => [latLng.lng(), latLng.lat()]);
+  if (
+    coordinates.length > 0 &&
+    (coordinates[0][0] !== coordinates[coordinates.length - 1][0] ||
+      coordinates[0][1] !== coordinates[coordinates.length - 1][1])
+  ) {
+    coordinates.push([...coordinates[0]]);
+  }
+  return [coordinates];
 };
 
 const PetaGambarAset = ({
   onPolygonCreated,
   selectedKorem,
   selectedKodim,
-  isLocationSelected,
   onLocationSelect,
   importedGeometry,
-  geoJsonKey,
   koremBoundaries,
   kodimBoundaries,
 }) => {
-  const featureGroupRef = useRef(null);
-  const selectedLayerRef = useRef(null);
-  const [mapReady, setMapReady] = useState(true);
-  const mapCenter = [-7.5, 110.0];
-  const initialZoom = 8;
+  const [map, setMap] = useState(null);
+  const [drawingManager, setDrawingManager] = useState(null);
+  const [drawnPolygon, setDrawnPolygon] = useState(null);
+  const [koremPolygons, setKoremPolygons] = useState([]);
+  const [kodimPolygons, setKodimPolygons] = useState([]);
+  const [autocomplete, setAutocomplete] = useState(null);
+  const [isDrawing, setIsDrawing] = useState(false);
 
+  // State untuk riwayat perubahan polygon
+  const [polygonHistory, setPolygonHistory] = useState([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+
+  const drawingManagerRef = useRef(null);
+  const mapCenter = useMemo(() => ({ lat: -7.5, lng: 110.0 }), []);
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || "",
+    libraries,
+  });
+
+  const onLoadDrawingManager = useCallback((dm) => {
+    drawingManagerRef.current = dm;
+    setDrawingManager(dm);
+  }, []);
+
+  // Inject custom styles for the new layout
   useEffect(() => {
     const style = document.createElement("style");
     style.textContent = `
-      .leaflet-control-zoom, .leaflet-control-layers, .leaflet-control-geosearch, 
-      .leaflet-draw, .leaflet-draw-toolbar, .leaflet-control-attribution, .leaflet-control {
-        z-index: 500 !important;
+      .map-controls-wrapper {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none; /* Allows clicks to pass through to the map */
       }
-      .leaflet-control-layers-expanded, .leaflet-geosearch .results {
-        z-index: 501 !important;
+      .map-controls-wrapper > * {
+        pointer-events: auto; /* Re-enable pointer events for controls */
       }
-      .leaflet-popup { z-index: 1002 !important; }
+      .top-left-controls {
+        position: absolute;
+        top: 15px;
+        left: 15px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .top-center-controls {
+        position: absolute;
+        top: 15px;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+      .top-right-controls {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+      }
+      .left-bottom-controls {
+        position: absolute;
+        bottom: 15px;
+        left: 15px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .zoom-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      .bottom-center-controls {
+        position: absolute;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+      .control-button {
+        background-color: white;
+        border: 1px solid #d1d5db; /* gray-300 */
+        border-radius: 8px;
+        padding: 10px 15px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 40px;
+      }
+      .control-button:hover {
+        background-color: #f9fafb; /* gray-50 */
+        border-color: #9ca3af; /* gray-400 */
+      }
+      .icon-button {
+        background-color: white;
+        border: 1px solid #d1d5db; /* gray-300 */
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-width: 40px;
+        min-height: 40px;
+        width: 40px;
+      }
+      .icon-button:hover {
+        background-color: #f9fafb; /* gray-50 */
+        border-color: #9ca3af; /* gray-400 */
+      }
+      .search-input {
+        width: 350px;
+        padding: 10px 15px;
+        border-radius: 8px;
+        border: 1px solid #d1d5db; /* gray-300 */
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        font-size: 14px;
+      }
+
+      .map-type-controls select {
+        background-color: white;
+        border: 1px solid #d1d5db; /* gray-300 */
+        border-radius: 8px;
+        padding: 10px 15px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        transition: all 0.2s;
+        min-width: 100px;
+        min-height: 40px;
+        color: #374151;
+      }
+
+      .map-type-controls select:hover {
+        background-color: #f9fafb; /* gray-50 */
+        border-color: #9ca3af; /* gray-400 */
+      }
+      .delete-button {
+        background-color: #dc3545; /* red-600 */
+        color: white;
+        border-color: #dc3545; /* red-600 */
+      }
+      .delete-button:hover {
+        background-color: #c82333; /* darker red */
+        border-color: #bd2130; /* darker red */
+      }
+      .icon-button.delete-button {
+        background-color: #dc3545; /* red-600 */
+        color: white;
+        border-color: #dc3545; /* red-600 */
+      }
+      .icon-button.delete-button:hover {
+        background-color: #c82333; /* darker red */
+        border-color: #bd2130; /* darker red */
+      }
+
+
+      .gm-style .gm-fullscreen-control,
+      .gm-style .gm-zoom-control {
+        border-radius: 8px !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+        border: 1px solid #d1d5db !important;
+      }
+
+      .gm-style .gm-fullscreen-control div,
+      .gm-style .gm-zoom-control button {
+        min-width: 40px !important;
+        min-height: 40px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+      }
+
+      .gm-style .gm-fullscreen-control div:hover,
+      .gm-style .gm-zoom-control button:hover {
+        background-color: #f9fafb !important;
+      }
     `;
     document.head.appendChild(style);
-    return () => {
-      document.head.removeChild(style);
-    };
+    return () => document.head.removeChild(style);
   }, []);
 
-  const resetSelectedLayer = useCallback(() => {
-    if (selectedLayerRef.current) {
-      if (selectedLayerRef.current.feature && selectedLayerRef.current.feature.properties) {
-        const properties = selectedLayerRef.current.feature.properties;
-        if (isConservationArea(selectedLayerRef.current.feature)) {
-          selectedLayerRef.current.setStyle(conservationStyle);
-        } else if (properties.listkodim_Kodim) {
-          selectedLayerRef.current.setStyle(kodimStyle);
-        } else if (properties.listkodim_Korem) {
-          const koremName = properties.listkodim_Korem;
-          const color = stringToColor(koremName);
-          selectedLayerRef.current.setStyle({
-            fillColor: color,
-            weight: 2,
-            opacity: 1,
-            color: "white",
-            fillOpacity: 0.5,
-          });
+  // Fit bounds to selected area or imported geometry
+  useEffect(() => {
+    if (!map || !koremBoundaries) return;
+    const timer = setTimeout(() => {
+      if (drawnPolygon && !importedGeometry) return;
+      const bounds = new window.google.maps.LatLngBounds();
+      let hasValidBounds = false;
+
+      const extendBoundsWithCoords = (coords) => {
+        if (!Array.isArray(coords)) return;
+        if (coords.length >= 2 && typeof coords[0] === 'number' && typeof coords[1] === 'number') {
+          if (!isNaN(coords[0]) && !isNaN(coords[1])) {
+            bounds.extend({ lat: coords[1], lng: coords[0] });
+            hasValidBounds = true;
+          }
+          return;
+        }
+        coords.forEach(item => extendBoundsWithCoords(item));
+      };
+
+      if (importedGeometry?.coordinates) {
+        extendBoundsWithCoords(importedGeometry.coordinates);
+        if (hasValidBounds) map.fitBounds(bounds, { padding: 50 });
+        return;
+      }
+
+      if (selectedKodim && kodimBoundaries) {
+        const kodimFeature = kodimBoundaries.features.find((f) => {
+          const featureName = normalizeKodimName(f.properties.listkodim_Kodim);
+          const searchName = selectedKodim.nama;
+          if (searchName === "Kodim 0733/Kota Semarang") {
+            return f.properties.listkodim_Kodim === "Kodim 0733/Semarang (BS)";
+          }
+          return featureName === searchName;
+        });
+
+        if (kodimFeature?.geometry?.coordinates) {
+          extendBoundsWithCoords(kodimFeature.geometry.coordinates);
+          if (hasValidBounds) map.fitBounds(bounds);
+          return;
         }
       }
-      selectedLayerRef.current = null;
-    }
-  }, []);
 
-  const onKoremEachFeature = useCallback((feature, layer) => {
-    // Menonaktifkan interaksi untuk area konservasi
-    if (isConservationArea(feature)) {
-      // Tidak ada bindPopup atau event click untuk area konservasi
+      if (selectedKorem && koremBoundaries) {
+        const koremNameToSearch = selectedKorem.nama === "Kodim 0733/Kota Semarang" ? "Berdiri Sendiri" : selectedKorem.nama;
+        const koremFeatures = koremBoundaries.features.filter(f => f.properties.listkodim_Korem === koremNameToSearch);
+        if (koremFeatures.length > 0) {
+          koremFeatures.forEach(feature => extendBoundsWithCoords(feature?.geometry?.coordinates));
+          if (hasValidBounds) map.fitBounds(bounds);
+          return;
+        }
+      }
+
+      if (koremBoundaries.features.length > 0) {
+        koremBoundaries.features.forEach(feature => {
+          if (!isConservationArea(feature)) extendBoundsWithCoords(feature?.geometry?.coordinates);
+        });
+        if (hasValidBounds) map.fitBounds(bounds);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [map, selectedKorem, selectedKodim, importedGeometry, koremBoundaries, kodimBoundaries, drawnPolygon]);
+
+  // Render Korem boundaries
+  useEffect(() => {
+    if (!map || !koremBoundaries || selectedKorem) {
+      setKoremPolygons([]);
+      return;
+    }
+    const polygons = koremBoundaries.features
+      .filter(f => !isConservationArea(f))
+      .map((feature, index) => ({
+        id: `korem-${index}`,
+        paths: geoJsonToGooglePaths(feature.geometry.coordinates, feature.geometry.type),
+        options: {
+          fillColor: stringToColor(feature.properties.listkodim_Korem),
+          fillOpacity: 0.35,
+          strokeColor: "#000000",
+          strokeWeight: 3,
+          strokeOpacity: 1,
+        },
+        feature,
+      }));
+    setKoremPolygons(polygons);
+  }, [map, koremBoundaries, selectedKorem]);
+
+  // Render Kodim boundaries
+  useEffect(() => {
+    if (!map || !kodimBoundaries || !selectedKorem) {
+      setKodimPolygons([]);
+      return;
+    }
+    const filteredFeatures = kodimBoundaries.features.filter(feature => {
+      if (isConservationArea(feature)) return false;
+      const featureKoremName = feature.properties.listkodim_Korem;
+      const isKoremMatch = selectedKorem.nama === "Kodim 0733/Kota Semarang"
+        ? featureKoremName === "Berdiri Sendiri"
+        : featureKoremName === selectedKorem.nama;
+      if (!isKoremMatch) return false;
+      if (selectedKodim?.nama) {
+        const searchName = selectedKodim.nama.trim().toLowerCase();
+        const featureKodimName = normalizeKodimName(feature.properties.listkodim_Kodim).trim().toLowerCase();
+
+        const isMatch = searchName === "kodim 0733/kota semarang"
+          ? featureKodimName.includes("semarang")
+          : featureKodimName === searchName;
+
+        if (!isMatch) {
+          // console.log(`Mismatch: '${featureKodimName}' !== '${searchName}'`); // Optional debug
+          return false;
+        }
+        return true;
+      }
+      return true;
+    });
+
+    const polygons = filteredFeatures.map((feature, index) => ({
+      id: `kodim-${index}`,
+      paths: geoJsonToGooglePaths(feature.geometry.coordinates, feature.geometry.type),
+      options: selectedKodim && normalizeKodimName(feature.properties.listkodim_Kodim) === selectedKodim.nama ? selectedStyle : kodimStyle,
+      feature,
+      isSelected: selectedKodim && normalizeKodimName(feature.properties.listkodim_Kodim) === selectedKodim.nama,
+    }));
+
+    console.log("Filtered Kodim Features:", filteredFeatures.map(f => f.properties.listkodim_Kodim));
+    console.log("Generated Polygons:", polygons.length);
+
+    setKodimPolygons(polygons);
+  }, [map, kodimBoundaries, selectedKorem, selectedKodim]);
+
+  // Fungsi untuk menyimpan riwayat perubahan polygon
+  const savePolygonToHistory = useCallback((polygon, action = 'update') => {
+    if (!polygon && action !== 'delete') {
+      // Jika tidak ada polygon dan bukan aksi delete, simpan entri kosong
+      setPolygonHistory(prevHistory => {
+        const maxHistory = 20;
+        const newHistoryEntry = {
+          coordinates: null,
+          action: 'delete',
+          timestamp: Date.now(),
+        };
+        const newHistory = [...prevHistory.slice(-(maxHistory - 1)), newHistoryEntry];
+        return newHistory;
+      });
+
+      setHistoryIndex(prevIndex => prevIndex + 1);
       return;
     }
 
-    const koremName = feature.properties.listkodim_Korem;
-    const displayKoremName = koremName === "Berdiri Sendiri" ? "Kodim 0733/Kota Semarang" : koremName;
-    if (displayKoremName) {
-      layer.bindPopup(`<b>KOREM:</b><br/>${displayKoremName}`);
+    if (polygon) {
+      const path = polygon.getPath();
+      const coordinates = googlePathToGeoJson(path);
+      const newHistoryEntry = {
+        coordinates: JSON.parse(JSON.stringify(coordinates)), // Buat salinan
+        action: action,
+        timestamp: Date.now(),
+      };
+
+      // Batasi jumlah entri dalam riwayat (misalnya maksimal 20)
+      setPolygonHistory(prevHistory => {
+        const maxHistory = 20;
+        const newHistory = [...prevHistory.slice(-(maxHistory - 1)), newHistoryEntry];
+        return newHistory;
+      });
+
+      setHistoryIndex(prevIndex => prevIndex + 1);
     }
-    layer.on({
-      click: () => {
-        if (koremName === "Berdiri Sendiri") {
-          onLocationSelect && onLocationSelect("KODIM", "Kodim 0733/Kota Semarang", "Kodim 0733/Kota Semarang");
-        } else {
-          const finalKoremName = koremName === "Berdiri Sendiri" ? "Kodim 0733/Kota Semarang" : koremName;
-          onLocationSelect && onLocationSelect("KOREM", finalKoremName, null);
-        }
-      },
-    });
-  }, [onLocationSelect]);
+  }, []);
 
-  const onKodimEachFeature = useCallback((feature, layer) => {
-    if (isConservationArea(feature)) return; // Seharusnya tidak terjadi, tapi untuk keamanan
+  const handlePolygonUpdate = useCallback((polygon, skipValidation = false) => {
+    const path = polygon.getPath();
+    const coordinates = googlePathToGeoJson(path);
+    const polyFeature = turf.polygon(coordinates);
 
-    const kodimName = normalizeKodimName(feature.properties.listkodim_Kodim);
-    const koremName = feature.properties.listkodim_Korem;
-    const displayKodimName = kodimName.includes("Semarang") ? "Kodim 0733/Kota Semarang" : kodimName;
-    const displayKoremName = koremName === "Berdiri Sendiri" ? "Kodim 0733/Kota Semarang" : koremName;
-    if (displayKodimName && displayKoremName) {
-      layer.bindPopup(`<b>KODIM:</b> ${displayKodimName}<br/><b>KOREM:</b> ${displayKoremName}`);
-    }
-    layer.on({
-      click: () => {
-        resetSelectedLayer();
-        layer.setStyle(selectedStyle);
-        selectedLayerRef.current = layer;
-        if (kodimName.includes("Semarang") || koremName === "Berdiri Sendiri" || kodimName === "Kodim 0733/Semarang (BS)") {
-          onLocationSelect && onLocationSelect("KODIM", "Kodim 0733/Kota Semarang", "Kodim 0733/Kota Semarang");
-        } else {
-          const finalKoremName = koremName === "Berdiri Sendiri" ? "Kodim 0733/Kota Semarang" : koremName;
-          const finalKodimName = kodimName.includes("Semarang") ? "Kodim 0733/Kota Semarang" : kodimName;
-          onLocationSelect && onLocationSelect("KODIM", finalKoremName, finalKodimName);
-        }
-      },
-    });
-  }, [resetSelectedLayer, onLocationSelect]);
+    // Lewati validasi jika ini panggilan dari undo/redo
+    if (!skipValidation) {
+      // Validasi apakah polygon berada dalam area Kodim yang dipilih
+      if (selectedKodim && kodimBoundaries) {
+        // Cari fitur GeoJSON yang sesuai dengan Kodim yang dipilih
+        const kodimFeature = kodimBoundaries.features.find((f) => {
+          const featureName = normalizeKodimName(f.properties.listkodim_Kodim);
+          const searchName = selectedKodim.nama;
+          if (searchName === "Kodim 0733/Kota Semarang") {
+            return f.properties.listkodim_Kodim === "Kodim 0733/Semarang (BS)";
+          }
+          return featureName === searchName;
+        });
 
-  const handleCreated = (e) => {
-    const { layerType, layer } = e;
-    if (layerType === "polygon") {
-      const newPolygon = layer.toGeoJSON();
+        if (kodimFeature) {
+          // Periksa apakah polygon berada dalam batas Kodim yang dipilih
+          const kodimPolyFeature = turf.feature(kodimFeature.geometry);
 
-      // Validasi tumpang tindih dengan area konservasi
-      const conservationFeatures = koremBoundaries.features.filter(isConservationArea);
-      for (const conservationFeature of conservationFeatures) {
-        // Pastikan kedua geometri valid sebelum melakukan intersect
-        if (newPolygon && newPolygon.geometry && conservationFeature && conservationFeature.geometry) {
-          try {
-            const intersection = turf.intersect(newPolygon, conservationFeature);
-            if (intersection) {
-              toast.error("Aset tidak boleh tumpang tindih dengan area konservasi (hutan atau waduk).");
-              // Hapus layer yang baru digambar dari peta
-              if (featureGroupRef.current) {
-                featureGroupRef.current.removeLayer(layer);
-              }
-              return; // Hentikan proses
-            }
-          } catch (error) {
-            console.error("Error saat memeriksa tumpang tindih geometri:", error);
-            // Tetap lanjutkan proses jika terjadi error saat intersect
+          // Gunakan turf.booleanWithin untuk memeriksa apakah polygon berada dalam batas Kodim
+          if (!turf.booleanWithin(polyFeature, kodimPolyFeature)) {
+            toast.error("Aset harus digambar dalam area Kodim yang dipilih.");
+            return;
           }
         }
       }
 
-      const area = turf.area(newPolygon);
-      featureGroupRef.current.clearLayers();
-      featureGroupRef.current.addLayer(layer);
-      onPolygonCreated({ geometry: newPolygon.geometry, area: area });
-    }
-  };
-
-  const handleBackToKorem = () => {
-    // Hapus polygon yang telah digambar saat kembali ke level Korem
-    if (featureGroupRef.current) {
-      featureGroupRef.current.clearLayers();
-    }
-    onLocationSelect && onLocationSelect("KOREM", null, null);
-  };
-
-  const handleBackToKoremView = () => {
-    // Hapus polygon yang telah digambar saat kembali ke level Korem
-    if (featureGroupRef.current) {
-      featureGroupRef.current.clearLayers();
-    }
-    if (selectedKorem) {
-      const koremName = selectedKorem.nama === "Kodim 0733/Kota Semarang" ? "Berdiri Sendiri" : selectedKorem.nama;
-      onLocationSelect && onLocationSelect("KOREM", koremName, null);
-    }
-  };
-
-  const buttonStyle = {
-    position: "absolute",
-    top: "10px",
-    left: "50px",
-    zIndex: 1000,
-    padding: "6px 10px",
-    fontSize: "14px",
-    backgroundColor: "white",
-    border: "2px solid rgba(0,0,0,0.2)",
-    borderRadius: "4px",
-    cursor: "pointer",
-  };
-
-  const filteredKodimData = useMemo(() => {
-    if (!selectedKorem || !kodimBoundaries) return null;
-    const nonConservationFeatures = kodimBoundaries.features.filter(f => !isConservationArea(f));
-    return {
-      ...kodimBoundaries,
-      features: nonConservationFeatures.filter((feature) => {
-        const featureKoremName = feature.properties.listkodim_Korem;
-        const featureKodimName = normalizeKodimName(feature.properties.listkodim_Kodim);
-        const isKoremMatch = selectedKorem.nama === "Kodim 0733/Kota Semarang"
-          ? featureKoremName === "Berdiri Sendiri"
-          : featureKoremName === selectedKorem.nama;
-        if (!isKoremMatch) return false;
-        if (selectedKodim && selectedKodim.nama) {
-          const searchName = selectedKodim.nama;
-          if (searchName === "Kodim 0733/Kota Semarang") {
-            return featureKodimName.includes("Semarang");
+      if (koremBoundaries) {
+        const conservationFeatures = koremBoundaries.features.filter(isConservationArea);
+        for (const c of conservationFeatures) {
+          if (turf.intersect(turf.featureCollection([polyFeature, c]))) {
+            toast.error("Aset tidak boleh tumpang tindih dengan area konservasi!");
+            return;
           }
-          return featureKodimName === searchName;
         }
-        return true;
-      }),
-    };
-  }, [selectedKorem, selectedKodim, kodimBoundaries]);
+      }
+    }
+
+    // Simpan ke riwayat sebelum memperbarui (hanya jika bukan dari undo/redo)
+    if (!skipValidation) {
+      savePolygonToHistory(polygon);
+    }
+
+    onPolygonCreated({ geometry: polyFeature.geometry, area: turf.area(polyFeature) });
+  }, [kodimBoundaries, selectedKodim, onPolygonCreated, normalizeKodimName, savePolygonToHistory]);
+
+  // Fungsi undo
+  const handleUndo = useCallback(() => {
+    if (historyIndex <= 0 || polygonHistory.length === 0) {
+      toast.info("Tidak ada riwayat untuk di-undo.");
+      return;
+    }
+
+    const previousIndex = historyIndex - 1;
+    const previousState = polygonHistory[previousIndex];
+
+    if (previousState) {
+      if (previousState.action === 'delete' || previousState.coordinates === null) {
+        // Jika sebelumnya polygon dihapus, sekarang kita kembalikan polygon
+        if (drawnPolygon) {
+          drawnPolygon.setMap(null); // Hapus polygon saat ini
+          setDrawnPolygon(null);
+        }
+        setHistoryIndex(previousIndex);
+        onPolygonCreated(null); // Kirim null untuk menghapus polygon
+        toast.success("Polygon dihapus (undo).");
+      } else if (drawnPolygon && previousState.coordinates) {
+        // Update path polygon dengan koordinat sebelumnya
+        const newPath = new window.google.maps.MVCArray();
+        previousState.coordinates[0].forEach(coord => {
+          newPath.push({ lat: coord[1], lng: coord[0] });
+        });
+
+        drawnPolygon.setPath(newPath);
+        setHistoryIndex(previousIndex);
+
+        // Panggil handlePolygonUpdate untuk memperbarui tampilan tanpa validasi
+        setTimeout(() => {
+          if (typeof handlePolygonUpdate === 'function') {
+            handlePolygonUpdate(drawnPolygon, true); // Lewati validasi
+          }
+        }, 0);
+      }
+    }
+  }, [historyIndex, polygonHistory, drawnPolygon, handlePolygonUpdate, onPolygonCreated]);
+
+  // Fungsi redo
+  const handleRedo = useCallback(() => {
+    if (historyIndex >= polygonHistory.length - 1) {
+      toast.info("Tidak ada riwayat untuk di-redo.");
+      return;
+    }
+
+    const nextIndex = historyIndex + 1;
+    const nextState = polygonHistory[nextIndex];
+
+    if (nextState) {
+      if (nextState.action === 'delete' || nextState.coordinates === null) {
+        // Jika langkah berikutnya adalah menghapus polygon
+        if (drawnPolygon) {
+          drawnPolygon.setMap(null);
+          setDrawnPolygon(null);
+        }
+        setHistoryIndex(nextIndex);
+        onPolygonCreated(null); // Kirim null untuk menghapus polygon
+        toast.success("Polygon dihapus (redo).");
+      } else if (drawnPolygon && nextState.coordinates) {
+        // Update path polygon dengan koordinat berikutnya
+        const newPath = new window.google.maps.MVCArray();
+        nextState.coordinates[0].forEach(coord => {
+          newPath.push({ lat: coord[1], lng: coord[0] });
+        });
+
+        drawnPolygon.setPath(newPath);
+        setHistoryIndex(nextIndex);
+
+        // Panggil handlePolygonUpdate untuk memperbarui tampilan tanpa validasi
+        setTimeout(() => {
+          if (typeof handlePolygonUpdate === 'function') {
+            handlePolygonUpdate(drawnPolygon, true); // Lewati validasi
+          }
+        }, 0);
+      }
+    }
+  }, [historyIndex, polygonHistory, drawnPolygon, handlePolygonUpdate, onPolygonCreated]);
+
+  const handlePolygonComplete = useCallback((polygon) => {
+    setIsDrawing(false);
+    const path = polygon.getPath();
+    const coordinates = googlePathToGeoJson(path);
+    const polyFeature = turf.polygon(coordinates);
+
+    // Validasi apakah polygon berada dalam area Kodim yang dipilih
+    if (selectedKodim && kodimBoundaries) {
+      // Cari fitur GeoJSON yang sesuai dengan Kodim yang dipilih
+      const kodimFeature = kodimBoundaries.features.find((f) => {
+        const featureName = normalizeKodimName(f.properties.listkodim_Kodim);
+        const searchName = selectedKodim.nama;
+        if (searchName === "Kodim 0733/Kota Semarang") {
+          return f.properties.listkodim_Kodim === "Kodim 0733/Semarang (BS)";
+        }
+        return featureName === searchName;
+      });
+
+      if (kodimFeature) {
+        // Periksa apakah polygon berada dalam batas Kodim yang dipilih
+        const kodimPolyFeature = turf.feature(kodimFeature.geometry);
+
+        // Gunakan turf.booleanWithin untuk memeriksa apakah polygon berada dalam batas Kodim
+        if (!turf.booleanWithin(polyFeature, kodimPolyFeature)) {
+          toast.error("Aset harus digambar dalam area Kodim yang dipilih.");
+          polygon.setMap(null);
+          return;
+        }
+      }
+    }
+
+    if (koremBoundaries) {
+      const conservationFeatures = koremBoundaries.features.filter(isConservationArea);
+      for (const c of conservationFeatures) {
+        if (turf.intersect(turf.featureCollection([polyFeature, c]))) {
+          toast.error("Aset tumpang tindih dengan area konservasi.");
+          polygon.setMap(null);
+          return;
+        }
+      }
+    }
+
+    if (drawnPolygon) drawnPolygon.setMap(null);
+    setDrawnPolygon(polygon);
+    onPolygonCreated({ geometry: polyFeature.geometry, area: turf.area(polyFeature) });
+
+    // Simpan polygon ke riwayat setelah selesai digambar
+    savePolygonToHistory(polygon, 'create'); // Tandai sebagai aksi pembuatan
+
+    polygon.setEditable(true);
+    polygon.setDraggable(true);
+    ['set_at', 'insert_at', 'remove_at'].forEach(evt => path.addListener(evt, () => handlePolygonUpdate(polygon, false)));
+    polygon.addListener('dragend', () => handlePolygonUpdate(polygon, false));
+  }, [drawnPolygon, koremBoundaries, kodimBoundaries, selectedKodim, onPolygonCreated, handlePolygonUpdate, normalizeKodimName, savePolygonToHistory]);
+
+  const handleKoremClick = useCallback((feature) => onLocationSelect?.("KOREM", feature.properties.listkodim_Korem, null), [onLocationSelect]);
+  const handleKodimClick = useCallback((feature) => onLocationSelect?.("KODIM", feature.properties.listkodim_Korem, normalizeKodimName(feature.properties.listkodim_Kodim)), [onLocationSelect]);
+
+  const handleToggleDrawing = () => {
+    if (!selectedKodim) {
+      toast.error("Pilih wilayah KODIM sebelum menggambar.");
+      return;
+    }
+    setIsDrawing(prev => !prev);
+  };
+
+  const handleDeleteClick = () => {
+    Swal.fire({
+      title: "Apakah Anda yakin?",
+      text: "Data yang dihapus tidak dapat dikembalikan!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Ya, hapus!",
+      cancelButtonText: "Batal",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        if (drawnPolygon) {
+          // Simpan ke riwayat sebelum menghapus
+          savePolygonToHistory(null, 'delete');
+
+          drawnPolygon.setMap(null);
+          setDrawnPolygon(null);
+          onPolygonCreated(null);
+          setIsDrawing(false);
+        }
+      }
+    });
+  };
+
+  const handleBackClick = () => {
+    if (drawnPolygon) {
+      drawnPolygon.setMap(null);
+      setDrawnPolygon(null);
+    }
+    onLocationSelect?.(selectedKodim ? "KOREM" : "KOREM", selectedKodim ? (selectedKorem.nama === "Kodim 0733/Kota Semarang" ? "Berdiri Sendiri" : selectedKorem.nama) : null, null);
+  };
+
+  const onPlaceChanged = () => {
+    const place = autocomplete?.getPlace();
+    if (place?.geometry?.location) {
+      map.panTo(place.geometry.location);
+      map.setZoom(15);
+    }
+  };
+
+  useEffect(() => {
+    if (drawingManager) drawingManager.setDrawingMode(isDrawing ? window.google.maps.drawing.OverlayType.POLYGON : null);
+  }, [isDrawing, drawingManager]);
+
+  if (loadError) return <div className="alert alert-danger">Error loading Google Maps.</div>;
+  if (!isLoaded) return <div className="spinner-border text-primary" />;
 
   return (
     <div style={{ position: "relative", height: "100%", width: "100%" }}>
-      <MapContainer
+      <GoogleMap
         center={mapCenter}
-        zoom={initialZoom}
-        style={{ height: "100%", width: "100%" }}
-        maxZoom={22}
-        zoomAnimation={true}
-        fadeAnimation={false}
-        markerZoomAnimation={false}
+        zoom={8}
+        mapContainerStyle={{ height: "100%", width: "100%" }}
+        options={{
+          streetViewControl: false,
+          fullscreenControl: false, // Nonaktifkan kontrol fullscreen
+          mapTypeControl: false, // Nonaktifkan kontrol bawaan
+          zoomControl: false, // Nonaktifkan kontrol zoom default
+          panControl: false,
+          scaleControl: false,
+          rotateControl: false,
+          clickableIcons: false, // Nonaktifkan ikon yang bisa diklik
+          drawingControl: false,
+          keyboardShortcuts: false, // Nonaktifkan shortcut keyboard
+          scrollwheel: true, // Biarkan scroll wheel aktif
+          disableDoubleClickZoom: false, // Biarkan double click zoom aktif
+          gestureHandling: 'greedy', // Ubah cara penanganan gestur
+          disableDefaultUI: true, // Nonaktifkan semua UI default
+        }}
+        onLoad={setMap}
       >
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        />
-        <MapSearch />
-        {mapReady && (
-          <MapController
-            selectedKorem={selectedKorem}
-            selectedKodim={selectedKodim}
-            koremBoundaries={koremBoundaries}
-            kodimBoundaries={kodimBoundaries}
-            resetSelectedLayer={resetSelectedLayer}
-            importedGeometry={importedGeometry}
+        <div className="map-controls-wrapper">
+          <div className="top-left-controls">
+            {selectedKorem && (
+              <button onClick={handleBackClick} className="control-button">
+                ← Kembali
+              </button>
+            )}
+            {selectedKodim && !importedGeometry && (
+              <>
+                {!drawnPolygon && (
+                  <DrawingTools
+                    isDrawing={isDrawing}
+                    onToggleDrawing={handleToggleDrawing}
+                  />
+                )}
+                {drawnPolygon && (
+                  <div className="drawing-tools-container">
+                    <button
+                      onClick={handleDeleteClick}
+                      className="icon-button delete-button"
+                      title="Hapus Polygon"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          <div className="top-center-controls">
+            {!importedGeometry && !drawnPolygon && !isDrawing && (
+              <Autocomplete onLoad={setAutocomplete} onPlaceChanged={onPlaceChanged}>
+                <input type="text" placeholder="Cari lokasi..." className="search-input" />
+              </Autocomplete>
+            )}
+          </div>
+
+          <div className="top-right-controls">
+            {/* Kontrol tipe peta buatan sendiri */}
+            <div className="map-type-controls">
+              <select
+                className="control-button"
+                onChange={(e) => {
+                  if (map) {
+                    map.setMapTypeId(e.target.value);
+                  }
+                }}
+                defaultValue="roadmap"
+              >
+                <option value="roadmap">Peta</option>
+                <option value="satellite">Satelit</option>
+                <option value="hybrid">Hybrid</option>
+                <option value="terrain">Terrain</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="left-bottom-controls">
+            <div className="zoom-controls">
+              <button
+                className="control-button"
+                onClick={() => map && map.setZoom(map.getZoom() + 1)}
+                title="Zoom In"
+              >
+                +
+              </button>
+              <button
+                className="control-button"
+                onClick={() => map && map.setZoom(map.getZoom() - 1)}
+                title="Zoom Out"
+              >
+                -
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {importedGeometry?.coordinates && (
+          <Polygon
+            paths={geoJsonToGooglePaths(importedGeometry.coordinates)}
+            options={{ fillColor: "#00FFFF", fillOpacity: 0.4, strokeColor: "#00FFFF", strokeWeight: 4 }}
           />
         )}
-        {importedGeometry && (
-          <GeoJSON key={geoJsonKey} data={importedGeometry} style={{ color: "#00FFFF", weight: 4 }} />
+
+        {!importedGeometry && !selectedKorem && koremPolygons.map(p => (
+          <Polygon key={p.id} paths={p.paths} options={p.options} onClick={() => handleKoremClick(p.feature)} />
+        ))}
+
+        {!importedGeometry && selectedKorem && kodimPolygons.map(p => (
+          <Polygon key={p.id} paths={p.paths} options={p.options} onClick={() => !p.isSelected && handleKodimClick(p.feature)} />
+        ))}
+
+        {selectedKodim && !importedGeometry && (
+          <DrawingManager
+            onLoad={onLoadDrawingManager}
+            onPolygonComplete={handlePolygonComplete}
+            options={{
+              drawingControl: false,
+              polygonOptions: {
+                fillColor: "#ff0000",
+                fillOpacity: 0.5,
+                strokeWeight: 2,
+                strokeColor: "#ff0000",
+                editable: true,
+                draggable: true,
+              },
+            }}
+          />
         )}
-        <LayersControl position="topright">
-          <LayersControl.BaseLayer checked name="Street Map">
-            <TileLayer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              maxZoom={21}
-            />
-          </LayersControl.BaseLayer>
-          <LayersControl.BaseLayer name="Satelit">
-            <TileLayer
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-              attribution="Tiles &copy; Esri"
-              maxZoom={21}
-            />
-          </LayersControl.BaseLayer>
-          <LayersControl.BaseLayer name="Topografi">
-            <TileLayer
-              url="https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png"
-              attribution='Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
-              maxZoom={19}
-            />
-          </LayersControl.BaseLayer>
-
-          {!importedGeometry && !selectedKorem && koremBoundaries && mapReady && (
-            <LayersControl.Overlay checked name="Area KOREM">
-              <GeoJSON
-                data={{
-                  ...koremBoundaries,
-                  features: koremBoundaries.features.filter(f => !isConservationArea(f))
-                }}
-                style={(feature) => {
-                  const koremName = feature.properties.listkodim_Korem;
-                  const color = stringToColor(koremName);
-                  return {
-                    fillColor: color,
-                    weight: 2,
-                    opacity: 1,
-                    color: "white",
-                    fillOpacity: 0.5,
-                  };
-                }}
-                onEachFeature={onKoremEachFeature}
-              />
-            </LayersControl.Overlay>
-          )}
-
-          {!importedGeometry && filteredKodimData && mapReady && (
-            <LayersControl.Overlay checked name="Area KODIM">
-              <GeoJSON
-                key={selectedKodim ? selectedKodim.nama : selectedKorem.id}
-                data={filteredKodimData}
-                style={selectedKodim ? selectedStyle : kodimStyle}
-                onEachFeature={onKodimEachFeature}
-              />
-            </LayersControl.Overlay>
-          )}
-        </LayersControl>
-        <FeatureGroup ref={featureGroupRef}>
-          {selectedKodim && !importedGeometry && (
-            <EditControl
-              position="topleft"
-              onCreated={handleCreated}
-              onEdited={() => {}}
-              onDeleted={() => {}}
-              draw={{
-                rectangle: false,
-                circle: false,
-                circlemarker: false,
-                marker: false,
-                polyline: false,
-                polygon: {
-                  allowIntersection: false,
-                  showArea: true,
-                  shapeOptions: {
-                    color: "#ff0000",
-                  },
-                },
-              }}
-            />
-          )}
-        </FeatureGroup>
-      </MapContainer>
-      {selectedKorem && !selectedKodim && (
-        <button onClick={handleBackToKorem} style={buttonStyle}>
-          Kembali
-        </button>
-      )}
-      {selectedKodim && selectedKorem && (
-        <button
-          onClick={
-            selectedKorem.nama === "Kodim 0733/Kota Semarang" ||
-            selectedKorem.nama === "Berdiri Sendiri"
-              ? handleBackToKorem
-              : handleBackToKoremView
-          }
-          style={buttonStyle}
-        >
-          Kembali
-        </button>
-      )}
+      </GoogleMap>
     </div>
   );
 };

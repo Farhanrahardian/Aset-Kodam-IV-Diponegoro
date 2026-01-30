@@ -19,8 +19,6 @@ import { Toaster } from "react-hot-toast";
 
 // CSS global
 import "bootstrap/dist/css/bootstrap.min.css";
-import "leaflet/dist/leaflet.css";
-import "leaflet-draw/dist/leaflet.draw.css";
 
 function App() {
   return (
