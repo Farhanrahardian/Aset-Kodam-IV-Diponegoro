@@ -262,6 +262,21 @@ const PetaGambarAset = forwardRef(({
           width: 200px;
         }
       }
+        @media (max-width: 480px) {
+  .search-input {
+    width: 150px;
+    transform: translateX(-10px);
+  }
+}
+
+@media (max-width: 400px) {
+  .search-input {
+    width: 120px;
+    padding: 8px 10px;
+    font-size: 12px;
+    transform: translateX(-12px);
+  }
+}
 
       .map-type-controls select {
         background-color: white;

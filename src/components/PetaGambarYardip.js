@@ -172,6 +172,22 @@ const PetaGambarYardip = ({
           width: 200px;
         }
       }
+@media (max-width: 480px) {
+  .search-input {
+    width: 150px;
+    transform: translateX(-10px);
+  }
+}
+
+@media (max-width: 400px) {
+  .search-input {
+    width: 120px;
+    padding: 8px 10px;
+    font-size: 12px;
+    transform: translateX(-12px);
+  }
+}
+
       .delete-button {
         background-color: #dc3545; /* red-600 */
         color: white;
