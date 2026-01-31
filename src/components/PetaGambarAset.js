@@ -670,7 +670,33 @@ const PetaGambarAset = forwardRef(({
       setIsDrawing(false);
       const path = polygon.getPath();
       const coordinates = googlePathToGeoJson(path);
-      const polyFeature = turf.polygon(coordinates);
+
+      // Validasi jumlah titik sebelum membuat poligon
+      if (!coordinates || coordinates.length === 0 || coordinates[0].length < 4) {
+        toast.error("Poligon tidak valid: harus memiliki minimal 4 titik (3 titik unik ditambah 1 titik penutup).");
+        polygon.setMap(null);
+        return;
+      }
+
+      // Ambil hanya cincin pertama (eksterior) dari poligon
+      const exteriorRing = coordinates[0];
+
+      // Pastikan cincin memiliki minimal 4 titik (3 titik unik + 1 titik penutup)
+      if (exteriorRing.length < 4) {
+        toast.error("Poligon tidak valid: harus memiliki minimal 4 titik (3 titik unik ditambah 1 titik penutup).");
+        polygon.setMap(null);
+        return;
+      }
+
+      let polyFeature;
+      try {
+        polyFeature = turf.polygon(coordinates);
+      } catch (error) {
+        console.error("Error creating polygon:", error);
+        toast.error("Gagal membuat poligon: bentuk tidak valid.");
+        polygon.setMap(null);
+        return;
+      }
 
       // Validasi apakah polygon berada dalam area Kodim yang dipilih
       if (selectedKodim && kodimBoundaries) {
@@ -700,10 +726,15 @@ const PetaGambarAset = forwardRef(({
       if (koremBoundaries) {
         const conservationFeatures = koremBoundaries.features.filter(isConservationArea);
         for (const c of conservationFeatures) {
-          if (turf.intersect(turf.featureCollection([polyFeature, c]))) {
-            toast.error("Aset tumpang tindih dengan area konservasi.");
-            polygon.setMap(null);
-            return;
+          try {
+            if (turf.intersect(turf.featureCollection([polyFeature, c]))) {
+              toast.error("Aset tumpang tindih dengan area konservasi.");
+              polygon.setMap(null);
+              return;
+            }
+          } catch (error) {
+            console.error("Error checking conservation overlap:", error);
+            // Continue anyway if intersection check fails
           }
         }
       }
