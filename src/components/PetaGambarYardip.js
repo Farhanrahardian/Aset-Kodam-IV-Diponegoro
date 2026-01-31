@@ -554,22 +554,70 @@ const PetaGambarYardip = ({
       >
         <div className="map-controls-wrapper">
           <div className="top-left-controls">
-            {selectedProvinsi && (
+            {(selectedKabupaten || selectedProvinsi) && (
               <button
                 onClick={() => {
-                  console.log("Back button clicked");
-                  console.log("Current drawnPolygon state:", drawnPolygon);
-                  // Hapus polygon saat kembali ke pemilihan provinsi
+                  // Tentukan level saat ini dan level tujuan
+                  const isAtKabupatenLevel = selectedKabupaten;
+
+                  // Jika ada polygon yang digambar, tampilkan konfirmasi sebelum kembali
                   if (drawnPolygon) {
-                    console.log("Removing polygon from map and resetting state");
-                    drawnPolygon.setMap(null);
-                    setDrawnPolygon(null);
-                    onPolygonCreated(null);
+                    Swal.fire({
+                      title: "Apakah Anda yakin?",
+                      text: "Anda akan kembali ke level sebelumnya dan area aset yang telah digambar akan hilang. Apakah Anda yakin?",
+                      icon: "warning",
+                      showCancelButton: true,
+                      confirmButtonColor: "#3085d6",
+                      cancelButtonColor: "#d33",
+                      confirmButtonText: "Ya, kembali!",
+                      cancelButtonText: "Batal",
+                    }).then((result) => {
+                      if (result.isConfirmed) {
+                        console.log("Back button clicked");
+                        console.log("Current drawnPolygon state:", drawnPolygon);
+                        // Hapus polygon saat kembali ke pemilihan provinsi
+                        if (drawnPolygon) {
+                          console.log("Removing polygon from map and resetting state");
+                          drawnPolygon.setMap(null);
+                          setDrawnPolygon(null);
+                          onPolygonCreated(null);
+                        }
+                        setIsDrawing(false);
+
+                        if (isAtKabupatenLevel) {
+                          // Kembali ke pemilihan kabupaten/kota di provinsi yang sama
+                          console.log("Navigating back to kabupaten selection");
+                          onLocationSelect?.("provinsi", selectedProvinsi, true); // Tandai sebagai operasi kembali
+                        } else {
+                          // Kembali ke pemilihan provinsi (level nasional)
+                          console.log("Navigating back to province selection (national level)");
+                          onLocationSelect?.("provinsi", null, true); // Tandai sebagai operasi kembali
+                        }
+                      }
+                    });
+                  } else {
+                    // Jika tidak ada polygon yang digambar, langsung kembali
+                    console.log("Back button clicked");
+                    console.log("Current drawnPolygon state:", drawnPolygon);
+                    // Hapus polygon saat kembali ke pemilihan provinsi
+                    if (drawnPolygon) {
+                      console.log("Removing polygon from map and resetting state");
+                      drawnPolygon.setMap(null);
+                      setDrawnPolygon(null);
+                      onPolygonCreated(null);
+                    }
+                    setIsDrawing(false);
+
+                    if (isAtKabupatenLevel) {
+                      // Kembali ke pemilihan kabupaten/kota di provinsi yang sama
+                      console.log("Navigating back to kabupaten selection");
+                      onLocationSelect?.("provinsi", selectedProvinsi, true); // Tandai sebagai operasi kembali
+                    } else {
+                      // Kembali ke pemilihan provinsi (level nasional)
+                      console.log("Navigating back to province selection (national level)");
+                      onLocationSelect?.("provinsi", null, true); // Tandai sebagai operasi kembali
+                    }
                   }
-                  setIsDrawing(false);
-                  // Kembali ke pemilihan provinsi
-                  console.log("Navigating back to province selection");
-                  onLocationSelect?.("provinsi", null);
                 }}
                 className="control-button"
               >

@@ -59,13 +59,28 @@ const TambahAsetYardipPage = () => {
     loadBoundaryData();
   }, []);
 
-  const handleLocationSelect = useCallback((type, name) => {
+  const handleLocationSelect = useCallback((type, name, isBackOperation = false) => {
     if (type === "provinsi") {
-      setSelectedLocation({ provinsi: name, kabupaten: null });
-      setIsDrawingEnabled(false);
-      setDrawnAsset(null);
-      setManualArea(null);
-      toast.success(`Provinsi ${name} dipilih. Silakan pilih kabupaten/kota.`);
+      if (name) {
+        setSelectedLocation({ provinsi: name, kabupaten: null });
+        setIsDrawingEnabled(false);
+        setDrawnAsset(null);
+        setManualArea(null);
+        // Tampilkan notifikasi hanya jika bukan operasi kembali
+        if (!isBackOperation) {
+          toast.success(`Provinsi ${name} dipilih. Silakan pilih kabupaten/kota.`);
+        }
+      } else {
+        // Jika name null, kembali ke level nasional (semua pilihan direset)
+        setSelectedLocation({ provinsi: null, kabupaten: null });
+        setIsDrawingEnabled(false);
+        setDrawnAsset(null);
+        setManualArea(null);
+        // Tampilkan notifikasi hanya jika bukan operasi kembali
+        if (!isBackOperation) {
+          toast.success("Kembali ke level nasional. Silakan pilih provinsi.");
+        }
+      }
     } else if (type === "kabupaten") {
       setSelectedLocation((prev) => ({ ...prev, kabupaten: name }));
       setIsDrawingEnabled(true);
@@ -97,11 +112,20 @@ const TambahAsetYardipPage = () => {
     setMapNavigationTrigger({ type, name, timestamp: Date.now() });
 
     if (type === "provinsi") {
-      setSelectedLocation({ provinsi: name, kabupaten: null });
-      setIsDrawingEnabled(false);
-      setDrawnAsset(null);
-      setManualArea(null);
-      toast.success(`Peta dipindahkan ke Provinsi ${name}`);
+      if (name) {
+        setSelectedLocation({ provinsi: name, kabupaten: null });
+        setIsDrawingEnabled(false);
+        setDrawnAsset(null);
+        setManualArea(null);
+        toast.success(`Peta dipindahkan ke Provinsi ${name}`);
+      } else {
+        // Jika name null, kembali ke level nasional (semua pilihan direset)
+        setSelectedLocation({ provinsi: null, kabupaten: null });
+        setIsDrawingEnabled(false);
+        setDrawnAsset(null);
+        setManualArea(null);
+        toast.success("Kembali ke level nasional.");
+      }
     } else if (type === "kabupaten") {
       setSelectedLocation((prev) => ({ ...prev, kabupaten: name }));
       setIsDrawingEnabled(true);
@@ -129,7 +153,14 @@ const TambahAsetYardipPage = () => {
   }, []);
 
   const handleImportedGeometry = useCallback(
-    (geometry) => {
+    (geometry, source = 'kml') => {
+      // Jika geometry null, ini berarti ingin menghapus polygon, bukan error
+      if (geometry === null) {
+        setDrawnAsset(null);
+        setManualArea(null);
+        return;
+      }
+
       if (!geometry || !kabupatenData || !provinsiData) {
         toast.error("Gagal memproses geometri, data batas wilayah belum siap.");
         return;
@@ -157,9 +188,12 @@ const TambahAsetYardipPage = () => {
           });
           setDrawnAsset({ geometry, area, source: 'import' });
           setManualArea(area);
-          toast.success(
-            `Poligon berhasil diimpor! Lokasi: ${containingKab}, ${containingProv}.`
-          );
+
+          if (source === 'kml') {
+            toast.success("Poligon dari KML berhasil diimpor!");
+          } else if (source === 'coords') {
+            toast.success("Koordinat berhasil diproses!");
+          }
         } else {
           toast.error(
             "Tidak dapat menentukan lokasi poligon. Pastikan poligon berada di dalam wilayah yang didukung."
@@ -176,6 +210,15 @@ const TambahAsetYardipPage = () => {
     },
     [kabupatenData, provinsiData]
   );
+
+  // Handler khusus untuk menghapus polygon dan mereset tampilan peta
+  const handleClearPolygon = useCallback(() => {
+    setDrawnAsset(null);
+    setManualArea(null);
+    // Reset pilihan wilayah ke null untuk kembali ke tampilan default
+    setSelectedLocation({ provinsi: null, kabupaten: null });
+    setIsDrawingEnabled(false);
+  }, [setSelectedLocation, setIsDrawingEnabled]);
 
   // NEW: Handler for manual area changes
   const handleManualAreaChange = useCallback((newArea) => {
@@ -311,6 +354,7 @@ const TambahAsetYardipPage = () => {
               initialArea={manualArea !== null ? manualArea : (drawnAsset ? drawnAsset.area : 0)}
               onKmlImport={handleImportedGeometry}
               onCoordsImport={handleImportedGeometry}
+              onClearPolygon={handleClearPolygon} // Handler untuk menghapus polygon
               provinsiData={provinsiData}
               kabupatenData={kabupatenData}
               onLocationChange={handleLocationChangeFromForm}

@@ -4,6 +4,8 @@ import React, {
   useCallback,
   useMemo,
   useRef,
+  forwardRef, // Import forwardRef
+  useImperativeHandle, // Import useImperativeHandle
 } from "react";
 import {
   GoogleMap,
@@ -85,7 +87,8 @@ const googlePathToGeoJson = (path) => {
   return [coordinates];
 };
 
-const PetaGambarAset = ({
+// Wrap PetaGambarAset with forwardRef to receive ref from parent
+const PetaGambarAset = forwardRef(({
   onPolygonCreated,
   selectedKorem,
   selectedKodim,
@@ -93,7 +96,8 @@ const PetaGambarAset = ({
   importedGeometry,
   koremBoundaries,
   kodimBoundaries,
-}) => {
+  inputMode, // Mode input saat ini (draw, kml, coords)
+}, ref) => { // Accept ref as a second argument
   const [map, setMap] = useState(null);
   const [drawingManager, setDrawingManager] = useState(null);
   const [drawnPolygon, setDrawnPolygon] = useState(null);
@@ -101,6 +105,26 @@ const PetaGambarAset = ({
   const [kodimPolygons, setKodimPolygons] = useState([]);
   const [autocomplete, setAutocomplete] = useState(null);
   const [isDrawing, setIsDrawing] = useState(false);
+
+  // Expose internal functions to parent component via ref
+  useImperativeHandle(ref, () => ({
+    clearInternalDrawing: () => {
+      try {
+        if (drawnPolygon) {
+          drawnPolygon.setMap(null); // Remove from map
+          setDrawnPolygon(null); // Clear internal state
+        }
+      } catch (error) {
+        console.error("Error saat membersihkan polygon dari ref:", error);
+      }
+      try {
+        onPolygonCreated(null); // Inform parent that drawing is cleared
+      } catch (error) {
+        console.error("Error saat memanggil onPolygonCreated dari ref:", error);
+      }
+    },
+    // You can add other methods here if needed by the parent
+  }));
 
   // State untuk riwayat perubahan polygon
   const [polygonHistory, setPolygonHistory] = useState([]);
@@ -459,53 +483,58 @@ const PetaGambarAset = ({
   }, []);
 
   const handlePolygonUpdate = useCallback((polygon, skipValidation = false) => {
-    const path = polygon.getPath();
-    const coordinates = googlePathToGeoJson(path);
-    const polyFeature = turf.polygon(coordinates);
+    try {
+      const path = polygon.getPath();
+      const coordinates = googlePathToGeoJson(path);
+      const polyFeature = turf.polygon(coordinates);
 
-    // Lewati validasi jika ini panggilan dari undo/redo
-    if (!skipValidation) {
-      // Validasi apakah polygon berada dalam area Kodim yang dipilih
-      if (selectedKodim && kodimBoundaries) {
-        // Cari fitur GeoJSON yang sesuai dengan Kodim yang dipilih
-        const kodimFeature = kodimBoundaries.features.find((f) => {
-          const featureName = normalizeKodimName(f.properties.listkodim_Kodim);
-          const searchName = selectedKodim.nama;
-          if (searchName === "Kodim 0733/Kota Semarang") {
-            return f.properties.listkodim_Kodim === "Kodim 0733/Semarang (BS)";
+      // Lewati validasi jika ini panggilan dari undo/redo
+      if (!skipValidation) {
+        // Validasi apakah polygon berada dalam area Kodim yang dipilih
+        if (selectedKodim && kodimBoundaries) {
+          // Cari fitur GeoJSON yang sesuai dengan Kodim yang dipilih
+          const kodimFeature = kodimBoundaries.features.find((f) => {
+            const featureName = normalizeKodimName(f.properties.listkodim_Kodim);
+            const searchName = selectedKodim.nama;
+            if (searchName === "Kodim 0733/Kota Semarang") {
+              return f.properties.listkodim_Kodim === "Kodim 0733/Semarang (BS)";
+            }
+            return featureName === searchName;
+          });
+
+          if (kodimFeature) {
+            // Periksa apakah polygon berada dalam batas Kodim yang dipilih
+            const kodimPolyFeature = turf.feature(kodimFeature.geometry);
+
+            // Gunakan turf.booleanWithin untuk memeriksa apakah polygon berada dalam batas Kodim
+            if (!turf.booleanWithin(polyFeature, kodimPolyFeature)) {
+              toast.error("Aset harus digambar dalam area Kodim yang dipilih.");
+              return;
+            }
           }
-          return featureName === searchName;
-        });
+        }
 
-        if (kodimFeature) {
-          // Periksa apakah polygon berada dalam batas Kodim yang dipilih
-          const kodimPolyFeature = turf.feature(kodimFeature.geometry);
-
-          // Gunakan turf.booleanWithin untuk memeriksa apakah polygon berada dalam batas Kodim
-          if (!turf.booleanWithin(polyFeature, kodimPolyFeature)) {
-            toast.error("Aset harus digambar dalam area Kodim yang dipilih.");
-            return;
+        if (koremBoundaries) {
+          const conservationFeatures = koremBoundaries.features.filter(isConservationArea);
+          for (const c of conservationFeatures) {
+            if (turf.intersect(turf.featureCollection([polyFeature, c]))) {
+              toast.error("Aset tidak boleh tumpang tindih dengan area konservasi!");
+              return;
+            }
           }
         }
       }
 
-      if (koremBoundaries) {
-        const conservationFeatures = koremBoundaries.features.filter(isConservationArea);
-        for (const c of conservationFeatures) {
-          if (turf.intersect(turf.featureCollection([polyFeature, c]))) {
-            toast.error("Aset tidak boleh tumpang tindih dengan area konservasi!");
-            return;
-          }
-        }
+      // Simpan ke riwayat sebelum memperbarui (hanya jika bukan dari undo/redo)
+      if (!skipValidation) {
+        savePolygonToHistory(polygon);
       }
-    }
 
-    // Simpan ke riwayat sebelum memperbarui (hanya jika bukan dari undo/redo)
-    if (!skipValidation) {
-      savePolygonToHistory(polygon);
+      onPolygonCreated({ geometry: polyFeature.geometry, area: turf.area(polyFeature) });
+    } catch (error) {
+      console.error("Error saat memperbarui polygon:", error);
+      toast.error("Terjadi kesalahan saat memperbarui polygon.");
     }
-
-    onPolygonCreated({ geometry: polyFeature.geometry, area: turf.area(polyFeature) });
   }, [kodimBoundaries, selectedKodim, onPolygonCreated, normalizeKodimName, savePolygonToHistory]);
 
   // Fungsi undo
@@ -589,58 +618,71 @@ const PetaGambarAset = ({
   }, [historyIndex, polygonHistory, drawnPolygon, handlePolygonUpdate, onPolygonCreated]);
 
   const handlePolygonComplete = useCallback((polygon) => {
-    setIsDrawing(false);
-    const path = polygon.getPath();
-    const coordinates = googlePathToGeoJson(path);
-    const polyFeature = turf.polygon(coordinates);
+    try {
+      setIsDrawing(false);
+      const path = polygon.getPath();
+      const coordinates = googlePathToGeoJson(path);
+      const polyFeature = turf.polygon(coordinates);
 
-    // Validasi apakah polygon berada dalam area Kodim yang dipilih
-    if (selectedKodim && kodimBoundaries) {
-      // Cari fitur GeoJSON yang sesuai dengan Kodim yang dipilih
-      const kodimFeature = kodimBoundaries.features.find((f) => {
-        const featureName = normalizeKodimName(f.properties.listkodim_Kodim);
-        const searchName = selectedKodim.nama;
-        if (searchName === "Kodim 0733/Kota Semarang") {
-          return f.properties.listkodim_Kodim === "Kodim 0733/Semarang (BS)";
-        }
-        return featureName === searchName;
-      });
+      // Validasi apakah polygon berada dalam area Kodim yang dipilih
+      if (selectedKodim && kodimBoundaries) {
+        // Cari fitur GeoJSON yang sesuai dengan Kodim yang dipilih
+        const kodimFeature = kodimBoundaries.features.find((f) => {
+          const featureName = normalizeKodimName(f.properties.listkodim_Kodim);
+          const searchName = selectedKodim.nama;
+          if (searchName === "Kodim 0733/Kota Semarang") {
+            return f.properties.listkodim_Kodim === "Kodim 0733/Semarang (BS)";
+          }
+          return featureName === searchName;
+        });
 
-      if (kodimFeature) {
-        // Periksa apakah polygon berada dalam batas Kodim yang dipilih
-        const kodimPolyFeature = turf.feature(kodimFeature.geometry);
+        if (kodimFeature) {
+          // Periksa apakah polygon berada dalam batas Kodim yang dipilih
+          const kodimPolyFeature = turf.feature(kodimFeature.geometry);
 
-        // Gunakan turf.booleanWithin untuk memeriksa apakah polygon berada dalam batas Kodim
-        if (!turf.booleanWithin(polyFeature, kodimPolyFeature)) {
-          toast.error("Aset harus digambar dalam area Kodim yang dipilih.");
-          polygon.setMap(null);
-          return;
-        }
-      }
-    }
-
-    if (koremBoundaries) {
-      const conservationFeatures = koremBoundaries.features.filter(isConservationArea);
-      for (const c of conservationFeatures) {
-        if (turf.intersect(turf.featureCollection([polyFeature, c]))) {
-          toast.error("Aset tumpang tindih dengan area konservasi.");
-          polygon.setMap(null);
-          return;
+          // Gunakan turf.booleanWithin untuk memeriksa apakah polygon berada dalam batas Kodim
+          if (!turf.booleanWithin(polyFeature, kodimPolyFeature)) {
+            toast.error("Aset harus digambar dalam area Kodim yang dipilih.");
+            polygon.setMap(null);
+            return;
+          }
         }
       }
+
+      if (koremBoundaries) {
+        const conservationFeatures = koremBoundaries.features.filter(isConservationArea);
+        for (const c of conservationFeatures) {
+          if (turf.intersect(turf.featureCollection([polyFeature, c]))) {
+            toast.error("Aset tumpang tindih dengan area konservasi.");
+            polygon.setMap(null);
+            return;
+          }
+        }
+      }
+
+      if (drawnPolygon) drawnPolygon.setMap(null);
+      setDrawnPolygon(polygon);
+      onPolygonCreated({ geometry: polyFeature.geometry, area: turf.area(polyFeature) });
+
+      // Simpan polygon ke riwayat setelah selesai digambar
+      savePolygonToHistory(polygon, 'create'); // Tandai sebagai aksi pembuatan
+
+      polygon.setEditable(true);
+      polygon.setDraggable(true);
+      ['set_at', 'insert_at', 'remove_at'].forEach(evt => path.addListener(evt, () => handlePolygonUpdate(polygon, false)));
+      polygon.addListener('dragend', () => handlePolygonUpdate(polygon, false));
+    } catch (error) {
+      console.error("Error saat menyelesaikan polygon:", error);
+      toast.error("Terjadi kesalahan saat menyelesaikan polygon.");
+      // Membersihkan polygon jika terjadi error
+      try {
+        if (polygon) {
+          polygon.setMap(null);
+        }
+      } catch (cleanupError) {
+        console.error("Error saat membersihkan polygon setelah error:", cleanupError);
+      }
     }
-
-    if (drawnPolygon) drawnPolygon.setMap(null);
-    setDrawnPolygon(polygon);
-    onPolygonCreated({ geometry: polyFeature.geometry, area: turf.area(polyFeature) });
-
-    // Simpan polygon ke riwayat setelah selesai digambar
-    savePolygonToHistory(polygon, 'create'); // Tandai sebagai aksi pembuatan
-
-    polygon.setEditable(true);
-    polygon.setDraggable(true);
-    ['set_at', 'insert_at', 'remove_at'].forEach(evt => path.addListener(evt, () => handlePolygonUpdate(polygon, false)));
-    polygon.addListener('dragend', () => handlePolygonUpdate(polygon, false));
   }, [drawnPolygon, koremBoundaries, kodimBoundaries, selectedKodim, onPolygonCreated, handlePolygonUpdate, normalizeKodimName, savePolygonToHistory]);
 
   const handleKoremClick = useCallback((feature) => onLocationSelect?.("KOREM", feature.properties.listkodim_Korem, null), [onLocationSelect]);
@@ -666,25 +708,66 @@ const PetaGambarAset = ({
       cancelButtonText: "Batal",
     }).then((result) => {
       if (result.isConfirmed) {
-        if (drawnPolygon) {
-          // Simpan ke riwayat sebelum menghapus
-          savePolygonToHistory(null, 'delete');
+        try {
+          if (drawnPolygon) {
+            // Simpan ke riwayat sebelum menghapus
+            savePolygonToHistory(null, 'delete');
 
-          drawnPolygon.setMap(null);
-          setDrawnPolygon(null);
-          onPolygonCreated(null);
-          setIsDrawing(false);
+            drawnPolygon.setMap(null);
+            setDrawnPolygon(null);
+            onPolygonCreated(null);
+            setIsDrawing(false);
+          }
+        } catch (error) {
+          console.error("Error saat menghapus polygon:", error);
+          toast.error("Terjadi kesalahan saat menghapus polygon.");
         }
       }
     });
   };
 
   const handleBackClick = () => {
+    // Jika ada polygon yang digambar, tampilkan konfirmasi sebelum kembali
     if (drawnPolygon) {
-      drawnPolygon.setMap(null);
-      setDrawnPolygon(null);
+      Swal.fire({
+        title: "Apakah Anda yakin?",
+        text: "Anda akan kembali ke level sebelumnya dan area aset yang telah digambar akan hilang!",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#3085d6",
+        cancelButtonColor: "#d33",
+        confirmButtonText: "Ya, kembali!",
+        cancelButtonText: "Batal",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          try {
+            if (drawnPolygon && map) {
+              // Hapus polygon dari peta jika masih ada referensinya
+              drawnPolygon.setMap(null);
+              setDrawnPolygon(null);
+              // Kirim null ke parent untuk memberi tahu bahwa polygon telah dihapus
+              onPolygonCreated(null);
+            }
+          } catch (error) {
+            console.error("Error saat membersihkan polygon:", error);
+            // Jika terjadi error saat membersihkan polygon, tetap lanjutkan ke navigasi
+          }
+
+          try {
+            onLocationSelect?.(selectedKodim ? "KOREM" : "KOREM", selectedKodim ? (selectedKorem.nama === "Kodim 0733/Kota Semarang" ? "Berdiri Sendiri" : selectedKorem.nama) : null, null);
+          } catch (error) {
+            console.error("Error saat memanggil onLocationSelect:", error);
+          }
+        }
+      });
+    } else {
+      // Jika tidak ada polygon yang digambar, langsung kembali tanpa konfirmasi
+      try {
+        onLocationSelect?.(selectedKodim ? "KOREM" : "KOREM", selectedKodim ? (selectedKorem.nama === "Kodim 0733/Kota Semarang" ? "Berdiri Sendiri" : selectedKorem.nama) : null, null);
+      } catch (error) {
+        console.error("Error saat memanggil onLocationSelect:", error);
+      }
     }
-    onLocationSelect?.(selectedKodim ? "KOREM" : "KOREM", selectedKodim ? (selectedKorem.nama === "Kodim 0733/Kota Semarang" ? "Berdiri Sendiri" : selectedKorem.nama) : null, null);
   };
 
   const onPlaceChanged = () => {
@@ -698,6 +781,19 @@ const PetaGambarAset = ({
   useEffect(() => {
     if (drawingManager) drawingManager.setDrawingMode(isDrawing ? window.google.maps.drawing.OverlayType.POLYGON : null);
   }, [isDrawing, drawingManager]);
+
+  // Cleanup function untuk membersihkan referensi polygon saat komponen dilepas
+  useEffect(() => {
+    return () => {
+      if (drawnPolygon && map) {
+        try {
+          drawnPolygon.setMap(null);
+        } catch (error) {
+          console.error("Error saat membersihkan polygon di cleanup:", error);
+        }
+      }
+    };
+  }, [drawnPolygon, map]);
 
   if (loadError) return <div className="alert alert-danger">Error loading Google Maps.</div>;
   if (!isLoaded) return <div className="spinner-border text-primary" />;
@@ -728,7 +824,7 @@ const PetaGambarAset = ({
       >
         <div className="map-controls-wrapper">
           <div className="top-left-controls">
-            {selectedKorem && (
+            {selectedKorem && inputMode === 'draw' && (
               <button onClick={handleBackClick} className="control-button">
                 ← Kembali
               </button>
@@ -841,14 +937,14 @@ const PetaGambarAset = ({
                 strokeWeight: 2,
                 strokeColor: "#ff0000",
                 editable: true,
-                draggable: true,
-              },
+                draggable: true
+              }
             }}
           />
         )}
       </GoogleMap>
     </div>
   );
-};
+});
 
-export default React.memo(PetaGambarAset);
+export default PetaGambarAset;

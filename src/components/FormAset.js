@@ -69,6 +69,70 @@ const FormAset = forwardRef((props, ref) => {
   const [gambarTampakAtasFile, setGambarTampakAtasFile] = useState(null);
   const [kmlFileName, setKmlFileName] = useState("");
   const [inputMethod, setInputMethod] = useState("draw");
+
+  // Fungsi untuk mengganti metode input dengan konfirmasi
+  const handleInputChangeMethod = (newMethod) => {
+    // Jika metode input berubah dan ada geometri awal (poligon yang sudah digambar), tampilkan konfirmasi
+    if (newMethod !== inputMethod && initialGeometry) {
+      Swal.fire({
+        title: "Apakah Anda yakin?",
+        text: "Mengganti metode input lokasi akan menghapus area aset yang telah digambar dan kembali ke tampilan awal peta. Lanjutkan?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#3085d6",
+        cancelButtonColor: "#d33",
+        confirmButtonText: "Ya, ganti!",
+        cancelButtonText: "Batal",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          // Hapus poligon yang sudah digambar dengan mengatur initialGeometry ke null
+          // dan panggil fungsi untuk membersihkan poligon dari peta
+          if (props.onClearDrawing) {
+            props.onClearDrawing();
+          }
+
+          // Reset tampilan peta ke default
+          if (props.onResetMapView) {
+            props.onResetMapView();
+          }
+
+          // Reset input KML dan koordinat saat berpindah metode
+          if (inputMethod === 'kml') {
+            setKmlFileName(""); // Reset nama file KML
+          } else if (inputMethod === 'coords') {
+            setCoordsText(""); // Reset teks koordinat
+            setCoordsError(""); // Reset error koordinat
+          }
+
+          setInputMethod(newMethod);
+
+          // Update input mode di parent component
+          if (props.onUpdateInputMode) {
+            props.onUpdateInputMode(newMethod);
+          }
+        } else {
+          // Jika pengguna membatalkan, kembalikan metode input ke sebelumnya
+          setInputMethod(inputMethod);
+        }
+      });
+    } else {
+      // Jika tidak ada poligon yang digambar, langsung ganti metode input
+      // Reset input KML dan koordinat saat berpindah metode
+      if (inputMethod === 'kml') {
+        setKmlFileName(""); // Reset nama file KML
+      } else if (inputMethod === 'coords') {
+        setCoordsText(""); // Reset teks koordinat
+        setCoordsError(""); // Reset error koordinat
+      }
+
+      setInputMethod(newMethod);
+
+      // Update input mode di parent component
+      if (props.onUpdateInputMode) {
+        props.onUpdateInputMode(newMethod);
+      }
+    }
+  };
   const [coordsText, setCoordsText] = useState("");
   const [coordsError, setCoordsError] = useState("");
 
@@ -422,7 +486,7 @@ const FormAset = forwardRef((props, ref) => {
     }
   };
 
-  const analyzeAndSetGeometry = async (geometry) => {
+  const analyzeAndSetGeometry = async (geometry, isFromKmlImport = false) => {
     const toastId = toast.loading("Menganalisis poligon...");
     try {
       toast.loading("Memuat data batas wilayah...", { id: toastId });
@@ -471,11 +535,17 @@ const FormAset = forwardRef((props, ref) => {
             kodim: kodimNameInGeoJSON,
           }));
           onLocationChange?.(koremIdToSet, kodimNameInGeoJSON);
-          onKmlImport?.(geometry);
-          toast.success(
-            `Poligon berhasil diproses. Wilayah: ${koremNameInGeoJSON}.`,
-            { id: toastId }
-          );
+          onKmlImport?.(geometry, !isFromKmlImport); // Jika bukan dari KML import, maka dari koordinat
+          // Jika bukan dari impor KML, tampilkan notifikasi sukses
+          if (!isFromKmlImport) {
+            toast.success(
+              "Poligon berhasil diproses.",
+              { id: toastId }
+            );
+          } else {
+            // Jika dari impor KML, hanya tutup toast loading karena notifikasi akan ditangani oleh fungsi yang memanggil
+            toast.dismiss(toastId);
+          }
         } else {
           toast.error(
             `Korem "${koremNameInGeoJSON}" ditemukan tapi tidak ada di daftar pilihan.`,
@@ -496,6 +566,54 @@ const FormAset = forwardRef((props, ref) => {
   };
 
   const handleKmlImport = (event) => {
+    // Jika sudah ada geometri sebelumnya, tampilkan konfirmasi atau langsung hapus
+    if (initialGeometry) {
+      Swal.fire({
+        title: "Apakah Anda yakin?",
+        text: "Mengimpor file KML baru akan menghapus area aset yang telah digambar sebelumnya. Lanjutkan?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#3085d6",
+        cancelButtonColor: "#d33",
+        confirmButtonText: "Ya, impor!",
+        cancelButtonText: "Batal",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          // Hapus poligon yang sudah digambar sebelumnya
+          if (props.onClearDrawing) {
+            props.onClearDrawing();
+          }
+
+          // Reset tampilan peta ke default
+          if (props.onResetMapView) {
+            props.onResetMapView();
+          }
+
+          // Lanjutkan dengan proses impor KML
+          continueKmlImport(event);
+        } else {
+          // Jika pengguna membatalkan, reset input file
+          event.target.value = null;
+        }
+      });
+    } else {
+      // Jika tidak ada geometri sebelumnya, langsung proses
+      // Update input mode ke 'kml' sebelum memproses
+      setInputMethod('kml');
+      if (props.onUpdateInputMode) {
+        props.onUpdateInputMode('kml');
+      }
+      continueKmlImport(event);
+    }
+  };
+
+  const continueKmlImport = (event) => {
+    // Update input mode ke 'kml' sebelum memproses file
+    setInputMethod('kml');
+    if (props.onUpdateInputMode) {
+      props.onUpdateInputMode('kml');
+    }
+
     const file = event.target.files[0];
     if (!file) {
       setKmlFileName("");
@@ -518,7 +636,7 @@ const FormAset = forwardRef((props, ref) => {
           f.geometry.type === "Polygon" || f.geometry.type === "MultiPolygon"
       );
       if (importedPolygon) {
-        analyzeAndSetGeometry(importedPolygon.geometry);
+        analyzeAndSetGeometry(importedPolygon.geometry, true); // Tandai bahwa ini dari impor KML
       } else {
         toast.error("Tidak ditemukan geometri poligon dalam file KML.");
         setKmlFileName("");
@@ -529,6 +647,51 @@ const FormAset = forwardRef((props, ref) => {
   };
 
   const handleProcessCoords = () => {
+    // Jika sudah ada geometri sebelumnya, tampilkan konfirmasi
+    if (initialGeometry) {
+      Swal.fire({
+        title: "Apakah Anda yakin?",
+        text: "Memproses koordinat baru akan menghapus area aset yang telah digambar sebelumnya. Lanjutkan?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#3085d6",
+        cancelButtonColor: "#d33",
+        confirmButtonText: "Ya, proses!",
+        cancelButtonText: "Batal",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          // Hapus poligon yang sudah digambar sebelumnya
+          if (props.onClearDrawing) {
+            props.onClearDrawing();
+          }
+
+          // Reset tampilan peta ke default
+          if (props.onResetMapView) {
+            props.onResetMapView();
+          }
+
+          // Lanjutkan dengan proses koordinat
+          continueProcessCoords();
+        }
+      });
+    } else {
+      // Jika tidak ada geometri sebelumnya, langsung proses
+      // Update input mode ke 'coords' sebelum memproses
+      setInputMethod('coords');
+      if (props.onUpdateInputMode) {
+        props.onUpdateInputMode('coords');
+      }
+      continueProcessCoords();
+    }
+  };
+
+  const continueProcessCoords = () => {
+    // Update input mode ke 'coords' sebelum memproses koordinat
+    setInputMethod('coords');
+    if (props.onUpdateInputMode) {
+      props.onUpdateInputMode('coords');
+    }
+
     setCoordsError("");
     const lines = coordsText.trim().split("\n");
     if (lines.length < 3) {
@@ -572,7 +735,7 @@ const FormAset = forwardRef((props, ref) => {
     }
 
     const geojsonPolygon = { type: "Polygon", coordinates: [coordinates] };
-    analyzeAndSetGeometry(geojsonPolygon);
+    analyzeAndSetGeometry(geojsonPolygon, false); // Tandai bahwa ini bukan dari impor KML
   };
 
   // EFFECTS
@@ -774,7 +937,7 @@ const FormAset = forwardRef((props, ref) => {
                         name="inputMethod"
                         value="draw"
                         checked={inputMethod === "draw"}
-                        onChange={(e) => setInputMethod(e.currentTarget.value)}
+                        onChange={(e) => handleInputChangeMethod(e.currentTarget.value)}
                       >
                         Gambar di Peta
                       </ToggleButton>
@@ -786,7 +949,7 @@ const FormAset = forwardRef((props, ref) => {
                         name="inputMethod"
                         value="kml"
                         checked={inputMethod === "kml"}
-                        onChange={(e) => setInputMethod(e.currentTarget.value)}
+                        onChange={(e) => handleInputChangeMethod(e.currentTarget.value)}
                       >
                         Impor File KML
                       </ToggleButton>
@@ -798,7 +961,7 @@ const FormAset = forwardRef((props, ref) => {
                         name="inputMethod"
                         value="coords"
                         checked={inputMethod === "coords"}
-                        onChange={(e) => setInputMethod(e.currentTarget.value)}
+                        onChange={(e) => handleInputChangeMethod(e.currentTarget.value)}
                       >
                         Input Koordinat
                       </ToggleButton>
@@ -810,15 +973,28 @@ const FormAset = forwardRef((props, ref) => {
               {!viewMode && !isEditMode && inputMethod === "kml" && (
                 <Form.Group className="mb-3 border p-3 rounded">
                   <Form.Label>Impor Poligon dari KML</Form.Label>
-                  <Form.Control
-                    type="file"
-                    accept=".kml"
-                    onChange={handleKmlImport}
-                  />
+                  {!kmlFileName && (
+                    <Form.Control
+                      type="file"
+                      accept=".kml"
+                      onChange={handleKmlImport}
+                    />
+                  )}
                   {kmlFileName && (
-                    <Form.Text className="text-success mt-1 d-block">
-                      File terimpor: <strong>{kmlFileName}</strong>
-                    </Form.Text>
+                    <>
+                      <div className="alert alert-info p-2 mb-2">
+                        File terpilih: <strong>{kmlFileName}</strong>
+                      </div>
+                      <Form.Control
+                        type="file"
+                        accept=".kml"
+                        onChange={handleKmlImport}
+                        className="mb-2"
+                      />
+                      <Form.Text className="text-muted">
+                        Pilih file baru untuk mengganti file yang saat ini dipilih
+                      </Form.Text>
+                    </>
                   )}
                 </Form.Group>
               )}

@@ -17,6 +17,7 @@ import {
   InputGroup,
 } from "react-bootstrap";
 import toast from "react-hot-toast";
+import Swal from "sweetalert2";
 import { kml } from "@tmcw/togeojson";
 import { DOMParser } from "xmldom";
 
@@ -47,6 +48,7 @@ const FormYardip = forwardRef(
       isEditMode = false,
       onKmlImport,
       onCoordsImport,
+      onClearPolygon, // Handler untuk menghapus polygon
       provinsiData,
       kabupatenData,
       onLocationChange,
@@ -185,6 +187,39 @@ const FormYardip = forwardRef(
 
     const handleKmlFileImport = (event) => {
       const file = event.target.files[0];
+
+      // Jika sudah ada file KML yang dipilih dan pengguna ingin mengganti, tampilkan konfirmasi
+      if (kmlFileName && file) {
+        Swal.fire({
+          title: "Apakah Anda yakin?",
+          text: "Mengganti file KML akan menghapus area aset yang telah digambar sebelumnya. Lanjutkan?",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonColor: "#3085d6",
+          cancelButtonColor: "#d33",
+          confirmButtonText: "Ya, ganti!",
+          cancelButtonText: "Batal",
+        }).then((result) => {
+          if (result.isConfirmed) {
+            // Hapus polygon yang sudah digambar sebelumnya
+            if (isPolygonCreated && onClearPolygon) {
+              onClearPolygon();
+            }
+
+            // Lanjutkan dengan proses impor file baru
+            continueKmlImport(file, event);
+          } else {
+            // Jika pengguna membatalkan, reset input file
+            event.target.value = null;
+          }
+        });
+      } else {
+        // Jika belum ada file yang dipilih, langsung proses
+        continueKmlImport(file, event);
+      }
+    };
+
+    const continueKmlImport = (file, event) => {
       if (!file) {
         setKmlFileName("");
         return;
@@ -200,6 +235,7 @@ const FormYardip = forwardRef(
 
           if (!geojsonData?.features?.length) {
             toast.error("File KML tidak valid atau tidak berisi poligon.");
+            setKmlFileName(""); // Reset nama file jika error
             return;
           }
           const importedPolygon = geojsonData.features.find(
@@ -215,13 +251,15 @@ const FormYardip = forwardRef(
                     coordinates: importedPolygon.geometry.coordinates[0],
                   }
                 : importedPolygon.geometry;
-            onKmlImport?.(geometry);
-            toast.success("Poligon dari KML berhasil diimpor!");
+            onKmlImport?.(geometry, 'kml');
+            // Notifikasi akan ditangani di parent component
           } else {
             toast.error("Tidak ditemukan geometri poligon dalam file KML.");
+            setKmlFileName(""); // Reset nama file jika tidak ada poligon
           }
         } catch (error) {
           toast.error("Gagal memproses file KML.");
+          setKmlFileName(""); // Reset nama file jika error
           console.error("KML parsing error:", error);
         }
       };
@@ -230,6 +268,35 @@ const FormYardip = forwardRef(
     };
 
     const handleProcessCoords = () => {
+      // Jika sudah ada koordinat yang diproses dan pengguna ingin mengganti, tampilkan konfirmasi
+      if (coordsText.trim() && isPolygonCreated) {
+        Swal.fire({
+          title: "Apakah Anda yakin?",
+          text: "Memproses koordinat baru akan menghapus area aset yang telah digambar sebelumnya. Lanjutkan?",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonColor: "#3085d6",
+          cancelButtonColor: "#d33",
+          confirmButtonText: "Ya, proses!",
+          cancelButtonText: "Batal",
+        }).then((result) => {
+          if (result.isConfirmed) {
+            // Hapus polygon yang sudah digambar sebelumnya
+            if (onClearPolygon) {
+              onClearPolygon();
+            }
+
+            // Lanjutkan dengan proses koordinat
+            continueProcessCoords();
+          }
+        });
+      } else {
+        // Jika belum ada koordinat yang diproses sebelumnya, langsung proses
+        continueProcessCoords();
+      }
+    };
+
+    const continueProcessCoords = () => {
       setCoordsError("");
       const lines = coordsText.trim().split("\n");
       if (lines.length < 3) {
@@ -274,8 +341,8 @@ const FormYardip = forwardRef(
       }
 
       const geojsonPolygon = { type: "Polygon", coordinates: [coordinates] };
-      onCoordsImport?.(geojsonPolygon);
-      toast.success("Koordinat berhasil diproses!");
+      onCoordsImport?.(geojsonPolygon, 'coords');
+      // Notifikasi akan ditangani di parent component
     };
 
     const handleProvinceChange = (e) => {
@@ -296,6 +363,54 @@ const FormYardip = forwardRef(
       onLocationChange(selectedProvinceName, selectedKabupaten);
       if (selectedKabupaten && onMapLocationSelect) {
         onMapLocationSelect("kabupaten", selectedKabupaten);
+      }
+    };
+
+    // Fungsi untuk mengganti metode input dengan konfirmasi
+    const handleInputChangeMethod = (newMethod) => {
+      // Jika metode input berubah dan ada polygon yang sudah dibuat, tampilkan konfirmasi
+      if (newMethod !== inputMethod && isPolygonCreated) {
+        Swal.fire({
+          title: "Apakah Anda yakin?",
+          text: "Mengganti metode input lokasi akan menghapus area aset yang telah digambar dan kembali ke tampilan awal peta. Lanjutkan?",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonColor: "#3085d6",
+          cancelButtonColor: "#d33",
+          confirmButtonText: "Ya, ganti!",
+          cancelButtonText: "Batal",
+        }).then((result) => {
+          if (result.isConfirmed) {
+            // Hapus polygon yang sudah digambar dengan memanggil handler dari parent
+            if (onClearPolygon) {
+              onClearPolygon(); // Panggil handler khusus untuk menghapus polygon
+            }
+
+            // Reset input KML dan koordinat saat berpindah metode
+            if (inputMethod === 'kml') {
+              setKmlFileName(""); // Reset nama file KML
+            } else if (inputMethod === 'coords') {
+              setCoordsText(""); // Reset teks koordinat
+              setCoordsError(""); // Reset error koordinat
+            }
+
+            setInputMethod(newMethod);
+          } else {
+            // Jika pengguna membatalkan, kembalikan metode input ke sebelumnya
+            setInputMethod(inputMethod);
+          }
+        });
+      } else {
+        // Jika tidak ada polygon yang digambar, langsung ganti metode input
+        // Reset input KML dan koordinat saat berpindah metode
+        if (inputMethod === 'kml') {
+          setKmlFileName(""); // Reset nama file KML
+        } else if (inputMethod === 'coords') {
+          setCoordsText(""); // Reset teks koordinat
+          setCoordsError(""); // Reset error koordinat
+        }
+
+        setInputMethod(newMethod);
       }
     };
 
@@ -325,7 +440,7 @@ const FormYardip = forwardRef(
                         name="inputMethod"
                         value="draw"
                         checked={inputMethod === "draw"}
-                        onChange={(e) => setInputMethod(e.currentTarget.value)}
+                        onChange={(e) => handleInputChangeMethod(e.currentTarget.value)}
                       >
                         Gambar di Peta
                       </ToggleButton>
@@ -337,7 +452,7 @@ const FormYardip = forwardRef(
                         name="inputMethod"
                         value="kml"
                         checked={inputMethod === "kml"}
-                        onChange={(e) => setInputMethod(e.currentTarget.value)}
+                        onChange={(e) => handleInputChangeMethod(e.currentTarget.value)}
                       >
                         Impor KML
                       </ToggleButton>
@@ -349,7 +464,7 @@ const FormYardip = forwardRef(
                         name="inputMethod"
                         value="coords"
                         checked={inputMethod === "coords"}
-                        onChange={(e) => setInputMethod(e.currentTarget.value)}
+                        onChange={(e) => handleInputChangeMethod(e.currentTarget.value)}
                       >
                         Input Koordinat
                       </ToggleButton>
@@ -366,15 +481,28 @@ const FormYardip = forwardRef(
                   {inputMethod === "kml" && (
                     <Form.Group className="mt-3 mb-0">
                       <Form.Label>Upload File KML</Form.Label>
-                      <Form.Control
-                        type="file"
-                        accept=".kml"
-                        onChange={handleKmlFileImport}
-                      />
+                      {!kmlFileName && (
+                        <Form.Control
+                          type="file"
+                          accept=".kml"
+                          onChange={handleKmlFileImport}
+                        />
+                      )}
                       {kmlFileName && (
-                        <Form.Text className="text-success mt-1">
-                          File terpilih: <strong>{kmlFileName}</strong>
-                        </Form.Text>
+                        <>
+                          <div className="alert alert-info p-2 mb-2">
+                            File terpilih: <strong>{kmlFileName}</strong>
+                          </div>
+                          <Form.Control
+                            type="file"
+                            accept=".kml"
+                            onChange={handleKmlFileImport}
+                            className="mb-2"
+                          />
+                          <Form.Text className="text-muted">
+                            Pilih file baru untuk mengganti file yang saat ini dipilih
+                          </Form.Text>
+                        </>
                       )}
                     </Form.Group>
                   )}

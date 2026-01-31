@@ -31,15 +31,36 @@ const TambahAsetPage = () => {
   const [selectedKorem, setSelectedKorem] = useState(null);
   const [selectedKodim, setSelectedKodim] = useState(null);
 
+  const [inputMode, setInputMode] = useState("draw"); // Mode input saat ini (draw, kml, coords)
+
+  const mapRef = useRef(null); // Declare mapRef here
+
+
   const [drawnAsset, setDrawnAsset] = useState(null);
   const [importedGeometry, setImportedGeometry] = useState(null);
   const [geoJsonKey, setGeoJsonKey] = useState(0); // State baru untuk key
   const [isFormEnabled, setIsFormEnabled] = useState(false);
   const [isLocationSelected, setIsLocationSelected] = useState(false);
   const [selectionSource, setSelectionSource] = useState("form"); // 'form' or 'map'
+  const [activeLocationInputType, setActiveLocationInputType] = useState('none'); // 'none', 'kml', 'manual_draw', 'kodim_select'
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // New function to clear any existing asset location on the map
+  const clearAssetLocation = useCallback(() => {
+    setDrawnAsset(null);
+    setImportedGeometry(null);
+    setGeoJsonKey((prevKey) => prevKey + 1); // Increment key to force PetaGambarAset to re-render KML overlay
+    setActiveLocationInputType('none'); // Reset active input type
+    setIsFormEnabled(false); // Disable form if no location is selected
+    setIsLocationSelected(false);
+    // Explicitly call the map's internal clear function
+    if (mapRef.current && mapRef.current.clearInternalDrawing) {
+      mapRef.current.clearInternalDrawing();
+    }
+    return true; // Indicate that clearing was attempted/successful
+  }, []);
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -68,17 +89,22 @@ const TambahAsetPage = () => {
 
   const handleLocationChange = useCallback(
     (koremId, kodimName) => {
-      // Suppress redundant toasts if selection hasn't changed
       const isSameSelection =
         currentSelectionRef.current.koremId === koremId &&
         currentSelectionRef.current.kodimName === kodimName;
 
-      // Update ref immediately
+      if (drawnAsset && !isSameSelection) { // Only clear if there's an asset and selection actually changes
+        clearAssetLocation();
+      }
+
       currentSelectionRef.current = { koremId, kodimName };
 
       setSelectionSource("form");
       setSelectedKoremId(koremId);
       setSelectedKodimId(kodimName);
+      // We set activeLocationInputType here to indicate that Korem/Kodim selection is the current focus
+      // This doesn't mean a polygon is drawn, but it's the chosen *method* of determining location context.
+      setActiveLocationInputType('kodim_select');
 
       const koremData = koremList.find((k) => k.id === koremId);
       const displayNama =
@@ -108,9 +134,6 @@ const TambahAsetPage = () => {
         );
         setIsLocationSelected(true);
         if (!isSameSelection) {
-          toast.success(
-            `KODIM 0733/Kota Semarang dipilih. Silakan gambar area aset di peta.`
-          );
         }
       } else if (kodimName && kodimBoundaries) {
         const kodimFeature = kodimBoundaries.features.find((f) => {
@@ -127,9 +150,6 @@ const TambahAsetPage = () => {
         );
         setIsLocationSelected(true);
         if (!isSameSelection) {
-          toast.success(
-            `KODIM ${kodimName} dipilih. Silakan gambar area aset di peta.`
-          );
         }
       } else {
         setSelectedKodim(null);
@@ -139,8 +159,15 @@ const TambahAsetPage = () => {
     [kodimBoundaries, koremList]
   );
 
-  const handleAreaSelect = (type, koremName, kodimName) => {
+  const handleAreaSelect = useCallback((type, koremName, kodimName) => {
+    // Only clear if there's an asset and the selection is changing
+    if (drawnAsset) {
+      clearAssetLocation();
+    }
+
     setSelectionSource("map");
+    setActiveLocationInputType('kodim_select'); // Indicate Korem/Kodim selection as active
+
     if (type === "KOREM") {
       if (koremName === null) {
         setSelectedKoremId("");
@@ -186,9 +213,7 @@ const TambahAsetPage = () => {
         setSelectedKodimId("");
         setSelectedKodim(null);
         setIsLocationSelected(true);
-        toast.success(
-          `KOREM ${matchingKorem.nama} dipilih. Silakan pilih KODIM.`
-        );
+        // Jangan tampilkan notifikasi saat kembali dari level yang lebih rendah
       } else {
         toast.error(`Data KOREM "${koremName}" yang sesuai tidak ditemukan.`);
         console.error("Could not find Korem with name:", koremName);
@@ -217,7 +242,8 @@ const TambahAsetPage = () => {
             handleLocationChange(matchingKorem.id, kodimName);
           }
         }
-      } else {
+      }
+       else {
         const matchingKorem = koremList.find(
           (korem) => korem.nama.trim() === koremName.trim()
         );
@@ -229,21 +255,25 @@ const TambahAsetPage = () => {
           handleLocationChange(matchingKorem.id, kodimName);
         } else {
           setSelectedKodimId(kodimName);
-          toast.success(
-            `KODIM ${kodimName} dipilih. Silakan gambar area aset.`
-          );
+          // Jangan tampilkan notifikasi saat kembali dari level yang lebih rendah
         }
       }
     }
-  };
+  }, [drawnAsset, clearAssetLocation, koremList, kodimBoundaries, handleLocationChange]);
 
   const handleDrawingCreated = useCallback((data) => {
-    // Handle deletion (data is null)
     if (data === null) {
-      setDrawnAsset(null);
-      setImportedGeometry(null);
-      toast.success("Gambar berhasil dihapus.");
+      // This is a deletion triggered by the map component itself
+      if (drawnAsset) { // Only clear if there's actually something to clear
+        clearAssetLocation();
+      }
       return;
+    }
+
+    // If there's an existing KML or manual draw, and the source is changing
+    // (i.e., we are about to draw manually, but there's already an imported KML)
+    if (drawnAsset && activeLocationInputType !== 'manual_draw') {
+        clearAssetLocation();
     }
 
     if (!data || !data.geometry) {
@@ -254,23 +284,33 @@ const TambahAsetPage = () => {
     setImportedGeometry(null);
     setIsFormEnabled(true);
     setIsLocationSelected(true);
+    setActiveLocationInputType('manual_draw'); // Indicate manual drawing as active
     toast.success(
       `Polygon berhasil digambar! Luas: ${data.area.toFixed(2)} m²`
     );
-  }, []);
+  }, [drawnAsset, activeLocationInputType, clearAssetLocation]);
 
-  const handleKmlImport = (geometry) => {
+  const handleKmlImport = (geometry, isFromCoords = false) => {
     if (!geometry) return;
+
+    // If there's an existing manual draw or KML, clear it
+    if (drawnAsset && activeLocationInputType !== 'kml') {
+      clearAssetLocation();
+    }
+
     const feature = turf.feature(geometry);
     const area = turf.area(feature);
 
     setImportedGeometry(geometry);
-    setDrawnAsset({ geometry, area, source: 'import' });
+    setDrawnAsset({ geometry, area, source: isFromCoords ? 'coords' : 'import' });
     setIsFormEnabled(true);
     setIsLocationSelected(true);
-    setGeoJsonKey((prevKey) => prevKey + 1); // Inkrementasi key
+    setGeoJsonKey((prevKey) => prevKey + 1); // Increment key to force re-render in map component
+    setActiveLocationInputType(isFromCoords ? 'coords' : 'kml'); // Indicate source as active
+    if (!isFromCoords) {
+      toast.success("KML berhasil diimpor.");
+    }
   };
-
   const handleSaveAsset = async (
     assetData,
     buktiPemilikanFile,
@@ -416,6 +456,18 @@ const TambahAsetPage = () => {
     }
   };
 
+  const handleResetMapView = () => {
+    // Reset pilihan Korem dan Kodim ke null untuk kembali ke tampilan default
+    setSelectedKoremId("");
+    setSelectedKodimId("");
+    setSelectedKorem(null);
+    setSelectedKodim(null);
+
+    // Reset juga state terkait
+    setIsLocationSelected(false);
+    setSelectionSource("form");
+  };
+
   const handleCancel = () => {
     navigate("/data-aset-tanah", { replace: true });
   };
@@ -450,6 +502,7 @@ const TambahAsetPage = () => {
                   </Alert>
                   <div style={{ height: "70vh", width: "100%" }}>
                     <PetaGambarAset
+                      ref={mapRef}
                       onPolygonCreated={handleDrawingCreated}
                       selectedKorem={selectedKorem}
                       selectedKodim={selectedKodim}
@@ -461,6 +514,7 @@ const TambahAsetPage = () => {
                       kodimBoundaries={kodimBoundaries}
                       importedGeometry={drawnAsset && drawnAsset.source === 'import' ? drawnAsset.geometry : importedGeometry} // Conditional imported geometry
                       geoJsonKey={geoJsonKey} // Pass key ke peta
+                      inputMode={inputMode} // Mode input saat ini
                     />
                   </div>
                 </Col>
@@ -471,6 +525,9 @@ const TambahAsetPage = () => {
                     koremList={koremList}
                     onLocationChange={handleLocationChange}
                     onKmlImport={handleKmlImport} // Pass handler ke form
+                    onClearDrawing={clearAssetLocation} // Pass handler untuk membersihkan gambar
+                    onResetMapView={handleResetMapView} // Pass handler untuk mereset tampilan peta
+                    onUpdateInputMode={setInputMode} // Pass handler untuk mengupdate mode input
                     initialGeometry={drawnAsset ? drawnAsset.geometry : null}
                     initialArea={drawnAsset ? drawnAsset.area : null}
                     isEnabled={isFormEnabled}
