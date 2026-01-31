@@ -242,11 +242,25 @@ const PetaGambarAset = forwardRef(({
       }
       .search-input {
         width: 350px;
+        max-width: 100%;
         padding: 10px 15px;
         border-radius: 8px;
         border: 1px solid #d1d5db; /* gray-300 */
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         font-size: 14px;
+        box-sizing: border-box;
+      }
+
+      @media (max-width: 768px) {
+        .search-input {
+          width: 250px;
+        }
+      }
+
+      @media (max-width: 576px) {
+        .search-input {
+          width: 200px;
+        }
       }
 
       .map-type-controls select {
@@ -262,6 +276,25 @@ const PetaGambarAset = forwardRef(({
         min-width: 100px;
         min-height: 40px;
         color: #374151;
+        width: auto;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+
+      @media (max-width: 768px) {
+        .map-type-controls select {
+          min-width: 80px;
+          padding: 8px 12px;
+          font-size: 13px;
+        }
+      }
+
+      @media (max-width: 576px) {
+        .map-type-controls select {
+          min-width: 70px;
+          padding: 6px 10px;
+          font-size: 12px;
+        }
       }
 
       .map-type-controls select:hover {
