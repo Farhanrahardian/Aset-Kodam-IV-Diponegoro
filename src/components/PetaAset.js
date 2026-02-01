@@ -164,8 +164,8 @@ const PetaAset = React.memo(({
      .custom-back-button {
   position: absolute;
   top: 10px;
-  left: 50px;
-  z-index: 1000;
+  left: 10px;
+  z-index: 1;
   padding: 8px 12px;
   background-color: white;
   border: 2px solid rgba(0,0,0,0.2);
@@ -650,12 +650,11 @@ const PetaAset = React.memo(({
   return (
     <div style={{ position: "relative", height: "100%", width: "100%" }}>
       {/* Back button */}
-{view.type !== "nasional" && mode !== "detail" && (
-  <button onClick={handleBackClick} className="custom-back-button">
-    <span>←</span>
-    <span className="btn-text">Kembali</span>
-  </button>
-)}
+      {view.type !== "nasional" && mode !== "detail" && (
+        <button onClick={handleBackClick} className="custom-back-button">
+          Kembali
+        </button>
+      )}
 
       {/* Info banner */}
       {view.type === "kodim" && assetsToShow.length > assetsOnMapCount && (

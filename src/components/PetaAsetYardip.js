@@ -228,21 +228,29 @@ const PetaAsetYardip = ({
         background-color: rgba(255, 255, 255, 0.95);
       }
       .custom-back-button {
-        position: absolute;
-        top: 10px;
-        left: 50px;
-        z-index: 1000;
-        padding: 8px 12px;
-        background-color: white;
-        border: 2px solid rgba(0,0,0,0.2);
-        border-radius: 4px;
-        cursor: pointer;
-        font-family: Roboto, Arial, sans-serif;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-      }
-      .custom-back-button:hover {
-        background-color: #f0f0f0;
-      }
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  padding: 8px 12px;
+  background-color: white;
+  border: 2px solid rgba(0,0,0,0.2);
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: Roboto, Arial, sans-serif;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.custom-back-button:hover {
+  background-color: #f0f0f0;
+}
+@media (max-width: 480px) {
+  .custom-back-button .btn-text {
+    display: none;
+  }
+}
     `;
     document.head.appendChild(style);
     return () => {
