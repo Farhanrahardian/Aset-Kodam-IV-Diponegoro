@@ -157,14 +157,20 @@ const PetaGambarAset = forwardRef(({
       .map-controls-wrapper > * {
         pointer-events: auto; /* Re-enable pointer events for controls */
       }
-      .top-left-controls {
-        position: absolute;
-        top: 15px;
-        left: 15px;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-      }
+     .top-left-controls {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+  @media (max-width: 480px) {
+  .btn-kembali .btn-text {
+    display: none;
+  }
+}
       .top-center-controls {
         position: absolute;
         top: 15px;
@@ -903,43 +909,44 @@ const PetaGambarAset = forwardRef(({
       >
         <div className="map-controls-wrapper">
           <div className="top-left-controls">
-            {selectedKorem && inputMode === 'draw' && (
-              <button onClick={handleBackClick} className="control-button">
-                ← Kembali
-              </button>
-            )}
-            {selectedKodim && !importedGeometry && (
-              <>
-                {!drawnPolygon && (
-                  <DrawingTools
-                    isDrawing={isDrawing}
-                    onToggleDrawing={handleToggleDrawing}
-                  />
-                )}
-                {drawnPolygon && (
-                  <div className="drawing-tools-container">
-                    <button
-                      onClick={handleDeleteClick}
-                      className="icon-button delete-button"
-                      title="Hapus Polygon"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+  {selectedKorem && inputMode === 'draw' && (
+    <button onClick={handleBackClick} className="control-button btn-kembali">
+      <span>←</span>
+      <span className="btn-text">Kembali</span>
+    </button>
+  )}
+  {selectedKodim && !importedGeometry && (
+    <>
+      {!drawnPolygon && (
+        <DrawingTools
+          isDrawing={isDrawing}
+          onToggleDrawing={handleToggleDrawing}
+        />
+      )}
+      {drawnPolygon && (
+        <div className="drawing-tools-container">
+          <button
+            onClick={handleDeleteClick}
+            className="icon-button delete-button"
+            title="Hapus Polygon"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
+        </div>
+      )}
+    </>
+  )}
+</div>
 
           <div className="top-center-controls">
             {!importedGeometry && !drawnPolygon && !isDrawing && (

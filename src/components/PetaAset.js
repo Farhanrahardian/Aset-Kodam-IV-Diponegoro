@@ -161,22 +161,30 @@ const PetaAset = React.memo(({
         text-align: center;
         pointer-events: none; /* Make the label transparent to mouse events */
       }
-      .custom-back-button {
-        position: absolute;
-        top: 10px;
-        left: 50px;
-        z-index: 1000;
-        padding: 8px 12px;
-        background-color: white;
-        border: 2px solid rgba(0,0,0,0.2);
-        border-radius: 4px;
-        cursor: pointer;
-        font-family: Roboto, Arial, sans-serif;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-      }
-      .custom-back-button:hover {
-        background-color: #f0f0f0;
-      }
+     .custom-back-button {
+  position: absolute;
+  top: 10px;
+  left: 50px;
+  z-index: 1000;
+  padding: 8px 12px;
+  background-color: white;
+  border: 2px solid rgba(0,0,0,0.2);
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: Roboto, Arial, sans-serif;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.custom-back-button:hover {
+  background-color: #f0f0f0;
+}
+@media (max-width: 480px) {
+  .custom-back-button .btn-text {
+    display: none;
+  }
+}
       .info-banner {
         position: absolute;
         bottom: 10px;
@@ -642,11 +650,12 @@ const PetaAset = React.memo(({
   return (
     <div style={{ position: "relative", height: "100%", width: "100%" }}>
       {/* Back button */}
-      {view.type !== "nasional" && mode !== "detail" && (
-        <button onClick={handleBackClick} className="custom-back-button">
-          Kembali
-        </button>
-      )}
+{view.type !== "nasional" && mode !== "detail" && (
+  <button onClick={handleBackClick} className="custom-back-button">
+    <span>←</span>
+    <span className="btn-text">Kembali</span>
+  </button>
+)}
 
       {/* Info banner */}
       {view.type === "kodim" && assetsToShow.length > assetsOnMapCount && (

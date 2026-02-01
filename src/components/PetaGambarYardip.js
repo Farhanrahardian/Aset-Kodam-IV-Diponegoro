@@ -89,14 +89,26 @@ const PetaGambarYardip = ({
       .map-controls-wrapper > * {
         pointer-events: auto; /* Re-enable pointer events for controls */
       }
-      .top-left-controls {
-        position: absolute;
-        top: 15px;
-        left: 15px;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-      }
+     .top-left-controls {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  z-index: 10;
+}
+  @media (max-width: 480px) {
+  .btn-kembali .btn-text {
+    display: none;
+  }
+  .top-left-controls {
+    top: 10px;
+    left: 10px;
+    gap: 6px;
+  }
+}
       .top-center-controls {
         position: absolute;
         top: 15px;
@@ -742,10 +754,11 @@ const PetaGambarYardip = ({
                     }
                   }
                 }}
-                className="control-button"
-              >
-                ← Kembali
-              </button>
+              className="control-button btn-kembali"
+>
+  <span>←</span>
+  <span className="btn-text">Kembali</span>
+</button>
             )}
             {selectedKabupaten && !importedGeometry && (
               <>
