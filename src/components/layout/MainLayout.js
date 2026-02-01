@@ -28,12 +28,15 @@ const MainLayout = ({ children }) => {
   return (
     <div className="overflow-hidden" style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
       <Navbar onToggleSidebar={toggleSidebar} />
-      <div className="content-area">
-        <Sidebar show={isSidebarOpen} />
-        <main className="main-content">
-          {children}
-        </main>
-      </div>
+     <div className="content-area">
+  {isSidebarOpen && window.innerWidth <= 768 && (
+    <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
+  )}
+  <Sidebar show={isSidebarOpen} />
+  <main className="main-content">
+    {children}
+  </main>
+</div>
     </div>
   );
 };
