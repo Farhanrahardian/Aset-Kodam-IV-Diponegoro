@@ -442,24 +442,46 @@ const PetaGambarYardip = ({
     console.log("Kabupaten polygons set:", polygons.length);
   }, [map, kabupatenData, selectedProvinsi, selectedKabupaten]);
 
-  const handlePolygonUpdate = useCallback((polygon) => {
+  const handlePolygonUpdate = useCallback((polygon, skipValidation = false) => {
     const path = polygon.getPath();
     const coordinates = googlePathToGeoJson(path);
     const polyFeature = turf.polygon(coordinates);
 
-    // Check if polygon overlaps with conservation areas
-    if (provinsiData) {
-      const conservationFeatures = provinsiData.features.filter(isConservationArea);
-      for (const c of conservationFeatures) {
-        if (turf.intersect(turf.featureCollection([polyFeature, c]))) {
-          toast.error("Aset tidak boleh tumpang tindih dengan area konservasi!");
-          return;
+    // Lewati validasi jika ini panggilan dari undo/redo atau parameter skipValidation true
+    if (!skipValidation) {
+      // Validasi apakah polygon berada dalam area Kabupaten/Kota yang dipilih
+      if (selectedKabupaten && kabupatenData) {
+        // Cari fitur GeoJSON yang sesuai dengan Kabupaten/Kota yang dipilih
+        const kabupatenFeature = kabupatenData.features.find((f) =>
+          f.properties.Kabupaten === selectedKabupaten
+        );
+
+        if (kabupatenFeature) {
+          // Periksa apakah polygon berada dalam batas Kabupaten/Kota yang dipilih
+          const kabupatenPolyFeature = turf.feature(kabupatenFeature.geometry);
+
+          // Gunakan turf.booleanWithin untuk memeriksa apakah polygon berada dalam batas Kabupaten/Kota
+          if (!turf.booleanWithin(polyFeature, kabupatenPolyFeature)) {
+            toast.error("Aset harus digambar dalam area Kabupaten/Kota yang dipilih.");
+            return;
+          }
+        }
+      }
+
+      // Check if polygon overlaps with conservation areas
+      if (provinsiData) {
+        const conservationFeatures = provinsiData.features.filter(isConservationArea);
+        for (const c of conservationFeatures) {
+          if (turf.intersect(turf.featureCollection([polyFeature, c]))) {
+            toast.error("Aset tidak boleh tumpang tindih dengan area konservasi!");
+            return;
+          }
         }
       }
     }
 
     onPolygonCreated({ geometry: polyFeature.geometry, area: turf.area(polyFeature) });
-  }, [provinsiData, onPolygonCreated]);
+  }, [selectedKabupaten, kabupatenData, provinsiData, onPolygonCreated]);
 
   const handlePolygonComplete = useCallback((polygon) => {
     setIsDrawing(false);
@@ -493,6 +515,26 @@ const PetaGambarYardip = ({
       return;
     }
 
+    // Validasi apakah polygon berada dalam area Kabupaten/Kota yang dipilih
+    if (selectedKabupaten && kabupatenData) {
+      // Cari fitur GeoJSON yang sesuai dengan Kabupaten/Kota yang dipilih
+      const kabupatenFeature = kabupatenData.features.find((f) =>
+        f.properties.Kabupaten === selectedKabupaten
+      );
+
+      if (kabupatenFeature) {
+        // Periksa apakah polygon berada dalam batas Kabupaten/Kota yang dipilih
+        const kabupatenPolyFeature = turf.feature(kabupatenFeature.geometry);
+
+        // Gunakan turf.booleanWithin untuk memeriksa apakah polygon berada dalam batas Kabupaten/Kota
+        if (!turf.booleanWithin(polyFeature, kabupatenPolyFeature)) {
+          toast.error("Aset harus digambar dalam area Kabupaten/Kota yang dipilih.");
+          polygon.setMap(null);
+          return;
+        }
+      }
+    }
+
     // Check if polygon overlaps with conservation areas
     if (provinsiData) {
       const conservationFeatures = provinsiData.features.filter(isConservationArea);
@@ -516,9 +558,9 @@ const PetaGambarYardip = ({
 
     polygon.setEditable(true);
     polygon.setDraggable(true);
-    ['set_at', 'insert_at', 'remove_at'].forEach(evt => path.addListener(evt, () => handlePolygonUpdate(polygon)));
-    polygon.addListener('dragend', () => handlePolygonUpdate(polygon));
-  }, [drawnPolygon, onPolygonCreated, handlePolygonUpdate, provinsiData]);
+    ['set_at', 'insert_at', 'remove_at'].forEach(evt => path.addListener(evt, () => handlePolygonUpdate(polygon, false)));
+    polygon.addListener('dragend', () => handlePolygonUpdate(polygon, false));
+  }, [drawnPolygon, selectedKabupaten, kabupatenData, onPolygonCreated, handlePolygonUpdate, provinsiData]);
 
   const handleProvinsiClick = useCallback((feature) => {
     if (isConservationArea(feature)) {
@@ -595,6 +637,7 @@ const PetaGambarYardip = ({
       map.setZoom(15);
     }
   };
+
 
   useEffect(() => {
     // Jangan aktifkan drawing mode jika sudah ada polygon yang dibuat atau jika tidak sedang menggambar
