@@ -1063,7 +1063,7 @@ const FormAset = forwardRef((props, ref) => {
                   </Col>
                 </Row>
                 <Form.Group className="mb-3">
-                  <Form.Label>Keterangan</Form.Label>
+                  <Form.Label>Sejarah</Form.Label>
                   <Form.Control
                     as="textarea"
                     rows={3}
