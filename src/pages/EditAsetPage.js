@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Container, Row, Col, Spinner, Alert } from "react-bootstrap";
 import axios from "axios";
@@ -15,6 +15,7 @@ const EditAsetPage = () => {
   const [koremList, setKoremList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const formAsetRef = useRef();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -75,7 +76,8 @@ const EditAsetPage = () => {
     assetData,
     buktiPemilikanFile,
     assetPhotos,
-    gambarTampakAtasFile // TAMBAHKAN parameter ini jika belum ada
+    gambarTampakAtasFile, // TAMBAHKAN parameter ini jika belum ada
+    filesToDelete = {} // Tambahkan parameter untuk file yang ditandai untuk dihapus
   ) => {
     const toastId = toast.loading("Menyimpan perubahan...");
 
@@ -84,8 +86,41 @@ const EditAsetPage = () => {
     console.log("buktiPemilikanFile:", buktiPemilikanFile);
     console.log("assetPhotos:", assetPhotos);
     console.log("gambarTampakAtasFile:", gambarTampakAtasFile);
+    console.log("filesToDelete:", filesToDelete);
 
     let updatedData = { ...assetData };
+
+    // Hapus file-file yang ditandai untuk dihapus
+    if (filesToDelete) {
+      // Hapus bukti pemilikan yang ditandai
+      if (filesToDelete.buktiPemilikan) {
+        try {
+          await deleteOldFile(filesToDelete.buktiPemilikan, "bukti_pemilikan");
+        } catch (err) {
+          console.warn("Gagal menghapus bukti pemilikan yang ditandai:", err);
+        }
+      }
+
+      // Hapus foto tampak atas yang ditandai
+      if (filesToDelete.fotoTampakAtas) {
+        try {
+          await deleteOldFile(filesToDelete.fotoTampakAtas, "foto_tampak_atas");
+        } catch (err) {
+          console.warn("Gagal menghapus foto tampak atas yang ditandai:", err);
+        }
+      }
+
+      // Hapus foto aset yang ditandai
+      if (filesToDelete.assetPhotos && filesToDelete.assetPhotos.length > 0) {
+        for (const photoUrl of filesToDelete.assetPhotos) {
+          try {
+            await deleteOldFile(photoUrl, "asset_photo");
+          } catch (err) {
+            console.warn("Gagal menghapus foto aset yang ditandai:", err);
+          }
+        }
+      }
+    }
 
     // 1. Upload new Bukti Pemilikan if it exists
     if (buktiPemilikanFile) {
@@ -192,6 +227,10 @@ const EditAsetPage = () => {
   };
 
   const handleCancel = () => {
+    // Reset filesToDelete di FormAset jika ada
+    if (formAsetRef.current && formAsetRef.current.resetFilesToDelete) {
+      formAsetRef.current.resetFilesToDelete();
+    }
     navigate("/data-aset-tanah");
   };
 
@@ -205,6 +244,7 @@ const EditAsetPage = () => {
         <Col>
           {asset && (
             <FormAset
+              ref={formAsetRef}
               onSave={handleSaveAsset}
               onCancel={handleCancel}
               koremList={koremList}

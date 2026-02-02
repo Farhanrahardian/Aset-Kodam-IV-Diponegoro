@@ -70,6 +70,13 @@ const FormAset = forwardRef((props, ref) => {
   const [kmlFileName, setKmlFileName] = useState("");
   const [inputMethod, setInputMethod] = useState("draw");
 
+  // State untuk menyimpan file yang ditandai untuk dihapus (untuk mencegah penghapusan permanen sebelum simpan)
+  const [filesToDelete, setFilesToDelete] = useState({
+    buktiPemilikan: null,
+    fotoTampakAtas: null,
+    assetPhotos: [] // array untuk menyimpan URL foto aset yang akan dihapus
+  });
+
   // Fungsi untuk mengganti metode input dengan konfirmasi
   const handleInputChangeMethod = (newMethod) => {
     // Jika metode input berubah dan ada geometri awal (poligon yang sudah digambar), tampilkan konfirmasi
@@ -148,6 +155,13 @@ const FormAset = forwardRef((props, ref) => {
       assetPhotos,
       gambarTampakAtasFile,
     }),
+    resetFilesToDelete: () => {
+      setFilesToDelete({
+        buktiPemilikan: null,
+        fotoTampakAtas: null,
+        assetPhotos: []
+      });
+    }
   }));
 
   // TAMBAHKAN fungsi helper dulu (letakkan di atas handleDeleteBuktiPemilikan)
@@ -158,177 +172,106 @@ const FormAset = forwardRef((props, ref) => {
     return parts[parts.length - 1];
   };
   // DELETE HANDLERS - Perbaikan
-  const handleDeleteBuktiPemilikan = async () => {
+  const handleDeleteBuktiPemilikan = () => {
     if (!formData.bukti_pemilikan_url) {
       toast.error("Tidak ada bukti pemilikan untuk dihapus.");
       return;
     }
 
-    // EKSTRAK FILENAME dari URL
-    const filename = extractFilename(formData.bukti_pemilikan_url);
-
-    if (!filename) {
-      toast.error("Nama file tidak valid");
-      return;
-    }
-
     Swal.fire({
       title: "Apakah Anda yakin?",
-      text: "Anda tidak akan dapat mengembalikan bukti pemilikan ini!",
+      text: "Bukti pemilikan akan dihapus saat Anda menyimpan perubahan.",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Ya, hapus!",
+      confirmButtonText: "Ya, hapus nanti!",
       cancelButtonText: "Batal",
-    }).then(async (result) => {
+    }).then((result) => {
       if (result.isConfirmed) {
-        const toastId = toast.loading("Menghapus bukti pemilikan...");
+        // Tandai file untuk dihapus saat simpan
+        setFilesToDelete(prev => ({
+          ...prev,
+          buktiPemilikan: formData.bukti_pemilikan_url
+        }));
 
-        try {
-          console.log("Deleting bukti pemilikan:", filename);
+        // Update state
+        setFormData((prev) => ({
+          ...prev,
+          bukti_pemilikan_url: null,
+          bukti_pemilikan_filename: null,
+        }));
 
-          // PANGGIL ENDPOINT YANG BENAR
-          const response = await axios.delete(
-            `${API_URL}/upload/bukti-pemilikan/${filename}` // ✅ BENAR
-          );
-
-          console.log("Delete response:", response.data);
-
-          // Update state
-          setFormData((prev) => ({
-            ...prev,
-            bukti_pemilikan_url: null,
-            bukti_pemilikan_filename: null,
-          }));
-
-          toast.success("Bukti pemilikan berhasil dihapus!", { id: toastId });
-        } catch (error) {
-          console.error("Error deleting bukti pemilikan:", error);
-
-          const errorMsg =
-            error.response?.data?.error ||
-            error.message ||
-            "Gagal menghapus bukti pemilikan.";
-          toast.error(errorMsg, { id: toastId });
-        }
+        toast.success("Bukti pemilikan ditandai untuk dihapus saat disimpan!");
       }
     });
   };
 
-  const handleRemovePhoto = async (mediaUrl) => {
+  const handleRemovePhoto = (mediaUrl) => {
     if (!mediaUrl) {
       toast.error("URL foto tidak valid");
       return;
     }
 
-    // EKSTRAK FILENAME dari URL
-    const filename = extractFilename(mediaUrl);
-
-    if (!filename) {
-      toast.error("Nama file tidak valid");
-      return;
-    }
-
     Swal.fire({
       title: "Apakah Anda yakin?",
-      text: "Anda tidak akan dapat mengembalikan foto ini!",
+      text: "Foto akan dihapus saat Anda menyimpan perubahan.",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Ya, hapus!",
+      confirmButtonText: "Ya, hapus nanti!",
       cancelButtonText: "Batal",
-    }).then(async (result) => {
+    }).then((result) => {
       if (result.isConfirmed) {
-        const toastId = toast.loading("Menghapus foto...");
+        // Tandai file untuk dihapus saat simpan
+        setFilesToDelete(prev => ({
+          ...prev,
+          assetPhotos: [...prev.assetPhotos, mediaUrl]
+        }));
 
-        try {
-          console.log("Deleting asset photo:", filename);
+        // Update state - remove photo dari array tampilan
+        setFormData((prev) => ({
+          ...prev,
+          foto_aset: prev.foto_aset.filter((url) => url !== mediaUrl),
+        }));
 
-          // PANGGIL ENDPOINT YANG BENAR
-          const response = await axios.delete(
-            `${API_URL}/upload/asset-photos/${filename}` // ✅ BENAR
-          );
-
-          console.log("Delete photo response:", response.data);
-
-          // Update state - remove photo dari array
-          setFormData((prev) => ({
-            ...prev,
-            foto_aset: prev.foto_aset.filter((url) => url !== mediaUrl),
-          }));
-
-          toast.success("Foto berhasil dihapus!", { id: toastId });
-        } catch (error) {
-          console.error("Error deleting photo:", error);
-
-          const errorMsg =
-            error.response?.data?.error ||
-            error.message ||
-            "Gagal menghapus foto.";
-          toast.error(errorMsg, { id: toastId });
-        }
+        toast.success("Foto ditandai untuk dihapus saat disimpan!");
       }
     });
   };
 
-  const handleDeleteFotoTampakAtas = async () => {
+  const handleDeleteFotoTampakAtas = () => {
     if (!formData.gambar_tampak_atas_url) {
       toast.error("Tidak ada foto aset tampak atas untuk dihapus.");
       return;
     }
 
-    // EKSTRAK FILENAME dari URL
-    const filename = extractFilename(formData.gambar_tampak_atas_url);
-
-    if (!filename) {
-      toast.error("Nama file tidak valid");
-      return;
-    }
-
     Swal.fire({
       title: "Apakah Anda yakin?",
-      text: "Anda tidak akan dapat mengembalikan foto ini!",
+      text: "Foto tampak atas akan dihapus saat Anda menyimpan perubahan.",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Ya, hapus!",
+      confirmButtonText: "Ya, hapus nanti!",
       cancelButtonText: "Batal",
-    }).then(async (result) => {
+    }).then((result) => {
       if (result.isConfirmed) {
-        const toastId = toast.loading("Menghapus foto aset tampak atas...");
+        // Tandai file untuk dihapus saat simpan
+        setFilesToDelete(prev => ({
+          ...prev,
+          fotoTampakAtas: formData.gambar_tampak_atas_url
+        }));
 
-        try {
-          console.log("Deleting foto tampak atas:", filename);
+        // Update state
+        setFormData((prev) => ({
+          ...prev,
+          gambar_tampak_atas_url: null,
+          gambar_tampak_atas_filename: null,
+        }));
 
-          // PANGGIL ENDPOINT YANG BENAR
-          const response = await axios.delete(
-            `${API_URL}/upload/foto-tampak-atas/${filename}` // ✅ BENAR
-          );
-
-          console.log("Delete response:", response.data);
-
-          // Update state
-          setFormData((prev) => ({
-            ...prev,
-            gambar_tampak_atas_url: null,
-            gambar_tampak_atas_filename: null,
-          }));
-
-          toast.success("Foto aset tampak atas berhasil dihapus!", {
-            id: toastId,
-          });
-        } catch (error) {
-          console.error("Error deleting foto tampak atas:", error);
-
-          const errorMsg =
-            error.response?.data?.error ||
-            error.message ||
-            "Gagal menghapus foto aset tampak atas.";
-          toast.error(errorMsg, { id: toastId });
-        }
+        toast.success("Foto tampak atas ditandai untuk dihapus saat disimpan!");
       }
     });
   };
@@ -430,7 +373,7 @@ const FormAset = forwardRef((props, ref) => {
           : parseFloat(formData.belum_sertifikat_luas) || 0,
     };
 
-    onSave(dataToSave, buktiPemilikanFile, assetPhotos, gambarTampakAtasFile);
+    onSave(dataToSave, buktiPemilikanFile, assetPhotos, gambarTampakAtasFile, filesToDelete);
   };
 
   const handleChange = (e) => {
@@ -1583,7 +1526,18 @@ const FormAset = forwardRef((props, ref) => {
           {/* TOMBOL AKSI */}
           {!assetToEdit && (
             <div className="d-flex gap-2 justify-content-end mt-3">
-              <Button variant="secondary" onClick={onCancel}>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  // Reset filesToDelete saat pembatalan untuk mencegah penghapusan file
+                  setFilesToDelete({
+                    buktiPemilikan: null,
+                    fotoTampakAtas: null,
+                    assetPhotos: []
+                  });
+                  onCancel();
+                }}
+              >
                 Batalkan
               </Button>
               <Button
