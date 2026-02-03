@@ -20,6 +20,37 @@ import toast from "react-hot-toast";
 import Swal from "sweetalert2";
 import { kml } from "@tmcw/togeojson";
 import { DOMParser } from "xmldom";
+import JSZip from "jszip"; // TAMBAHAN: Import JSZip
+
+// TAMBAHAN: Helper function untuk check apakah file KMZ
+const isKmzFile = (filename) => {
+  if (!filename) return false;
+  return filename.toLowerCase().endsWith(".kmz");
+};
+
+// TAMBAHAN: Helper function untuk extract KML dari KMZ
+const extractKmlFromKmz = async (file) => {
+  try {
+    const zip = new JSZip();
+    const zipContent = await zip.loadAsync(file);
+    
+    // Cari file .kml dalam zip
+    const kmlFile = Object.keys(zipContent.files).find(
+      (filename) => filename.toLowerCase().endsWith('.kml')
+    );
+    
+    if (!kmlFile) {
+      throw new Error("Tidak ditemukan file KML dalam KMZ");
+    }
+    
+    // Extract konten KML
+    const kmlContent = await zipContent.files[kmlFile].async("text");
+    return kmlContent;
+  } catch (error) {
+    console.error("Error extracting KMZ:", error);
+    throw error;
+  }
+};
 
 const initialYardipState = {
   pengelola: "",
@@ -185,14 +216,15 @@ const FormYardip = forwardRef(
       setErrors({});
     }, []);
 
-    const handleKmlFileImport = (event) => {
+    // UPDATED: handleKmlFileImport untuk support KMZ
+    const handleKmlFileImport = async (event) => {
       const file = event.target.files[0];
 
       // Jika sudah ada file KML yang dipilih dan pengguna ingin mengganti, tampilkan konfirmasi
       if (kmlFileName && file) {
         Swal.fire({
           title: "Apakah Anda yakin?",
-          text: "Mengganti file KML akan menghapus area aset yang telah digambar sebelumnya. Lanjutkan?",
+          text: "Mengganti file KML/KMZ akan menghapus area aset yang telah digambar sebelumnya. Lanjutkan?",
           icon: "warning",
           showCancelButton: true,
           confirmButtonColor: "#3085d6",
@@ -219,51 +251,77 @@ const FormYardip = forwardRef(
       }
     };
 
-    const continueKmlImport = (file, event) => {
+    // UPDATED: continueKmlImport untuk support KMZ
+    const continueKmlImport = async (file, event) => {
       if (!file) {
         setKmlFileName("");
         return;
       }
+      
       setKmlFileName(file.name);
 
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const kmlString = e.target.result;
-          const kmlDom = new DOMParser().parseFromString(kmlString, "text/xml");
-          const geojsonData = kml(kmlDom);
-
-          if (!geojsonData?.features?.length) {
-            toast.error("File KML tidak valid atau tidak berisi poligon.");
-            setKmlFileName(""); // Reset nama file jika error
+      try {
+        let kmlString;
+        
+        // Check apakah file KMZ atau KML
+        if (isKmzFile(file.name)) {
+          // Extract KML dari KMZ
+          const toastId = toast.loading("Mengekstrak file KMZ...");
+          try {
+            kmlString = await extractKmlFromKmz(file);
+            toast.dismiss(toastId);
+          } catch (error) {
+            toast.error("Gagal mengekstrak file KMZ: " + error.message, { id: toastId });
+            setKmlFileName("");
+            event.target.value = null;
             return;
           }
-          const importedPolygon = geojsonData.features.find(
-            (f) =>
-              f.geometry.type === "Polygon" ||
-              f.geometry.type === "MultiPolygon"
-          );
-          if (importedPolygon) {
-            const geometry =
-              importedPolygon.geometry.type === "MultiPolygon"
-                ? {
-                    type: "Polygon",
-                    coordinates: importedPolygon.geometry.coordinates[0],
-                  }
-                : importedPolygon.geometry;
-            onKmlImport?.(geometry, 'kml');
-            // Notifikasi akan ditangani di parent component
-          } else {
-            toast.error("Tidak ditemukan geometri poligon dalam file KML.");
-            setKmlFileName(""); // Reset nama file jika tidak ada poligon
-          }
-        } catch (error) {
-          toast.error("Gagal memproses file KML.");
-          setKmlFileName(""); // Reset nama file jika error
-          console.error("KML parsing error:", error);
+        } else {
+          // Baca langsung sebagai KML
+          kmlString = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = reject;
+            reader.readAsText(file);
+          });
         }
-      };
-      reader.readAsText(file);
+        
+        // Parse KML string
+        const kmlDom = new DOMParser().parseFromString(kmlString, "text/xml");
+        const geojsonData = kml(kmlDom);
+
+        if (!geojsonData?.features?.length) {
+          toast.error("File tidak valid atau tidak berisi poligon.");
+          setKmlFileName("");
+          return;
+        }
+        
+        const importedPolygon = geojsonData.features.find(
+          (f) =>
+            f.geometry.type === "Polygon" ||
+            f.geometry.type === "MultiPolygon"
+        );
+        
+        if (importedPolygon) {
+          const geometry =
+            importedPolygon.geometry.type === "MultiPolygon"
+              ? {
+                  type: "Polygon",
+                  coordinates: importedPolygon.geometry.coordinates[0],
+                }
+              : importedPolygon.geometry;
+          onKmlImport?.(geometry, 'kml');
+          // Notifikasi akan ditangani di parent component
+        } else {
+          toast.error("Tidak ditemukan geometri poligon dalam file.");
+          setKmlFileName("");
+        }
+      } catch (error) {
+        toast.error("Gagal memproses file: " + error.message);
+        setKmlFileName("");
+        console.error("File parsing error:", error);
+      }
+      
       event.target.value = null;
     };
 
@@ -454,7 +512,7 @@ const FormYardip = forwardRef(
                         checked={inputMethod === "kml"}
                         onChange={(e) => handleInputChangeMethod(e.currentTarget.value)}
                       >
-                        Impor KML
+                        Impor KML/KMZ
                       </ToggleButton>
                       <ToggleButton
                         key="coords"
@@ -480,11 +538,11 @@ const FormYardip = forwardRef(
 
                   {inputMethod === "kml" && (
                     <Form.Group className="mt-3 mb-0">
-                      <Form.Label>Upload File KML</Form.Label>
+                      <Form.Label>Upload File KML/KMZ</Form.Label>
                       {!kmlFileName && (
                         <Form.Control
                           type="file"
-                          accept=".kml"
+                          accept=".kml,.kmz"
                           onChange={handleKmlFileImport}
                         />
                       )}
@@ -495,7 +553,7 @@ const FormYardip = forwardRef(
                           </div>
                           <Form.Control
                             type="file"
-                            accept=".kml"
+                            accept=".kml,.kmz"
                             onChange={handleKmlFileImport}
                             className="mb-2"
                           />
@@ -504,6 +562,9 @@ const FormYardip = forwardRef(
                           </Form.Text>
                         </>
                       )}
+                      <Form.Text className="text-muted d-block mt-2">
+                        Format yang didukung: KML dan KMZ
+                      </Form.Text>
                     </Form.Group>
                   )}
 
@@ -634,7 +695,7 @@ const FormYardip = forwardRef(
               {!isPolygonCreated && !isEditMode && (
                 <Alert variant="warning" className="text-center">
                   Silakan buat poligon di peta terlebih dahulu (gambar, impor
-                  KML, atau input koordinat) untuk mengisi detail aset.
+                  KML/KMZ, atau input koordinat) untuk mengisi detail aset.
                 </Alert>
               )}
 

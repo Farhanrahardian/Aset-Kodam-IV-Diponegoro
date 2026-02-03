@@ -20,6 +20,7 @@ import axios from "axios";
 import Swal from "sweetalert2";
 import { kml } from "@tmcw/togeojson";
 import { DOMParser } from "xmldom";
+import JSZip from "jszip"; // TAMBAHAN: Import JSZip
 import { normalizeKodimName } from "../utils/kodimUtils";
 import * as turf from "@turf/turf";
 
@@ -39,6 +40,36 @@ const isVideoFile = (filename) => {
   if (!filename) return false;
   const videoExtensions = [".mp4", ".mov", ".webm", ".avi"];
   return videoExtensions.some((ext) => filename.toLowerCase().endsWith(ext));
+};
+
+// TAMBAHAN: Helper function untuk check apakah file KMZ
+const isKmzFile = (filename) => {
+  if (!filename) return false;
+  return filename.toLowerCase().endsWith(".kmz");
+};
+
+// TAMBAHAN: Helper function untuk extract KML dari KMZ
+const extractKmlFromKmz = async (file) => {
+  try {
+    const zip = new JSZip();
+    const zipContent = await zip.loadAsync(file);
+    
+    // Cari file .kml dalam zip
+    const kmlFile = Object.keys(zipContent.files).find(
+      (filename) => filename.toLowerCase().endsWith('.kml')
+    );
+    
+    if (!kmlFile) {
+      throw new Error("Tidak ditemukan file KML dalam KMZ");
+    }
+    
+    // Extract konten KML
+    const kmlContent = await zipContent.files[kmlFile].async("text");
+    return kmlContent;
+  } catch (error) {
+    console.error("Error extracting KMZ:", error);
+    throw error;
+  }
 };
 
 const API_URL = "http://localhost:3001";
@@ -508,12 +539,13 @@ const FormAset = forwardRef((props, ref) => {
     }
   };
 
-  const handleKmlImport = (event) => {
+  // UPDATED: handleKmlImport untuk support KMZ
+  const handleKmlImport = async (event) => {
     // Jika sudah ada geometri sebelumnya, tampilkan konfirmasi atau langsung hapus
     if (initialGeometry) {
       Swal.fire({
         title: "Apakah Anda yakin?",
-        text: "Mengimpor file KML baru akan menghapus area aset yang telah digambar sebelumnya. Lanjutkan?",
+        text: "Mengimpor file KML/KMZ baru akan menghapus area aset yang telah digambar sebelumnya. Lanjutkan?",
         icon: "warning",
         showCancelButton: true,
         confirmButtonColor: "#3085d6",
@@ -532,7 +564,7 @@ const FormAset = forwardRef((props, ref) => {
             props.onResetMapView();
           }
 
-          // Lanjutkan dengan proses impor KML
+          // Lanjutkan dengan proses impor KML/KMZ
           continueKmlImport(event);
         } else {
           // Jika pengguna membatalkan, reset input file
@@ -550,7 +582,8 @@ const FormAset = forwardRef((props, ref) => {
     }
   };
 
-  const continueKmlImport = (event) => {
+  // UPDATED: continueKmlImport untuk support KMZ
+  const continueKmlImport = async (event) => {
     // Update input mode ke 'kml' sebelum memproses file
     setInputMethod('kml');
     if (props.onUpdateInputMode) {
@@ -562,30 +595,62 @@ const FormAset = forwardRef((props, ref) => {
       setKmlFileName("");
       return;
     }
+    
     setKmlFileName(file.name);
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const kmlString = e.target.result;
+    
+    try {
+      let kmlString;
+      
+      // Check apakah file KMZ atau KML
+      if (isKmzFile(file.name)) {
+        // Extract KML dari KMZ
+        const toastId = toast.loading("Mengekstrak file KMZ...");
+        try {
+          kmlString = await extractKmlFromKmz(file);
+          toast.dismiss(toastId);
+        } catch (error) {
+          toast.error("Gagal mengekstrak file KMZ: " + error.message, { id: toastId });
+          setKmlFileName("");
+          event.target.value = null;
+          return;
+        }
+      } else {
+        // Baca langsung sebagai KML
+        kmlString = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.onerror = reject;
+          reader.readAsText(file);
+        });
+      }
+      
+      // Parse KML string
       const kmlDom = new DOMParser().parseFromString(kmlString, "text/xml");
       const geojsonData = kml(kmlDom);
 
       if (!geojsonData?.features?.length) {
-        toast.error("File KML tidak valid atau tidak berisi poligon.");
+        toast.error("File tidak valid atau tidak berisi poligon.");
         setKmlFileName("");
         return;
       }
+      
       const importedPolygon = geojsonData.features.find(
         (f) =>
           f.geometry.type === "Polygon" || f.geometry.type === "MultiPolygon"
       );
+      
       if (importedPolygon) {
-        analyzeAndSetGeometry(importedPolygon.geometry, true); // Tandai bahwa ini dari impor KML
+        analyzeAndSetGeometry(importedPolygon.geometry, true); // Tandai bahwa ini dari impor KML/KMZ
       } else {
-        toast.error("Tidak ditemukan geometri poligon dalam file KML.");
+        toast.error("Tidak ditemukan geometri poligon dalam file.");
         setKmlFileName("");
       }
-    };
-    reader.readAsText(file);
+    } catch (error) {
+      console.error("Error processing file:", error);
+      toast.error("Gagal memproses file: " + error.message);
+      setKmlFileName("");
+    }
+    
     event.target.value = null;
   };
 
@@ -894,7 +959,7 @@ const FormAset = forwardRef((props, ref) => {
                         checked={inputMethod === "kml"}
                         onChange={(e) => handleInputChangeMethod(e.currentTarget.value)}
                       >
-                        Impor File KML
+                        Impor File KML/KMZ
                       </ToggleButton>
                       <ToggleButton
                         key="coords"
@@ -915,11 +980,11 @@ const FormAset = forwardRef((props, ref) => {
 
               {!viewMode && !isEditMode && inputMethod === "kml" && (
                 <Form.Group className="mb-3 border p-3 rounded">
-                  <Form.Label>Impor Poligon dari KML</Form.Label>
+                  <Form.Label>Impor Poligon dari KML/KMZ</Form.Label>
                   {!kmlFileName && (
                     <Form.Control
                       type="file"
-                      accept=".kml"
+                      accept=".kml,.kmz"
                       onChange={handleKmlImport}
                     />
                   )}
@@ -930,7 +995,7 @@ const FormAset = forwardRef((props, ref) => {
                       </div>
                       <Form.Control
                         type="file"
-                        accept=".kml"
+                        accept=".kml,.kmz"
                         onChange={handleKmlImport}
                         className="mb-2"
                       />
@@ -939,6 +1004,9 @@ const FormAset = forwardRef((props, ref) => {
                       </Form.Text>
                     </>
                   )}
+                  <Form.Text className="text-muted d-block mt-2">
+                    Format yang didukung: KML dan KMZ
+                  </Form.Text>
                 </Form.Group>
               )}
 
@@ -998,7 +1066,7 @@ const FormAset = forwardRef((props, ref) => {
                 <small>
                   Anda bisa memilih metode untuk menginputkan lokasi aset dengan
                   menggambar poligon secara langsung di peta, mengimpor file
-                  KML, atau memasukkan koordinat secara manual.
+                  KML/KMZ, atau memasukkan koordinat secara manual.
                 </small>
               </p>
             </Alert>
@@ -1066,7 +1134,7 @@ const FormAset = forwardRef((props, ref) => {
                   <Form.Label>Sejarah</Form.Label>
                   <Form.Control
                     as="textarea"
-                    rows={3}
+                    rows={3}  
                     name="keterangan"
                     value={formData.keterangan || ""}
                     onChange={handleChange}
