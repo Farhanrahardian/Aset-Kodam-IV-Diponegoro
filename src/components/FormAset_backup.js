@@ -20,7 +20,7 @@ import axios from "axios";
 import Swal from "sweetalert2";
 import { kml } from "@tmcw/togeojson";
 import { DOMParser } from "xmldom";
-import JSZip from "jszip";
+import JSZip from "jszip"; // TAMBAHAN: Import JSZip
 import { normalizeKodimName } from "../utils/kodimUtils";
 import * as turf from "@turf/turf";
 
@@ -42,18 +42,19 @@ const isVideoFile = (filename) => {
   return videoExtensions.some((ext) => filename.toLowerCase().endsWith(ext));
 };
 
+// TAMBAHAN: Helper function untuk check apakah file KMZ
 const isKmzFile = (filename) => {
   if (!filename) return false;
   return filename.toLowerCase().endsWith(".kmz");
 };
 
-// IMPROVED: Enhanced KML extraction from KMZ with better error handling
+// TAMBAHAN: Helper function untuk extract KML dari KMZ
 const extractKmlFromKmz = async (file) => {
   try {
     const zip = new JSZip();
     const zipContent = await zip.loadAsync(file);
     
-    // Cari file .kml dalam zip (case insensitive)
+    // Cari file .kml dalam zip
     const kmlFile = Object.keys(zipContent.files).find(
       (filename) => filename.toLowerCase().endsWith('.kml')
     );
@@ -62,147 +63,11 @@ const extractKmlFromKmz = async (file) => {
       throw new Error("Tidak ditemukan file KML dalam KMZ");
     }
     
-    console.log("KML file found in KMZ:", kmlFile);
-    
     // Extract konten KML
     const kmlContent = await zipContent.files[kmlFile].async("text");
     return kmlContent;
   } catch (error) {
     console.error("Error extracting KMZ:", error);
-    throw new Error(`Gagal mengekstrak KMZ: ${error.message}`);
-  }
-};
-
-// NEW: Function to validate and fix coordinates from Google Earth
-const validateAndFixCoordinates = (coordinates) => {
-  if (!coordinates || !Array.isArray(coordinates)) {
-    console.error("Invalid coordinates:", coordinates);
-    return null;
-  }
-
-  const fixCoordArray = (coordArray) => {
-    return coordArray.map(coord => {
-      if (Array.isArray(coord[0])) {
-        // Nested array (polygon ring)
-        return fixCoordArray(coord);
-      }
-      
-      // Individual coordinate [lng, lat, elevation?]
-      let [lng, lat, elev] = coord;
-      
-      // Validate longitude (-180 to 180)
-      if (typeof lng !== 'number' || lng < -180 || lng > 180) {
-        console.warn(`Invalid longitude: ${lng}, attempting to fix`);
-        lng = ((lng + 180) % 360) - 180;
-      }
-      
-      // Validate latitude (-90 to 90)
-      if (typeof lat !== 'number' || lat < -90 || lat > 90) {
-        console.warn(`Invalid latitude: ${lat}, attempting to fix`);
-        lat = Math.max(-90, Math.min(90, lat));
-      }
-      
-      // Return only [lng, lat] without elevation
-      return [parseFloat(lng.toFixed(8)), parseFloat(lat.toFixed(8))];
-    });
-  };
-
-  try {
-    return fixCoordArray(coordinates);
-  } catch (error) {
-    console.error("Error fixing coordinates:", error);
-    return null;
-  }
-};
-
-// NEW: Enhanced function to process geometry from Google Earth KML
-const processGoogleEarthGeometry = (feature) => {
-  try {
-    if (!feature || !feature.geometry) {
-      throw new Error("Feature tidak memiliki geometri");
-    }
-
-    let geometry = feature.geometry;
-    console.log("Original geometry type:", geometry.type);
-    console.log("Original coordinates sample:", geometry.coordinates?.[0]?.[0]);
-
-    // Handle MultiPolygon - combine all polygons into one if needed
-    if (geometry.type === "MultiPolygon") {
-      console.log("Processing MultiPolygon with", geometry.coordinates.length, "polygons");
-      
-      // Validate and fix all coordinates
-      const fixedCoordinates = geometry.coordinates.map(polygon => 
-        validateAndFixCoordinates(polygon)
-      ).filter(Boolean);
-
-      if (fixedCoordinates.length === 0) {
-        throw new Error("Tidak ada koordinat valid dalam MultiPolygon");
-      }
-
-      // If multiple polygons, use the largest one
-      if (fixedCoordinates.length > 1) {
-        console.warn("MultiPolygon detected, using the largest polygon");
-        const areas = fixedCoordinates.map(coords => {
-          try {
-            const poly = turf.polygon(coords);
-            return turf.area(poly);
-          } catch (e) {
-            return 0;
-          }
-        });
-        const maxIndex = areas.indexOf(Math.max(...areas));
-        geometry = {
-          type: "Polygon",
-          coordinates: fixedCoordinates[maxIndex]
-        };
-      } else {
-        geometry = {
-          type: "Polygon",
-          coordinates: fixedCoordinates[0]
-        };
-      }
-    } else if (geometry.type === "Polygon") {
-      // Validate and fix polygon coordinates
-      const fixedCoordinates = validateAndFixCoordinates(geometry.coordinates);
-      if (!fixedCoordinates) {
-        throw new Error("Gagal memperbaiki koordinat polygon");
-      }
-      geometry = {
-        type: "Polygon",
-        coordinates: fixedCoordinates
-      };
-    } else {
-      throw new Error(`Tipe geometri tidak didukung: ${geometry.type}`);
-    }
-
-    // Ensure the polygon is closed (first and last coordinates are the same)
-    const coords = geometry.coordinates[0];
-    if (coords.length > 0) {
-      const first = coords[0];
-      const last = coords[coords.length - 1];
-      if (first[0] !== last[0] || first[1] !== last[1]) {
-        console.log("Closing polygon by adding first coordinate at the end");
-        coords.push([...first]);
-      }
-    }
-
-    // Validate the final geometry
-    try {
-      const testPolygon = turf.polygon(geometry.coordinates);
-      const area = turf.area(testPolygon);
-      console.log("Processed geometry area:", area, "m²");
-      
-      if (area === 0 || isNaN(area)) {
-        throw new Error("Area polygon tidak valid (0 atau NaN)");
-      }
-    } catch (error) {
-      throw new Error(`Validasi geometri gagal: ${error.message}`);
-    }
-
-    console.log("Final processed geometry:", geometry);
-    return geometry;
-  } catch (error) {
-    console.error("Error processing Google Earth geometry:", error);
     throw error;
   }
 };
@@ -235,11 +100,77 @@ const FormAset = forwardRef((props, ref) => {
   const [gambarTampakAtasFile, setGambarTampakAtasFile] = useState(null);
   const [kmlFileName, setKmlFileName] = useState("");
   const [inputMethod, setInputMethod] = useState("draw");
+
+  // State untuk menyimpan file yang ditandai untuk dihapus (untuk mencegah penghapusan permanen sebelum simpan)
   const [filesToDelete, setFilesToDelete] = useState({
     buktiPemilikan: null,
     fotoTampakAtas: null,
-    assetPhotos: []
+    assetPhotos: [] // array untuk menyimpan URL foto aset yang akan dihapus
   });
+
+  // Fungsi untuk mengganti metode input dengan konfirmasi
+  const handleInputChangeMethod = (newMethod) => {
+    // Jika metode input berubah dan ada geometri awal (poligon yang sudah digambar), tampilkan konfirmasi
+    if (newMethod !== inputMethod && initialGeometry) {
+      Swal.fire({
+        title: "Apakah Anda yakin?",
+        text: "Mengganti metode input lokasi akan menghapus area aset yang telah digambar dan kembali ke tampilan awal peta. Lanjutkan?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#3085d6",
+        cancelButtonColor: "#d33",
+        confirmButtonText: "Ya, ganti!",
+        cancelButtonText: "Batal",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          // Hapus poligon yang sudah digambar dengan mengatur initialGeometry ke null
+          // dan panggil fungsi untuk membersihkan poligon dari peta
+          if (props.onClearDrawing) {
+            props.onClearDrawing();
+          }
+
+          // Reset tampilan peta ke default
+          if (props.onResetMapView) {
+            props.onResetMapView();
+          }
+
+          // Reset input KML dan koordinat saat berpindah metode
+          if (inputMethod === 'kml') {
+            setKmlFileName(""); // Reset nama file KML
+          } else if (inputMethod === 'coords') {
+            setCoordsText(""); // Reset teks koordinat
+            setCoordsError(""); // Reset error koordinat
+          }
+
+          setInputMethod(newMethod);
+
+          // Update input mode di parent component
+          if (props.onUpdateInputMode) {
+            props.onUpdateInputMode(newMethod);
+          }
+        } else {
+          // Jika pengguna membatalkan, kembalikan metode input ke sebelumnya
+          setInputMethod(inputMethod);
+        }
+      });
+    } else {
+      // Jika tidak ada poligon yang digambar, langsung ganti metode input
+      // Reset input KML dan koordinat saat berpindah metode
+      if (inputMethod === 'kml') {
+        setKmlFileName(""); // Reset nama file KML
+      } else if (inputMethod === 'coords') {
+        setCoordsText(""); // Reset teks koordinat
+        setCoordsError(""); // Reset error koordinat
+      }
+
+      setInputMethod(newMethod);
+
+      // Update input mode di parent component
+      if (props.onUpdateInputMode) {
+        props.onUpdateInputMode(newMethod);
+      }
+    }
+  };
   const [coordsText, setCoordsText] = useState("");
   const [coordsError, setCoordsError] = useState("");
 
@@ -264,13 +195,14 @@ const FormAset = forwardRef((props, ref) => {
     }
   }));
 
+  // TAMBAHKAN fungsi helper dulu (letakkan di atas handleDeleteBuktiPemilikan)
   const extractFilename = (url) => {
     if (!url) return null;
+    // URL format: /uploads/filename.ext
     const parts = url.split("/");
     return parts[parts.length - 1];
   };
-
-  // DELETE HANDLERS
+  // DELETE HANDLERS - Perbaikan
   const handleDeleteBuktiPemilikan = () => {
     if (!formData.bukti_pemilikan_url) {
       toast.error("Tidak ada bukti pemilikan untuk dihapus.");
@@ -288,11 +220,13 @@ const FormAset = forwardRef((props, ref) => {
       cancelButtonText: "Batal",
     }).then((result) => {
       if (result.isConfirmed) {
+        // Tandai file untuk dihapus saat simpan
         setFilesToDelete(prev => ({
           ...prev,
           buktiPemilikan: formData.bukti_pemilikan_url
         }));
 
+        // Update state
         setFormData((prev) => ({
           ...prev,
           bukti_pemilikan_url: null,
@@ -321,11 +255,13 @@ const FormAset = forwardRef((props, ref) => {
       cancelButtonText: "Batal",
     }).then((result) => {
       if (result.isConfirmed) {
+        // Tandai file untuk dihapus saat simpan
         setFilesToDelete(prev => ({
           ...prev,
           assetPhotos: [...prev.assetPhotos, mediaUrl]
         }));
 
+        // Update state - remove photo dari array tampilan
         setFormData((prev) => ({
           ...prev,
           foto_aset: prev.foto_aset.filter((url) => url !== mediaUrl),
@@ -353,11 +289,13 @@ const FormAset = forwardRef((props, ref) => {
       cancelButtonText: "Batal",
     }).then((result) => {
       if (result.isConfirmed) {
+        // Tandai file untuk dihapus saat simpan
         setFilesToDelete(prev => ({
           ...prev,
           fotoTampakAtas: formData.gambar_tampak_atas_url
         }));
 
+        // Update state
         setFormData((prev) => ({
           ...prev,
           gambar_tampak_atas_url: null,
@@ -405,7 +343,8 @@ const FormAset = forwardRef((props, ref) => {
 
         if (totalFileCount > 5) {
           toast.error(
-            `Total file foto aset tidak boleh melebihi 5. Anda saat ini memiliki ${existingPhotoCount} file dan mencoba menambahkan ${newFileCount} file. Maksimal ${5 - existingPhotoCount} file dapat ditambahkan.`
+            `Total file foto aset tidak boleh melebihi 5. Anda saat ini memiliki ${existingPhotoCount} file dan mencoba menambahkan ${newFileCount} file. Maksimal ${5 - existingPhotoCount
+            } file dapat ditambahkan.`
           );
           return;
         }
@@ -424,7 +363,7 @@ const FormAset = forwardRef((props, ref) => {
   const handleGambarTampakAtasChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      const maxSize = 10 * 1024 * 1024;
+      const maxSize = 10 * 1024 * 1024; // 10MB
       if (file.size > maxSize) {
         toast.error(
           `File foto aset tampak atas melebihi ukuran maksimal 10MB: ${file.name}`
@@ -443,6 +382,7 @@ const FormAset = forwardRef((props, ref) => {
     return formData.belum_sertifikat_luas;
   };
 
+  // 1. PERBAIKAN handleSave - pastikan menggunakan nilai dari formData, bukan initialArea
   const handleSave = () => {
     const newErrors = {};
     if (!formData.nama) newErrors.nama = "NUP tidak boleh kosong.";
@@ -455,6 +395,7 @@ const FormAset = forwardRef((props, ref) => {
       return;
     }
 
+    // PENTING: Pastikan luas yang dikirim adalah dari formData, bukan initialArea
     const dataToSave = {
       ...formData,
       luas:
@@ -501,10 +442,11 @@ const FormAset = forwardRef((props, ref) => {
         return updatedData;
       });
     } else if (name === "sertifikat_luas" || name === "belum_sertifikat_luas") {
+      // TAMBAHKAN: Update formData.luas juga saat user mengubah luas
       setFormData({
         ...formData,
         [name]: value,
-        luas: value,
+        luas: value, // Sync ke field luas utama
       });
     } else {
       setFormData({ ...formData, [name]: value });
@@ -567,11 +509,15 @@ const FormAset = forwardRef((props, ref) => {
             kodim: kodimNameInGeoJSON,
           }));
           onLocationChange?.(koremIdToSet, kodimNameInGeoJSON);
-          onKmlImport?.(geometry, !isFromKmlImport);
-          
+          onKmlImport?.(geometry, !isFromKmlImport); // Jika bukan dari KML import, maka dari koordinat
+          // Jika bukan dari impor KML, tampilkan notifikasi sukses
           if (!isFromKmlImport) {
-            toast.success("Poligon berhasil diproses.", { id: toastId });
+            toast.success(
+              "Poligon berhasil diproses.",
+              { id: toastId }
+            );
           } else {
+            // Jika dari impor KML, hanya tutup toast loading karena notifikasi akan ditangani oleh fungsi yang memanggil
             toast.dismiss(toastId);
           }
         } else {
@@ -593,8 +539,9 @@ const FormAset = forwardRef((props, ref) => {
     }
   };
 
-  // IMPROVED: Enhanced KML/KMZ import handler
+  // UPDATED: handleKmlImport untuk support KMZ
   const handleKmlImport = async (event) => {
+    // Jika sudah ada geometri sebelumnya, tampilkan konfirmasi atau langsung hapus
     if (initialGeometry) {
       Swal.fire({
         title: "Apakah Anda yakin?",
@@ -607,18 +554,26 @@ const FormAset = forwardRef((props, ref) => {
         cancelButtonText: "Batal",
       }).then((result) => {
         if (result.isConfirmed) {
+          // Hapus poligon yang sudah digambar sebelumnya
           if (props.onClearDrawing) {
             props.onClearDrawing();
           }
+
+          // Reset tampilan peta ke default
           if (props.onResetMapView) {
             props.onResetMapView();
           }
+
+          // Lanjutkan dengan proses impor KML/KMZ
           continueKmlImport(event);
         } else {
+          // Jika pengguna membatalkan, reset input file
           event.target.value = null;
         }
       });
     } else {
+      // Jika tidak ada geometri sebelumnya, langsung proses
+      // Update input mode ke 'kml' sebelum memproses
       setInputMethod('kml');
       if (props.onUpdateInputMode) {
         props.onUpdateInputMode('kml');
@@ -627,58 +582,9 @@ const FormAset = forwardRef((props, ref) => {
     }
   };
 
-  // Helper function to extract all polygons from KML
-  const extractAllPolygonsFromKML = (geojsonData) => {
-    if (!geojsonData?.features?.length) {
-      return [];
-    }
-
-    const polygons = geojsonData.features
-      .filter(f => f.geometry?.type === "Polygon" || f.geometry?.type === "MultiPolygon")
-      .map((feature, index) => ({
-        name: feature.properties?.name || `Polygon ${index + 1}`,
-        geometry: feature.geometry,
-        properties: feature.properties,
-        index: index
-      }));
-
-    return polygons;
-  };
-
-  // Helper function to show polygon selection dialog
-  const showPolygonSelectionDialog = async (polygons) => {
-    const options = {};
-    polygons.forEach((poly, idx) => {
-      options[idx] = poly.name;
-    });
-
-    const { value: selectedIndex } = await Swal.fire({
-      title: 'Pilih Polygon',
-      html: `
-        <p class="mb-2">File KML/KMZ mengandung <strong>${polygons.length} polygon</strong>.</p>
-        <p class="mb-3">Silakan pilih polygon yang ingin digunakan:</p>
-      `,
-      input: 'select',
-      inputOptions: options,
-      inputPlaceholder: 'Pilih polygon',
-      showCancelButton: true,
-      confirmButtonText: 'Gunakan Polygon Ini',
-      cancelButtonText: 'Batal',
-      inputValidator: (value) => {
-        if (!value && value !== 0) {
-          return 'Anda harus memilih salah satu polygon!';
-        }
-      }
-    });
-
-    if (selectedIndex !== undefined) {
-      return parseInt(selectedIndex);
-    }
-    return null;
-  };
-
-  // IMPROVED: Enhanced KML/KMZ processing with multiple polygon support
+  // UPDATED: continueKmlImport untuk support KMZ
   const continueKmlImport = async (event) => {
+    // Update input mode ke 'kml' sebelum memproses file
     setInputMethod('kml');
     if (props.onUpdateInputMode) {
       props.onUpdateInputMode('kml');
@@ -691,166 +597,65 @@ const FormAset = forwardRef((props, ref) => {
     }
     
     setKmlFileName(file.name);
-    const toastId = toast.loading("Memproses file...");
     
     try {
       let kmlString;
       
-      // Extract KML content
+      // Check apakah file KMZ atau KML
       if (isKmzFile(file.name)) {
-        toast.loading("Mengekstrak file KMZ...", { id: toastId });
-        kmlString = await extractKmlFromKmz(file);
-      } else {
-        toast.loading("Membaca file KML...", { id: toastId });
-        kmlString = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = (e) => resolve(e.target.result);
-          reader.onerror = () => reject(new Error("Gagal membaca file"));
-          reader.readAsText(file);
-        });
-      }
-      
-      toast.loading("Memproses geometri...", { id: toastId });
-      
-      // Parse KML
-      const kmlDom = new DOMParser().parseFromString(kmlString, "text/xml");
-      
-      // Check for parsing errors
-      const parseError = kmlDom.getElementsByTagName("parsererror");
-      if (parseError.length > 0) {
-        throw new Error("File KML tidak valid atau rusak");
-      }
-      
-      const geojsonData = kml(kmlDom);
-
-      if (!geojsonData?.features?.length) {
-        throw new Error("File tidak mengandung data geometri yang valid");
-      }
-      
-      console.log("Parsed GeoJSON features:", geojsonData.features.length);
-      
-      // Extract all polygons
-      const allPolygons = extractAllPolygonsFromKML(geojsonData);
-      
-      if (allPolygons.length === 0) {
-        throw new Error("Tidak ditemukan geometri poligon dalam file");
-      }
-
-      console.log("Found polygons:", allPolygons.map(p => p.name));
-      
-      let selectedPolygon;
-      
-      // If multiple polygons, let user choose
-      if (allPolygons.length > 1) {
-        toast.dismiss(toastId);
-        const selectedIndex = await showPolygonSelectionDialog(allPolygons);
-        
-        if (selectedIndex === null) {
+        // Extract KML dari KMZ
+        const toastId = toast.loading("Mengekstrak file KMZ...");
+        try {
+          kmlString = await extractKmlFromKmz(file);
+          toast.dismiss(toastId);
+        } catch (error) {
+          toast.error("Gagal mengekstrak file KMZ: " + error.message, { id: toastId });
           setKmlFileName("");
           event.target.value = null;
           return;
         }
-        
-        selectedPolygon = allPolygons[selectedIndex];
-        const newToastId = toast.loading("Memproses polygon terpilih...");
-        
-        // Continue processing with new toast
-        try {
-          toast.loading("Memvalidasi koordinat...", { id: newToastId });
-          const processedGeometry = processGoogleEarthGeometry({ 
-            geometry: selectedPolygon.geometry,
-            properties: selectedPolygon.properties 
-          });
-          
-          if (!processedGeometry) {
-            throw new Error("Gagal memproses geometri dari file");
-          }
-
-          toast.success(`Polygon "${selectedPolygon.name}" berhasil diimpor!`, { id: newToastId });
-          
-          // Send to parent component
-          analyzeAndSetGeometry(processedGeometry, true);
-        } catch (error) {
-          toast.error(`Gagal memproses: ${error.message}`, { id: newToastId });
-          throw error;
-        }
       } else {
-        // Single polygon - process directly
-        selectedPolygon = allPolygons[0];
-        console.log("Selected polygon:", selectedPolygon.name);
-        
-        // Process the geometry with enhanced validation
-        toast.loading("Memvalidasi koordinat...", { id: toastId });
-        const processedGeometry = processGoogleEarthGeometry({ 
-          geometry: selectedPolygon.geometry,
-          properties: selectedPolygon.properties 
+        // Baca langsung sebagai KML
+        kmlString = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.onerror = reject;
+          reader.readAsText(file);
         });
-        
-        if (!processedGeometry) {
-          throw new Error("Gagal memproses geometri dari file");
-        }
-
-        toast.success(`Polygon "${selectedPolygon.name}" berhasil diimpor!`, { id: toastId });
-        
-        // Send to parent component
-        analyzeAndSetGeometry(processedGeometry, true);
       }
       
+      // Parse KML string
+      const kmlDom = new DOMParser().parseFromString(kmlString, "text/xml");
+      const geojsonData = kml(kmlDom);
+
+      if (!geojsonData?.features?.length) {
+        toast.error("File tidak valid atau tidak berisi poligon.");
+        setKmlFileName("");
+        return;
+      }
+      
+      const importedPolygon = geojsonData.features.find(
+        (f) =>
+          f.geometry.type === "Polygon" || f.geometry.type === "MultiPolygon"
+      );
+      
+      if (importedPolygon) {
+        analyzeAndSetGeometry(importedPolygon.geometry, true); // Tandai bahwa ini dari impor KML/KMZ
+      } else {
+        toast.error("Tidak ditemukan geometri poligon dalam file.");
+        setKmlFileName("");
+      }
     } catch (error) {
-      console.error("Error processing KML/KMZ:", error);
-      toast.error(`Gagal memproses file: ${error.message}`, { id: toastId });
+      console.error("Error processing file:", error);
+      toast.error("Gagal memproses file: " + error.message);
       setKmlFileName("");
     }
     
     event.target.value = null;
   };
 
-  const handleInputChangeMethod = (newMethod) => {
-    if (newMethod !== inputMethod && initialGeometry) {
-      Swal.fire({
-        title: "Apakah Anda yakin?",
-        text: "Mengganti metode input lokasi akan menghapus area aset yang telah digambar dan kembali ke tampilan awal peta. Lanjutkan?",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "#3085d6",
-        cancelButtonColor: "#d33",
-        confirmButtonText: "Ya, ganti!",
-        cancelButtonText: "Batal",
-      }).then((result) => {
-        if (result.isConfirmed) {
-          if (props.onClearDrawing) {
-            props.onClearDrawing();
-          }
-          if (props.onResetMapView) {
-            props.onResetMapView();
-          }
-          if (inputMethod === 'kml') {
-            setKmlFileName("");
-          } else if (inputMethod === 'coords') {
-            setCoordsText("");
-            setCoordsError("");
-          }
-          setInputMethod(newMethod);
-          if (props.onUpdateInputMode) {
-            props.onUpdateInputMode(newMethod);
-          }
-        }
-      });
-    } else {
-      if (inputMethod === 'kml') {
-        setKmlFileName("");
-      } else if (inputMethod === 'coords') {
-        setCoordsText("");
-        setCoordsError("");
-      }
-      setInputMethod(newMethod);
-      if (props.onUpdateInputMode) {
-        props.onUpdateInputMode(newMethod);
-      }
-    }
-  };
-
   const handleProcessCoords = () => {
+    // Jika sudah ada geometri sebelumnya, tampilkan konfirmasi
     if (initialGeometry) {
       Swal.fire({
         title: "Apakah Anda yakin?",
@@ -863,16 +668,23 @@ const FormAset = forwardRef((props, ref) => {
         cancelButtonText: "Batal",
       }).then((result) => {
         if (result.isConfirmed) {
+          // Hapus poligon yang sudah digambar sebelumnya
           if (props.onClearDrawing) {
             props.onClearDrawing();
           }
+
+          // Reset tampilan peta ke default
           if (props.onResetMapView) {
             props.onResetMapView();
           }
+
+          // Lanjutkan dengan proses koordinat
           continueProcessCoords();
         }
       });
     } else {
+      // Jika tidak ada geometri sebelumnya, langsung proses
+      // Update input mode ke 'coords' sebelum memproses
       setInputMethod('coords');
       if (props.onUpdateInputMode) {
         props.onUpdateInputMode('coords');
@@ -882,6 +694,7 @@ const FormAset = forwardRef((props, ref) => {
   };
 
   const continueProcessCoords = () => {
+    // Update input mode ke 'coords' sebelum memproses koordinat
     setInputMethod('coords');
     if (props.onUpdateInputMode) {
       props.onUpdateInputMode('coords');
@@ -930,7 +743,7 @@ const FormAset = forwardRef((props, ref) => {
     }
 
     const geojsonPolygon = { type: "Polygon", coordinates: [coordinates] };
-    analyzeAndSetGeometry(geojsonPolygon, false);
+    analyzeAndSetGeometry(geojsonPolygon, false); // Tandai bahwa ini bukan dari impor KML
   };
 
   // EFFECTS
@@ -989,11 +802,13 @@ const FormAset = forwardRef((props, ref) => {
         (k) => k.id === formData.korem_id
       );
       if (selectedKoremData) {
+        // Deduplicate Kodim names just in case
         const distinctKodims = [...new Set(selectedKoremData.kodim || [])];
-        const kodimObjects = distinctKodims.map((kName) => ({
-          id: kName,
-          nama: kName,
-        }));
+        const kodimObjects =
+          distinctKodims.map((kName) => ({
+            id: kName,
+            nama: kName,
+          }));
         setKodimList(kodimObjects);
         if (!assetToEdit) {
           if (
@@ -1006,7 +821,7 @@ const FormAset = forwardRef((props, ref) => {
           } else if (kodimObjects.length === 0) {
             const newKodim =
               selectedKoremData.nama === "Berdiri Sendiri" ||
-              selectedKoremData.nama === "Kodim 0733/Kota Semarang"
+                selectedKoremData.nama === "Kodim 0733/Kota Semarang"
                 ? "Kodim 0733/Kota Semarang"
                 : selectedKoremData.nama;
             setFormData((prev) => ({ ...prev, kodim: newKodim }));
@@ -1032,13 +847,14 @@ const FormAset = forwardRef((props, ref) => {
     if (initialArea > 0 && !assetToEdit) {
       const areaValue = parseFloat(initialArea.toFixed(2));
       setFormData((prev) => {
+        // Hanya update jika field luas masih kosong/0
         const shouldUpdate =
           formData.pemilikan_sertifikat === "Ya"
             ? !prev.sertifikat_luas || prev.sertifikat_luas === 0
             : !prev.belum_sertifikat_luas || prev.belum_sertifikat_luas === 0;
 
         if (!shouldUpdate) {
-          return prev;
+          return prev; // Jangan update jika user sudah mengisi manual
         }
 
         const updatedData = { ...prev };
@@ -1189,7 +1005,7 @@ const FormAset = forwardRef((props, ref) => {
                     </>
                   )}
                   <Form.Text className="text-muted d-block mt-2">
-                    Format yang didukung: KML dan KMZ. File dari Google Earth akan otomatis diproses dengan benar.
+                    Format yang didukung: KML dan KMZ
                   </Form.Text>
                 </Form.Group>
               )}
@@ -1250,7 +1066,7 @@ const FormAset = forwardRef((props, ref) => {
                 <small>
                   Anda bisa memilih metode untuk menginputkan lokasi aset dengan
                   menggambar poligon secara langsung di peta, mengimpor file
-                  KML/KMZ dari Google Earth, atau memasukkan koordinat secara manual.
+                  KML/KMZ, atau memasukkan koordinat secara manual.
                 </small>
               </p>
             </Alert>
@@ -1318,7 +1134,7 @@ const FormAset = forwardRef((props, ref) => {
                   <Form.Label>Sejarah</Form.Label>
                   <Form.Control
                     as="textarea"
-                    rows={3}
+                    rows={3}  
                     name="keterangan"
                     value={formData.keterangan || ""}
                     onChange={handleChange}
@@ -1781,6 +1597,7 @@ const FormAset = forwardRef((props, ref) => {
               <Button
                 variant="secondary"
                 onClick={() => {
+                  // Reset filesToDelete saat pembatalan untuk mencegah penghapusan file
                   setFilesToDelete({
                     buktiPemilikan: null,
                     fotoTampakAtas: null,
