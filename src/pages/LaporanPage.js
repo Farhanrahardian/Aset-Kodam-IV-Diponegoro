@@ -42,7 +42,12 @@ const LaporanPage = () => {
         setKoremList(koremRes.data);
 
         const allKodims = koremRes.data.flatMap((korem) =>
-          korem.kodim.map((k) => ({ id: k, nama: k, korem_id: korem.id }))
+          korem.kodim.map((k, index) => ({
+  id: `${korem.id}-${index}`,
+  nama: k,
+  korem_id: korem.id,
+}))
+
         );
         setAllKodimList(allKodims);
         setFilteredAssets(assetsRes.data);
