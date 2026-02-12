@@ -12,6 +12,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import * as turf from "@turf/turf";
+import { isGeometryNearCoastalArea } from "../utils/coastalConfig";
 import PetaGambarYardip from "../components/PetaGambarYardip";
 import FormYardip from "../components/FormYardip";
 import MapErrorBoundary from "../components/MapErrorBoundary";
@@ -172,12 +173,64 @@ const TambahAsetYardipPage = () => {
 
       try {
         const centroid = turf.centroid(geometry);
-
+        
+        // Check if the geometry is in a coastal area
+        const isCoastal = isGeometryNearCoastalArea(geometry);
+        
+        // Find which kabupaten polygon the asset is in
         for (const kabFeature of kabupatenData.features) {
-          if (turf.booleanPointInPolygon(centroid, kabFeature)) {
+          let isInside = false;
+          
+          if (isCoastal) {
+            // For coastal areas, use intersection as fallback if centroid check fails
+            if (turf.booleanPointInPolygon(centroid, kabFeature)) {
+              isInside = true;
+            } else {
+              // Try intersection approach for coastal areas
+              try {
+                const intersection = turf.intersect(
+                  turf.featureCollection([turf.polygon(geometry.coordinates), kabFeature])
+                );
+                if (intersection) {
+                  isInside = true;
+                }
+              } catch (e) {
+                // If intersection fails, stick with point in polygon
+                isInside = turf.booleanPointInPolygon(centroid, kabFeature);
+              }
+            }
+          } else {
+            // For non-coastal areas, use standard point in polygon check
+            isInside = turf.booleanPointInPolygon(centroid, kabFeature);
+          }
+          
+          if (isInside) {
             containingKab = kabFeature.properties.Kabupaten;
             containingProv = kabFeature.properties.PROVINCE;
             break;
+          }
+        }
+
+        // If no kabupaten was found and it's a coastal area, try broader search
+        if (!containingKab && isCoastal) {
+          for (const kabFeature of kabupatenData.features) {
+            try {
+              // Create a small buffer around the kabupaten boundary for coastal areas
+              const bufferedKab = turf.buffer(kabFeature, 0.05, { units: 'kilometers' });
+              
+              const intersection = turf.intersect(
+                turf.featureCollection([turf.polygon(geometry.coordinates), bufferedKab])
+              );
+              
+              if (intersection) {
+                containingKab = kabFeature.properties.Kabupaten;
+                containingProv = kabFeature.properties.PROVINCE;
+                break;
+              }
+            } catch (e) {
+              // If buffering fails, skip this approach
+              continue;
+            }
           }
         }
 

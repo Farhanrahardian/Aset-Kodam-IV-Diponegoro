@@ -72,15 +72,12 @@ const DetailYardipModal = ({ show, onHide, asset }) => {
   return (
     <Modal show={show} onHide={onHide} size="xl" centered>
       <Modal.Header closeButton>
-        <Modal.Title>Detail Aset Yardip: {asset.pengelola}</Modal.Title>
+        <Modal.Title>Aset Yardip: {asset.pengelola}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         <Row>
           <Col md={6}>
             <Card>
-              <Card.Header>
-                <h5>Informasi Aset</h5>
-              </Card.Header>
               <Card.Body>
                 <Table borderless striped>
                   <tbody>
@@ -165,9 +162,6 @@ const DetailYardipModal = ({ show, onHide, asset }) => {
           </Col>
           <Col md={6}>
             <Card className="h-100">
-              <Card.Header>
-                <h5>Lokasi Peta</h5>
-              </Card.Header>
               <Card.Body className="p-0">
                 <div style={{ height: "100%", minHeight: "400px" }}>
                   {hasValidLocation && provinsiData && kabupatenData ? (

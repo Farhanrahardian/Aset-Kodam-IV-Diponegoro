@@ -3,6 +3,7 @@ import { GoogleMap, useJsApiLoader, Polygon, Marker, InfoWindow, OverlayView } f
 import { MarkerClusterer } from "@googlemaps/markerclusterer";
 import * as turf from "@turf/turf";
 import { parseLocation } from "../utils/locationUtils";
+import { isGeometryNearCoastalArea } from "../utils/coastalConfig";
 
 const libraries = ["drawing", "places", "geometry"];
 
@@ -266,7 +267,41 @@ const PetaAsetYardip = ({
         const center = getAssetCenter(asset);
         if (!center) return false;
         const point = turf.point([center.lng, center.lat]);
-        return turf.booleanPointInPolygon(point, feature);
+        
+        // Check if the asset is in a coastal area
+        let isInside = false;
+        try {
+          const geometry = parseLocation(asset.lokasi);
+          const isCoastal = geometry && isGeometryNearCoastalArea(geometry);
+          
+          if (isCoastal) {
+            // For coastal areas, use intersection as fallback if centroid check fails
+            if (turf.booleanPointInPolygon(point, feature)) {
+              isInside = true;
+            } else {
+              // Try intersection approach for coastal areas
+              try {
+                const intersection = turf.intersect(
+                  turf.featureCollection([turf.polygon(geometry.coordinates), feature])
+                );
+                if (intersection) {
+                  isInside = true;
+                }
+              } catch (e) {
+                // If intersection fails, stick with point in polygon
+                isInside = turf.booleanPointInPolygon(point, feature);
+              }
+            }
+          } else {
+            // For non-coastal areas, use standard point in polygon check
+            isInside = turf.booleanPointInPolygon(point, feature);
+          }
+        } catch (e) {
+          // If anything fails, fall back to original method
+          isInside = turf.booleanPointInPolygon(point, feature);
+        }
+        
+        return isInside;
       }).length;
       return { ...feature, properties: { ...feature.properties, asset_count } };
     });
@@ -280,7 +315,41 @@ const PetaAsetYardip = ({
         const center = getAssetCenter(asset);
         if (!center) return false;
         const point = turf.point([center.lng, center.lat]);
-        return turf.booleanPointInPolygon(point, feature);
+        
+        // Check if the asset is in a coastal area
+        let isInside = false;
+        try {
+          const geometry = parseLocation(asset.lokasi);
+          const isCoastal = geometry && isGeometryNearCoastalArea(geometry);
+          
+          if (isCoastal) {
+            // For coastal areas, use intersection as fallback if centroid check fails
+            if (turf.booleanPointInPolygon(point, feature)) {
+              isInside = true;
+            } else {
+              // Try intersection approach for coastal areas
+              try {
+                const intersection = turf.intersect(
+                  turf.featureCollection([turf.polygon(geometry.coordinates), feature])
+                );
+                if (intersection) {
+                  isInside = true;
+                }
+              } catch (e) {
+                // If intersection fails, stick with point in polygon
+                isInside = turf.booleanPointInPolygon(point, feature);
+              }
+            }
+          } else {
+            // For non-coastal areas, use standard point in polygon check
+            isInside = turf.booleanPointInPolygon(point, feature);
+          }
+        } catch (e) {
+          // If anything fails, fall back to original method
+          isInside = turf.booleanPointInPolygon(point, feature);
+        }
+        
+        return isInside;
       }).length;
       return { ...feature, properties: { ...feature.properties, asset_count } };
     });

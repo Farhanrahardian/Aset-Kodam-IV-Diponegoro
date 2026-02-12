@@ -26,6 +26,7 @@ import Swal from "sweetalert2";
 import * as turf from "@turf/turf";
 
 import { parseLocation, getCentroid } from "../utils/locationUtils";
+import { isGeometryNearCoastalArea } from "../utils/coastalConfig";
 import { normalizeKodimName } from "../utils/kodimUtils";
 import PetaAset from "../components/PetaAset";
 import DetailOffcanvasAset from "../components/DetailOffcanvasAset";
@@ -1271,15 +1272,70 @@ const DataAsetTanahPage = () => {
 
         if (centroid) {
           const point = turf.point([centroid[1], centroid[0]]);
+          
+          // Check if the asset is in a coastal area
+          const isCoastal = geometry && isGeometryNearCoastalArea(geometry);
+          
+          let foundContainingPolygon = false;
+          
           // Find which korem polygon the asset is in
           for (const koremFeature of koremFeatures) {
+            let isInside = false;
+            
+            if (isCoastal) {
+              // For coastal areas, use intersection as fallback if centroid check fails
+              if (turf.booleanPointInPolygon(point, koremFeature.geometry)) {
+                isInside = true;
+              } else {
+                // Try intersection approach for coastal areas
+                try {
+                  const intersection = turf.intersect(
+                    turf.featureCollection([turf.polygon(geometry.coordinates), koremFeature])
+                  );
+                  if (intersection) {
+                    isInside = true;
+                  }
+                } catch (e) {
+                  // If intersection fails, stick with point in polygon
+                  isInside = turf.booleanPointInPolygon(point, koremFeature.geometry);
+                }
+              }
+            } else {
+              // For non-coastal areas, use standard point in polygon check
+              isInside = turf.booleanPointInPolygon(point, koremFeature.geometry);
+            }
+            
             if (
               koremFeature.geometry &&
-              turf.booleanPointInPolygon(point, koremFeature.geometry)
+              isInside
             ) {
               koremFeature.properties.asset_count++;
+              foundContainingPolygon = true;
               // Break after finding the containing polygon
               break;
+            }
+          }
+          
+          // If no containing polygon was found and it's a coastal area, 
+          // try a broader search with buffered polygons
+          if (!foundContainingPolygon && isCoastal) {
+            for (const koremFeature of koremFeatures) {
+              try {
+                // Create a small buffer around the korem boundary for coastal areas
+                const bufferedKorem = turf.buffer(koremFeature, 0.05, { units: 'kilometers' });
+                
+                const intersection = turf.intersect(
+                  turf.featureCollection([turf.polygon(geometry.coordinates), bufferedKorem])
+                );
+                
+                if (intersection) {
+                  koremFeature.properties.asset_count++;
+                  break;
+                }
+              } catch (e) {
+                // If buffering fails, skip this approach
+                continue;
+              }
             }
           }
         }
@@ -1318,14 +1374,69 @@ const DataAsetTanahPage = () => {
 
         if (centroid) {
           const point = turf.point([centroid[1], centroid[0]]);
+          
+          // Check if the asset is in a coastal area
+          const isCoastal = geometry && isGeometryNearCoastalArea(geometry);
+          
+          let foundContainingPolygon = false;
+          
           // Find which kodim polygon the asset is in
           for (const kodimFeature of kodimFeatures) {
+            let isInside = false;
+            
+            if (isCoastal) {
+              // For coastal areas, use intersection as fallback if centroid check fails
+              if (turf.booleanPointInPolygon(point, kodimFeature.geometry)) {
+                isInside = true;
+              } else {
+                // Try intersection approach for coastal areas
+                try {
+                  const intersection = turf.intersect(
+                    turf.featureCollection([turf.polygon(geometry.coordinates), kodimFeature])
+                  );
+                  if (intersection) {
+                    isInside = true;
+                  }
+                } catch (e) {
+                  // If intersection fails, stick with point in polygon
+                  isInside = turf.booleanPointInPolygon(point, kodimFeature.geometry);
+                }
+              }
+            } else {
+              // For non-coastal areas, use standard point in polygon check
+              isInside = turf.booleanPointInPolygon(point, kodimFeature.geometry);
+            }
+            
             if (
               kodimFeature.geometry &&
-              turf.booleanPointInPolygon(point, kodimFeature.geometry)
+              isInside
             ) {
               kodimFeature.properties.asset_count++;
+              foundContainingPolygon = true;
               break;
+            }
+          }
+          
+          // If no containing polygon was found and it's a coastal area, 
+          // try a broader search with buffered polygons
+          if (!foundContainingPolygon && isCoastal) {
+            for (const kodimFeature of kodimFeatures) {
+              try {
+                // Create a small buffer around the kodim boundary for coastal areas
+                const bufferedKodim = turf.buffer(kodimFeature, 0.05, { units: 'kilometers' });
+                
+                const intersection = turf.intersect(
+                  turf.featureCollection([turf.polygon(geometry.coordinates), bufferedKodim])
+                );
+                
+                if (intersection) {
+                  kodimFeature.properties.asset_count++;
+                  break;
+                }
+              } catch (e) {
+                // If buffering fails, skip this approach
+                continue;
+              }
             }
           }
         }
@@ -1356,13 +1467,68 @@ const DataAsetTanahPage = () => {
         const centroid = getCentroid(geometry);
         if (centroid) {
           const point = turf.point([centroid[1], centroid[0]]);
+          
+          // Check if the asset is in a coastal area
+          const isCoastal = geometry && isGeometryNearCoastalArea(geometry);
+          
+          let foundContainingPolygon = false;
+          
           for (const koremFeature of koremFeatures) {
+            let isInside = false;
+            
+            if (isCoastal) {
+              // For coastal areas, use intersection as fallback if centroid check fails
+              if (turf.booleanPointInPolygon(point, koremFeature.geometry)) {
+                isInside = true;
+              } else {
+                // Try intersection approach for coastal areas
+                try {
+                  const intersection = turf.intersect(
+                    turf.featureCollection([turf.polygon(geometry.coordinates), koremFeature])
+                  );
+                  if (intersection) {
+                    isInside = true;
+                  }
+                } catch (e) {
+                  // If intersection fails, stick with point in polygon
+                  isInside = turf.booleanPointInPolygon(point, koremFeature.geometry);
+                }
+              }
+            } else {
+              // For non-coastal areas, use standard point in polygon check
+              isInside = turf.booleanPointInPolygon(point, koremFeature.geometry);
+            }
+            
             if (
               koremFeature.geometry &&
-              turf.booleanPointInPolygon(point, koremFeature.geometry)
+              isInside
             ) {
               koremFeature.properties.asset_count++;
+              foundContainingPolygon = true;
               break;
+            }
+          }
+          
+          // If no containing polygon was found and it's a coastal area, 
+          // try a broader search with buffered polygons
+          if (!foundContainingPolygon && isCoastal) {
+            for (const koremFeature of koremFeatures) {
+              try {
+                // Create a small buffer around the korem boundary for coastal areas
+                const bufferedKorem = turf.buffer(koremFeature, 0.05, { units: 'kilometers' });
+                
+                const intersection = turf.intersect(
+                  turf.featureCollection([turf.polygon(geometry.coordinates), bufferedKorem])
+                );
+                
+                if (intersection) {
+                  koremFeature.properties.asset_count++;
+                  break;
+                }
+              } catch (e) {
+                // If buffering fails, skip this approach
+                continue;
+              }
             }
           }
         }
@@ -1399,13 +1565,68 @@ const DataAsetTanahPage = () => {
         const centroid = getCentroid(geometry);
         if (centroid) {
           const point = turf.point([centroid[1], centroid[0]]);
+          
+          // Check if the asset is in a coastal area
+          const isCoastal = geometry && isGeometryNearCoastalArea(geometry);
+          
+          let foundContainingPolygon = false;
+          
           for (const kodimFeature of kodimFeatures) {
+            let isInside = false;
+            
+            if (isCoastal) {
+              // For coastal areas, use intersection as fallback if centroid check fails
+              if (turf.booleanPointInPolygon(point, kodimFeature.geometry)) {
+                isInside = true;
+              } else {
+                // Try intersection approach for coastal areas
+                try {
+                  const intersection = turf.intersect(
+                    turf.featureCollection([turf.polygon(geometry.coordinates), kodimFeature])
+                  );
+                  if (intersection) {
+                    isInside = true;
+                  }
+                } catch (e) {
+                  // If intersection fails, stick with point in polygon
+                  isInside = turf.booleanPointInPolygon(point, kodimFeature.geometry);
+                }
+              }
+            } else {
+              // For non-coastal areas, use standard point in polygon check
+              isInside = turf.booleanPointInPolygon(point, kodimFeature.geometry);
+            }
+            
             if (
               kodimFeature.geometry &&
-              turf.booleanPointInPolygon(point, kodimFeature.geometry)
+              isInside
             ) {
               kodimFeature.properties.asset_count++;
+              foundContainingPolygon = true;
               break;
+            }
+          }
+          
+          // If no containing polygon was found and it's a coastal area, 
+          // try a broader search with buffered polygons
+          if (!foundContainingPolygon && isCoastal) {
+            for (const kodimFeature of kodimFeatures) {
+              try {
+                // Create a small buffer around the kodim boundary for coastal areas
+                const bufferedKodim = turf.buffer(kodimFeature, 0.05, { units: 'kilometers' });
+                
+                const intersection = turf.intersect(
+                  turf.featureCollection([turf.polygon(geometry.coordinates), bufferedKodim])
+                );
+                
+                if (intersection) {
+                  kodimFeature.properties.asset_count++;
+                  break;
+                }
+              } catch (e) {
+                // If buffering fails, skip this approach
+                continue;
+              }
             }
           }
         }
@@ -1808,7 +2029,6 @@ const DataAsetTanahPage = () => {
       <Row>
         <Col md={12}>
           <Card className="mb-4">
-            <Card.Header as="h5">Peta Aset BMN</Card.Header>
             <Card.Body style={{ height: "50vh", padding: 0 }}>
               <PetaAset
                 assets={filteredAssets}
@@ -1850,9 +2070,6 @@ const DataAsetTanahPage = () => {
           />
 
           <Card>
-            <Card.Header className="bg-light">
-              <h5 className="mb-0">Daftar Aset BMN</h5>
-            </Card.Header>
             <Card.Body className="p-0">
               <div className="position-relative">
                 {assets.length === 0 ? (

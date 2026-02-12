@@ -23,6 +23,7 @@ import { DOMParser } from "xmldom";
 import JSZip from "jszip";
 import { normalizeKodimName } from "../utils/kodimUtils";
 import * as turf from "@turf/turf";
+import { isGeometryNearCoastalArea, findCoastalArea } from "../utils/coastalConfig";
 
 // Helper functions
 const isImageFile = (filename) => {
@@ -518,6 +519,43 @@ const FormAset = forwardRef((props, ref) => {
     }
   };
 
+  // Helper function to check if geometry is near coastline
+  const isNearCoastline = async (geometry) => {
+    try {
+      // Use the centralized coastal configuration
+      return isGeometryNearCoastalArea(geometry);
+    } catch (error) {
+      console.error("Error checking coastal proximity:", error);
+      return null;
+    }
+  };
+
+  // Function to expand boundary with buffer for coastal areas
+  const expandBoundaryWithBuffer = (boundaryData, bufferDistanceKm) => {
+    try {
+      const expandedFeatures = boundaryData.features.map(feature => {
+        try {
+          // Add small buffer to each feature
+          const buffered = turf.buffer(feature, bufferDistanceKm, { units: 'kilometers' });
+          // Preserve original properties
+          buffered.properties = { ...feature.properties };
+          return buffered;
+        } catch (e) {
+          // If buffering fails, return original feature
+          return feature;
+        }
+      });
+      
+      return {
+        type: 'FeatureCollection',
+        features: expandedFeatures
+      };
+    } catch (error) {
+      console.error("Error expanding boundary:", error);
+      return boundaryData; // Return original if expansion fails
+    }
+  };
+
   const analyzeAndSetGeometry = async (geometry, isFromKmlImport = false) => {
     const toastId = toast.loading("Menganalisis poligon...");
     try {
@@ -533,19 +571,68 @@ const FormAset = forwardRef((props, ref) => {
       const centerPoint = turf.centroid(geometry);
       let foundKorem = null;
       let foundKodim = null;
+      let usedCoastalBuffer = false;
 
-      for (const koremFeature of koremBoundaryData.features) {
+      // Check if the geometry is near a coastline
+      const coastalArea = await isNearCoastline(geometry);
+      
+      // Determine which boundary data to use
+      let searchKoremData = koremBoundaryData;
+      let searchKodimData = kodimBoundaryData;
+      
+      if (coastalArea) {
+        toast.loading(`Mendeteksi area pesisir, menyesuaikan toleransi...`, { id: toastId });
+        // Use expanded boundaries for coastal areas
+        searchKoremData = expandBoundaryWithBuffer(koremBoundaryData, coastalArea.bufferDistance);
+        searchKodimData = expandBoundaryWithBuffer(kodimBoundaryData, coastalArea.bufferDistance);
+        usedCoastalBuffer = true;
+      }
+
+      // Search for Korem in the appropriate boundary data
+      for (const koremFeature of searchKoremData.features) {
         if (turf.booleanPointInPolygon(centerPoint, koremFeature)) {
           foundKorem = koremFeature.properties;
           break;
         }
       }
 
+      // If not found with centroid, try with intersection for coastal areas
+      if (!foundKorem && coastalArea) {
+        toast.loading("Mencari wilayah dengan pendekatan intersection...", { id: toastId });
+        for (const koremFeature of searchKoremData.features) {
+          try {
+            if (turf.intersect(turf.featureCollection([geometry, koremFeature]))) {
+              foundKorem = koremFeature.properties;
+              break;
+            }
+          } catch (e) {
+            // Continue to next feature if intersection fails
+            continue;
+          }
+        }
+      }
+
       if (foundKorem) {
-        for (const kodimFeature of kodimBoundaryData.features) {
+        // Search for Kodim
+        for (const kodimFeature of searchKodimData.features) {
           if (turf.booleanPointInPolygon(centerPoint, kodimFeature)) {
             foundKodim = kodimFeature.properties;
             break;
+          }
+        }
+
+        // If not found with centroid for Kodim in coastal areas, try intersection
+        if (!foundKodim && coastalArea) {
+          for (const kodimFeature of searchKodimData.features) {
+            try {
+              if (turf.intersect(turf.featureCollection([geometry, kodimFeature]))) {
+                foundKodim = kodimFeature.properties;
+                break;
+              }
+            } catch (e) {
+              // Continue to next feature if intersection fails
+              continue;
+            }
           }
         }
 
@@ -568,9 +655,12 @@ const FormAset = forwardRef((props, ref) => {
           }));
           onLocationChange?.(koremIdToSet, kodimNameInGeoJSON);
           onKmlImport?.(geometry, !isFromKmlImport);
-          
+
           if (!isFromKmlImport) {
-            toast.success("Poligon berhasil diproses.", { id: toastId });
+            const successMessage = usedCoastalBuffer 
+              ? "Poligon berhasil diproses (menggunakan toleransi area pesisir)." 
+              : "Poligon berhasil diproses.";
+            toast.success(successMessage, { id: toastId });
           } else {
             toast.dismiss(toastId);
           }
@@ -581,9 +671,12 @@ const FormAset = forwardRef((props, ref) => {
           );
         }
       } else {
-        toast.error("Gagal menentukan wilayah Korem untuk poligon.", {
-          id: toastId,
-        });
+        // Show different message if coastal buffer was used but still failed
+        const errorMessage = usedCoastalBuffer
+          ? "Gagal menentukan wilayah Korem meskipun telah menggunakan toleransi area pesisir. Pastikan poligon berada di wilayah yang valid."
+          : "Gagal menentukan wilayah Korem untuk poligon. Cek apakah poligon berada di wilayah yang valid.";
+        
+        toast.error(errorMessage, { id: toastId });
       }
     } catch (error) {
       console.error("Error during geometry analysis:", error);

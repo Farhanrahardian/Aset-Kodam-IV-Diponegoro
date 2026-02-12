@@ -368,7 +368,6 @@ const DataAsetYardipPage = () => {
       <Row>
         <Col md={12}>
           <Card className="mb-4">
-            <Card.Header as="h5">Peta Aset Yardip Interaktif</Card.Header>
             <Card.Body style={{ height: "55vh", padding: 0 }}>
               <MapErrorBoundary height="55vh">
                 <PetaAsetYardip
@@ -396,9 +395,6 @@ const DataAsetYardipPage = () => {
           />
 
           <Card>
-            <Card.Header>
-              <h5 className="mb-0">Daftar Aset Yardip</h5>
-            </Card.Header>
             <Card.Body>
               {/* Container dengan dual scroll - scroll horizontal dan vertical */}
               <div

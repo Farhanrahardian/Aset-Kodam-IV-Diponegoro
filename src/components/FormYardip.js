@@ -22,6 +22,7 @@ import { kml } from "@tmcw/togeojson";
 import { DOMParser } from "xmldom";
 import JSZip from "jszip";
 import * as turf from "@turf/turf";
+import { isGeometryNearCoastalArea } from "../utils/coastalConfig";
 
 // Helper function untuk check apakah file KMZ
 const isKmzFile = (filename) => {
