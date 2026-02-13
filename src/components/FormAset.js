@@ -1209,51 +1209,52 @@ const FormAset = forwardRef((props, ref) => {
                 </Col>
               </Row>
 
-              {!viewMode && !isEditMode && (
-                <Form.Group className="mb-3">
-                  <Form.Label>Pilih Metode Input Lokasi</Form.Label>
-                  <div className="mt-2">
-                    <ButtonGroup>
-                      <ToggleButton
-                        key="draw"
-                        id="radio-draw"
-                        type="radio"
-                        variant="outline-primary"
-                        name="inputMethod"
-                        value="draw"
-                        checked={inputMethod === "draw"}
-                        onChange={(e) => handleInputChangeMethod(e.currentTarget.value)}
-                      >
-                        Gambar di Peta
-                      </ToggleButton>
-                      <ToggleButton
-                        key="kml"
-                        id="radio-kml"
-                        type="radio"
-                        variant="outline-primary"
-                        name="inputMethod"
-                        value="kml"
-                        checked={inputMethod === "kml"}
-                        onChange={(e) => handleInputChangeMethod(e.currentTarget.value)}
-                      >
-                        Impor File KML/KMZ
-                      </ToggleButton>
-                      <ToggleButton
-                        key="coords"
-                        id="radio-coords"
-                        type="radio"
-                        variant="outline-primary"
-                        name="inputMethod"
-                        value="coords"
-                        checked={inputMethod === "coords"}
-                        onChange={(e) => handleInputChangeMethod(e.currentTarget.value)}
-                      >
-                        Input Koordinat
-                      </ToggleButton>
-                    </ButtonGroup>
-                  </div>
-                </Form.Group>
-              )}
+          {!viewMode && !isEditMode && (
+  <Form.Group className="mb-3">
+    <Form.Label>Pilih Metode Input Lokasi</Form.Label>
+
+   <ButtonGroup className="d-flex flex-column flex-md-row gap-2 mt-2">
+  <ToggleButton
+    id="radio-draw"
+    type="radio"
+    variant="outline-primary"
+    name="inputMethod"
+    value="draw"
+    checked={inputMethod === "draw"}
+    onChange={(e) => handleInputChangeMethod(e.currentTarget.value)}
+    className="w-100 rounded rounded-md-0"
+  >
+    Gambar di Peta
+  </ToggleButton>
+
+  <ToggleButton
+    id="radio-kml"
+    type="radio"
+    variant="outline-primary"
+    name="inputMethod"
+    value="kml"
+    checked={inputMethod === "kml"}
+    onChange={(e) => handleInputChangeMethod(e.currentTarget.value)}
+    className="w-100 rounded rounded-md-0"
+  >
+    Impor File KML/KMZ
+  </ToggleButton>
+
+  <ToggleButton
+    id="radio-coords"
+    type="radio"
+    variant="outline-primary"
+    name="inputMethod"
+    value="coords"
+    checked={inputMethod === "coords"}
+    onChange={(e) => handleInputChangeMethod(e.currentTarget.value)}
+    className="w-100 rounded rounded-md-0"
+  >
+    Input Koordinat
+  </ToggleButton>
+</ButtonGroup>
+  </Form.Group>
+)}
 
               {!viewMode && !isEditMode && inputMethod === "kml" && (
                 <Form.Group className="mb-3 border p-3 rounded">
