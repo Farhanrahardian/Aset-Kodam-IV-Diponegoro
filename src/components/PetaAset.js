@@ -53,6 +53,18 @@ const geoJsonToGooglePaths = (coordinates, type) => {
   }
 };
 
+// Helper: Check if asset data is incomplete (same logic as DataAsetTanahPage.js)
+const isIncompleteData = (asset) => {
+  // Check 4 fields: Sertifikat, Foto Aset, Foto Tampak Atas, Sejarah (Keterangan)
+  const hasSertifikat = asset.pemilikan_sertifikat === "Ya" || asset.bukti_pemilikan_url || asset.bukti_pemilikan_filename;
+  const hasFotoAset = asset.foto_aset && asset.foto_aset.length > 0;
+  const hasFotoTampakAtas = asset.gambar_tampak_atas_url || asset.gambar_tampak_atas_filename;
+  const hasSejarah = asset.keterangan && asset.keterangan.trim() !== "";
+  
+  // Return true if ANY of the 4 fields is missing
+  return !hasSertifikat || !hasFotoAset || !hasFotoTampakAtas || !hasSejarah;
+};
+
 
 // Helper: Check if feature is large enough to show label at current zoom
 const isFeatureVisibleAtZoom = (feature, zoom) => {
@@ -92,34 +104,41 @@ const PetaAset = React.memo(({
 }) => {
   const mapOptions = useMemo(() => {
     if (mode === 'detail' && assets && assets.length > 0) {
-        const asset = assets[0];
-        const geometry = parseLocation(asset.lokasi);
-        if (geometry) {
-            const centroid = getCentroid(geometry);
-            if (centroid) {
-                return {
-                    center: { lat: centroid[0], lng: centroid[1] },
-                    zoom: 17
-                };
-            }
+      const asset = assets[0];
+      const geometry = parseLocation(asset.lokasi);
+      if (geometry) {
+        const centroid = getCentroid(geometry);
+        if (centroid) {
+          return {
+            center: { lat: centroid[0], lng: centroid[1] },
+            zoom: 17
+          };
         }
+      }
     }
     return {
-        center: { lat: -7.5, lng: 110.0 }, // Default for interactive map
-        zoom: 8
+      center: { lat: -7.5, lng: 110.0 }, // Default for interactive map
+      zoom: 8
     };
   }, [assets, mode]);
 
   const [zoom, setZoom] = useState(mapOptions.zoom);
   const [map, setMap] = useState(null);
 
-  // ... (existing code for mapCenter, initialZoom, libraries)
+  const [view, setView] = useState({
+    type: "nasional",
+    korem: null,
+    kodim: null,
+  });
 
-  // ...
+  // State for hovered marker info
+  const [hoveredMarker, setHoveredMarker] = useState(null);
 
-
-
-  // ...
+  // Load Google Maps API
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || "",
+    libraries: libraries,
+  });
 
   // Handle map zoom change
   const handleZoomChanged = useCallback(() => {
@@ -128,21 +147,6 @@ const PetaAset = React.memo(({
     }
   }, [map]);
 
-
-
-
-
-        const [view, setView] = useState({
-          type: "nasional",
-          korem: null,
-          kodim: null,
-        });
-
-  // Load Google Maps API
-  const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || "",
-    libraries: libraries,
-  });
 
   // Inject CSS for labels
   useEffect(() => {
@@ -340,10 +344,11 @@ const PetaAset = React.memo(({
         }
       }
 
-              if (hasBounds) {
-                map.setCenter(bounds.getCenter());
-                map.fitBounds(bounds);
-              }    } catch (error) {
+      if (hasBounds) {
+        map.setCenter(bounds.getCenter());
+        map.fitBounds(bounds);
+      }
+    } catch (error) {
       console.error("Error fitting bounds:", error);
     }
   }, [map, view, koremData, kodimData, assets, mode]);
@@ -465,19 +470,45 @@ const PetaAset = React.memo(({
         const centroid = getCentroid(geometry);
         const isSelected = asetPilihan && asetPilihan.id === asset.id;
 
-        // Elegant pin-style marker with colors based on certificate status
+        // Check certificate status and data completeness
         const isCertified = asset.pemilikan_sertifikat === "Ya";
-        const fillColor = isCertified ? 'green' : 'red'; // Green for certified, red for not certified
-        const markerIcon = {
-          path: 'M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z',
-          fillColor: fillColor,
-          fillOpacity: 1,
-          strokeColor: 'white',
-          strokeWeight: 0.8,
-          scale: isSelected ? 1.2 : 1,
-          anchor: new window.google.maps.Point(0, 0),
-          labelOrigin: new window.google.maps.Point(0, -29),
-        };
+        const incomplete = isIncompleteData(asset);
+        
+        // Determine base color
+        const fillColor = isCertified ? 'green' : 'red';
+        
+        // Create marker with pattern for incomplete data
+        // For incomplete data: use striped pattern (diagonal lines)
+        // For complete data: use solid color
+        let markerIcon;
+        
+        if (incomplete) {
+          // Striped pattern icon for incomplete data
+          // Using a SVG-like pattern with diagonal lines
+          const stripeColor = 'rgba(255, 255, 255, 0.7)';
+          markerIcon = {
+            path: 'M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z M -8,-28 L -6,-28 M -4,-26 L -2,-26 M 0,-24 L 2,-24 M 4,-26 L 6,-26 M 8,-28 L 7,-28 M -7,-22 L -5,-22 M -3,-20 L -1,-20 M 1,-18 L 3,-18 M 5,-20 L 7,-20 M -6,-16 L -4,-16 M -2,-14 L 0,-14 M 2,-16 L 4,-16 M 5,-12 L 3,-12 M -5,-10 L -3,-10 M -1,-8 L 1,-8 M 3,-10 L 5,-10 M -4,-6 L -2,-6 M 0,-4 L 2,-4 M 4,-6 L 6,-6 M -3,-2 L -1,-2 M 1,0 L 3,0',
+            fillColor: fillColor,
+            fillOpacity: 1,
+            strokeColor: stripeColor,
+            strokeWeight: 1.5,
+            scale: isSelected ? 1.2 : 1,
+            anchor: new window.google.maps.Point(0, 0),
+            labelOrigin: new window.google.maps.Point(0, -29),
+          };
+        } else {
+          // Solid color icon for complete data
+          markerIcon = {
+            path: 'M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z',
+            fillColor: fillColor,
+            fillOpacity: 1,
+            strokeColor: 'white',
+            strokeWeight: 0.8,
+            scale: isSelected ? 1.2 : 1,
+            anchor: new window.google.maps.Point(0, 0),
+            labelOrigin: new window.google.maps.Point(0, -29),
+          };
+        }
 
         const markerLabel = {
           text: "•",
@@ -493,6 +524,7 @@ const PetaAset = React.memo(({
           icon: markerIcon,
           label: markerLabel,
           isSelected: isSelected,
+          incomplete: incomplete,
         };
       });
   }, [assetsToShow, asetPilihan]);
@@ -826,8 +858,85 @@ const PetaAset = React.memo(({
             icon={marker.icon}
             label={marker.label}
             onClick={() => handleAssetClick(marker.asset, [marker.position.lat, marker.position.lng])}
+            onMouseOver={() => setHoveredMarker(marker)}
+            onMouseOut={() => setHoveredMarker(null)}
           />
         ))}
+
+        {/* Info window for hovered marker - shows data completeness info */}
+        {hoveredMarker && (
+          <InfoWindow
+            position={hoveredMarker.position}
+            onCloseClick={() => setHoveredMarker(null)}
+            options={{
+              pixelOffset: new window.google.maps.Size(0, -40),
+              maxWidth: 250,
+            }}
+          >
+            <div style={{ fontSize: '12px', padding: '5px' }}>
+              <strong style={{ fontSize: '13px', display: 'block', marginBottom: '8px' }}>
+                {hoveredMarker.asset.nama || 'Aset'}
+              </strong>
+              <div style={{ marginBottom: '6px' }}>
+                <strong>Kelengkapan Data:</strong>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ 
+                    width: '12px', 
+                    height: '12px', 
+                    borderRadius: '2px', 
+                    background: (hoveredMarker.asset.pemilikan_sertifikat === "Ya" || hoveredMarker.asset.bukti_pemilikan_url || hoveredMarker.asset.bukti_pemilikan_filename) ? '#4CAF50' : '#F44336',
+                    display: 'inline-block'
+                  }}></span>
+                  <span>Sertifikat</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ 
+                    width: '12px', 
+                    height: '12px', 
+                    borderRadius: '2px', 
+                    background: (hoveredMarker.asset.foto_aset && hoveredMarker.asset.foto_aset.length > 0) ? '#4CAF50' : '#F44336',
+                    display: 'inline-block'
+                  }}></span>
+                  <span>Foto Aset</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ 
+                    width: '12px', 
+                    height: '12px', 
+                    borderRadius: '2px', 
+                    background: (hoveredMarker.asset.gambar_tampak_atas_url || hoveredMarker.asset.gambar_tampak_atas_filename) ? '#4CAF50' : '#F44336',
+                    display: 'inline-block'
+                  }}></span>
+                  <span>Foto Tampak Atas</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ 
+                    width: '12px', 
+                    height: '12px', 
+                    borderRadius: '2px', 
+                    background: (hoveredMarker.asset.keterangan && hoveredMarker.asset.keterangan.trim() !== "") ? '#4CAF50' : '#F44336',
+                    display: 'inline-block'
+                  }}></span>
+                  <span>Sejarah</span>
+                </div>
+              </div>
+              {hoveredMarker.incomplete && (
+                <div style={{ 
+                  marginTop: '8px', 
+                  padding: '6px', 
+                  backgroundColor: '#FEF3C7', 
+                  borderRadius: '4px',
+                  fontSize: '11px',
+                  color: '#92400E'
+                }}>
+                  ⚠️ Data tidak lengkap. Harap lengkapi data yang bertanda merah.
+                </div>
+              )}
+            </div>
+          </InfoWindow>
+        )}
 
         {/* Render region labels using OverlayView */}
         {mode !== 'detail' && regionLabels.map((label) => (

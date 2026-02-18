@@ -7,6 +7,7 @@ import { useAuth } from "../auth/AuthContext";
 import toast from "react-hot-toast";
 import Swal from "sweetalert2";
 import * as turf from "@turf/turf";
+import { FaSearch } from "react-icons/fa";
 
 import { parseLocation, getCentroid } from "../utils/locationUtils";
 import { isGeometryNearCoastalArea } from "../utils/coastalConfig";
@@ -55,13 +56,13 @@ const fetchKodimSimplified = async () => {
 
 const processAssetsForMapping = (assets) => {
   if (!assets || assets.length === 0) return [];
-  
+
   console.time('Process 2000 assets');
   const result = assets.map((asset) => {
     const geometry = parseLocation(asset.lokasi);
     const centroid = getCentroid(geometry);
     const isCoastal = geometry ? isGeometryNearCoastalArea(geometry) : false;
-    
+
     return {
       ...asset,
       _processed: {
@@ -82,19 +83,19 @@ const calculateAssetCountsFast = (features, processedAssets, callback) => {
     callback([]);
     return;
   }
-  
+
   // Use setTimeout untuk non-blocking
   setTimeout(() => {
     console.time('Calculate counts');
     const updatedFeatures = JSON.parse(JSON.stringify(features));
-    
+
     updatedFeatures.forEach((f) => {
       f.properties.asset_count = 0;
     });
 
     processedAssets.forEach((asset) => {
       const { centroid, isCoastal, geometry, hasValidLocation } = asset._processed;
-      
+
       if (!hasValidLocation) return;
 
       const point = turf.point([centroid[1], centroid[0]]);
@@ -103,9 +104,9 @@ const calculateAssetCountsFast = (features, processedAssets, callback) => {
       // Standard point-in-polygon check
       for (let i = 0; i < updatedFeatures.length; i++) {
         const feature = updatedFeatures[i];
-        
+
         if (!feature.geometry) continue;
-        
+
         try {
           if (turf.booleanPointInPolygon(point, feature.geometry)) {
             feature.properties.asset_count++;
@@ -121,13 +122,13 @@ const calculateAssetCountsFast = (features, processedAssets, callback) => {
       if (!foundContainingPolygon && isCoastal && geometry) {
         for (let i = 0; i < updatedFeatures.length; i++) {
           const feature = updatedFeatures[i];
-          
+
           try {
             const assetPolygon = turf.polygon(geometry.coordinates);
             const intersection = turf.intersect(
               turf.featureCollection([assetPolygon, feature])
             );
-            
+
             if (intersection) {
               feature.properties.asset_count++;
               break;
@@ -190,6 +191,35 @@ const getStatusBadgeClass = (status) => {
   }
 };
 
+// ============= CEK KELENGKAPAN DATA ASET =============
+const checkAssetCompleteness = (asset) => {
+  const requiredFields = {
+    sertifikat: asset.pemilikan_sertifikat === "Ya" || asset.bukti_pemilikan_url || asset.bukti_pemilikan_filename,
+    fotoAset: asset.foto_aset && asset.foto_aset.length > 0,
+    fotoTampakAtas: asset.gambar_tampak_atas_url || asset.gambar_tampak_atas_filename,
+    sejarah: asset.keterangan && asset.keterangan.trim() !== "",
+  };
+
+  const missingFields = [];
+  if (!requiredFields.sertifikat) missingFields.push("Sertifikat");
+  if (!requiredFields.fotoAset) missingFields.push("Foto Aset");
+  if (!requiredFields.fotoTampakAtas) missingFields.push("Foto Tampak Atas");
+  if (!requiredFields.sejarah) missingFields.push("Sejarah");
+
+  const isComplete = missingFields.length === 0;
+  const completenessPercentage = Object.values(requiredFields).filter(Boolean).length / Object.values(requiredFields).length * 100;
+
+  return {
+    isComplete,
+    missingFields,
+    completenessPercentage,
+    hasSertifikat: requiredFields.sertifikat,
+    hasFotoAset: requiredFields.fotoAset,
+    hasFotoTampakAtas: requiredFields.fotoTampakAtas,
+    hasSejarah: requiredFields.sejarah,
+  };
+};
+
 // ============= TABLE COMPONENT =============
 const TabelAset = ({ assets, onEdit, onDelete, onViewDetail, koremList, allKodimList, userRole }) => {
   const getKodimName = (asset) => {
@@ -231,10 +261,11 @@ const TabelAset = ({ assets, onEdit, onDelete, onViewDetail, koremList, allKodim
     <div style={{ maxHeight: "50vh", overflow: "auto" }}>
       <table
         className="table table-striped table-bordered table-hover mb-0"
-        style={{ minWidth: "1200px", width: "100%" }}
+        style={{ minWidth: "1400px", width: "100%" }}
       >
         <thead className="table-dark" style={{ position: "sticky", top: 0, zIndex: 1 }}>
           <tr>
+            <th style={{ minWidth: "120px" }}>Nomor Registrasi</th>
             <th style={{ minWidth: "120px" }}>NUP</th>
             <th style={{ minWidth: "140px" }}>Wilayah Korem</th>
             <th style={{ minWidth: "140px" }}>Wilayah Kodim</th>
@@ -243,6 +274,7 @@ const TabelAset = ({ assets, onEdit, onDelete, onViewDetail, koremList, allKodim
             <th style={{ minWidth: "100px" }}>Status</th>
             <th style={{ minWidth: "120px" }}>Luas</th>
             <th style={{ minWidth: "100px" }}>Sertifikat</th>
+            <th style={{ minWidth: "200px" }}>Keterangan</th>
             <th style={{ minWidth: "100px" }}>Aksi</th>
           </tr>
         </thead>
@@ -250,9 +282,11 @@ const TabelAset = ({ assets, onEdit, onDelete, onViewDetail, koremList, allKodim
           {assets.map((asset) => {
             const korem = koremList?.find((k) => k.id == asset.korem_id);
             const kodimName = getKodimName(asset);
+            const completeness = checkAssetCompleteness(asset);
 
             return (
               <tr key={asset.id}>
+                <td style={{ minWidth: "120px" }}>{asset.nomor_registrasi || "-"}</td>
                 <td style={{ minWidth: "120px" }}>{asset.nama || "-"}</td>
                 <td style={{ minWidth: "140px" }}>{korem?.nama || "-"}</td>
                 <td style={{ minWidth: "140px" }}>{kodimName}</td>
@@ -277,6 +311,20 @@ const TabelAset = ({ assets, onEdit, onDelete, onViewDetail, koremList, allKodim
                     <span className="badge bg-success">Ya</span>
                   ) : (
                     <span className="badge bg-danger">Tidak</span>
+                  )}
+                </td>
+                <td style={{ minWidth: "200px" }}>
+                  {completeness.isComplete ? (
+                    <span className="badge bg-success">✓ Lengkap</span>
+                  ) : (
+                    <div className="d-flex flex-column gap-1">
+                      <small className="text-danger">
+                        <strong>Kurang:</strong>
+                      </small>
+                      <small className="text-danger">
+                        {completeness.missingFields.join(", ")}
+                      </small>
+                    </div>
                   )}
                 </td>
                 <td style={{ minWidth: "100px" }}>
@@ -305,7 +353,7 @@ const TabelAset = ({ assets, onEdit, onDelete, onViewDetail, koremList, allKodim
   );
 };
 
-// ============= FILTER PANEL =============
+// ============= FILTER PANEL - HORIZONTAL TOOLBAR (MINIMALIS) =============
 const FilterPanelTop = ({
   koremList,
   kodimList,
@@ -317,9 +365,8 @@ const FilterPanelTop = ({
   onSelectKodim,
   onSelectStatus,
   onShowAll,
-  totalAssets,
-  filteredAssetsCount,
-  assetsOnMapCount,
+  searchQuery,
+  onSearchChange,
 }) => {
   const statusOptions = [
     { value: "", label: "Semua Status" },
@@ -328,95 +375,124 @@ const FilterPanelTop = ({
   ];
 
   const filteredKodimForFilter = selectedKorem ? kodimList : allKodimList;
+  const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery || "");
+
+  useEffect(() => {
+    setLocalSearchQuery(searchQuery || "");
+  }, [searchQuery]);
+
+  const handleSearch = () => {
+    onSearchChange(localSearchQuery);
+  };
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setLocalSearchQuery(value);
+    if (value === "") {
+      onSearchChange("");
+    }
+  };
+
+  const hasActiveFilters = selectedKorem || selectedKodim || statusFilter || searchQuery;
 
   return (
-    <Card className="mb-4">
-      <Card.Header className="bg-primary text-white">
-        <h5 className="mb-0">Filter Data Aset BMN</h5>
-      </Card.Header>
-      <Card.Body>
-        <Row>
-          <Col md={3}>
-            <div className="mb-3">
-              <label className="form-label fw-bold">Wilayah Korem</label>
-              <select
-                className="form-select"
-                value={selectedKorem?.id || ""}
-                onChange={(e) => {
-                  const korem = koremList?.find((k) => k.id == e.target.value);
-                  onSelectKorem(korem || null);
+    <Card className="mb-3 border-0 shadow-sm">
+      <Card.Body className="py-2">
+        <div className="d-flex align-items-center justify-content-between gap-2">
+          {/* Kiri: Filter Dropdowns */}
+          <div className="d-flex align-items-center gap-2">
+            <select
+              className="form-select form-select-sm"
+              style={{ width: "auto", minWidth: "180px" }}
+              value={selectedKorem?.id || ""}
+              onChange={(e) => {
+                const korem = koremList?.find((k) => k.id == e.target.value);
+                onSelectKorem(korem || null);
+              }}
+            >
+              <option value="">Semua Korem</option>
+              {koremList?.map((korem) => (
+                <option key={korem.id} value={korem.id}>
+                  {korem.nama === "Berdiri Sendiri" ? "Kodim 0733/Kota Semarang" : korem.nama}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className="form-select form-select-sm"
+              style={{ width: "auto", minWidth: "180px" }}
+              value={selectedKodim || ""}
+              onChange={(e) => onSelectKodim(e.target.value)}
+              disabled={!selectedKorem}
+            >
+              <option value="">Semua Kodim</option>
+              {filteredKodimForFilter?.map((kodim, index) => {
+                const normalizedKodimName = normalizeKodimName(kodim.nama);
+                return (
+                  <option key={`${kodim.id}-${index}`} value={normalizedKodimName}>
+                    {normalizedKodimName}
+                  </option>
+                );
+              })}
+            </select>
+
+            <select
+              className="form-select form-select-sm"
+              style={{ width: "auto", minWidth: "150px" }}
+              value={statusFilter || ""}
+              onChange={(e) => onSelectStatus(e.target.value)}
+            >
+              {statusOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+
+            {/* Reset Button */}
+            {hasActiveFilters && (
+              <button
+                className="btn btn-outline-secondary btn-sm"
+                onClick={onShowAll}
+              >
+                ✕ Reset
+              </button>
+            )}
+          </div>
+
+          {/* Kanan: Search Bar */}
+          <div className="flex-shrink-0" style={{ maxWidth: "350px" }}>
+            <div className="input-group input-group-sm">
+              <span className="input-group-text bg-light border-0">
+                <FaSearch size={14} />
+              </span>
+              <input
+                type="text"
+                className="form-control border-0 bg-light"
+                placeholder="Cari NUP / Nomor Registrasi..."
+                value={localSearchQuery}
+                onChange={handleSearchChange}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSearch();
+                  }
                 }}
-              >
-                <option value="">Semua Korem</option>
-                {koremList?.map((korem) => (
-                  <option key={korem.id} value={korem.id}>
-                    {korem.nama === "Berdiri Sendiri" ? "Kodim 0733/Kota Semarang" : korem.nama}
-                  </option>
-                ))}
-              </select>
+              />
+              {localSearchQuery && (
+                <button
+                  className="btn btn-link text-muted px-2 border-0 bg-light"
+                  type="button"
+                  onClick={() => {
+                    setLocalSearchQuery("");
+                    onSearchChange("");
+                  }}
+                >
+                  ✕
+                </button>
+              )}
             </div>
-          </Col>
-          <Col md={3}>
-            <div className="mb-3">
-              <label className="form-label fw-bold">Wilayah Kodim</label>
-              <select
-                className="form-select"
-                value={selectedKodim || ""}
-                onChange={(e) => onSelectKodim(e.target.value)}
-                disabled={!selectedKorem}
-              >
-                <option value="">Pilih Kodim</option>
-                {filteredKodimForFilter?.map((kodim, index) => {
-                  const normalizedKodimName = normalizeKodimName(kodim.nama);
-                  return (
-                    <option key={`${kodim.id}-${index}`} value={normalizedKodimName}>
-                      {normalizedKodimName}
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-          </Col>
-          <Col md={3}>
-            <div className="mb-3">
-              <label className="form-label fw-bold">Status</label>
-              <select
-                className="form-select"
-                value={statusFilter || ""}
-                onChange={(e) => onSelectStatus(e.target.value)}
-              >
-                {statusOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </Col>
-          <Col md={3}>
-            <div className="mb-3">
-              <label className="form-label fw-bold">Aksi</label>
-              <Button variant="outline-secondary" onClick={onShowAll} className="w-100">
-                Reset Filter
-              </Button>
-            </div>
-          </Col>
-        </Row>
-        <Row>
-          <Col>
-            <div className="bg-light p-2 rounded">
-              <small className="text-muted">
-                <strong>Hasil:</strong> Menampilkan <strong>{assetsOnMapCount}</strong> aset di peta dari{" "}
-                <strong>{filteredAssetsCount}</strong> yang cocok dengan filter.
-                {filteredAssetsCount > assetsOnMapCount && (
-                  <em className="ms-2">
-                    ({filteredAssetsCount - assetsOnMapCount} aset tidak memiliki lokasi valid)
-                  </em>
-                )}
-              </small>
-            </div>
-          </Col>
-        </Row>
+          </div>
+        </div>
       </Card.Body>
     </Card>
   );
@@ -427,7 +503,7 @@ const DataAsetTanahPage = () => {
   const { user } = useAuth();
   const location = useLocation();
   const queryClient = useQueryClient();
-  
+
   // ============= REACT QUERY: FETCH DATA WITH CACHING =============
   const { data: assets = [], isLoading: assetsLoading } = useQuery({
     queryKey: ['assets'],
@@ -472,6 +548,7 @@ const DataAsetTanahPage = () => {
   const [selectedKorem, setSelectedKorem] = useState(null);
   const [selectedKodim, setSelectedKodim] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedAssetDetail, setSelectedAssetDetail] = useState(null);
@@ -488,7 +565,7 @@ const DataAsetTanahPage = () => {
   const [koremDataForMapSimplified, setKoremDataForMapSimplified] = useState(null);
   const [kodimDataForMapSimplified, setKodimDataForMapSimplified] = useState(null);
   const [isCalculatingCounts, setIsCalculatingCounts] = useState(false);
-  
+
   const calculationTimeoutRef = useRef(null);
 
   // Pre-process assets (memoized)
@@ -500,7 +577,7 @@ const DataAsetTanahPage = () => {
   // Build all kodim list
   useEffect(() => {
     if (!koremList || koremList.length === 0) return;
-    
+
     const allKodims = koremList.flatMap((korem) => {
       if (korem.nama === "Kodim 0733/Kota Semarang") {
         return [{
@@ -608,28 +685,49 @@ const DataAsetTanahPage = () => {
   useEffect(() => {
     let filtered = assets;
 
-    if (selectedKodim) {
-      const filterKodim = normalizeKodimName(String(selectedKodim || "").trim());
+    // 1. SEARCH FILTER - Hanya NUP atau Nomor Registrasi
+    if (searchQuery && searchQuery.trim() !== "") {
+      const lowerQuery = searchQuery.toLowerCase().trim();
       filtered = filtered.filter((asset) => {
-        const assetKodim = normalizeKodimName(String(asset.kodim || "").trim());
-        if (filterKodim === "Kodim 0733/Kota Semarang") {
-          return (
-            assetKodim === "Kodim 0733/Kota Semarang" ||
-            asset.kodim === "Kodim 0733/Semarang (BS)"
-          );
-        }
-        return assetKodim === filterKodim;
+        // Hanya cek NUP (nama) dan Nomor Registrasi
+        const namaMatches = asset.nama && asset.nama.toLowerCase().includes(lowerQuery);
+        const noRegMatches = asset.nomor_registrasi && String(asset.nomor_registrasi).toLowerCase().includes(lowerQuery);
+        return namaMatches || noRegMatches;
       });
-    } else if (selectedKorem) {
-      filtered = filtered.filter((asset) => asset.korem_id == selectedKorem.id);
+      // Jika ada search query, skip filter region (prioritas search)
+    } else {
+      // 2. REGION FILTERS - Hanya jika TIDAK ada search query
+      if (selectedKodim) {
+        const filterKodim = normalizeKodimName(String(selectedKodim || "").trim());
+        filtered = filtered.filter((asset) => {
+          const assetKodim = normalizeKodimName(String(asset.kodim || "").trim());
+          if (filterKodim === "Kodim 0733/Kota Semarang") {
+            return (
+              assetKodim === "Kodim 0733/Kota Semarang" ||
+              asset.kodim === "Kodim 0733/Semarang (BS)"
+            );
+          }
+          return assetKodim === filterKodim;
+        });
+      } else if (selectedKorem) {
+        filtered = filtered.filter((asset) => asset.korem_id == selectedKorem.id);
+      }
     }
 
+    // 3. STATUS FILTER - Selalu diterapkan
     if (statusFilter) {
       filtered = filtered.filter((asset) => asset.status === statusFilter);
     }
 
+    // 4. SORTIR berdasarkan Nomor Registrasi (ascending)
+    filtered = [...filtered].sort((a, b) => {
+      const regA = String(a.nomor_registrasi || "").trim();
+      const regB = String(b.nomor_registrasi || "").trim();
+      return regA.localeCompare(regB, 'id', { numeric: true });
+    });
+
     setFilteredAssets(filtered);
-  }, [selectedKorem, selectedKodim, statusFilter, assets]);
+  }, [selectedKorem, selectedKodim, statusFilter, searchQuery, assets]);
 
   const assetsOnMapCount = useMemo(
     () =>
@@ -654,7 +752,7 @@ const DataAsetTanahPage = () => {
       setKodimList([]);
       return;
     }
-    
+
     const selectedKoremData = koremList.find((k) => k.id === koremId);
     if (selectedKoremData) {
       if (selectedKoremData.nama === "Kodim 0733/Kota Semarang") {
@@ -677,7 +775,9 @@ const DataAsetTanahPage = () => {
 
   const handleKoremChange = (korem) => {
     setSelectedKorem(korem || null);
+    // Reset search query ketika user memilih filter region
     if (korem) {
+      setSearchQuery("");
       fetchKodim(korem.id);
       if (korem.nama === "Kodim 0733/Kota Semarang" || korem.nama === "Berdiri Sendiri") {
         setTimeout(() => setSelectedKodim("Kodim 0733/Kota Semarang"), 0);
@@ -693,7 +793,9 @@ const DataAsetTanahPage = () => {
   const handleKodimChange = (kodimName) => {
     const normalizedKodimName = normalizeKodimName(kodimName || "");
     setSelectedKodim(normalizedKodimName);
+    // Reset search query ketika user memilih filter region
     if (normalizedKodimName) {
+      setSearchQuery("");
       const kodimData = allKodimList.find((k) => normalizeKodimName(k.nama) === normalizedKodimName);
       if (kodimData) {
         const koremData = koremList.find((k) => k.id === kodimData.korem_id);
@@ -701,6 +803,14 @@ const DataAsetTanahPage = () => {
           setSelectedKorem(koremData);
         }
       }
+    }
+  };
+
+  const handleStatusChange = (status) => {
+    setStatusFilter(status);
+    // Reset search query ketika user memilih filter status
+    if (status) {
+      setSearchQuery("");
     }
   };
 
@@ -779,10 +889,10 @@ const DataAsetTanahPage = () => {
 
       await axios.put(`${API_URL}/assets/${id}`, updatedData);
       toast.success("Aset berhasil diperbarui!", { id: toastId });
-      
+
       // Invalidate and refetch
       queryClient.invalidateQueries(['assets']);
-      
+
       const refreshedAsset = await axios.get(`${API_URL}/assets/${id}`);
       setEditingAsset(refreshedAsset.data);
       setEditModalKey(Date.now());
@@ -810,7 +920,7 @@ const DataAsetTanahPage = () => {
   return (
     <Container fluid className="mt-4">
       <h3>Data Aset BMN</h3>
-      
+
       {isCalculatingCounts && (
         <Alert variant="info" className="mb-3">
           <small>
@@ -867,18 +977,18 @@ const DataAsetTanahPage = () => {
             selectedKorem={selectedKorem}
             selectedKodim={selectedKodim}
             statusFilter={statusFilter}
+            searchQuery={searchQuery}
             onSelectKorem={handleKoremChange}
             onSelectKodim={handleKodimChange}
-            onSelectStatus={setStatusFilter}
+            onSelectStatus={handleStatusChange}
+            onSearchChange={setSearchQuery}
             onShowAll={() => {
               handleKoremChange(null);
               setSelectedKodim("");
               setStatusFilter("");
+              setSearchQuery("");
               setZoomToAsset(null);
             }}
-            totalAssets={assets.length}
-            filteredAssetsCount={filteredAssets.length}
-            assetsOnMapCount={assetsOnMapCount}
           />
 
           <Card>

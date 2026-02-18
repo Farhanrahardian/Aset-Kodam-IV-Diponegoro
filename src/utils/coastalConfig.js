@@ -10,7 +10,7 @@ const COASTAL_AREAS = [
       minLat: -7.8, 
       maxLat: -7.4 
     },
-    bufferDistance: 0.05, // 50 meters in kilometers
+    bufferDistance: 20, // 50 meters in kilometers
     description: "Area pesisir Kabupaten Cilacap"
   }
 ];
