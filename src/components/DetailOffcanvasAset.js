@@ -640,7 +640,7 @@ const DetailOffcanvasAset = ({
             {aset.keterangan && (
               <Card className="mb-3 shadow-sm">
                 <Card.Header className="bg-secondary text-white">
-                  <FaInfoCircle className="me-2" /> Keterangan Tambahan
+                  <FaInfoCircle className="me-2" /> Sejarah
                 </Card.Header>
                 <Card.Body>
                   <p className="mb-0">{aset.keterangan}</p>
