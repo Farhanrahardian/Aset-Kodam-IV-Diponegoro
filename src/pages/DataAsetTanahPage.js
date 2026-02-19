@@ -194,7 +194,8 @@ const getStatusBadgeClass = (status) => {
 // ============= CEK KELENGKAPAN DATA ASET =============
 const checkAssetCompleteness = (asset) => {
   const requiredFields = {
-    sertifikat: asset.pemilikan_sertifikat === "Ya" || asset.bukti_pemilikan_url || asset.bukti_pemilikan_filename,
+    // Sertifikat hanya dicek dari file Bukti Pemilikan
+    sertifikat: asset.bukti_pemilikan_url || asset.bukti_pemilikan_filename,
     fotoAset: asset.foto_aset && asset.foto_aset.length > 0,
     fotoTampakAtas: asset.gambar_tampak_atas_url || asset.gambar_tampak_atas_filename,
     sejarah: asset.keterangan && asset.keterangan.trim() !== "",

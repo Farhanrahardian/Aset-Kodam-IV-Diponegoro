@@ -55,12 +55,12 @@ const geoJsonToGooglePaths = (coordinates, type) => {
 
 // Helper: Check if asset data is incomplete (same logic as DataAsetTanahPage.js)
 const isIncompleteData = (asset) => {
-  // Check 4 fields: Sertifikat, Foto Aset, Foto Tampak Atas, Sejarah (Keterangan)
-  const hasSertifikat = asset.pemilikan_sertifikat === "Ya" || asset.bukti_pemilikan_url || asset.bukti_pemilikan_filename;
+  // Check 4 fields: Sertifikat (hanya dari Bukti Pemilikan), Foto Aset, Foto Tampak Atas, Sejarah (Keterangan)
+  const hasSertifikat = asset.bukti_pemilikan_url || asset.bukti_pemilikan_filename;
   const hasFotoAset = asset.foto_aset && asset.foto_aset.length > 0;
   const hasFotoTampakAtas = asset.gambar_tampak_atas_url || asset.gambar_tampak_atas_filename;
   const hasSejarah = asset.keterangan && asset.keterangan.trim() !== "";
-  
+
   // Return true if ANY of the 4 fields is missing
   return !hasSertifikat || !hasFotoAset || !hasFotoTampakAtas || !hasSejarah;
 };
@@ -470,18 +470,18 @@ const PetaAset = React.memo(({
         const centroid = getCentroid(geometry);
         const isSelected = asetPilihan && asetPilihan.id === asset.id;
 
-        // Check certificate status and data completeness
+        // Check certificate status - warna berdasarkan Status Sertifikat
         const isCertified = asset.pemilikan_sertifikat === "Ya";
         const incomplete = isIncompleteData(asset);
-        
-        // Determine base color
+
+        // Determine base color - hijau jika Status Sertifikat "Ya", merah jika "Tidak"
         const fillColor = isCertified ? 'green' : 'red';
-        
+
         // Create marker with pattern for incomplete data
         // For incomplete data: use striped pattern (diagonal lines)
         // For complete data: use solid color
         let markerIcon;
-        
+
         if (incomplete) {
           // Striped pattern icon for incomplete data
           // Using a SVG-like pattern with diagonal lines
