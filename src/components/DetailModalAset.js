@@ -419,7 +419,7 @@ const DetailModalAset = ({
                 )}
 
                 <Row className="mb-2">
-                  <Col xs={5}><strong>Keterangan:</strong></Col>
+                  <Col xs={5}><strong>Sejarah:</strong></Col>
                   <Col xs={7}>{asset.keterangan || "-"}</Col>
                 </Row>
 
