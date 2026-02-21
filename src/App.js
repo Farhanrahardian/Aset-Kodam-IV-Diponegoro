@@ -19,61 +19,68 @@ import ManageUsersPage from "./pages/ManageUsersPage";
 import ViewFilePage from "./pages/ViewFilePage";
 import { Toaster } from "react-hot-toast";
 
-// CSS global
 import "bootstrap/dist/css/bootstrap.min.css";
 
-// ============= REACT QUERY CONFIGURATION =============
+// ─────────────────────────────────────────────
+// Environment flag — evaluated once at module
+// load time. Vite exposes import.meta.env.MODE;
+// CRA exposes process.env.NODE_ENV.
+// Both resolve to a static string during the
+// production build, so tree-shaking removes the
+// dead branch entirely.
+// ─────────────────────────────────────────────
+const IS_DEV =
+  typeof import.meta !== "undefined"
+    ? import.meta.env?.MODE === "development"   // Vite
+    : process.env.NODE_ENV === "development";   // CRA / webpack
+
+// ─────────────────────────────────────────────
+// QueryClient — created outside the component
+// so it is never re-instantiated on re-renders.
+// ─────────────────────────────────────────────
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Data dianggap fresh selama 5 menit
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      
-      // Keep data in cache selama 10 menit setelah tidak dipakai
-      gcTime: 10 * 60 * 1000, // 10 minutes (previously called cacheTime)
-      
-      // Jangan refetch saat window focus (mengurangi request yang tidak perlu)
-      refetchOnWindowFocus: false,
-      
-      // Retry 1x saja kalau error
+      staleTime: 5 * 60 * 1000,       // 5 min — data stays "fresh"
+      gcTime: 10 * 60 * 1000,         // 10 min — unused cache is purged
+      refetchOnWindowFocus: false,     // avoids noisy background refetches
       retry: 1,
-      
-      // Retry delay
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 30_000),
     },
   },
 });
 
+// ─────────────────────────────────────────────
+// Toast style presets — defined outside JSX so
+// the object reference is stable.
+// ─────────────────────────────────────────────
+const TOAST_OPTIONS = {
+  success: { style: { background: "#4CAF50", color: "white" } },
+  error:   { style: { background: "#F44336", color: "white" } },
+};
+
+// ─────────────────────────────────────────────
+// App
+// ─────────────────────────────────────────────
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router>
-          <Toaster
-            position="top-center"
-            toastOptions={{
-              success: {
-                style: {
-                  background: "#4CAF50",
-                  color: "white",
-                },
-              },
-              error: {
-                style: {
-                  background: "#F44336",
-                  color: "white",
-                },
-              },
-            }}
-          />
+          {/* ── Global toast notifications ── */}
+          <Toaster position="top-center" toastOptions={TOAST_OPTIONS} />
+
           <Routes>
+            {/* Public route */}
             <Route path="/login" element={<LoginPage />} />
+
+            {/* All protected routes share MainLayout */}
             <Route
               path="/*"
               element={
                 <MainLayout>
                   <Routes>
-                    {/* Rute untuk Admin dan Pengguna */}
+                    {/* ── Admin + Pengguna ── */}
                     <Route
                       path="/"
                       element={
@@ -99,7 +106,7 @@ function App() {
                       }
                     />
 
-                    {/* Rute khusus Admin */}
+                    {/* ── Admin only ── */}
                     <Route
                       path="/tambah-aset"
                       element={
@@ -109,18 +116,18 @@ function App() {
                       }
                     />
                     <Route
-                      path="/edit-aset/:id"
-                      element={
-                        <ProtectedRoute roles={["admin"]}>
-                          <EditAsetPage />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
                       path="/tambah-aset-yardip"
                       element={
                         <ProtectedRoute roles={["admin"]}>
                           <TambahAsetYardipPage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/edit-aset/:id"
+                      element={
+                        <ProtectedRoute roles={["admin"]}>
+                          <EditAsetPage />
                         </ProtectedRoute>
                       }
                     />
@@ -169,10 +176,14 @@ function App() {
               }
             />
           </Routes>
-          
-          {/* React Query DevTools - helpful untuk debug */}
-          {/* Hanya muncul di development, otomatis hilang di production */}
-          <ReactQueryDevtools initialIsOpen={false} />
+
+          {/* ── DevTools: development only ──────────────────────────
+              IS_DEV resolves to a static boolean at build time.
+              Bundlers (Vite / webpack) dead-code-eliminate the
+              false branch in production, so <ReactQueryDevtools />
+              is never included in the production bundle at all.
+          ────────────────────────────────────────────────────────── */}
+          {IS_DEV && <ReactQueryDevtools initialIsOpen={false} />}
         </Router>
       </AuthProvider>
     </QueryClientProvider>
