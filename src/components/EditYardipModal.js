@@ -143,7 +143,7 @@ const EditYardipModal = ({ show, onHide, asset, onSave, provinsiData, kabupatenD
 
   const handleSave = () => {
     if (formRef.current) {
-      const { formData: latestFormData } = formRef.current.getFormData();
+      const { formData: latestFormData, buktiPemilikanFile, filesToDelete } = formRef.current.getFormData();
       let finalData = { ...latestFormData };
 
       if (geometryChanged && geometry) {
@@ -156,7 +156,7 @@ const EditYardipModal = ({ show, onHide, asset, onSave, provinsiData, kabupatenD
         finalData.lokasi = JSON.stringify(asset.lokasi);
       }
 
-      onSave(finalData);
+      onSave(finalData, buktiPemilikanFile, filesToDelete);
     }
   };
 

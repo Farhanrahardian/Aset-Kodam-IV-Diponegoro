@@ -1,7 +1,28 @@
 import React, { useState, useEffect } from "react";
-import { Modal, Button, Row, Col, Card, Table } from "react-bootstrap";
+import { Modal, Button, Row, Col, Card, Table, Image } from "react-bootstrap";
 import { parseLocation } from "../utils/locationUtils";
 import PetaAsetYardip from "./PetaAsetYardip";
+
+const API_URL = "http://localhost:3001";
+
+// Helper functions
+const isImageFile = (filename) => {
+  if (!filename) return false;
+  const imageExtensions = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"];
+  return imageExtensions.some((ext) => filename.toLowerCase().endsWith(ext));
+};
+
+const isPdfFile = (filename) => {
+  if (!filename) return false;
+  return filename.toLowerCase().endsWith(".pdf");
+};
+
+const getFileUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  if (url.startsWith("/")) return `${API_URL}${url}`;
+  return `${API_URL}/${url}`;
+};
 
 const DetailYardipModal = ({ show, onHide, asset }) => {
   const [provinsiData, setProvinsiData] = useState(null);
@@ -147,6 +168,68 @@ const DetailYardipModal = ({ show, onHide, asset }) => {
                           : "-"}
                       </td>
                     </tr>
+                    {/* BUKTI PEMILIKAN */}
+                    {asset.bukti_pemilikan_url && (
+                      <tr>
+                        <td>
+                          <strong>Bukti Pemilikan</strong>
+                        </td>
+                        <td>
+                          <div className="d-flex align-items-center gap-2">
+                            {isImageFile(asset.bukti_pemilikan_filename) && (
+                              <div
+                                style={{
+                                  width: "40px",
+                                  height: "40px",
+                                  border: "1px solid #ddd",
+                                  borderRadius: "4px",
+                                  overflow: "hidden",
+                                }}
+                              >
+                                <img
+                                  src={getFileUrl(asset.bukti_pemilikan_url)}
+                                  alt="Preview"
+                                  style={{
+                                    width: "100%",
+                                    height: "100%",
+                                    objectFit: "cover",
+                                  }}
+                                />
+                              </div>
+                            )}
+                            <div>
+                              <div style={{ fontSize: "0.8em" }}>
+                                {asset.bukti_pemilikan_filename}
+                              </div>
+                              <Button
+                                variant="link"
+                                size="sm"
+                                onClick={() =>
+                                  window.open(
+                                    getFileUrl(asset.bukti_pemilikan_url),
+                                    "_blank"
+                                  )
+                                }
+                                className="p-0"
+                                style={{ fontSize: "0.7em" }}
+                              >
+                                {isPdfFile(asset.bukti_pemilikan_filename)
+                                  ? "Lihat PDF"
+                                  : "Lihat Gambar"}
+                              </Button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    {asset.keterangan_bukti_pemilikan && (
+                      <tr>
+                        <td>
+                          <strong>Keterangan Bukti</strong>
+                        </td>
+                        <td>{asset.keterangan_bukti_pemilikan}</td>
+                      </tr>
+                    )}
                     <tr>
                       <td>
                         <strong>Keterangan</strong>

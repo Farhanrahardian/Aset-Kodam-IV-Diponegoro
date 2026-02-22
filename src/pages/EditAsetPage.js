@@ -76,17 +76,10 @@ const EditAsetPage = () => {
     assetData,
     buktiPemilikanFile,
     assetPhotos,
-    gambarTampakAtasFile, // TAMBAHKAN parameter ini jika belum ada
-    filesToDelete = {} // Tambahkan parameter untuk file yang ditandai untuk dihapus
+    gambarTampakAtasFile,
+    filesToDelete = {}
   ) => {
     const toastId = toast.loading("Menyimpan perubahan...");
-
-    console.log("=== EDIT ASSET PAGE SAVE ===");
-    console.log("Received assetData:", assetData);
-    console.log("buktiPemilikanFile:", buktiPemilikanFile);
-    console.log("assetPhotos:", assetPhotos);
-    console.log("gambarTampakAtasFile:", gambarTampakAtasFile);
-    console.log("filesToDelete:", filesToDelete);
 
     let updatedData = { ...assetData };
 
@@ -127,7 +120,7 @@ const EditAsetPage = () => {
       try {
         toast.loading("Mengupload bukti pemilikan baru...", { id: toastId });
 
-        // TAMBAHKAN: Delete old file first
+        // Delete old file first
         await deleteOldFile(asset.bukti_pemilikan_url, "bukti_pemilikan");
 
         const formData = new FormData();
@@ -138,7 +131,6 @@ const EditAsetPage = () => {
         );
         updatedData.bukti_pemilikan_url = uploadRes.data.url;
         updatedData.bukti_pemilikan_filename = uploadRes.data.filename;
-        console.log("Bukti pemilikan uploaded:", uploadRes.data);
       } catch (err) {
         toast.error("Gagal mengupload bukti pemilikan baru.", { id: toastId });
         console.error("File upload error:", err);

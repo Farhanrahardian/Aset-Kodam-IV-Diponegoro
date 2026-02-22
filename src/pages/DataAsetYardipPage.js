@@ -340,10 +340,56 @@ const DataAsetYardipPage = () => {
     setShowEditModal(true);
   };
 
-  const handleSaveYardip = async (formData) => {
+  const handleSaveYardip = async (formData, buktiPemilikanFile, filesToDelete) => {
     const toastId = toast.loading("Menyimpan perubahan...");
+
+    let buktiPemilikanUrl = formData.bukti_pemilikan_url || "";
+    let buktiPemilikanFilename = formData.bukti_pemilikan_filename || "";
+
     try {
-      await axios.put(`${API_URL}/yardip_assets/${formData.id}`, formData);
+      // Hapus file yang ditandai untuk dihapus
+      if (filesToDelete?.buktiPemilikan) {
+        const filename = filesToDelete.buktiPemilikan.split("/").pop();
+        if (filename) {
+          try {
+            await axios.delete(`${API_URL}/upload/bukti-pemilikan/${filename}`);
+            console.log("✅ Old file deleted:", filename);
+          } catch (err) {
+            console.warn("⚠️ Failed to delete old file:", filename);
+          }
+        }
+      }
+
+      // Upload file baru jika ada
+      if (buktiPemilikanFile) {
+        try {
+          toast.loading("Mengupload bukti pemilikan baru...", { id: toastId });
+          const fileFormData = new FormData();
+          fileFormData.append("bukti_pemilikan", buktiPemilikanFile);
+
+          const uploadRes = await axios.post(
+            `${API_URL}/upload/bukti-pemilikan`,
+            fileFormData
+          );
+
+          buktiPemilikanUrl = uploadRes.data.url;
+          buktiPemilikanFilename = uploadRes.data.filename;
+          toast.loading("Bukti pemilikan berhasil diupload.", { id: toastId });
+        } catch (err) {
+          toast.error("Gagal mengupload bukti pemilikan baru.", { id: toastId });
+          console.error("File upload error:", err);
+          return;
+        }
+      }
+
+      // Update data dengan URL file baru
+      const updatedData = {
+        ...formData,
+        bukti_pemilikan_url: buktiPemilikanUrl,
+        bukti_pemilikan_filename: buktiPemilikanFilename,
+      };
+
+      await axios.put(`${API_URL}/yardip_assets/${formData.id}`, updatedData);
       toast.success("Aset Yardip berhasil diperbarui!", { id: toastId });
 
       const refreshedAsset = await axios.get(

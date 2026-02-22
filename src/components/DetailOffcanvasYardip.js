@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { Offcanvas, Badge, Card, Row, Col } from "react-bootstrap";
+import { Offcanvas, Badge, Card, Row, Col, Button, Image } from "react-bootstrap";
 import {
   FaBuilding,
   FaMapMarkerAlt,
   FaInfoCircle,
   FaGlobe,
+  FaFilePdf,
 } from "react-icons/fa";
 import { parseLocation } from "../utils/locationUtils";
 import PetaAsetYardip from "./PetaAsetYardip";
+
+const API_URL = "http://localhost:3001";
 
 // Helper untuk mendapatkan warna badge berdasarkan status
 const getStatusBadgeVariant = (status) => {
@@ -19,6 +22,25 @@ const getStatusBadgeVariant = (status) => {
     default:
       return "warning";
   }
+};
+
+// Helper functions
+const isImageFile = (filename) => {
+  if (!filename) return false;
+  const imageExtensions = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"];
+  return imageExtensions.some((ext) => filename.toLowerCase().endsWith(ext));
+};
+
+const isPdfFile = (filename) => {
+  if (!filename) return false;
+  return filename.toLowerCase().endsWith(".pdf");
+};
+
+const getFileUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  if (url.startsWith("/")) return `${API_URL}${url}`;
+  return `${API_URL}/${url}`;
 };
 
 const DetailOffcanvasYardip = ({ show, handleClose, asetYardip }) => {
@@ -208,6 +230,68 @@ const DetailOffcanvasYardip = ({ show, handleClose, asetYardip }) => {
                         )}
                       </td>
                     </tr>
+                    {/* BUKTI PEMILIKAN */}
+                    {asetYardip.bukti_pemilikan_url && (
+                      <tr>
+                        <td>
+                          <strong>Bukti Pemilikan:</strong>
+                        </td>
+                        <td>
+                          <div className="d-flex align-items-center gap-2">
+                            {isImageFile(asetYardip.bukti_pemilikan_filename) && (
+                              <div
+                                style={{
+                                  width: "40px",
+                                  height: "40px",
+                                  border: "1px solid #ddd",
+                                  borderRadius: "4px",
+                                  overflow: "hidden",
+                                }}
+                              >
+                                <img
+                                  src={getFileUrl(asetYardip.bukti_pemilikan_url)}
+                                  alt="Preview"
+                                  style={{
+                                    width: "100%",
+                                    height: "100%",
+                                    objectFit: "cover",
+                                  }}
+                                />
+                              </div>
+                            )}
+                            <div>
+                              <div style={{ fontSize: "0.8em" }}>
+                                {asetYardip.bukti_pemilikan_filename}
+                              </div>
+                              <Button
+                                variant="link"
+                                size="sm"
+                                onClick={() =>
+                                  window.open(
+                                    getFileUrl(asetYardip.bukti_pemilikan_url),
+                                    "_blank"
+                                  )
+                                }
+                                className="p-0"
+                                style={{ fontSize: "0.7em" }}
+                              >
+                                {isPdfFile(asetYardip.bukti_pemilikan_filename)
+                                  ? "Lihat PDF"
+                                  : "Lihat Gambar"}
+                              </Button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    {asetYardip.keterangan_bukti_pemilikan && (
+                      <tr>
+                        <td>
+                          <strong>Keterangan Bukti:</strong>
+                        </td>
+                        <td>{asetYardip.keterangan_bukti_pemilikan}</td>
+                      </tr>
+                    )}
                     <tr>
                       <td>
                         <strong>Keterangan:</strong>

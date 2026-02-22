@@ -374,10 +374,11 @@ app.post("/yardip_assets", async (req, res) => {
     await pool.query(
       `
       INSERT INTO yardip_assets (
-          id, pengelola, bidang, provinsi, kabkota, 
-          kecamatan, kelurahan, peruntukan, status, 
-          keterangan, area, lokasi, type
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          id, pengelola, bidang, provinsi, kabkota,
+          kecamatan, kelurahan, peruntukan, status,
+          keterangan, area, lokasi, type,
+          bukti_pemilikan_url, bukti_pemilikan_filename, keterangan_bukti_pemilikan
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         id,
@@ -393,6 +394,9 @@ app.post("/yardip_assets", async (req, res) => {
         assetData.area,
         lokasiJSON, // ← Convert ke JSON string
         assetData.type || "yardip",
+        assetData.bukti_pemilikan_url || null,
+        assetData.bukti_pemilikan_filename || null,
+        assetData.keterangan_bukti_pemilikan || null,
       ]
     );
 
@@ -424,7 +428,9 @@ app.put("/yardip_assets/:id", async (req, res) => {
       UPDATE yardip_assets SET
           pengelola = ?, bidang = ?, provinsi = ?, kabkota = ?,
           kecamatan = ?, kelurahan = ?, peruntukan = ?, status = ?,
-          keterangan = ?, area = ?, lokasi = ?, updated_at = CURRENT_TIMESTAMP
+          keterangan = ?, area = ?, lokasi = ?, updated_at = CURRENT_TIMESTAMP,
+          bukti_pemilikan_url = ?, bukti_pemilikan_filename = ?,
+          keterangan_bukti_pemilikan = ?
       WHERE id = ?
       `,
       [
@@ -439,6 +445,9 @@ app.put("/yardip_assets/:id", async (req, res) => {
         assetData.keterangan,
         assetData.area,
         lokasiJSON, // ← Convert ke JSON string
+        assetData.bukti_pemilikan_url || null,
+        assetData.bukti_pemilikan_filename || null,
+        assetData.keterangan_bukti_pemilikan || null,
         id,
       ]
     );

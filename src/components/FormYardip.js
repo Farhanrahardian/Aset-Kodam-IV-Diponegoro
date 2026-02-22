@@ -15,6 +15,7 @@ import {
   ButtonGroup,
   ToggleButton,
   InputGroup,
+  Image,
 } from "react-bootstrap";
 import toast from "react-hot-toast";
 import Swal from "sweetalert2";
@@ -23,6 +24,20 @@ import { DOMParser } from "xmldom";
 import JSZip from "jszip";
 import * as turf from "@turf/turf";
 import { isGeometryNearCoastalArea } from "../utils/coastalConfig";
+
+const API_URL = "http://localhost:3001";
+
+// Helper functions
+const isImageFile = (filename) => {
+  if (!filename) return false;
+  const imageExtensions = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"];
+  return imageExtensions.some((ext) => filename.toLowerCase().endsWith(ext));
+};
+
+const isPdfFile = (filename) => {
+  if (!filename) return false;
+  return filename.toLowerCase().endsWith(".pdf");
+};
 
 // Helper function untuk check apakah file KMZ
 const isKmzFile = (filename) => {
@@ -202,6 +217,9 @@ const initialYardipState = {
   provinsi: "",
   area: 0,
   id: null,
+  bukti_pemilikan_url: "",
+  bukti_pemilikan_filename: "",
+  keterangan_bukti_pemilikan: "",
 };
 
 const FormYardip = forwardRef(
@@ -233,9 +251,18 @@ const FormYardip = forwardRef(
     const [coordsText, setCoordsText] = useState("");
     const [coordsError, setCoordsError] = useState("");
     const [kmlFileName, setKmlFileName] = useState("");
+    const [buktiPemilikanFile, setBuktiPemilikanFile] = useState(null);
+    const [filesToDelete, setFilesToDelete] = useState({
+      buktiPemilikan: null,
+    });
 
     useImperativeHandle(ref, () => ({
-      getFormData: () => ({ formData }),
+      getFormData: () => ({ formData, buktiPemilikanFile, filesToDelete }),
+      resetFilesToDelete: () => {
+        setFilesToDelete({
+          buktiPemilikan: null,
+        });
+      }
     }));
 
     useEffect(() => {
@@ -339,16 +366,66 @@ const FormYardip = forwardRef(
       (e) => {
         e.preventDefault();
         if (validateForm()) {
-          onSave(formData);
+          onSave(formData, buktiPemilikanFile, filesToDelete);
         }
       },
-      [validateForm, formData, onSave]
+      [validateForm, formData, onSave, buktiPemilikanFile, filesToDelete]
     );
 
     const handleReset = useCallback(() => {
       setFormData(initialYardipState);
       setErrors({});
+      setBuktiPemilikanFile(null);
+      setFilesToDelete({ buktiPemilikan: null });
     }, []);
+
+    // ===== BUKTI PEMILIKAN HANDLERS =====
+    const handleDeleteBuktiPemilikan = () => {
+      if (!formData.bukti_pemilikan_url) {
+        toast.error("Tidak ada bukti pemilikan untuk dihapus.");
+        return;
+      }
+
+      Swal.fire({
+        title: "Apakah Anda yakin?",
+        text: "Bukti pemilikan akan dihapus saat Anda menyimpan perubahan.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#3085d6",
+        cancelButtonColor: "#d33",
+        confirmButtonText: "Ya, hapus nanti!",
+        cancelButtonText: "Batal",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          setFilesToDelete(prev => ({
+            ...prev,
+            buktiPemilikan: formData.bukti_pemilikan_url
+          }));
+
+          setFormData((prev) => ({
+            ...prev,
+            bukti_pemilikan_url: null,
+            bukti_pemilikan_filename: null,
+          }));
+
+          toast.success("Bukti pemilikan ditandai untuk dihapus saat disimpan!");
+        }
+      });
+    };
+
+    const handleFileChange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const maxSize = 10 * 1024 * 1024;
+        if (file.size > maxSize) {
+          toast.error(
+            `File bukti pemilikan melebihi ukuran maksimal 10MB: ${file.name}`
+          );
+          return;
+        }
+        setBuktiPemilikanFile(file);
+      }
+    };
 
     // IMPROVED: Enhanced KML/KMZ file import handler
     const handleKmlFileImport = async (event) => {
@@ -1057,6 +1134,117 @@ const FormYardip = forwardRef(
                         onChange={handleChange}
                       />
                     </Form.Group>
+
+                    {/* BUKTI PEMILIKAN - TAMBAH & EDIT MODE */}
+                    <>
+                      <Form.Group className="mb-3">
+                        <Form.Label>Nama Bukti Kepemilikan</Form.Label>
+                        <Form.Control
+                          type="text"
+                          name="keterangan_bukti_pemilikan"
+                          value={formData.keterangan_bukti_pemilikan || ""}
+                          onChange={handleChange}
+                          placeholder="Contoh: Sertifikat Hak Milik No. 123"
+                        />
+                      </Form.Group>
+
+                      <Form.Group className="mb-3">
+                        <Form.Label>Upload Bukti Pemilikan</Form.Label>
+                        {isEditMode && formData.bukti_pemilikan_url && (
+                          <div className="mb-2">
+                            <Card body>
+                              <div className="d-flex justify-content-between align-items-center">
+                                <div>
+                                  {isImageFile(formData.bukti_pemilikan_filename) ? (
+                                    <Image
+                                      src={
+                                        formData.bukti_pemilikan_url.startsWith(
+                                          "http"
+                                        )
+                                          ? formData.bukti_pemilikan_url
+                                          : `${API_URL}${formData.bukti_pemilikan_url}`
+                                      }
+                                      alt="Preview"
+                                      style={{
+                                        height: "50px",
+                                        marginRight: "10px",
+                                        cursor: "pointer",
+                                      }}
+                                      fluid
+                                      onClick={() =>
+                                        window.open(
+                                          formData.bukti_pemilikan_url.startsWith(
+                                            "http"
+                                          )
+                                            ? formData.bukti_pemilikan_url
+                                            : `${API_URL}${formData.bukti_pemilikan_url}`,
+                                          "_blank"
+                                        )
+                                      }
+                                    />
+                                  ) : isPdfFile(formData.bukti_pemilikan_filename) ? (
+                                    <Button
+                                      variant="outline-secondary"
+                                      size="sm"
+                                      onClick={() =>
+                                        window.open(
+                                          formData.bukti_pemilikan_url.startsWith(
+                                            "http"
+                                          )
+                                            ? formData.bukti_pemilikan_url
+                                            : `${API_URL}${formData.bukti_pemilikan_url}`,
+                                          "_blank"
+                                        )
+                                      }
+                                    >
+                                      Lihat PDF
+                                    </Button>
+                                  ) : (
+                                    <a
+                                      href={
+                                        formData.bukti_pemilikan_url.startsWith(
+                                          "http"
+                                        )
+                                          ? formData.bukti_pemilikan_url
+                                          : `${API_URL}${formData.bukti_pemilikan_url}`
+                                      }
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                    >
+                                      Lihat File
+                                    </a>
+                                  )}
+                                  <span className="ms-2 fst-italic">
+                                    {formData.bukti_pemilikan_filename}
+                                  </span>
+                                </div>
+                                <Button
+                                  variant="danger"
+                                  size="sm"
+                                  onClick={handleDeleteBuktiPemilikan}
+                                >
+                                  Hapus
+                                </Button>
+                              </div>
+                            </Card>
+                          </div>
+                        )}
+                        <Form.Control
+                          type="file"
+                          name="bukti_pemilikan_file"
+                          onChange={handleFileChange}
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          disabled={isEditMode && !!formData.bukti_pemilikan_url}
+                        />
+                        <Form.Text className="text-muted">
+                          {isEditMode
+                            ? formData.bukti_pemilikan_url
+                              ? "Hapus bukti yang ada jika ingin menggantinya."
+                              : "Upload file baru untuk mengganti yang lama."
+                            : "Format: PDF, JPG, JPEG, PNG (Maks. 10MB per file)"}
+                        </Form.Text>
+                      </Form.Group>
+                    </>
                   </Card.Body>
                 </Card>
               </fieldset>

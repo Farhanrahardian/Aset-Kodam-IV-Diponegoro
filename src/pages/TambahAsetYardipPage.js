@@ -279,7 +279,7 @@ const TambahAsetYardipPage = () => {
   }, []);
 
   const handleSaveAsset = useCallback(
-    async (assetData) => {
+    async (assetData, buktiPemilikanFile, filesToDelete) => {
       if (!drawnAsset) {
         toast.error("Silakan gambar lokasi di peta terlebih dahulu!");
         return;
@@ -295,6 +295,32 @@ const TambahAsetYardipPage = () => {
       const finalArea = manualArea !== null ? manualArea : drawnAsset.area;
 
       const toastId = toast.loading("Menyimpan data aset yardip...");
+
+      let buktiPemilikanUrl = assetData.bukti_pemilikan_url || "";
+      let buktiPemilikanFilename = assetData.bukti_pemilikan_filename || "";
+
+      // Upload bukti pemilikan jika ada
+      if (buktiPemilikanFile) {
+        try {
+          toast.loading("Mengupload bukti pemilikan...", { id: toastId });
+          const fileFormData = new FormData();
+          fileFormData.append("bukti_pemilikan", buktiPemilikanFile);
+
+          const uploadRes = await axios.post(
+            `${API_URL}/upload/bukti-pemilikan`,
+            fileFormData
+          );
+
+          buktiPemilikanUrl = uploadRes.data.url;
+          buktiPemilikanFilename = uploadRes.data.filename;
+          toast.loading(`Bukti pemilikan berhasil diupload.`, { id: toastId });
+        } catch (err) {
+          toast.error("Gagal mengupload bukti pemilikan.", { id: toastId });
+          console.error("File upload error:", err.response?.data || err.message);
+          return;
+        }
+      }
+
       try {
         const payload = {
           ...assetData,
@@ -304,6 +330,8 @@ const TambahAsetYardipPage = () => {
           type: "yardip",
           provinsi: selectedLocation.provinsi,
           kabkota: selectedLocation.kabupaten,
+          bukti_pemilikan_url: buktiPemilikanUrl,
+          bukti_pemilikan_filename: buktiPemilikanFilename,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
