@@ -11,6 +11,7 @@ import {
   Card,
   Form,
 } from "react-bootstrap";
+import { FaSearch } from "react-icons/fa";
 import axios from "axios";
 import { useAuth } from "../auth/AuthContext";
 import toast from "react-hot-toast";
@@ -23,81 +24,145 @@ import DetailYardipModal from "../components/DetailYardipModal";
 
 const API_URL = "http://localhost:3001";
 
+// ============= FILTER PANEL - HORIZONTAL TOOLBAR (MINIMALIS) =============
 const FilterPanelTop = ({
   provinsiOptions,
   kotaOptions,
   selectedProvinsi,
   selectedKota,
+  statusFilter,
   onSelectProvinsi,
   onSelectKota,
+  onSelectStatus,
   onShowAll,
+  searchQuery,
+  onSearchChange,
   totalAssets,
   filteredAssetsCount,
 }) => {
+  const statusOptions = [
+    { value: "", label: "Semua Status" },
+    { value: "Dimiliki/Dikuasai", label: "Dimiliki/Dikuasai" },
+    { value: "Tidak Dimiliki/Tidak Dikuasai", label: "Tidak Dimiliki/Tidak Dikuasai" },
+    { value: "Lain-lain", label: "Lain-lain" },
+  ];
+
+  const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery || "");
+
+  useEffect(() => {
+    setLocalSearchQuery(searchQuery || "");
+  }, [searchQuery]);
+
+  const handleSearch = () => {
+    onSearchChange(localSearchQuery);
+  };
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setLocalSearchQuery(value);
+    if (value === "") {
+      onSearchChange("");
+    }
+  };
+
+  const hasActiveFilters = selectedProvinsi || selectedKota || statusFilter || searchQuery;
+
   return (
-    <Card className="mb-4">
-      <Card.Header className="bg-primary text-white">
-        <h5 className="mb-0">Filter Data Aset Yardip</h5>
-      </Card.Header>
-      <Card.Body>
-        <Row>
-          <Col md={4}>
-            <Form.Group className="mb-3">
-              <Form.Label className="fw-bold">Provinsi</Form.Label>
-              <Form.Select
-                value={selectedProvinsi}
-                onChange={(e) => onSelectProvinsi(e.target.value)}
-              >
-                <option value="">Semua Provinsi</option>
-                {provinsiOptions.map((p) => (
-                  <option key={p.value} value={p.value}>
-                    {p.label}
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Group>
-          </Col>
-          <Col md={4}>
-            <Form.Group className="mb-3">
-              <Form.Label className="fw-bold">Kota/Kabupaten</Form.Label>
-              <Form.Select
-                value={selectedKota}
-                onChange={(e) => onSelectKota(e.target.value)}
-                disabled={!selectedProvinsi}
-              >
-                <option value="">
-                  {selectedProvinsi
-                    ? "Semua Kota/Kabupaten"
-                    : "Pilih Provinsi Dulu"}
-                </option>
-                {kotaOptions.map((k) => (
-                  <option key={k.value} value={k.value}>
-                    {k.label}
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Group>
-          </Col>
-          <Col md={4} className="d-flex align-items-end">
-            <Button
-              variant="outline-secondary"
-              onClick={onShowAll}
-              className="w-100 mb-3"
+    <Card className="mb-3 border-0 shadow-sm">
+      <Card.Body className="py-2">
+        <div className="d-flex align-items-center justify-content-between gap-2">
+          {/* Kiri: Filter Dropdowns */}
+          <div className="d-flex align-items-center gap-2">
+            <select
+              className="form-select form-select-sm"
+              style={{ width: "auto", minWidth: "180px" }}
+              value={selectedProvinsi || ""}
+              onChange={(e) => {
+                onSelectProvinsi(e.target.value || null);
+              }}
             >
-              Reset Filter & Peta
-            </Button>
-          </Col>
-        </Row>
-        <Row>
-          <Col>
-            <div className="bg-light p-2 rounded">
-              <small className="text-muted">
-                <strong>Menampilkan:</strong> {filteredAssetsCount} dari{" "}
-                {totalAssets} aset yardip
-              </small>
+              <option value="">Semua Provinsi</option>
+              {provinsiOptions.map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className="form-select form-select-sm"
+              style={{ width: "auto", minWidth: "180px" }}
+              value={selectedKota || ""}
+              onChange={(e) => onSelectKota(e.target.value)}
+              disabled={!selectedProvinsi}
+            >
+              <option value="">Semua Kota/Kabupaten</option>
+              {selectedProvinsi && kotaOptions.map((k) => (
+                <option key={k.value} value={k.value}>
+                  {k.label}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className="form-select form-select-sm"
+              style={{ width: "auto", minWidth: "150px" }}
+              value={statusFilter || ""}
+              onChange={(e) => onSelectStatus(e.target.value)}
+            >
+              {statusOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+
+            {/* Reset Button */}
+            {hasActiveFilters && (
+              <button
+                className="btn btn-outline-secondary btn-sm"
+                onClick={onShowAll}
+              >
+                ✕ Reset
+              </button>
+            )}
+          </div>
+
+          {/* Kanan: Search Bar */}
+          <div className="flex-shrink-0" style={{ maxWidth: "350px" }}>
+            <div className="input-group input-group-sm">
+              <span className="input-group-text bg-light border-0">
+                <FaSearch size={14} />
+              </span>
+              <input
+                type="text"
+                className="form-control border-0 bg-light"
+                placeholder="Cari nama pengelola..."
+                value={localSearchQuery}
+                onChange={handleSearchChange}
+                onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+              />
+              {localSearchQuery && (
+                <button
+                  className="btn btn-outline-secondary btn-sm"
+                  onClick={() => {
+                    setLocalSearchQuery("");
+                    onSearchChange("");
+                  }}
+                >
+                  ✕
+                </button>
+              )}
             </div>
-          </Col>
-        </Row>
+          </div>
+        </div>
+
+        {/* Info Counter */}
+        <div className="mt-2">
+          <small className="text-muted">
+            <strong>Menampilkan:</strong> {filteredAssetsCount} dari {totalAssets} aset yardip
+          </small>
+        </div>
       </Card.Body>
     </Card>
   );
@@ -210,6 +275,8 @@ const DataAsetYardipPage = () => {
   const [error, setError] = useState(null);
 
   const [view, setView] = useState({ provinsi: "", kabupaten: "" });
+  const [statusFilter, setStatusFilter] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [editingAsset, setEditingAsset] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -276,9 +343,14 @@ const DataAsetYardipPage = () => {
     return assets.filter((asset) => {
       const provMatch = !view.provinsi || asset.provinsi === view.provinsi;
       const kabMatch = !view.kabupaten || asset.kabkota === view.kabupaten;
-      return provMatch && kabMatch;
+      const statusMatch = !statusFilter || asset.status === statusFilter;
+      
+      const searchMatch = !searchQuery || 
+        (asset.pengelola && asset.pengelola.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      return provMatch && kabMatch && statusMatch && searchMatch;
     });
-  }, [assets, view]);
+  }, [assets, view, statusFilter, searchQuery]);
 
   const handleSelectProvinsi = (prov) => {
     setView({ provinsi: prov, kabupaten: "" });
@@ -290,6 +362,8 @@ const DataAsetYardipPage = () => {
 
   const handleShowAll = () => {
     setView({ provinsi: "", kabupaten: "" });
+    setStatusFilter("");
+    setSearchQuery("");
   };
 
   const handleMapViewChange = (newView) => {
@@ -433,8 +507,12 @@ const DataAsetYardipPage = () => {
             kotaOptions={kotaOptions}
             selectedProvinsi={view.provinsi}
             selectedKota={view.kabupaten}
+            statusFilter={statusFilter}
+            searchQuery={searchQuery}
             onSelectProvinsi={handleSelectProvinsi}
             onSelectKota={handleSelectKota}
+            onSelectStatus={setStatusFilter}
+            onSearchChange={setSearchQuery}
             onShowAll={handleShowAll}
             totalAssets={assets.length}
             filteredAssetsCount={filteredTableAssets.length}
