@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import {
   Container,
   Row,
@@ -8,8 +8,8 @@ import {
   Table,
   Button,
   Card,
-  Form,
 } from "react-bootstrap";
+import { FaSearch } from "react-icons/fa";
 import axios from "axios";
 import { useAuth } from "../auth/AuthContext";
 import toast from "react-hot-toast";
@@ -39,82 +39,145 @@ const fetchKabupatenGeoJSON = async () => {
   return data;
 };
 
-// ============= FILTER PANEL =============
+// ============= FILTER PANEL - HORIZONTAL TOOLBAR (MINIMALIS) =============
 const FilterPanelTop = ({
   provinsiOptions,
   kotaOptions,
   selectedProvinsi,
   selectedKota,
+  statusFilter,
   onSelectProvinsi,
   onSelectKota,
+  onSelectStatus,
   onShowAll,
+  searchQuery,
+  onSearchChange,
   totalAssets,
   filteredAssetsCount,
 }) => {
+  const statusOptions = [
+    { value: "", label: "Semua Status" },
+    { value: "Dimiliki/Dikuasai", label: "Dimiliki/Dikuasai" },
+    { value: "Tidak Dimiliki/Tidak Dikuasai", label: "Tidak Dimiliki/Tidak Dikuasai" },
+    { value: "Lain-lain", label: "Lain-lain" },
+  ];
+
+  const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery || "");
+
+  useEffect(() => {
+    setLocalSearchQuery(searchQuery || "");
+  }, [searchQuery]);
+
+  const handleSearch = () => {
+    onSearchChange(localSearchQuery);
+  };
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setLocalSearchQuery(value);
+    if (value === "") {
+      onSearchChange("");
+    }
+  };
+
+  const hasActiveFilters = selectedProvinsi || selectedKota || statusFilter || searchQuery;
+
   return (
-    <Card className="mb-4">
-      <Card.Header className="bg-primary text-white">
-        <h5 className="mb-0">Filter Data Aset Yardip</h5>
-      </Card.Header>
-      <Card.Body>
-        <Row>
-          <Col md={4}>
-            <Form.Group className="mb-3">
-              <Form.Label className="fw-bold">Provinsi</Form.Label>
-              <Form.Select
-                value={selectedProvinsi}
-                onChange={(e) => onSelectProvinsi(e.target.value)}
-              >
-                <option value="">Semua Provinsi</option>
-                {provinsiOptions.map((p) => (
-                  <option key={p.value} value={p.value}>
-                    {p.label}
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Group>
-          </Col>
-          <Col md={4}>
-            <Form.Group className="mb-3">
-              <Form.Label className="fw-bold">Kota/Kabupaten</Form.Label>
-              <Form.Select
-                value={selectedKota}
-                onChange={(e) => onSelectKota(e.target.value)}
-                disabled={!selectedProvinsi}
-              >
-                <option value="">
-                  {selectedProvinsi
-                    ? "Semua Kota/Kabupaten"
-                    : "Pilih Provinsi Dulu"}
+    <Card className="mb-3 border-0 shadow-sm">
+      <Card.Body className="py-2">
+        <div className="d-flex align-items-center justify-content-between gap-2">
+          {/* Kiri: Filter Dropdowns */}
+          <div className="d-flex align-items-center gap-2">
+            <select
+              className="form-select form-select-sm"
+              style={{ width: "auto", minWidth: "180px" }}
+              value={selectedProvinsi || ""}
+              onChange={(e) => onSelectProvinsi(e.target.value || "")}
+            >
+              <option value="">Semua Provinsi</option>
+              {provinsiOptions.map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.label}
                 </option>
-                {kotaOptions.map((k) => (
+              ))}
+            </select>
+
+            <select
+              className="form-select form-select-sm"
+              style={{ width: "auto", minWidth: "180px" }}
+              value={selectedKota || ""}
+              onChange={(e) => onSelectKota(e.target.value)}
+              disabled={!selectedProvinsi}
+            >
+              <option value="">Semua Kota/Kabupaten</option>
+              {selectedProvinsi &&
+                kotaOptions.map((k) => (
                   <option key={k.value} value={k.value}>
                     {k.label}
                   </option>
                 ))}
-              </Form.Select>
-            </Form.Group>
-          </Col>
-          <Col md={4} className="d-flex align-items-end">
-            <Button
-              variant="outline-secondary"
-              onClick={onShowAll}
-              className="w-100 mb-3"
+            </select>
+
+            <select
+              className="form-select form-select-sm"
+              style={{ width: "auto", minWidth: "150px" }}
+              value={statusFilter || ""}
+              onChange={(e) => onSelectStatus(e.target.value)}
             >
-              Reset Filter & Peta
-            </Button>
-          </Col>
-        </Row>
-        <Row>
-          <Col>
-            <div className="bg-light p-2 rounded">
-              <small className="text-muted">
-                <strong>Menampilkan:</strong> {filteredAssetsCount} dari{" "}
-                {totalAssets} aset yardip
-              </small>
+              {statusOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+
+            {/* Reset Button */}
+            {hasActiveFilters && (
+              <button
+                className="btn btn-outline-secondary btn-sm"
+                onClick={onShowAll}
+              >
+                ✕ Reset
+              </button>
+            )}
+          </div>
+
+          {/* Kanan: Search Bar */}
+          <div className="flex-shrink-0" style={{ maxWidth: "350px" }}>
+            <div className="input-group input-group-sm">
+              <span className="input-group-text bg-light border-0">
+                <FaSearch size={14} />
+              </span>
+              <input
+                type="text"
+                className="form-control border-0 bg-light"
+                placeholder="Cari nama pengelola..."
+                value={localSearchQuery}
+                onChange={handleSearchChange}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              />
+              {localSearchQuery && (
+                <button
+                  className="btn btn-link text-muted px-2 border-0 bg-light"
+                  type="button"
+                  onClick={() => {
+                    setLocalSearchQuery("");
+                    onSearchChange("");
+                  }}
+                >
+                  ✕
+                </button>
+              )}
             </div>
-          </Col>
-        </Row>
+          </div>
+        </div>
+
+        {/* Info Counter */}
+        <div className="mt-2">
+          <small className="text-muted">
+            <strong>Menampilkan:</strong> {filteredAssetsCount} dari {totalAssets} aset yardip
+          </small>
+        </div>
       </Card.Body>
     </Card>
   );
@@ -244,6 +307,8 @@ const DataAsetYardipPage = () => {
 
   // ============= LOCAL UI STATE =============
   const [view, setView] = useState({ provinsi: "", kabupaten: "" });
+  const [statusFilter, setStatusFilter] = useState("");       // ← tambahan teman
+  const [searchQuery, setSearchQuery] = useState("");         // ← tambahan teman
   const [editingAsset, setEditingAsset] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedAssetDetail, setSelectedAssetDetail] = useState(null);
@@ -282,13 +347,19 @@ const DataAsetYardipPage = () => {
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [kabupatenData, view.provinsi]);
 
+  // ← filter diperluas oleh teman: + statusMatch & searchMatch
   const filteredTableAssets = useMemo(() => {
     return assets.filter((asset) => {
       const provMatch = !view.provinsi || asset.provinsi === view.provinsi;
       const kabMatch = !view.kabupaten || asset.kabkota === view.kabupaten;
-      return provMatch && kabMatch;
+      const statusMatch = !statusFilter || asset.status === statusFilter;
+      const searchMatch =
+        !searchQuery ||
+        (asset.pengelola &&
+          asset.pengelola.toLowerCase().includes(searchQuery.toLowerCase()));
+      return provMatch && kabMatch && statusMatch && searchMatch;
     });
-  }, [assets, view]);
+  }, [assets, view, statusFilter, searchQuery]);
 
   // ============= EVENT HANDLERS (semua dibungkus useCallback) =============
   const handleSelectProvinsi = useCallback((prov) => {
@@ -299,17 +370,17 @@ const DataAsetYardipPage = () => {
     setView((prev) => ({ ...prev, kabupaten: kab }));
   }, []);
 
+  // ← reset diperluas oleh teman: + clear statusFilter & searchQuery
   const handleShowAll = useCallback(() => {
     setView({ provinsi: "", kabupaten: "" });
+    setStatusFilter("");
+    setSearchQuery("");
   }, []);
 
-  // ✅ useCallback mencegah fungsi dibuat ulang setiap render
-  // sehingga PetaAsetYardip tidak re-render berlebihan
   const handleMapViewChange = useCallback((newView) => {
     setView((prev) => {
       const nextProvinsi = newView.provinsi || "";
       const nextKabupaten = newView.kabupaten || "";
-      // ✅ Hanya update jika nilai benar-benar berubah (mencegah infinite loop)
       if (prev.provinsi === nextProvinsi && prev.kabupaten === nextKabupaten) {
         return prev;
       }
@@ -350,7 +421,6 @@ const DataAsetYardipPage = () => {
       const toastId = toast.loading("Menghapus aset...");
       try {
         await axios.delete(`${API_URL}/yardip_assets/${id}`);
-        // ✅ Invalidate cache → React Query otomatis refetch
         queryClient.invalidateQueries(["yardip_assets"]);
         toast.success("Aset berhasil dihapus!", { id: toastId });
       } catch (err) {
@@ -366,7 +436,6 @@ const DataAsetYardipPage = () => {
     let buktiPemilikanFilename = formData.bukti_pemilikan_filename || "";
 
     try {
-      // Hapus file lama jika ditandai
       if (filesToDelete?.buktiPemilikan) {
         const filename = filesToDelete.buktiPemilikan.split("/").pop();
         if (filename) {
@@ -379,7 +448,6 @@ const DataAsetYardipPage = () => {
         }
       }
 
-      // Upload file baru jika ada
       if (buktiPemilikanFile) {
         try {
           toast.loading("Mengupload bukti pemilikan baru...", { id: toastId });
@@ -398,7 +466,6 @@ const DataAsetYardipPage = () => {
         }
       }
 
-      // Simpan data
       const updatedData = {
         ...formData,
         bukti_pemilikan_url: buktiPemilikanUrl,
@@ -408,11 +475,9 @@ const DataAsetYardipPage = () => {
       await axios.put(`${API_URL}/yardip_assets/${formData.id}`, updatedData);
       toast.success("Aset Yardip berhasil diperbarui!", { id: toastId });
 
-      // Refresh editingAsset agar modal menampilkan data terbaru
       const refreshedAsset = await axios.get(`${API_URL}/yardip_assets/${formData.id}`);
       setEditingAsset(refreshedAsset.data);
 
-      // ✅ Invalidate cache → React Query otomatis refetch
       queryClient.invalidateQueries(["yardip_assets"]);
     } catch (err) {
       toast.error("Gagal menyimpan perubahan.", { id: toastId });
@@ -460,8 +525,12 @@ const DataAsetYardipPage = () => {
             kotaOptions={kotaOptions}
             selectedProvinsi={view.provinsi}
             selectedKota={view.kabupaten}
+            statusFilter={statusFilter}
+            searchQuery={searchQuery}
             onSelectProvinsi={handleSelectProvinsi}
             onSelectKota={handleSelectKota}
+            onSelectStatus={setStatusFilter}
+            onSearchChange={setSearchQuery}
             onShowAll={handleShowAll}
             totalAssets={assets.length}
             filteredAssetsCount={filteredTableAssets.length}
