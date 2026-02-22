@@ -50,6 +50,7 @@ const queryClient = new QueryClient({
   },
 });
 
+window.__queryClient = queryClient;
 // ─────────────────────────────────────────────
 // Toast style presets — defined outside JSX so
 // the object reference is stable.

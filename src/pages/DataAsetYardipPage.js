@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import {
   Container,
   Row,
@@ -7,7 +7,6 @@ import {
   Alert,
   Table,
   Button,
-  Modal,
   Card,
   Form,
 } from "react-bootstrap";
@@ -20,9 +19,27 @@ import MapErrorBoundary from "../components/MapErrorBoundary";
 import EditYardipModal from "../components/EditYardipModal";
 import DetailOffcanvasYardip from "../components/DetailOffcanvasYardip";
 import DetailYardipModal from "../components/DetailYardipModal";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const API_URL = "http://localhost:3001";
 
+// ============= REACT QUERY: FETCH FUNCTIONS =============
+const fetchYardipAssets = async () => {
+  const { data } = await axios.get(`${API_URL}/yardip_assets`);
+  return data;
+};
+
+const fetchProvinsiGeoJSON = async () => {
+  const { data } = await axios.get("/data/provinsi.geojson");
+  return data;
+};
+
+const fetchKabupatenGeoJSON = async () => {
+  const { data } = await axios.get("/data/kabupaten_kota.geojson");
+  return data;
+};
+
+// ============= FILTER PANEL =============
 const FilterPanelTop = ({
   provinsiOptions,
   kotaOptions,
@@ -103,13 +120,8 @@ const FilterPanelTop = ({
   );
 };
 
-const TabelAsetYardip = ({
-  assets,
-  onEdit,
-  onDelete,
-  onViewDetail,
-  userRole,
-}) => {
+// ============= TABLE COMPONENT =============
+const TabelAsetYardip = ({ assets, onEdit, onDelete, onViewDetail, userRole }) => {
   if (!assets || assets.length === 0) {
     return (
       <div className="text-center py-5">
@@ -119,6 +131,7 @@ const TabelAsetYardip = ({
       </div>
     );
   }
+
   const getStatusBadgeClass = (status) => {
     switch (status) {
       case "Dimiliki/Dikuasai":
@@ -201,16 +214,36 @@ const TabelAsetYardip = ({
   );
 };
 
+// ============= MAIN COMPONENT =============
 const DataAsetYardipPage = () => {
   const { user } = useAuth();
-  const [assets, setAssets] = useState([]);
-  const [provinsiData, setProvinsiData] = useState(null);
-  const [kabupatenData, setKabupatenData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const queryClient = useQueryClient();
 
+  // ============= REACT QUERY: FETCH DATA WITH CACHING =============
+  const {
+    data: assets = [],
+    isLoading: assetsLoading,
+    error: assetsError,
+  } = useQuery({
+    queryKey: ["yardip_assets"],
+    queryFn: fetchYardipAssets,
+    staleTime: 5 * 60 * 1000, // cache 5 menit
+  });
+
+  const { data: provinsiData, isLoading: provinsiLoading } = useQuery({
+    queryKey: ["provinsiGeoJSON"],
+    queryFn: fetchProvinsiGeoJSON,
+    staleTime: 30 * 60 * 1000, // cache 30 menit (data statis)
+  });
+
+  const { data: kabupatenData, isLoading: kabupatenLoading } = useQuery({
+    queryKey: ["kabupatenGeoJSON"],
+    queryFn: fetchKabupatenGeoJSON,
+    staleTime: 30 * 60 * 1000, // cache 30 menit (data statis)
+  });
+
+  // ============= LOCAL UI STATE =============
   const [view, setView] = useState({ provinsi: "", kabupaten: "" });
-
   const [editingAsset, setEditingAsset] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedAssetDetail, setSelectedAssetDetail] = useState(null);
@@ -218,44 +251,21 @@ const DataAsetYardipPage = () => {
   const [assetForOffcanvas, setAssetForOffcanvas] = useState(null);
   const [showOffcanvas, setShowOffcanvas] = useState(false);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [res, provRes, kabRes] = await Promise.all([
-        axios.get(`${API_URL}/yardip_assets`),
-        axios.get("/data/provinsi.geojson"),
-        axios.get("/data/kabupaten_kota.geojson"),
-      ]);
-      setAssets(res.data || []);
-      setProvinsiData(provRes.data);
-      setKabupatenData(kabRes.data);
-    } catch (err) {
-      setError("Gagal memuat data aset yardip.");
-      toast.error("Gagal memuat data aset yardip.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // ============= DERIVED LOADING/ERROR STATE =============
+  const loading = assetsLoading || provinsiLoading || kabupatenLoading;
+  const error = assetsError ? "Gagal memuat data aset yardip." : null;
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
+  // ============= MEMOIZED COMPUTED VALUES =============
   const provinsiOptions = useMemo(
     () => [
       { value: "Jawa Tengah", label: "Jawa Tengah" },
-      {
-        value: "Daerah Istimewa Yogyakarta",
-        label: "Daerah Istimewa Yogyakarta",
-      },
+      { value: "Daerah Istimewa Yogyakarta", label: "Daerah Istimewa Yogyakarta" },
     ],
     []
   );
 
-  // Fungsi untuk mengecek apakah kabupaten adalah area konservasi
-  const isConservationArea = (kabupatenName) => {
-    return kabupatenName === "Hutan" || kabupatenName === "Wadung Kedungombo";
-  };
+  const isConservationArea = (kabupatenName) =>
+    kabupatenName === "Hutan" || kabupatenName === "Wadung Kedungombo";
 
   const kotaOptions = useMemo(() => {
     if (!view.provinsi || !kabupatenData) return [];
@@ -280,24 +290,32 @@ const DataAsetYardipPage = () => {
     });
   }, [assets, view]);
 
-  const handleSelectProvinsi = (prov) => {
+  // ============= EVENT HANDLERS (semua dibungkus useCallback) =============
+  const handleSelectProvinsi = useCallback((prov) => {
     setView({ provinsi: prov, kabupaten: "" });
-  };
+  }, []);
 
-  const handleSelectKota = (kab) => {
+  const handleSelectKota = useCallback((kab) => {
     setView((prev) => ({ ...prev, kabupaten: kab }));
-  };
+  }, []);
 
-  const handleShowAll = () => {
+  const handleShowAll = useCallback(() => {
     setView({ provinsi: "", kabupaten: "" });
-  };
+  }, []);
 
-  const handleMapViewChange = (newView) => {
-    setView({
-      provinsi: newView.provinsi || "",
-      kabupaten: newView.kabupaten || "",
+  // ✅ useCallback mencegah fungsi dibuat ulang setiap render
+  // sehingga PetaAsetYardip tidak re-render berlebihan
+  const handleMapViewChange = useCallback((newView) => {
+    setView((prev) => {
+      const nextProvinsi = newView.provinsi || "";
+      const nextKabupaten = newView.kabupaten || "";
+      // ✅ Hanya update jika nilai benar-benar berubah (mencegah infinite loop)
+      if (prev.provinsi === nextProvinsi && prev.kabupaten === nextKabupaten) {
+        return prev;
+      }
+      return { provinsi: nextProvinsi, kabupaten: nextKabupaten };
     });
-  };
+  }, []);
 
   const handleViewDetail = useCallback((asset) => {
     setSelectedAssetDetail(asset);
@@ -307,6 +325,11 @@ const DataAsetYardipPage = () => {
   const handleMarkerClick = useCallback((asset) => {
     setAssetForOffcanvas(asset);
     setShowOffcanvas(true);
+  }, []);
+
+  const handleEditAsset = useCallback((asset) => {
+    setEditingAsset(asset);
+    setShowEditModal(true);
   }, []);
 
   const handleDeleteAsset = async (id) => {
@@ -327,17 +350,13 @@ const DataAsetYardipPage = () => {
       const toastId = toast.loading("Menghapus aset...");
       try {
         await axios.delete(`${API_URL}/yardip_assets/${id}`);
+        // ✅ Invalidate cache → React Query otomatis refetch
+        queryClient.invalidateQueries(["yardip_assets"]);
         toast.success("Aset berhasil dihapus!", { id: toastId });
-        fetchData();
       } catch (err) {
         toast.error("Gagal menghapus aset.", { id: toastId });
       }
     }
-  };
-
-  const handleEditAsset = (asset) => {
-    setEditingAsset(asset);
-    setShowEditModal(true);
   };
 
   const handleSaveYardip = async (formData, buktiPemilikanFile, filesToDelete) => {
@@ -347,7 +366,7 @@ const DataAsetYardipPage = () => {
     let buktiPemilikanFilename = formData.bukti_pemilikan_filename || "";
 
     try {
-      // Hapus file yang ditandai untuk dihapus
+      // Hapus file lama jika ditandai
       if (filesToDelete?.buktiPemilikan) {
         const filename = filesToDelete.buktiPemilikan.split("/").pop();
         if (filename) {
@@ -366,15 +385,12 @@ const DataAsetYardipPage = () => {
           toast.loading("Mengupload bukti pemilikan baru...", { id: toastId });
           const fileFormData = new FormData();
           fileFormData.append("bukti_pemilikan", buktiPemilikanFile);
-
           const uploadRes = await axios.post(
             `${API_URL}/upload/bukti-pemilikan`,
             fileFormData
           );
-
           buktiPemilikanUrl = uploadRes.data.url;
           buktiPemilikanFilename = uploadRes.data.filename;
-          toast.loading("Bukti pemilikan berhasil diupload.", { id: toastId });
         } catch (err) {
           toast.error("Gagal mengupload bukti pemilikan baru.", { id: toastId });
           console.error("File upload error:", err);
@@ -382,7 +398,7 @@ const DataAsetYardipPage = () => {
         }
       }
 
-      // Update data dengan URL file baru
+      // Simpan data
       const updatedData = {
         ...formData,
         bukti_pemilikan_url: buktiPemilikanUrl,
@@ -392,19 +408,30 @@ const DataAsetYardipPage = () => {
       await axios.put(`${API_URL}/yardip_assets/${formData.id}`, updatedData);
       toast.success("Aset Yardip berhasil diperbarui!", { id: toastId });
 
-      const refreshedAsset = await axios.get(
-        `${API_URL}/yardip_assets/${formData.id}`
-      );
+      // Refresh editingAsset agar modal menampilkan data terbaru
+      const refreshedAsset = await axios.get(`${API_URL}/yardip_assets/${formData.id}`);
       setEditingAsset(refreshedAsset.data);
 
-      fetchData();
+      // ✅ Invalidate cache → React Query otomatis refetch
+      queryClient.invalidateQueries(["yardip_assets"]);
     } catch (err) {
       toast.error("Gagal menyimpan perubahan.", { id: toastId });
       console.error("Error updating yardip asset:", err);
     }
   };
 
-  if (loading) return <Spinner animation="border" variant="primary" />;
+  // ============= RENDER =============
+  if (loading) {
+    return (
+      <Container fluid className="mt-4">
+        <div className="text-center py-5">
+          <Spinner animation="border" variant="primary" />
+          <p className="mt-3">Memuat data aset yardip...</p>
+        </div>
+      </Container>
+    );
+  }
+
   if (error) return <Alert variant="danger">{error}</Alert>;
 
   return (
@@ -442,14 +469,7 @@ const DataAsetYardipPage = () => {
 
           <Card>
             <Card.Body>
-              {/* Container dengan dual scroll - scroll horizontal dan vertical */}
-              <div
-                style={{
-                  maxHeight: "60vh",
-                  overflowY: "auto",
-                  overflowX: "auto",
-                }}
-              >
+              <div style={{ maxHeight: "60vh", overflowY: "auto", overflowX: "auto" }}>
                 <TabelAsetYardip
                   assets={filteredTableAssets}
                   onEdit={user ? handleEditAsset : null}
@@ -467,35 +487,23 @@ const DataAsetYardipPage = () => {
                 <Row className="text-center">
                   <Col md={4}>
                     <div className="border-end">
-                      <h5 className="text-primary">
-                        {filteredTableAssets.length}
-                      </h5>
+                      <h5 className="text-primary">{filteredTableAssets.length}</h5>
                       <small className="text-muted">Total Aset</small>
                     </div>
                   </Col>
                   <Col md={4}>
                     <div className="border-end">
                       <h5 className="text-success">
-                        {
-                          filteredTableAssets.filter(
-                            (a) => a.status === "Dimiliki/Dikuasai"
-                          ).length
-                        }
+                        {filteredTableAssets.filter((a) => a.status === "Dimiliki/Dikuasai").length}
                       </h5>
                       <small className="text-muted">Dimiliki/Dikuasai</small>
                     </div>
                   </Col>
                   <Col md={4}>
                     <h5 className="text-danger">
-                      {
-                        filteredTableAssets.filter(
-                          (a) => a.status === "Tidak Dimiliki/Tidak Dikuasai"
-                        ).length
-                      }
+                      {filteredTableAssets.filter((a) => a.status === "Tidak Dimiliki/Tidak Dikuasai").length}
                     </h5>
-                    <small className="text-muted">
-                      Tidak Dimiliki/Tidak Dikuasai
-                    </small>
+                    <small className="text-muted">Tidak Dimiliki/Tidak Dikuasai</small>
                   </Col>
                 </Row>
               </Card.Body>
