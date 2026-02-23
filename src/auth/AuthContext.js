@@ -19,32 +19,22 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password) => {
     try {
-      // ✅ UBAH: Ganti endpoint ke MySQL server
-      const response = await axios.get(`${API_URL}/users`);
-      const users = response.data;
+      // Gunakan endpoint login baru di backend
+      const response = await axios.post(`${API_URL}/auth/login`, {
+        username,
+        password,
+      });
 
-      // Cari user yang cocok
-      const foundUser = users.find(
-        (u) => u.username === username && u.password === password
-      );
-
-      if (foundUser) {
-        const userData = {
-          id: foundUser.id,
-          username: foundUser.username,
-          name: foundUser.name,
-          role: foundUser.role,
-        };
-        setUser(userData);
-        // Simpan data user di localStorage
-        localStorage.setItem("user", JSON.stringify(userData));
-        return true;
-      } else {
-        throw new Error("Username atau password salah.");
-      }
+      // Login berhasil, simpan data user
+      const userData = response.data.user;
+      setUser(userData);
+      localStorage.setItem("user", JSON.stringify(userData));
+      return true;
     } catch (error) {
       console.error("Login failed:", error);
-      throw error;
+      // Ambil pesan error dari response backend
+      const message = error.response?.data?.message || "Gagal untuk login.";
+      throw new Error(message);
     }
   };
 

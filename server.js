@@ -486,6 +486,64 @@ app.get("/users", async (req, res) => {
   }
 });
 
+// ✅ POST login user
+app.post("/auth/login", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    console.log("=== LOGIN ATTEMPT ===");
+    console.log("Username:", username);
+
+    // Validasi input
+    if (!username || !password) {
+      return res.status(400).json({
+        message: "Username dan password wajib diisi",
+      });
+    }
+
+    // Cari user berdasarkan username
+    const [users] = await pool.query(
+      "SELECT * FROM users WHERE username = ?",
+      [username]
+    );
+
+    if (users.length === 0) {
+      return res.status(401).json({
+        message: "Username atau password salah",
+      });
+    }
+
+    const user = users[0];
+
+    // Bandingkan password dengan bcrypt
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        message: "Username atau password salah",
+      });
+    }
+
+    // Login berhasil, kembalikan data user (tanpa password)
+    const { password: _, ...userWithoutPassword } = user;
+    
+    res.json({
+      message: "Login berhasil",
+      user: {
+        id: user.id,
+        username: user.username,
+        name: user.name,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({
+      message: error.message || "Terjadi kesalahan saat login",
+    });
+  }
+});
+
 // POST new user
 app.post("/users", async (req, res) => {
   try {
