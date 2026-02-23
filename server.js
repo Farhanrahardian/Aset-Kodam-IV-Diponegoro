@@ -559,10 +559,10 @@ app.post("/users", async (req, res) => {
       });
     }
 
-    // Validasi NRP (18 digit)
-    if (username.length !== 18 || !/^\d+$/.test(username)) {
+    // Validasi NRP (6-18 digit)
+    if (!/^\d{6,18}$/.test(username)) {
       return res.status(400).json({
-        message: "NRP (Username) harus berupa 18 digit angka",
+        message: "NRP (Username) harus berupa 6-18 digit angka",
       });
     }
 

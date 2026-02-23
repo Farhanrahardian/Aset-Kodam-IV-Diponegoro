@@ -82,8 +82,8 @@ const ManageUsersPage = () => {
     setModalError("");
 
     // Frontend Validation
-    if (formData.username.length !== 18 || !/^\d+$/.test(formData.username)) {
-      setModalError("NRP (Username) harus berupa 18 digit angka.");
+    if (!/^\d{6,18}$/.test(formData.username)) {
+      setModalError("NRP (Username) harus berupa 6-18 digit angka.");
       return;
     }
 
