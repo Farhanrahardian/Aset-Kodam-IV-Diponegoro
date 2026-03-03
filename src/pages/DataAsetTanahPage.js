@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { useLocation } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Container, Row, Col, Spinner, Alert, Button, Card } from "react-bootstrap";
-import axios from "axios";
+import axiosAuth from "../utils/axiosAuth";
 import { useAuth } from "../auth/AuthContext";
 import toast from "react-hot-toast";
 import Swal from "sweetalert2";
@@ -21,32 +21,32 @@ const API_URL = "http://localhost:3001";
 
 // ============= REACT QUERY: FETCH FUNCTIONS =============
 const fetchAssets = async () => {
-  const { data } = await axios.get(`${API_URL}/assets`);
+  const { data } = await axiosAuth.get(`${API_URL}/assets`);
   return data;
 };
 
 const fetchKorem = async () => {
-  const { data } = await axios.get(`${API_URL}/korem`);
+  const { data } = await axiosAuth.get(`${API_URL}/korem`);
   return data;
 };
 
 const fetchKoremGeoJSON = async () => {
-  const { data } = await axios.get('/data/korem.geojson');
+  const { data } = await axiosAuth.get('/data/korem.geojson');
   return data;
 };
 
 const fetchKodimGeoJSON = async () => {
-  const { data } = await axios.get('/data/Kodim.geojson');
+  const { data } = await axiosAuth.get('/data/Kodim.geojson');
   return data;
 };
 
 const fetchKoremSimplified = async () => {
-  const { data } = await axios.get('/data/korem_simplified.geojson');
+  const { data } = await axiosAuth.get('/data/korem_simplified.geojson');
   return data;
 };
 
 const fetchKodimSimplified = async () => {
-  const { data } = await axios.get('/data/Kodim_simplified.geojson');
+  const { data } = await axiosAuth.get('/data/Kodim_simplified.geojson');
   return data;
 };
 
@@ -847,7 +847,7 @@ const DataAsetTanahPage = () => {
     if (result.isConfirmed) {
       const toastId = toast.loading("Menghapus aset...");
       try {
-        await axios.delete(`${API_URL}/assets/${id}`);
+        await axiosAuth.delete(`${API_URL}/assets/${id}`);
         queryClient.invalidateQueries(['assets']); // Invalidate cache
         toast.success("Aset berhasil dihapus.", { id: toastId });
       } catch (err) {
@@ -867,7 +867,7 @@ const DataAsetTanahPage = () => {
       if (buktiPemilikanFile) {
         const formData = new FormData();
         formData.append("bukti_pemilikan", buktiPemilikanFile);
-        const uploadRes = await axios.post(`${API_URL}/upload/bukti-pemilikan`, formData);
+        const uploadRes = await axiosAuth.post(`${API_URL}/upload/bukti-pemilikan`, formData);
         updatedData.bukti_pemilikan_url = uploadRes.data.url;
         updatedData.bukti_pemilikan_filename = uploadRes.data.filename;
       }
@@ -875,7 +875,7 @@ const DataAsetTanahPage = () => {
       if (assetPhotos && assetPhotos.length > 0) {
         const photosFormData = new FormData();
         assetPhotos.forEach((photo) => photosFormData.append("asset_photos", photo));
-        const photosUploadRes = await axios.post(`${API_URL}/upload/asset-photos`, photosFormData);
+        const photosUploadRes = await axiosAuth.post(`${API_URL}/upload/asset-photos`, photosFormData);
         const newPhotoUrls = photosUploadRes.data.files.map((file) => file.url);
         updatedData.foto_aset = [...(updatedData.foto_aset || []), ...newPhotoUrls];
       }
@@ -883,18 +883,18 @@ const DataAsetTanahPage = () => {
       if (gambarTampakAtasFile) {
         const formData = new FormData();
         formData.append("foto_tampak_atas", gambarTampakAtasFile);
-        const uploadRes = await axios.post(`${API_URL}/upload/foto-tampak-atas`, formData);
+        const uploadRes = await axiosAuth.post(`${API_URL}/upload/foto-tampak-atas`, formData);
         updatedData.gambar_tampak_atas_url = uploadRes.data.url;
         updatedData.gambar_tampak_atas_filename = uploadRes.data.filename;
       }
 
-      await axios.put(`${API_URL}/assets/${id}`, updatedData);
+      await axiosAuth.put(`${API_URL}/assets/${id}`, updatedData);
       toast.success("Aset berhasil diperbarui!", { id: toastId });
 
       // Invalidate and refetch
       queryClient.invalidateQueries(['assets']);
 
-      const refreshedAsset = await axios.get(`${API_URL}/assets/${id}`);
+      const refreshedAsset = await axiosAuth.get(`${API_URL}/assets/${id}`);
       setEditingAsset(refreshedAsset.data);
       setEditModalKey(Date.now());
     } catch (err) {

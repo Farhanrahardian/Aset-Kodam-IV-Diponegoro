@@ -9,7 +9,7 @@ import {
   Alert,
   Spinner,
 } from "react-bootstrap";
-import axios from "axios";
+import axiosAuth from "../utils/axiosAuth";
 import ExcelJS from "exceljs";
 import toast from "react-hot-toast";
 
@@ -34,8 +34,8 @@ const LaporanPage = () => {
       setLoading(true);
       try {
         const [assetsRes, koremRes] = await Promise.all([
-          axios.get(`${API_URL}/assets`),
-          axios.get(`${API_URL}/korem`),
+          axiosAuth.get(`${API_URL}/assets`),
+          axiosAuth.get(`${API_URL}/korem`),
         ]);
 
         setAssets(assetsRes.data);

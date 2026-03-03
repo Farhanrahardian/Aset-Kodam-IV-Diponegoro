@@ -10,7 +10,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import axiosAuth from "../utils/axiosAuth";
 import "./Dashboard.css";
 
 const API_URL = "http://localhost:3001";
@@ -141,9 +141,9 @@ const Dashboard = () => {
     setLoading(true);
     try {
       const [tanahRes, yardipRes, koremRes] = await Promise.all([
-        axios.get(`${API_URL}/assets`),
-        axios.get(`${API_URL}/yardip_assets`),
-        axios.get(`${API_URL}/korem`),
+        axiosAuth.get(`${API_URL}/assets`),
+        axiosAuth.get(`${API_URL}/yardip_assets`),
+        axiosAuth.get(`${API_URL}/korem`),
       ]);
 
       const assetsData = tanahRes.data;

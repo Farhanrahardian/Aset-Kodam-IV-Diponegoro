@@ -8,7 +8,7 @@ import {
   Alert,
   Card,
 } from "react-bootstrap";
-import axios from "axios";
+import axiosAuth from "../utils/axiosAuth";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import PetaGambarAset from "../components/PetaGambarAset";
@@ -67,9 +67,9 @@ const TambahAsetPage = () => {
       setLoading(true);
       try {
         const [koremRes, kodimGeoRes, koremGeoRes] = await Promise.all([
-          axios.get(`${API_URL}/korem`),
-          axios.get("/data/Kodim_simplified.geojson"),
-          axios.get("/data/korem_simplified.geojson"),
+          axiosAuth.get(`${API_URL}/korem`),
+          axiosAuth.get("/data/Kodim_simplified.geojson"),
+          axiosAuth.get("/data/korem_simplified.geojson"),
         ]);
         setKoremList(koremRes.data);
         setKodimBoundaries(kodimGeoRes.data);
@@ -335,7 +335,7 @@ const TambahAsetPage = () => {
         const fileFormData = new FormData();
         fileFormData.append("bukti_pemilikan", buktiPemilikanFile);
 
-        const uploadRes = await axios.post(
+        const uploadRes = await axiosAuth.post(
           `${API_URL}/upload/bukti-pemilikan`,
           fileFormData
         );
@@ -361,7 +361,7 @@ const TambahAsetPage = () => {
           photosFormData.append("asset_photos", photo);
         });
 
-        const photosUploadRes = await axios.post(
+        const photosUploadRes = await axiosAuth.post(
           `${API_URL}/upload/asset-photos`,
           photosFormData
         );
@@ -391,7 +391,7 @@ const TambahAsetPage = () => {
         const tampakAtasFormData = new FormData();
         tampakAtasFormData.append("foto_tampak_atas", gambarTampakAtasFile);
 
-        const uploadRes = await axios.post(
+        const uploadRes = await axiosAuth.post(
           `${API_URL}/upload/foto-tampak-atas`,
           tampakAtasFormData
         );
@@ -443,7 +443,7 @@ const TambahAsetPage = () => {
         return;
       }
 
-      const response = await axios.post(`${API_URL}/assets`, assetPayload);
+      const response = await axiosAuth.post(`${API_URL}/assets`, assetPayload);
       console.log("✅ Response dari server:", response.data);
 
       toast.success("Aset berhasil ditambahkan!", { id: toastId });

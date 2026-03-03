@@ -9,7 +9,7 @@ import {
   Alert,
   Spinner,
 } from "react-bootstrap";
-import axios from "axios";
+import axiosAuth from "../utils/axiosAuth";
 import ExcelJS from "exceljs";
 import toast from "react-hot-toast";
 
@@ -36,8 +36,8 @@ const LaporanYardipPage = () => {
       setLoading(true);
       try {
         const [assetsRes, kabGeoRes] = await Promise.all([
-          axios.get(`${API_URL}/yardip_assets`),
-          axios.get("/data/kabupaten_kota.geojson"), // Load GeoJSON kabupaten
+          axiosAuth.get(`${API_URL}/yardip_assets`),
+          axiosAuth.get("/data/kabupaten_kota.geojson"), // Load GeoJSON kabupaten
         ]);
 
         const assetsData = assetsRes.data || [];

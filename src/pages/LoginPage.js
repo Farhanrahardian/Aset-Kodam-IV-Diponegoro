@@ -9,12 +9,17 @@ import {
   Row,
   Col,
   Alert,
+  Spinner,
 } from "react-bootstrap";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 const LoginPage = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const auth = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -24,6 +29,7 @@ const LoginPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
     try {
       const loggedIn = await auth.login(username, password);
       if (loggedIn) {
@@ -31,6 +37,8 @@ const LoginPage = () => {
       }
     } catch (err) {
       setError(err.message || "Gagal untuk login.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -50,10 +58,17 @@ const LoginPage = () => {
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.4)", // Optional: overlay gelap untuk kontras yang lebih baik
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
+  };
+
+  const inputStyle = {
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    backdropFilter: "blur(8px)",
+    WebkitBackdropFilter: "blur(8px)",
+    color: "white",
   };
 
   return (
@@ -77,49 +92,69 @@ const LoginPage = () => {
                   Login
                 </h3>
                 <Form onSubmit={handleSubmit}>
-                  <Form.Group className="mb-3" controlId="formBasicEmail">
+                  <Form.Group className="mb-3" controlId="formUsername">
                     <Form.Label style={{ color: "rgba(255, 255, 255, 0.7)" }}>
-                      Username
+                      Username (NRP)
                     </Form.Label>
                     <Form.Control
                       type="text"
-                      placeholder="Masukkan username"
+                      placeholder="Masukkan NRP"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       required
-                      style={{
-                        backgroundColor: "rgba(255, 255, 255, 0.2)",
-                        backdropFilter: "blur(8px)",
-                        WebkitBackdropFilter: "blur(8px)",
-                        color: "white",
-                      }}
+                      disabled={loading}
+                      style={inputStyle}
                     />
                   </Form.Group>
 
-                  <Form.Group className="mb-3" controlId="formBasicPassword">
+                  <Form.Group className="mb-3" controlId="formPassword">
                     <Form.Label style={{ color: "rgba(255, 255, 255, 0.7)" }}>
                       Password
                     </Form.Label>
-                    <Form.Control
-                      type="password"
-                      placeholder="Password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      style={{
-                        backgroundColor: "rgba(255, 255, 255, 0.2)",
-                        backdropFilter: "blur(8px)",
-                        WebkitBackdropFilter: "blur(8px)",
-                        color: "white",
-                      }}
-                    />
+                    <div className="position-relative">
+                      <Form.Control
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        disabled={loading}
+                        style={{ ...inputStyle, paddingRight: "2.5rem" }}
+                      />
+                      <span
+                        onClick={() => setShowPassword(!showPassword)}
+                        style={{
+                          position: "absolute",
+                          right: "10px",
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          cursor: "pointer",
+                          color: "rgba(255,255,255,0.7)",
+                          zIndex: 10,
+                        }}
+                      >
+                        {showPassword ? <FaEye /> : <FaEyeSlash />}
+                      </span>
+                    </div>
                   </Form.Group>
 
                   {error && <Alert variant="danger">{error}</Alert>}
 
                   <div className="d-grid">
-                    <Button variant="primary" type="submit">
-                      Login
+                    <Button variant="primary" type="submit" disabled={loading}>
+                      {loading ? (
+                        <>
+                          <Spinner
+                            as="span"
+                            animation="border"
+                            size="sm"
+                            className="me-2"
+                          />
+                          Masuk...
+                        </>
+                      ) : (
+                        "Login"
+                      )}
                     </Button>
                   </div>
                 </Form>

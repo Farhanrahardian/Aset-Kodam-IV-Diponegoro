@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Container, Row, Col, Spinner, Alert } from "react-bootstrap";
-import axios from "axios";
+import axiosAuth from "../utils/axiosAuth";
 import toast from "react-hot-toast";
 
 import FormAset from "../components/FormAset";
@@ -21,8 +21,8 @@ const EditAsetPage = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const assetRes = await axios.get(`${API_URL}/assets/${id}`);
-        const koremRes = await axios.get(`${API_URL}/korem`);
+        const assetRes = await axiosAuth.get(`${API_URL}/assets/${id}`);
+        const koremRes = await axiosAuth.get(`${API_URL}/korem`);
         setAsset(assetRes.data);
         setKoremList(koremRes.data);
         setError(null);
@@ -63,7 +63,7 @@ const EditAsetPage = () => {
       }
 
       if (endpoint) {
-        await axios.delete(endpoint);
+        await axiosAuth.delete(endpoint);
         console.log(`✅ Old file deleted: ${filename}`);
       }
     } catch (err) {
@@ -125,7 +125,7 @@ const EditAsetPage = () => {
 
         const formData = new FormData();
         formData.append("bukti_pemilikan", buktiPemilikanFile);
-        const uploadRes = await axios.post(
+        const uploadRes = await axiosAuth.post(
           `${API_URL}/upload/bukti-pemilikan`,
           formData
         );
@@ -148,7 +148,7 @@ const EditAsetPage = () => {
 
         const formData = new FormData();
         formData.append("foto_tampak_atas", gambarTampakAtasFile);
-        const uploadRes = await axios.post(
+        const uploadRes = await axiosAuth.post(
           `${API_URL}/upload/foto-tampak-atas`,
           formData
         );
@@ -181,7 +181,7 @@ const EditAsetPage = () => {
         assetPhotos.forEach((photo) => {
           photosFormData.append("asset_photos", photo);
         });
-        const photosUploadRes = await axios.post(
+        const photosUploadRes = await axiosAuth.post(
           `${API_URL}/upload/asset-photos`,
           photosFormData
         );
@@ -208,7 +208,7 @@ const EditAsetPage = () => {
 
       console.log("Final data being sent to server:", updatedData);
 
-      await axios.put(`${API_URL}/assets/${id}`, updatedData);
+      await axiosAuth.put(`${API_URL}/assets/${id}`, updatedData);
       toast.success("Aset berhasil diperbarui!", { id: toastId });
       navigate("/data-aset-tanah");
     } catch (err) {

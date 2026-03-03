@@ -1,56 +1,97 @@
-import React, { createContext, useState, useContext } from "react";
+// src/auth/AuthContext.jsx
+import React, { createContext, useState, useContext, useRef, useEffect } from "react";
 import axios from "axios";
 
-// ✅ UBAH: Ganti port dari 3000 ke 3001
 const API_URL = "http://localhost:3001";
-
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
-    // Cek jika ada data user di localStorage saat aplikasi pertama kali dimuat
     const storedUser = localStorage.getItem("user");
     try {
       return storedUser ? JSON.parse(storedUser) : null;
-    } catch (error) {
+    } catch {
       return null;
     }
   });
 
-  const login = async (username, password) => {
-    try {
-      // ✅ UBAH: Ganti endpoint ke MySQL server
-      const response = await axios.get(`${API_URL}/users`);
-      const users = response.data;
+  const heartbeatRef = useRef(null);
 
-      // Cari user yang cocok
-      const foundUser = users.find(
-        (u) => u.username === username && u.password === password
-      );
+  // ── Helpers untuk kirim request dengan token ──
+  const authHeaders = (token) => ({
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  });
 
-      if (foundUser) {
-        const userData = {
-          id: foundUser.id,
-          username: foundUser.username,
-          name: foundUser.name,
-          role: foundUser.role,
-        };
-        setUser(userData);
-        // Simpan data user di localStorage
-        localStorage.setItem("user", JSON.stringify(userData));
-        return true;
-      } else {
-        throw new Error("Username atau password salah.");
-      }
-    } catch (error) {
-      console.error("Login failed:", error);
-      throw error;
+  // ── Heartbeat ──────────────────────────────────────────────
+  const startHeartbeat = (userId, token) => {
+    fetch(`${API_URL}/users/heartbeat`, {
+      method: "POST",
+      headers: authHeaders(token),
+      body: JSON.stringify({ userId }),
+    });
+
+    heartbeatRef.current = setInterval(() => {
+      fetch(`${API_URL}/users/heartbeat`, {
+        method: "POST",
+        headers: authHeaders(token),
+        body: JSON.stringify({ userId }),
+      });
+    }, 30000);
+  };
+
+  const stopHeartbeat = () => {
+    if (heartbeatRef.current) {
+      clearInterval(heartbeatRef.current);
+      heartbeatRef.current = null;
     }
   };
 
-  const logout = () => {
+  // ── Restart heartbeat saat reload halaman (user sudah login) ──
+  useEffect(() => {
+    if (user?.id && user?.token) {
+      startHeartbeat(user.id, user.token);
+    }
+    return () => stopHeartbeat();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Login ──────────────────────────────────────────────────
+  const login = async (username, password) => {
+    try {
+      const response = await axios.post(`${API_URL}/auth/login`, {
+        username,
+        password,
+      });
+
+      // response.data = { id, username, name, role, token }
+      const userData = response.data;
+      setUser(userData);
+      localStorage.setItem("user", JSON.stringify(userData));
+
+      startHeartbeat(userData.id, userData.token);
+      return true;
+    } catch (error) {
+      const message =
+        error.response?.data?.message || "Username atau password salah.";
+      throw new Error(message);
+    }
+  };
+
+  // ── Logout ─────────────────────────────────────────────────
+  const logout = async () => {
+    if (user?.id && user?.token) {
+      stopHeartbeat();
+      try {
+        await fetch(`${API_URL}/users/logout-status`, {
+          method: "POST",
+          headers: authHeaders(user.token),
+          body: JSON.stringify({ userId: user.id }),
+        });
+      } catch (_) {
+        // Tetap logout meski request gagal
+      }
+    }
     setUser(null);
-    // Hapus data user dari localStorage
     localStorage.removeItem("user");
   };
 
@@ -59,7 +100,4 @@ export const AuthProvider = ({ children }) => {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-// Hook kustom untuk menggunakan AuthContext
-export const useAuth = () => {
-  return useContext(AuthContext);
-};
+export const useAuth = () => useContext(AuthContext);

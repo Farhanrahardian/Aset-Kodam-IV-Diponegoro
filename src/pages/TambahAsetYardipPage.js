@@ -8,7 +8,7 @@ import {
   Card,
   Spinner,
 } from "react-bootstrap";
-import axios from "axios";
+import axiosAuth from "../utils/axiosAuth";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import * as turf from "@turf/turf";
@@ -44,8 +44,8 @@ const TambahAsetYardipPage = () => {
     const loadBoundaryData = async () => {
       try {
         const [provRes, kabRes] = await Promise.all([
-          axios.get("/data/provinsi.geojson"),
-          axios.get("/data/kabupaten_kota.geojson"),
+          axiosAuth.get("/data/provinsi.geojson"),
+          axiosAuth.get("/data/kabupaten_kota.geojson"),
         ]);
         setProvinsiData(provRes.data);
         setKabupatenData(kabRes.data);
@@ -306,7 +306,7 @@ const TambahAsetYardipPage = () => {
           const fileFormData = new FormData();
           fileFormData.append("bukti_pemilikan", buktiPemilikanFile);
 
-          const uploadRes = await axios.post(
+          const uploadRes = await axiosAuth.post(
             `${API_URL}/upload/bukti-pemilikan`,
             fileFormData
           );
@@ -336,10 +336,10 @@ const TambahAsetYardipPage = () => {
           updated_at: new Date().toISOString(),
         };
 
-        await axios.post(`${API_URL}/yardip_assets`, payload);
+        await axiosAuth.post(`${API_URL}/yardip_assets`, payload);
         toast.success("Aset Yardip berhasil ditambahkan!", { id: toastId });
 
-        const response = await axios.get(`${API_URL}/yardip_assets`);
+        const response = await axiosAuth.get(`${API_URL}/yardip_assets`);
         setYardipAssets(response.data || []);
 
         setTimeout(() => navigate("/data-aset-yardip"), 1500);

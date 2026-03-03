@@ -10,7 +10,7 @@ import {
   Card,
 } from "react-bootstrap";
 import { FaSearch } from "react-icons/fa";
-import axios from "axios";
+import axiosAuth from "../utils/axiosAuth";
 import { useAuth } from "../auth/AuthContext";
 import toast from "react-hot-toast";
 import Swal from "sweetalert2";
@@ -25,17 +25,17 @@ const API_URL = "http://localhost:3001";
 
 // ============= REACT QUERY: FETCH FUNCTIONS =============
 const fetchYardipAssets = async () => {
-  const { data } = await axios.get(`${API_URL}/yardip_assets`);
+  const { data } = await axiosAuth.get(`${API_URL}/yardip_assets`);
   return data;
 };
 
 const fetchProvinsiGeoJSON = async () => {
-  const { data } = await axios.get("/data/provinsi.geojson");
+  const { data } = await axiosAuth.get("/data/provinsi.geojson");
   return data;
 };
 
 const fetchKabupatenGeoJSON = async () => {
-  const { data } = await axios.get("/data/kabupaten_kota.geojson");
+  const { data } = await axiosAuth.get("/data/kabupaten_kota.geojson");
   return data;
 };
 
@@ -420,7 +420,7 @@ const DataAsetYardipPage = () => {
     if (result.isConfirmed) {
       const toastId = toast.loading("Menghapus aset...");
       try {
-        await axios.delete(`${API_URL}/yardip_assets/${id}`);
+        await axiosAuth.delete(`${API_URL}/yardip_assets/${id}`);
         queryClient.invalidateQueries(["yardip_assets"]);
         toast.success("Aset berhasil dihapus!", { id: toastId });
       } catch (err) {
@@ -440,7 +440,7 @@ const DataAsetYardipPage = () => {
         const filename = filesToDelete.buktiPemilikan.split("/").pop();
         if (filename) {
           try {
-            await axios.delete(`${API_URL}/upload/bukti-pemilikan/${filename}`);
+            await axiosAuth.delete(`${API_URL}/upload/bukti-pemilikan/${filename}`);
             console.log("✅ Old file deleted:", filename);
           } catch (err) {
             console.warn("⚠️ Failed to delete old file:", filename);
@@ -453,7 +453,7 @@ const DataAsetYardipPage = () => {
           toast.loading("Mengupload bukti pemilikan baru...", { id: toastId });
           const fileFormData = new FormData();
           fileFormData.append("bukti_pemilikan", buktiPemilikanFile);
-          const uploadRes = await axios.post(
+          const uploadRes = await axiosAuth.post(
             `${API_URL}/upload/bukti-pemilikan`,
             fileFormData
           );
@@ -472,10 +472,10 @@ const DataAsetYardipPage = () => {
         bukti_pemilikan_filename: buktiPemilikanFilename,
       };
 
-      await axios.put(`${API_URL}/yardip_assets/${formData.id}`, updatedData);
+      await axiosAuth.put(`${API_URL}/yardip_assets/${formData.id}`, updatedData);
       toast.success("Aset Yardip berhasil diperbarui!", { id: toastId });
 
-      const refreshedAsset = await axios.get(`${API_URL}/yardip_assets/${formData.id}`);
+      const refreshedAsset = await axiosAuth.get(`${API_URL}/yardip_assets/${formData.id}`);
       setEditingAsset(refreshedAsset.data);
 
       queryClient.invalidateQueries(["yardip_assets"]);
