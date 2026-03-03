@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Offcanvas, Badge, Card, Row, Col, Button, Image } from "react-bootstrap";
+import React, { useState, useEffect, Fragment } from "react";
+import { Offcanvas, Badge, Card, Row, Col, Button, Image, Modal } from "react-bootstrap";
 import {
   FaBuilding,
   FaMapMarkerAlt,
@@ -36,6 +36,12 @@ const isPdfFile = (filename) => {
   return filename.toLowerCase().endsWith(".pdf");
 };
 
+const isVideoFile = (filename) => {
+  if (!filename) return false;
+  const videoExtensions = [".mp4", ".mov", ".webm", ".avi"];
+  return videoExtensions.some((ext) => filename.toLowerCase().endsWith(ext));
+};
+
 const getFileUrl = (url) => {
   if (!url) return null;
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
@@ -43,9 +49,60 @@ const getFileUrl = (url) => {
   return `${API_URL}/${url}`;
 };
 
+// ===== PREVIEW MODAL BUKTI PEMILIKAN =====
+const BuktiPreviewModal = ({ show, onHide, buktiPreviewMedia }) => (
+  <Modal show={show} onHide={onHide} size="lg" centered>
+    <Modal.Header closeButton>
+      <Modal.Title>Bukti Kepemilikan</Modal.Title>
+    </Modal.Header>
+    <Modal.Body className="text-center">
+      {buktiPreviewMedia?.isPdf ? (
+        <iframe
+          src={buktiPreviewMedia.url}
+          style={{ width: "100%", height: "70vh", border: "none" }}
+          title="Preview PDF"
+        />
+      ) : buktiPreviewMedia?.isVideo ? (
+        <video
+          src={buktiPreviewMedia.url}
+          controls
+          className="img-fluid"
+          style={{ maxHeight: "70vh", objectFit: "contain" }}
+          autoPlay
+        >
+          Browser Anda tidak mendukung elemen video.
+        </video>
+      ) : (
+        <img
+          src={buktiPreviewMedia?.url}
+          alt="Preview Bukti Pemilikan"
+          className="img-fluid"
+          style={{ maxHeight: "70vh", objectFit: "contain" }}
+        />
+      )}
+    </Modal.Body>
+    <Modal.Footer>
+      {buktiPreviewMedia && (
+        <Button
+          variant="info"
+          onClick={() => window.open(buktiPreviewMedia.url, "_blank")}
+          className="me-2"
+        >
+          Buka di Tab Baru
+        </Button>
+      )}
+      <Button variant="secondary" onClick={onHide}>
+        Tutup
+      </Button>
+    </Modal.Footer>
+  </Modal>
+);
+
 const DetailOffcanvasYardip = ({ show, handleClose, asetYardip }) => {
   const [provinsiData, setProvinsiData] = useState(null);
   const [kabupatenData, setKabupatenData] = useState(null);
+  const [buktiPreviewMedia, setBuktiPreviewMedia] = useState(null);
+  const [showBuktiPreviewModal, setShowBuktiPreviewModal] = useState(false);
 
   // Load geojson data when offcanvas is shown
   useEffect(() => {
@@ -75,24 +132,41 @@ const DetailOffcanvasYardip = ({ show, handleClose, asetYardip }) => {
     }
   }, [show, asetYardip]);
 
+  // ===== HANDLER PREVIEW BUKTI PEMILIKAN =====
+  const handlePreviewBukti = (mediaUrl, filename) => {
+    const fullUrl = mediaUrl.startsWith("http") ? mediaUrl : `${API_URL}${mediaUrl}`;
+    setBuktiPreviewMedia({
+      url: fullUrl,
+      isVideo: isVideoFile(filename),
+      isPdf: isPdfFile(filename),
+    });
+    setShowBuktiPreviewModal(true);
+  };
+
+  const handleCloseBuktiPreview = () => {
+    setShowBuktiPreviewModal(false);
+    setBuktiPreviewMedia(null);
+  };
+
   if (!asetYardip) return null;
 
   const locationData = parseLocation(asetYardip.lokasi);
   const hasValidLocation = locationData && locationData.type === "Polygon";
 
   return (
-    <Offcanvas
-      show={show}
-      onHide={handleClose}
-      placement="end"
-      backdrop={true}
-      style={{ width: "600px" }}
-    >
-      <Offcanvas.Header
-        closeButton
-        className="bg-success text-white border-bottom"
+    <Fragment>
+      <Offcanvas
+        show={show}
+        onHide={handleClose}
+        placement="end"
+        backdrop={true}
+        style={{ width: "600px" }}
       >
-        <Offcanvas.Title as="h5">
+        <Offcanvas.Header
+          closeButton
+          className="bg-success text-white border-bottom"
+        >
+          <Offcanvas.Title as="h5">
           <FaBuilding className="me-2" />
           Detail Aset Yardip
         </Offcanvas.Title>
@@ -267,9 +341,9 @@ const DetailOffcanvasYardip = ({ show, handleClose, asetYardip }) => {
                                 variant="link"
                                 size="sm"
                                 onClick={() =>
-                                  window.open(
-                                    getFileUrl(asetYardip.bukti_pemilikan_url),
-                                    "_blank"
+                                  handlePreviewBukti(
+                                    asetYardip.bukti_pemilikan_url,
+                                    asetYardip.bukti_pemilikan_filename
                                   )
                                 }
                                 className="p-0"
@@ -481,6 +555,14 @@ const DetailOffcanvasYardip = ({ show, handleClose, asetYardip }) => {
         </div>
       </Offcanvas.Body>
     </Offcanvas>
+
+    {/* ===== PREVIEW MODAL BUKTI PEMILIKAN ===== */}
+    <BuktiPreviewModal
+      show={showBuktiPreviewModal}
+      onHide={handleCloseBuktiPreview}
+      buktiPreviewMedia={buktiPreviewMedia}
+    />
+    </Fragment>
   );
 };
 

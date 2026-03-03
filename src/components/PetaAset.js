@@ -55,8 +55,8 @@ const geoJsonToGooglePaths = (coordinates, type) => {
 
 // Helper: Check if asset data is incomplete (same logic as DataAsetTanahPage.js)
 const isIncompleteData = (asset) => {
-  // Check 4 fields: Sertifikat (hanya dari Bukti Pemilikan), Foto Aset, Foto Tampak Atas, Sejarah (Keterangan)
-  const hasSertifikat = asset.bukti_pemilikan_url || asset.bukti_pemilikan_filename;
+  // Check 4 fields: Sertifikat (hanya dari Bukti Pemilikan URL), Foto Aset, Foto Tampak Atas, Sejarah (Keterangan)
+  const hasSertifikat = asset.bukti_pemilikan_url;
   const hasFotoAset = asset.foto_aset && asset.foto_aset.length > 0;
   const hasFotoTampakAtas = asset.gambar_tampak_atas_url || asset.gambar_tampak_atas_filename;
   const hasSejarah = asset.keterangan && asset.keterangan.trim() !== "";
@@ -882,11 +882,11 @@ const PetaAset = React.memo(({
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ 
-                    width: '12px', 
-                    height: '12px', 
-                    borderRadius: '2px', 
-                    background: (hoveredMarker.asset.pemilikan_sertifikat === "Ya" || hoveredMarker.asset.bukti_pemilikan_url || hoveredMarker.asset.bukti_pemilikan_filename) ? '#4CAF50' : '#F44336',
+                  <span style={{
+                    width: '12px',
+                    height: '12px',
+                    borderRadius: '2px',
+                    background: hoveredMarker.asset.bukti_pemilikan_url ? '#4CAF50' : '#F44336',
                     display: 'inline-block'
                   }}></span>
                   <span>Sertifikat</span>

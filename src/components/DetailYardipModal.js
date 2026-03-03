@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Fragment } from "react";
 import { Modal, Button, Row, Col, Card, Table, Image } from "react-bootstrap";
 import { parseLocation } from "../utils/locationUtils";
 import PetaAsetYardip from "./PetaAsetYardip";
@@ -17,6 +17,12 @@ const isPdfFile = (filename) => {
   return filename.toLowerCase().endsWith(".pdf");
 };
 
+const isVideoFile = (filename) => {
+  if (!filename) return false;
+  const videoExtensions = [".mp4", ".mov", ".webm", ".avi"];
+  return videoExtensions.some((ext) => filename.toLowerCase().endsWith(ext));
+};
+
 const getFileUrl = (url) => {
   if (!url) return null;
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
@@ -24,7 +30,58 @@ const getFileUrl = (url) => {
   return `${API_URL}/${url}`;
 };
 
+// ===== PREVIEW MODAL BUKTI PEMILIKAN =====
+const BuktiPreviewModal = ({ show, onHide, buktiPreviewMedia }) => (
+  <Modal show={show} onHide={onHide} size="lg" centered>
+    <Modal.Header closeButton>
+      <Modal.Title>Bukti Kepemilikan</Modal.Title>
+    </Modal.Header>
+    <Modal.Body className="text-center">
+      {buktiPreviewMedia?.isPdf ? (
+        <iframe
+          src={buktiPreviewMedia.url}
+          style={{ width: "100%", height: "70vh", border: "none" }}
+          title="Preview PDF"
+        />
+      ) : buktiPreviewMedia?.isVideo ? (
+        <video
+          src={buktiPreviewMedia.url}
+          controls
+          className="img-fluid"
+          style={{ maxHeight: "70vh", objectFit: "contain" }}
+          autoPlay
+        >
+          Browser Anda tidak mendukung elemen video.
+        </video>
+      ) : (
+        <img
+          src={buktiPreviewMedia?.url}
+          alt="Preview Bukti Pemilikan"
+          className="img-fluid"
+          style={{ maxHeight: "70vh", objectFit: "contain" }}
+        />
+      )}
+    </Modal.Body>
+    <Modal.Footer>
+      {buktiPreviewMedia && (
+        <Button
+          variant="info"
+          onClick={() => window.open(buktiPreviewMedia.url, "_blank")}
+          className="me-2"
+        >
+          Buka di Tab Baru
+        </Button>
+      )}
+      <Button variant="secondary" onClick={onHide}>
+        Tutup
+      </Button>
+    </Modal.Footer>
+  </Modal>
+);
+
 const DetailYardipModal = ({ show, onHide, asset }) => {
+  const [buktiPreviewMedia, setBuktiPreviewMedia] = useState(null);
+  const [showBuktiPreviewModal, setShowBuktiPreviewModal] = useState(false);
   const [provinsiData, setProvinsiData] = useState(null);
   const [kabupatenData, setKabupatenData] = useState(null);
 
@@ -55,6 +112,22 @@ const DetailYardipModal = ({ show, onHide, asset }) => {
       }
     }
   }, [show, asset]);
+
+  // ===== HANDLER PREVIEW BUKTI PEMILIKAN =====
+  const handlePreviewBukti = (mediaUrl, filename) => {
+    const fullUrl = mediaUrl.startsWith("http") ? mediaUrl : `${API_URL}${mediaUrl}`;
+    setBuktiPreviewMedia({
+      url: fullUrl,
+      isVideo: isVideoFile(filename),
+      isPdf: isPdfFile(filename),
+    });
+    setShowBuktiPreviewModal(true);
+  };
+
+  const handleCloseBuktiPreview = () => {
+    setShowBuktiPreviewModal(false);
+    setBuktiPreviewMedia(null);
+  };
 
   if (!asset) return null;
 
@@ -91,13 +164,14 @@ const DetailYardipModal = ({ show, onHide, asset }) => {
     : null;
 
   return (
-    <Modal show={show} onHide={onHide} size="xl" centered>
-      <Modal.Header closeButton>
-        <Modal.Title>Aset Yardip: {asset.pengelola}</Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        <Row>
-          <Col md={6}>
+    <Fragment>
+      <Modal show={show} onHide={onHide} size="xl" centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Aset Yardip: {asset.pengelola}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Row>
+            <Col md={6}>
             <Card>
               <Card.Body>
                 <Table borderless striped>
@@ -205,9 +279,9 @@ const DetailYardipModal = ({ show, onHide, asset }) => {
                                 variant="link"
                                 size="sm"
                                 onClick={() =>
-                                  window.open(
-                                    getFileUrl(asset.bukti_pemilikan_url),
-                                    "_blank"
+                                  handlePreviewBukti(
+                                    asset.bukti_pemilikan_url,
+                                    asset.bukti_pemilikan_filename
                                   )
                                 }
                                 className="p-0"
@@ -285,6 +359,14 @@ const DetailYardipModal = ({ show, onHide, asset }) => {
         </Button>
       </Modal.Footer>
     </Modal>
+
+    {/* ===== PREVIEW MODAL BUKTI PEMILIKAN ===== */}
+    <BuktiPreviewModal
+      show={showBuktiPreviewModal}
+      onHide={handleCloseBuktiPreview}
+      buktiPreviewMedia={buktiPreviewMedia}
+    />
+    </Fragment>
   );
 };
 
