@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
-import Navbar from './Navbar';
+import Header from './Header';
 import Sidebar from './Sidebar';
-import './MainLayout.css'; // Import the new CSS
+import './MainLayout.css';
 
 const MainLayout = ({ children }) => {
   const [isSidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
@@ -11,7 +10,7 @@ const MainLayout = ({ children }) => {
     setSidebarOpen(!isSidebarOpen);
   };
 
-  // Effect to handle window resize
+  // Handle window resize
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth > 768) {
@@ -26,17 +25,24 @@ const MainLayout = ({ children }) => {
   }, []);
 
   return (
-    <div className="overflow-hidden" style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      <Navbar onToggleSidebar={toggleSidebar} />
-     <div className="content-area">
-  {isSidebarOpen && window.innerWidth <= 768 && (
-    <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
-  )}
-  <Sidebar show={isSidebarOpen} />
-  <main className="main-content">
-    {children}
-  </main>
-</div>
+    <div className="app-layout">
+      <div className="app-body">
+        {/* Sidebar */}
+        <Sidebar show={isSidebarOpen} />
+
+        {/* Sidebar Overlay for Mobile */}
+        {isSidebarOpen && window.innerWidth <= 768 && (
+          <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
+        )}
+
+        {/* Main Content with Header inside */}
+        <main className={`main-content ${isSidebarOpen ? 'sidebar-open' : ''}`}>
+          <Header onToggleSidebar={toggleSidebar} />
+          <div className="content-wrapper">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 };

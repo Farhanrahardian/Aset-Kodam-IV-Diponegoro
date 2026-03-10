@@ -1,0 +1,402 @@
+/* ═══════════════════════════════════════════════════════════
+   YARDIP MODAL - STYLE KONSISTEN DENGAN BMN
+   Aset Kodam IV/Diponegoro
+   ═══════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════
+   OVERRIDE DESIGN-TOKENS.CSS - FORCE PROPER SIZE
+   Must override: .modal.detail-modal .modal-dialog { 95vw }
+   in design-tokens.css line ~820
+   
+   NOTE: BMN uses 65vw for both Detail and Edit modals
+   ═══════════════════════════════════════════════════════════ */
+
+/* Detail Yardip Modal - 65vw (SAME AS BMN) */
+.modal.detail-modal.yardip-modal .modal-dialog,
+.modal.yardip-modal.detail-modal .modal-dialog,
+.modal-dialog.modal-65vw {
+  --bs-modal-width: 65vw !important;
+  max-width: 65vw !important;
+  width: 65vw !important;
+  min-width: auto !important;
+  margin: 1rem auto !important;
+}
+
+/* Edit Yardip Modal - 65vw (SAME AS BMN) */
+.modal.edit-aset-modal.yardip-modal .modal-dialog,
+.modal.yardip-modal.edit-aset-modal .modal-dialog {
+  --bs-modal-width: 65vw !important;
+  max-width: 65vw !important;
+  width: 65vw !important;
+  min-width: auto !important;
+  margin: 1rem auto !important;
+}
+
+/* Modal content utility classes - same as BMN */
+.modal-content-65vw {
+  max-width: 65vw !important;
+  width: 65vw !important;
+}
+
+/* Modal content sizing - override design-tokens.css width: 100% and flex */
+.modal.detail-modal.yardip-modal .modal-content,
+.modal.yardip-modal.detail-modal .modal-content {
+  max-width: 65vw !important;
+  width: 65vw !important;
+  max-height: calc(100vh - 140px) !important;
+  height: calc(100vh - 140px) !important;
+  flex: none !important;
+  border-radius: 20px !important;
+  border: none !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+  background-color: #f1f5f9 !important;
+  overflow: hidden;
+}
+
+.modal.edit-aset-modal.yardip-modal .modal-content,
+.modal.yardip-modal.edit-aset-modal .modal-content {
+  max-width: 65vw !important;
+  width: 65vw !important;
+  max-height: calc(100vh - 140px) !important;
+  height: calc(100vh - 140px) !important;
+  flex: none !important;
+  border-radius: 20px !important;
+  border: none !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+  background-color: #f1f5f9 !important;
+  overflow: hidden;
+}
+
+/* Responsive - laptops */
+@media (max-width: 1366px) {
+  .modal.detail-modal.yardip-modal .modal-dialog,
+  .modal.yardip-modal.detail-modal .modal-dialog,
+  .modal.edit-aset-modal.yardip-modal .modal-dialog,
+  .modal.yardip-modal.edit-aset-modal .modal-dialog {
+    max-width: 75vw !important;
+    width: 75vw !important;
+  }
+}
+
+/* Small screens */
+@media (max-width: 768px) {
+  .modal.detail-modal.yardip-modal .modal-dialog,
+  .modal.yardip-modal.detail-modal .modal-dialog,
+  .modal.edit-aset-modal.yardip-modal .modal-dialog,
+  .modal.yardip-modal.edit-aset-modal .modal-dialog {
+    max-width: 95vw !important;
+    width: 95vw !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MODAL HEADER - GRADIENT BIRU
+   ═══════════════════════════════════════════════════════════ */
+
+.yardip-modal .modal-header {
+  background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+  padding: 1rem 1.5rem;
+  border-bottom: none;
+}
+
+.yardip-modal .modal-title {
+  color: white;
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+
+.yardip-modal .btn-close {
+  filter: brightness(0) invert(1);
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  padding: 0.5rem;
+  margin: -0.5rem -0.5rem -0.5rem auto;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MODAL BODY - NO PADDING (2-COLUMN LAYOUT)
+   ═══════════════════════════════════════════════════════════ */
+
+.yardip-modal .modal-body {
+  padding: 0 !important;
+  overflow: hidden;
+  height: calc(100vh - 140px);
+  min-height: 500px;
+}
+
+.yardip-modal .modal-body > .row {
+  height: 100%;
+  min-height: 500px;
+}
+
+/* Info Wrapper (Left Column - Scrollable) */
+.yardip-modal .modal-info-wrapper {
+  background: #f8f9fa;
+  border-right: 3px solid #e9ecef;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.yardip-modal .modal-info-scrollable {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  height: 100%;
+}
+
+/* Map Wrapper (Right Column - Fixed) */
+.yardip-modal .modal-map-wrapper {
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.yardip-modal .modal-map-fixed {
+  height: 100%;
+  width: 100%;
+  position: relative;
+  flex: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CARD & TABLE STYLING
+   ═══════════════════════════════════════════════════════════ */
+
+.yardip-modal .card {
+  border: 1px solid #dee2e6 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+  background: white !important;
+  margin-bottom: 1rem !important;
+  border-radius: 8px !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.yardip-modal .card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.yardip-modal .card-header {
+  font-weight: 600 !important;
+  font-size: 0.95rem !important;
+  border-bottom: 1px solid #dee2e6 !important;
+  padding: 0.75rem 1rem !important;
+  background: #f8f9fa !important;
+  color: #212529 !important;
+  border-radius: 8px 8px 0 0 !important;
+}
+
+.yardip-modal .card-header.bg-success,
+.yardip-modal .card-header.bg-info {
+  background: #f8f9fa !important;
+  color: #212529 !important;
+}
+
+.yardip-modal .card-body {
+  padding: 1rem !important;
+}
+
+.yardip-modal table {
+  margin-bottom: 0 !important;
+}
+
+.yardip-modal table td {
+  padding: 0.5rem 0.75rem !important;
+  vertical-align: middle;
+  border-bottom: 1px solid #e9ecef !important;
+}
+
+.yardip-modal table td:first-child {
+  font-weight: 600;
+  color: #495057;
+}
+
+.yardip-modal .badge {
+  padding: 0.35rem 0.65rem;
+  font-weight: 500;
+  border-radius: 6px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MODAL FOOTER
+   ═══════════════════════════════════════════════════════════ */
+
+.yardip-modal .modal-footer {
+  border-top: 1px solid #e9ecef;
+  padding: 1rem 1.5rem;
+  background: #f8f9fa;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PREVIEW MODAL - FULLSCREEN & DARK BACKDROP
+   ═══════════════════════════════════════════════════════════ */
+
+/* Dark backdrop for preview modals */
+.modal-backdrop-dark {
+  background-color: rgba(0, 0, 0, 0.9) !important;
+  backdrop-filter: blur(5px);
+}
+
+/* Fullscreen modal */
+.fullscreen-modal {
+  max-width: 100vw !important;
+  width: 100vw !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.fullscreen-modal .modal-dialog {
+  max-width: 100vw !important;
+  width: 100vw !important;
+  margin: 0 !important;
+}
+
+.fullscreen-modal .modal-content {
+  border-radius: 0 !important;
+  max-height: 100vh !important;
+  height: 100vh !important;
+}
+
+.fullscreen-modal .modal-body {
+  max-height: calc(100vh - 120px) !important;
+  height: calc(100vh - 120px) !important;
+}
+
+/* Preview body with dark background */
+.preview-body {
+  background-color: #000 !important;
+  background-image:
+    radial-gradient(circle at center, rgba(30, 30, 30, 0.3) 0%, rgba(0, 0, 0, 0.8) 100%) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Canvas pattern overlay */
+.preview-body::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* Loading spinner centering */
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%);
+  z-index: 100;
+}
+
+/* Rotation controls animation */
+.rotation-controls button {
+  transition: all 0.2s ease;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.rotation-controls button:hover {
+  transform: scale(1.1);
+  background-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Fullscreen button styling */
+.modal-header .btn-outline-light {
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.modal-header .btn-outline-light:hover {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SCROLLBAR CUSTOMIZATION
+   ═══════════════════════════════════════════════════════════ */
+
+.yardip-modal .modal-info-scrollable::-webkit-scrollbar {
+  width: 8px;
+}
+
+.yardip-modal .modal-info-scrollable::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.yardip-modal .modal-info-scrollable::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.yardip-modal .modal-info-scrollable::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MAP CONTROLS - MODERN STYLING
+   ═══════════════════════════════════════════════════════════ */
+
+.yardip-modal .map-controls-wrapper {
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.yardip-modal .map-controls-wrapper > * {
+  pointer-events: auto;
+}
+
+.yardip-modal .btn-map-control {
+  background-color: white;
+  border: 1px solid #d1d5db !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  transition: all 0.2s ease;
+}
+
+.yardip-modal .btn-map-control:hover {
+  background-color: #f8f9fa;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+  transform: translateY(-1px);
+}
+
+.yardip-modal .form-select-sm {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid #d1d5db !important;
+}
+
+/* Zoom controls */
+.yardip-modal .zoom-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.yardip-modal .zoom-controls button {
+  width: 32px;
+  height: 32px;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

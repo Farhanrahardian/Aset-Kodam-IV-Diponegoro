@@ -1,0 +1,117 @@
+/* ═══════════════════════════════════════════════════════════
+   INFORMASI DASAR ASET - SIDE PANEL STYLING
+   ═══════════════════════════════════════════════════════════ */
+
+.informasi-dasar-wrapper {
+  background: transparent;
+}
+
+.informasi-dasar-wrapper .form-label {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.informasi-dasar-wrapper .form-control,
+.informasi-dasar-wrapper .form-select {
+  border: 1px solid #ced4da;
+  border-radius: 8px;
+  padding: 0.625rem 1rem;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  background-color: white;
+}
+
+.informasi-dasar-wrapper .form-control:focus,
+.informasi-dasar-wrapper .form-select:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+}
+
+.informasi-dasar-wrapper .form-control:disabled,
+.informasi-dasar-wrapper .form-select:disabled {
+  background-color: #f8f9fa;
+  cursor: not-allowed;
+}
+
+.informasi-dasar-wrapper textarea.form-control {
+  resize: vertical;
+  min-height: 100px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 0.85rem;
+}
+
+/* Toggle Buttons */
+.informasi-dasar-wrapper .btn-group .btn,
+.informasi-dasar-wrapper .btn-group .btn-check + .btn {
+  border-radius: 8px;
+  padding: 0.625rem 1rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  text-align: left;
+  border: 2px solid #8A9A5B;
+  color: #8A9A5B;
+  background: white;
+}
+
+.informasi-dasar-wrapper .btn-group .btn:hover {
+  background: rgba(138, 154, 91, 0.15);
+  border-color: #6B7C45;
+  color: #6B7C45;
+}
+
+.informasi-dasar-wrapper .btn-group .btn-check:checked + .btn {
+  background: linear-gradient(135deg, #8A9A5B 0%, #6B7C45 100%);
+  border-color: #8A9A5B;
+  color: white;
+  box-shadow: 0 4px 12px rgba(138, 154, 91, 0.3);
+}
+
+.informasi-dasar-wrapper .btn-group .btn-check:focus + .btn {
+  box-shadow: 0 0 0 0.2rem rgba(138, 154, 91, 0.25);
+}
+
+/* Alert Styling */
+.informasi-dasar-wrapper .alert {
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  border-left: 4px solid;
+  font-size: 0.85rem;
+}
+
+.informasi-dasar-wrapper .alert-warning {
+  background: #fff8e1;
+  color: #856404;
+  border-left-color: #ffc107;
+}
+
+.informasi-dasar-wrapper .alert-info {
+  background: rgba(138, 154, 91, 0.15);
+  color: #556633;
+  border-left-color: #8A9A5B;
+}
+
+.informasi-dasar-wrapper .alert-danger {
+  background: #fee;
+  color: #721c24;
+  border-left-color: #dc3545;
+}
+
+/* File Input */
+.informasi-dasar-wrapper .form-control[type="file"] {
+  background: white;
+  cursor: pointer;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .informasi-dasar-wrapper .btn-group {
+    flex-direction: column;
+  }
+
+  .informasi-dasar-wrapper .btn-group .btn {
+    width: 100%;
+  }
+}

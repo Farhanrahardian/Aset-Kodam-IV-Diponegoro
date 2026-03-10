@@ -1,0 +1,38 @@
+/* ═══════════════════════════════════════════════════════════
+   EDIT ASET MODAL - SIZE 65VW (COMPACT LIKE BMN)
+   ═══════════════════════════════════════════════════════════ */
+
+/* Force modal size to 65vw - OVERRIDE all other styles */
+.modal.edit-aset-modal .modal-dialog,
+.modal-dialog.modal-65vw.edit-aset-modal {
+  --bs-modal-width: 65vw !important;
+  max-width: 65vw !important;
+  width: 65vw !important;
+  min-width: 65vw !important;
+  margin: 1rem auto !important;
+}
+
+/* Modal content */
+.modal.edit-aset-modal .modal-content,
+.modal-content-65vw {
+  max-width: 65vw !important;
+  width: 65vw !important;
+}
+
+/* Responsive - keep 65vw on laptops */
+@media (max-width: 1366px) {
+  .modal.edit-aset-modal .modal-dialog,
+  .modal-dialog.modal-65vw.edit-aset-modal {
+    max-width: 65vw !important;
+    width: 65vw !important;
+  }
+}
+
+/* For very small screens */
+@media (max-width: 768px) {
+  .modal.edit-aset-modal .modal-dialog,
+  .modal-dialog.modal-65vw.edit-aset-modal {
+    max-width: 95vw !important;
+    width: 95vw !important;
+  }
+}

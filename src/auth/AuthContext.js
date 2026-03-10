@@ -16,6 +16,8 @@ export const AuthProvider = ({ children }) => {
   });
 
   const heartbeatRef = useRef(null);
+  const reconnectAttempts = useRef(0);
+  const MAX_RECONNECT_ATTEMPTS = 3;
 
   // ── Helpers untuk kirim request dengan token ──
   const authHeaders = (token) => ({
@@ -24,19 +26,35 @@ export const AuthProvider = ({ children }) => {
   });
 
   // ── Heartbeat ──────────────────────────────────────────────
-  const startHeartbeat = (userId, token) => {
-    fetch(`${API_URL}/users/heartbeat`, {
-      method: "POST",
-      headers: authHeaders(token),
-      body: JSON.stringify({ userId }),
-    });
-
-    heartbeatRef.current = setInterval(() => {
-      fetch(`${API_URL}/users/heartbeat`, {
+  const sendHeartbeat = async (userId, token) => {
+    try {
+      await fetch(`${API_URL}/users/heartbeat`, {
         method: "POST",
         headers: authHeaders(token),
         body: JSON.stringify({ userId }),
       });
+      reconnectAttempts.current = 0; // Reset reconnect attempts on success
+    } catch (error) {
+      // Jangan logout user jika heartbeat gagal!
+      // Hanya log error dan coba lagi nanti
+      console.warn("Heartbeat gagal (user tetap login):", error.message);
+      
+      // Retry dengan exponential backoff (max 3x)
+      if (reconnectAttempts.current < MAX_RECONNECT_ATTEMPTS) {
+        reconnectAttempts.current += 1;
+        const retryDelay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
+        setTimeout(() => sendHeartbeat(userId, token), retryDelay);
+      }
+    }
+  };
+
+  const startHeartbeat = (userId, token) => {
+    // Kirim heartbeat pertama
+    sendHeartbeat(userId, token);
+
+    // Set interval untuk heartbeat berikutnya (setiap 30 detik)
+    heartbeatRef.current = setInterval(() => {
+      sendHeartbeat(userId, token);
     }, 30000);
   };
 
@@ -45,6 +63,7 @@ export const AuthProvider = ({ children }) => {
       clearInterval(heartbeatRef.current);
       heartbeatRef.current = null;
     }
+    reconnectAttempts.current = 0;
   };
 
   // ── Restart heartbeat saat reload halaman (user sudah login) ──

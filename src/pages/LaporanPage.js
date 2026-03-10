@@ -12,6 +12,7 @@ import {
 import axiosAuth from "../utils/axiosAuth";
 import ExcelJS from "exceljs";
 import toast from "react-hot-toast";
+import "./LaporanPage.css";
 
 const API_URL = "http://localhost:3001";
 
@@ -28,6 +29,7 @@ const LaporanPage = () => {
   const [selectedKodim, setSelectedKodim] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [filteredAssets, setFilteredAssets] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -43,11 +45,10 @@ const LaporanPage = () => {
 
         const allKodims = koremRes.data.flatMap((korem) =>
           korem.kodim.map((k, index) => ({
-  id: `${korem.id}-${index}`,
-  nama: k,
-  korem_id: korem.id,
-}))
-
+            id: `${korem.id}-${index}`,
+            nama: k,
+            korem_id: korem.id,
+          }))
         );
         setAllKodimList(allKodims);
         setFilteredAssets(assetsRes.data);
@@ -69,10 +70,7 @@ const LaporanPage = () => {
     let filtered = assets;
 
     if (selectedKorem) {
-      const koremData = koremList.find((k) => k.id == selectedKorem);
-      if (koremData) {
-        filtered = filtered.filter((asset) => asset.korem_id == selectedKorem);
-      }
+      filtered = filtered.filter((asset) => asset.korem_id == selectedKorem);
     }
 
     if (selectedKodim) {
@@ -87,8 +85,19 @@ const LaporanPage = () => {
       filtered = filtered.filter((asset) => asset.status === statusFilter);
     }
 
+    // Apply local search term
+    if (searchTerm) {
+      const lowerSearch = searchTerm.toLowerCase();
+      filtered = filtered.filter((asset) => 
+        (asset.nama?.toLowerCase().includes(lowerSearch)) ||
+        (asset.alamat?.toLowerCase().includes(lowerSearch)) ||
+        (asset.kib_kode_barang?.toLowerCase().includes(lowerSearch)) ||
+        (asset.kode_barang?.toLowerCase().includes(lowerSearch))
+      );
+    }
+
     setFilteredAssets(filtered);
-  }, [selectedKorem, selectedKodim, statusFilter, assets, koremList]);
+  }, [selectedKorem, selectedKodim, statusFilter, assets, searchTerm]);
 
   // Get kodim list based on selected korem
   const getKodimForSelectedKorem = () => {
@@ -107,19 +116,13 @@ const LaporanPage = () => {
     setSelectedKorem("");
     setSelectedKodim("");
     setStatusFilter("");
+    setSearchTerm("");
   };
 
   // Helper function untuk mendapatkan nama korem
   const getKoremName = (koremId) => {
     const korem = koremList.find((k) => k.id == koremId);
     return korem ? korem.nama : "-";
-  };
-
-  // Helper function untuk mendapatkan nama kodim
-  const getKodimName = (asset) => {
-    if (!asset.kodim) return "-";
-    const kodim = allKodimList.find((k) => k.nama === asset.kodim);
-    return kodim ? kodim.nama : asset.kodim;
   };
 
   // Helper function untuk format luas
@@ -158,7 +161,6 @@ const LaporanPage = () => {
     return grouped;
   };
 
-  // Function untuk export ke XLSX menggunakan ExcelJS dengan grouping
   const exportToExcel = async () => {
     if (filteredAssets.length === 0) {
       toast.error("Tidak ada data untuk diekspor!");
@@ -168,7 +170,6 @@ const LaporanPage = () => {
     setExporting(true);
 
     try {
-      // Siapkan judul berdasarkan filter
       let title = "TANAH BMN TNI AD BERSERTIFIKAT DAN BELUM SERTIFIKAT";
       let subtitle = "";
 
@@ -180,689 +181,288 @@ const LaporanPage = () => {
         subtitle = "DI WILAYAH SELURUH KOREM";
       }
 
-      // Buat workbook baru
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Laporan Aset BMN");
 
-      // Set column widths
       worksheet.columns = [
-        { width: 8 }, // A - Nomor Urut
-        { width: 6 }, // B - BAG
-        { width: 20 }, // C - NUP
-        { width: 20 }, // D - KIB/Kode Barang
-        { width: 15 }, // E - No Reg
-        { width: 35 }, // F - Alamat
-        { width: 25 }, // G - Peruntukan
-        { width: 25 }, // H - Status
-        { width: 20 }, // I - Asal Milik
-        { width: 25 }, // J - Bukti Pemilikan
-        { width: 25 }, // K - A.N. Pemilik Sertifikat
-        { width: 8 }, // L - BID Total
-        { width: 15 }, // M - Luas Total
-        { width: 8 }, // N - BID Sertifikat
-        { width: 15 }, // O - Luas Sertifikat
-        { width: 8 }, // P - BID Belum
-        { width: 15 }, // Q - Luas Belum
-        { width: 40 }, // R - Keterangan
+        { width: 8 }, { width: 6 }, { width: 20 }, { width: 20 }, { width: 15 },
+        { width: 35 }, { width: 25 }, { width: 25 }, { width: 20 }, { width: 25 },
+        { width: 25 }, { width: 8 }, { width: 15 }, { width: 8 }, { width: 15 },
+        { width: 8 }, { width: 15 }, { width: 40 },
       ];
 
-      // Tambahkan title (Row 1)
       const titleCell = worksheet.getCell("A1");
       titleCell.value = title;
-      titleCell.font = {
-        bold: true,
-        size: 12,
-        name: "Arial",
-      };
-      titleCell.alignment = {
-        horizontal: "center",
-        vertical: "middle",
-      };
-      titleCell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FFE6E6FA" },
-      };
-
-      // Merge title across all columns
+      titleCell.font = { bold: true, size: 12, name: "Arial" };
+      titleCell.alignment = { horizontal: "center", vertical: "middle" };
       worksheet.mergeCells("A1:R1");
 
-      // Tambahkan subtitle (Row 2)
       const subtitleCell = worksheet.getCell("A2");
       subtitleCell.value = subtitle;
-      subtitleCell.font = {
-        bold: true,
-        size: 11,
-        name: "Arial",
-      };
-      subtitleCell.alignment = {
-        horizontal: "center",
-        vertical: "middle",
-      };
-      subtitleCell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FFF0F0F0" },
-      };
-
-      // Merge subtitle across all columns
+      subtitleCell.font = { bold: true, size: 11, name: "Arial" };
+      subtitleCell.alignment = { horizontal: "center", vertical: "middle" };
       worksheet.mergeCells("A2:R2");
 
-      // Row kosong (Row 3)
       worksheet.getRow(3).height = 10;
 
-      // Header Row 1 (Row 4)
       const headers1 = [
-        "NOMOR\nURUT",
-        "BAG",
-        "NUP",
-        "KIB / KODE\nBARANG",
-        "NO. REG",
-        "ALAMAT",
-        "PERUNTUKAN",
-        "STATUS",
-        "ASAL MILIK",
-        "BUKTI PEMILIKAN",
-        "A.N. PEMILIK\nSERTIFIKAT",
-        "JUMLAH TANAH\nKESELURUHAN",
-        "",
-        "SUDAH SERTIFIKAT",
-        "",
-        "BELUM SERTIFIKAT",
-        "",
-        "KET",
+        "NOMOR URUT", "BAG", "NUP", "KIB / KODE BARANG", "NO. REG", "ALAMAT",
+        "PERUNTUKAN", "STATUS", "ASAL MILIK", "BUKTI PEMILIKAN", "A.N. PEMILIK SERTIFIKAT",
+        "JUMLAH TANAH KESELURUHAN", "", "SUDAH SERTIFIKAT", "", "BELUM SERTIFIKAT", "", "KET",
       ];
 
       const headerRow1 = worksheet.getRow(4);
       headers1.forEach((header, index) => {
         const cell = headerRow1.getCell(index + 1);
         cell.value = header;
-        cell.font = {
-          bold: true,
-          size: 9,
-          name: "Arial",
-        };
-        cell.alignment = {
-          horizontal: "center",
-          vertical: "middle",
-          wrapText: true,
-        };
-        cell.fill = {
-          type: "pattern",
-          pattern: "solid",
-          fgColor: { argb: "FFD3D3D3" },
-        };
+        cell.font = { bold: true, size: 9, name: "Arial" };
+        cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD3D3D3" } };
       });
-      headerRow1.height = 35;
 
-      // Header Row 2 (Row 5)
       const headers2 = [
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "BID",
-        "LUAS (M2)",
-        "BID",
-        "LUAS (M2)",
-        "BID",
-        "LUAS (M2)",
-        "",
+        "", "", "", "", "", "", "", "", "", "", "", "BID", "LUAS (M2)", "BID", "LUAS (M2)", "BID", "LUAS (M2)", "",
       ];
-
       const headerRow2 = worksheet.getRow(5);
       headers2.forEach((header, index) => {
         const cell = headerRow2.getCell(index + 1);
         cell.value = header;
-        cell.font = {
-          bold: true,
-          size: 9,
-          name: "Arial",
-        };
-        cell.alignment = {
-          horizontal: "center",
-          vertical: "middle",
-        };
-        cell.fill = {
-          type: "pattern",
-          pattern: "solid",
-          fgColor: { argb: "FFD3D3D3" },
-        };
-      });
-      headerRow2.height = 25;
-
-      // Merge header cells
-      const mergeRanges = [
-        "A4:A5",
-        "B4:B5",
-        "C4:C5",
-        "D4:D5",
-        "E4:E5",
-        "F4:F5",
-        "G4:G5",
-        "H4:H5",
-        "I4:I5",
-        "J4:J5",
-        "K4:K5",
-        "L4:M4",
-        "N4:O4",
-        "P4:Q4",
-        "R4:R5",
-      ];
-
-      mergeRanges.forEach((range) => {
-        worksheet.mergeCells(range);
+        cell.font = { bold: true, size: 9, name: "Arial" };
+        cell.alignment = { horizontal: "center", vertical: "middle" };
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD3D3D3" } };
       });
 
-      // Group assets berdasarkan Korem dan Kodim
+      const mergeRanges = ["A4:A5", "B4:B5", "C4:C5", "D4:D5", "E4:E5", "F4:F5", "G4:G5", "H4:H5", "I4:I5", "J4:J5", "K4:K5", "L4:M4", "N4:O4", "P4:Q4", "R4:R5"];
+      mergeRanges.forEach(range => worksheet.mergeCells(range));
+
       const groupedAssets = groupAssetsByKoremKodim(filteredAssets);
-
       let currentRow = 6;
       let globalIndex = 1;
 
-      // Loop through each Korem
       Object.keys(groupedAssets).forEach((koremId) => {
         const koremData = groupedAssets[koremId];
-
-        // Tambahkan header KOREM dengan background biru
-        const koremHeaderRow = worksheet.getRow(currentRow);
-        const koremHeaderCell = koremHeaderRow.getCell(1);
-        koremHeaderCell.value = koremData.koremName.toUpperCase();
-        koremHeaderCell.font = {
-          bold: true,
-          size: 11,
-          name: "Arial",
-          color: { argb: "FFFFFFFF" }, // White text
-        };
-        koremHeaderCell.alignment = {
-          horizontal: "left",
-          vertical: "middle",
-        };
-        koremHeaderCell.fill = {
-          type: "pattern",
-          pattern: "solid",
-          fgColor: { argb: "FF4472C4" }, // Blue background
-        };
-
-        // Merge korem header across all columns
+        const koremRow = worksheet.getRow(currentRow);
+        koremRow.getCell(1).value = koremData.koremName.toUpperCase();
+        koremRow.getCell(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
+        koremRow.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF4472C4" } };
         worksheet.mergeCells(`A${currentRow}:R${currentRow}`);
-        koremHeaderRow.height = 25;
         currentRow++;
 
-        // Loop through each Kodim in this Korem
         Object.keys(koremData.kodims).forEach((kodimName) => {
           const kodimAssets = koremData.kodims[kodimName];
-
-          // Tambahkan header Kodim dengan background kuning
-          const kodimHeaderRow = worksheet.getRow(currentRow);
-          const kodimHeaderCell = kodimHeaderRow.getCell(1);
-          kodimHeaderCell.value = `${kodimName.toUpperCase()} (${
-            kodimAssets.length
-          } aset)`;
-          kodimHeaderCell.font = {
-            bold: true,
-            size: 10,
-            name: "Arial",
-          };
-          kodimHeaderCell.alignment = {
-            horizontal: "left",
-            vertical: "middle",
-          };
-          kodimHeaderCell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "FFFFD700" }, // Gold/Yellow color
-          };
-
-          // Merge kodim header across all columns
+          const kodimRow = worksheet.getRow(currentRow);
+          kodimRow.getCell(1).value = `${kodimName.toUpperCase()} (${kodimAssets.length} aset)`;
+          kodimRow.getCell(1).font = { bold: true };
+          kodimRow.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFD700" } };
           worksheet.mergeCells(`A${currentRow}:R${currentRow}`);
-          kodimHeaderRow.height = 20;
           currentRow++;
 
-          // Tambahkan data aset untuk kodim ini
           kodimAssets.forEach((asset) => {
-            const sertifikatLuas = parseFloat(asset.sertifikat_luas) || 0;
-            const belumSertifikatLuas =
-              parseFloat(asset.belum_sertifikat_luas) || 0;
             const hasSertifikat = asset.pemilikan_sertifikat === "Ya";
-
             const rowData = [
-              globalIndex, // A - Nomor urut global
-              1, // B - BAG
-              asset.nama || "-", // C - NUP
-              asset.kib_kode_barang || asset.kode_barang || "-", // D - KIB/Kode Barang
-              asset.nomor_registrasi || asset.no_registrasi || "-", // E - No Reg
-              asset.alamat || "-", // F - Alamat
-              asset.peruntukan || asset.fungsi || "-", // G - Peruntukan
-              asset.status || "-", // H - Status
-              asset.asal_milik || "-", // I - Asal Milik
-              asset.bukti_pemilikan_filename ||
-                asset.bukti_kepemilikan_filename ||
-                "-", // J - Bukti Pemilikan
-              asset.atas_nama_pemilik_sertifikat || "-", // K - A.N. Pemilik Sertifikat
-              1, // L - BID Keseluruhan
-              formatLuas(asset), // M - Luas Keseluruhan
-              hasSertifikat ? 1 : 0, // N - BID Sertifikat
-              sertifikatLuas, // O - Luas Sertifikat
-              !hasSertifikat ? 1 : 0, // P - BID Belum Sertifikat
-              belumSertifikatLuas, // Q - Luas Belum Sertifikat
-              asset.keterangan || asset.keterangan_bukti_pemilikan || "-", // R - Keterangan
+              globalIndex, 1, asset.nama || "-", asset.kib_kode_barang || asset.kode_barang || "-",
+              asset.nomor_registrasi || asset.no_registrasi || "-", asset.alamat || "-",
+              asset.peruntukan || asset.fungsi || "-", asset.status || "-", asset.asal_milik || "-",
+              asset.bukti_pemilikan_filename || "-", asset.atas_nama_pemilik_sertifikat || "-",
+              1, formatLuas(asset), hasSertifikat ? 1 : 0, parseFloat(asset.sertifikat_luas) || 0,
+              !hasSertifikat ? 1 : 0, parseFloat(asset.belum_sertifikat_luas) || 0, asset.keterangan || "-",
             ];
-
             const dataRow = worksheet.getRow(currentRow);
-            rowData.forEach((data, colIndex) => {
-              const cell = dataRow.getCell(colIndex + 1);
-              cell.value = data;
-              cell.font = {
-                size: 9,
-                name: "Arial",
-              };
-
-              // Set alignment based on column type
-              if ([1, 2, 12, 14, 16].includes(colIndex + 1)) {
-                // Number columns (A, B, L, N, P) - center
-                cell.alignment = { horizontal: "center", vertical: "middle" };
-              } else if ([13, 15, 17].includes(colIndex + 1)) {
-                // Area columns (M, O, Q) - right
-                cell.alignment = { horizontal: "right", vertical: "middle" };
-                if (typeof data === "number" && data > 0) {
-                  cell.numFmt = "#,##0";
-                }
-              } else {
-                // Text columns - left
-                cell.alignment = {
-                  horizontal: "left",
-                  vertical: "middle",
-                  wrapText: true,
-                };
+            rowData.forEach((val, i) => {
+              const cell = dataRow.getCell(i + 1);
+              cell.value = val;
+              if ([1, 2, 12, 14, 16].includes(i + 1)) cell.alignment = { horizontal: "center" };
+              else if ([13, 15, 17].includes(i + 1)) {
+                cell.alignment = { horizontal: "right" };
+                if (typeof val === "number") cell.numFmt = "#,##0";
               }
             });
-
-            dataRow.height = 20;
             currentRow++;
             globalIndex++;
           });
         });
       });
 
-      // Apply border ke semua cells yang berisi data
-      for (let row = 1; row < currentRow; row++) {
-        for (let col = 1; col <= 18; col++) {
-          const cell = worksheet.getCell(row, col);
-          cell.border = {
-            top: { style: "thin", color: { argb: "FF000000" } },
-            left: { style: "thin", color: { argb: "FF000000" } },
-            bottom: { style: "thin", color: { argb: "FF000000" } },
-            right: { style: "thin", color: { argb: "FF000000" } },
-          };
+      for (let r = 1; r < currentRow; r++) {
+        for (let c = 1; c <= 18; c++) {
+          worksheet.getCell(r, c).border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
         }
       }
 
-      // Generate nama file
-      const koremName = selectedKorem
-        ? getKoremName(selectedKorem)
-            .replace(/[^a-zA-Z0-9\s]/g, "")
-            .replace(/\s+/g, "_")
-        : "Semua";
-      const fileName = `Laporan_Aset_Tanah_${koremName}_${
-        new Date().toISOString().split("T")[0]
-      }.xlsx`;
-
-      // Write dan download file
       const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
-
-      // Download file
+      const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
       const link = document.createElement("a");
-      const url = URL.createObjectURL(blob);
-      link.setAttribute("href", url);
-      link.setAttribute("download", fileName);
-      link.style.visibility = "hidden";
-      document.body.appendChild(link);
+      link.href = URL.createObjectURL(blob);
+      link.download = `Laporan_Aset_Tanah_${new Date().toISOString().split("T")[0]}.xlsx`;
       link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
       toast.success("File Excel berhasil didownload.");
     } catch (error) {
-      console.error("Error exporting to Excel:", error);
-      toast.error(`Gagal mengekspor data ke Excel: ${error.message}`);
+      toast.error(`Gagal mengekspor: ${error.message}`);
     } finally {
       setExporting(false);
     }
   };
 
-  // Helper function untuk group assets for preview
-  const getGroupedAssetsForPreview = () => {
-    return groupAssetsByKoremKodim(filteredAssets);
-  };
+  if (loading) return (
+    <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: "60vh" }}>
+      <Spinner animation="border" variant="success" />
+    </Container>
+  );
 
-  if (loading)
-    return (
-      <Container
-        className="d-flex justify-content-center align-items-center"
-        style={{ minHeight: "50vh" }}
-      >
-        <div className="text-center">
-          <Spinner
-            animation="border"
-            variant="primary"
-            style={{ width: "3rem", height: "3rem" }}
-          />
-          <p className="mt-3">Memuat data...</p>
-        </div>
-      </Container>
-    );
+  const groupedPreview = groupAssetsByKoremKodim(filteredAssets);
 
   return (
-    <Container className="py-4">
-      <div className="mb-4">
-        <h2 className="text-dark">
-          <i className="fas fa-file-excel me-2"></i>
-          Cetak Laporan Data Aset BMN
-        </h2>
+    <Container className="py-4 laporan-container">
+      {/* Page Header */}
+      <div className="page-header-box shadow-sm">
+        <div className="page-header-title">
+          <h2><i className="fas fa-file-invoice me-3 text-success"></i>Laporan Aset BMN</h2>
+        </div>
+        <div className="page-header-actions">
+          <Button 
+            className="btn-sage-export" 
+            onClick={exportToExcel}
+            disabled={exporting || filteredAssets.length === 0}
+          >
+            {exporting ? <Spinner size="sm" className="me-2" /> : <i className="fas fa-file-excel me-2"></i>}
+            Ekspor Excel
+          </Button>
+        </div>
       </div>
 
-      {error && (
-        <Alert variant="danger" className="mb-4">
-          <Alert.Heading>Error!</Alert.Heading>
-          {error}
-        </Alert>
-      )}
+      {error && <Alert variant="danger">{error}</Alert>}
 
-      <Card className="mb-4 shadow-sm">
-        <Card.Header className="bg-primary text-white">
-          <h5 className="mb-0">
-            <i className="fas fa-filter me-2"></i>
-            Filter Laporan
-          </h5>
-        </Card.Header>
-        <Card.Body>
-          <Row className="g-3">
-            <Col md={4}>
-              <Form.Group>
-                <Form.Label className="fw-bold">
-                  <i className="fas fa-map-marked-alt me-2"></i>
-                  Wilayah Korem
-                </Form.Label>
-                <Form.Select
-                  value={selectedKorem}
-                  onChange={handleKoremChange}
-                  className="form-select-lg"
-                >
+      <Row>
+        {/* Left Column: Filter */}
+        <Col lg={4}>
+          <Card className="filter-panel-card border-0 shadow-sm mb-4">
+            <Card.Header>
+              <h5><i className="fas fa-sliders-h"></i>Filter Data</h5>
+            </Card.Header>
+            <Card.Body>
+              <Form.Group className="mb-3">
+                <Form.Label>Wilayah Korem</Form.Label>
+                <Form.Select value={selectedKorem} onChange={handleKoremChange}>
                   <option value="">Semua Korem</option>
-                  {koremList.map((korem) => (
-                    <option key={korem.id} value={korem.id}>
-                      {korem.nama}
-                    </option>
-                  ))}
+                  {koremList.map(k => <option key={k.id} value={k.id}>{k.nama}</option>)}
                 </Form.Select>
               </Form.Group>
-            </Col>
 
-            <Col md={4}>
-              <Form.Group>
-                <Form.Label className="fw-bold">
-                  <i className="fas fa-building me-2"></i>
-                  Wilayah Kodim
-                </Form.Label>
-                <Form.Select
-                  value={selectedKodim}
+              <Form.Group className="mb-3">
+                <Form.Label>Wilayah Kodim</Form.Label>
+                <Form.Select 
+                  value={selectedKodim} 
                   onChange={(e) => setSelectedKodim(e.target.value)}
-                  className="form-select-lg"
-                  disabled={!selectedKorem && koremList.length > 0}
+                  disabled={!selectedKorem}
                 >
                   <option value="">Semua Kodim</option>
-                  {getKodimForSelectedKorem().map((kodim) => (
-                    <option key={kodim.id} value={kodim.nama}>
-                      {kodim.nama}
-                    </option>
-                  ))}
+                  {getKodimForSelectedKorem().map(k => <option key={k.id} value={k.nama}>{k.nama}</option>)}
                 </Form.Select>
               </Form.Group>
-            </Col>
 
-            <Col md={4}>
-              <Form.Group>
-                <Form.Label className="fw-bold">
-                  <i className="fas fa-flag me-2"></i>
-                  Status Aset
-                </Form.Label>
-                <Form.Select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="form-select-lg"
-                >
+              <Form.Group className="mb-4">
+                <Form.Label>Status Aset</Form.Label>
+                <Form.Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
                   <option value="">Semua Status</option>
                   <option value="Dimiliki/Dikuasai">Dimiliki/Dikuasai</option>
-                  <option value="TIdak Dimiliki/Dikuasai">
-                    TIdak Dimiliki/Dikuasai
-                  </option>
+                  <option value="TIdak Dimiliki/Dikuasai">Tidak Dimiliki/Dikuasai</option>
                 </Form.Select>
               </Form.Group>
-            </Col>
-          </Row>
 
-          <hr className="my-4" />
-
-          <Row>
-            <Col>
-              <div className="d-flex gap-3 flex-wrap">
-                <Button
-                  variant="secondary"
-                  onClick={handleResetFilter}
-                  size="lg"
-                >
-                  <i className="fas fa-undo me-2"></i>
-                  Reset Filter
-                </Button>
-
-                <Button
-                  variant="success"
-                  onClick={exportToExcel}
-                  disabled={exporting || filteredAssets.length === 0}
-                  size="lg"
-                  className="flex-grow-1 flex-md-grow-0"
-                >
-                  {exporting ? (
-                    <>
-                      <Spinner
-                        as="span"
-                        animation="border"
-                        size="sm"
-                        role="status"
-                        aria-hidden="true"
-                        className="me-2"
-                      />
-                      Mengekspor data...
-                    </>
-                  ) : (
-                    <>
-                      <i className="fas fa-download me-2"></i>
-                      Cetak Laporan Excel
-                    </>
-                  )}
+              <div className="filter-actions">
+                <Button className="btn-reset-filter w-100" onClick={handleResetFilter}>
+                  <i className="fas fa-undo me-2"></i>Reset
                 </Button>
               </div>
-            </Col>
-          </Row>
-        </Card.Body>
-      </Card>
+            </Card.Body>
+          </Card>
 
-      <Card className="shadow-sm">
-        <Card.Header className="bg-info text-white">
-          <h5 className="mb-0">
-            <i className="fas fa-eye me-2"></i>
-            Preview Data yang akan Diekspor
-          </h5>
-        </Card.Header>
-        <Card.Body>
-          {filteredAssets.length === 0 ? (
-            <div className="text-center py-5">
-              <div className="text-muted">
-                <i className="fas fa-folder-open fa-4x mb-4 text-secondary"></i>
-                <h4 className="mb-3">Tidak ada data untuk ditampilkan</h4>
-                <p className="lead">
-                  Sesuaikan filter di atas untuk menampilkan data yang
-                  diinginkan.
-                </p>
-                <Button variant="outline-primary" onClick={handleResetFilter}>
-                  <i className="fas fa-undo me-2"></i>
-                  Reset Filter
-                </Button>
+          {/* Mini Stats in Sidebar */}
+          <div className="summary-grid-vertical">
+            <div className="stats-card mb-3">
+              <div className="stats-icon bg-sage-light"><i className="fas fa-boxes"></i></div>
+              <div className="stats-info">
+                <h3>{filteredAssets.length}</h3>
+                <p>Total Aset</p>
               </div>
             </div>
-          ) : (
-            <>
-              {/* Summary Cards - Updated to 3 cards only */}
-              <Row className="mb-4">
-                <Col lg={4} md={4} className="mb-3">
-                  <Card className="bg-primary text-white h-100">
-                    <Card.Body className="text-center">
-                      <i className="fas fa-database fa-2x mb-2"></i>
-                      <h3 className="mb-1">{filteredAssets.length}</h3>
-                      <small>Total Aset Tanah</small>
-                    </Card.Body>
-                  </Card>
-                </Col>
-                <Col lg={4} md={4} className="mb-3">
-                  <Card className="bg-success text-white h-100">
-                    <Card.Body className="text-center">
-                      <i className="fas fa-shield-alt fa-2x mb-2"></i>
-                      <h3 className="mb-1">
-                        {
-                          filteredAssets.filter(
-                            (a) => a.status === "Dimiliki/Dikuasai"
-                          ).length
-                        }
-                      </h3>
-                      <small>Dimiliki/Dikuasai</small>
-                    </Card.Body>
-                  </Card>
-                </Col>
-                <Col lg={4} md={4} className="mb-3">
-                  <Card className="bg-danger text-white h-100">
-                    <Card.Body className="text-center">
-                      <i className="fas fa-exclamation-triangle fa-2x mb-2"></i>
-                      <h3 className="mb-1">
-                        {
-                          filteredAssets.filter(
-                            (a) => a.status === "TIdak Dimiliki/Dikuasai"
-                          ).length
-                        }
-                      </h3>
-                      <small>TIdak Dimiliki/Dikuasai</small>
-                    </Card.Body>
-                  </Card>
-                </Col>
-              </Row>
+            <div className="stats-card mb-3">
+              <div className="stats-icon bg-success-light"><i className="fas fa-check-shield"></i></div>
+              <div className="stats-info">
+                <h3>{filteredAssets.filter(a => a.status === "Dimiliki/Dikuasai").length}</h3>
+                <p>Dimiliki</p>
+              </div>
+            </div>
+          </div>
+        </Col>
 
-              {/* Data Preview dengan Grouping */}
-              <div
-                className="border rounded"
-                style={{ maxHeight: "600px", overflowY: "auto" }}
-              >
-                {Object.keys(getGroupedAssetsForPreview()).map((koremId) => {
-                  const koremData = getGroupedAssetsForPreview()[koremId];
+        {/* Right Column: Data Preview */}
+        <Col lg={8}>
+          <Card className="preview-section-card border-0 shadow-sm">
+            <div className="preview-toolbar">
+              <h5 className="mb-0 fw-bold text-dark">
+                <i className="fas fa-table me-2 text-success"></i>Pratinjau Data
+              </h5>
+              <div className="search-box-wrapper">
+                <i className="fas fa-search"></i>
+                <Form.Control 
+                  type="text" 
+                  placeholder="Cari nama atau alamat..." 
+                  className="search-input-preview"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="preview-scroll-container">
+              {Object.keys(groupedPreview).length > 0 ? (
+                Object.keys(groupedPreview).map(koremId => {
+                  const koremData = groupedPreview[koremId];
                   return (
-                    <div key={koremId} className="mb-4">
-                      {/* Header Korem dengan background biru */}
-                      <div
-                        className="p-3"
-                        style={{ backgroundColor: "#4472C4", color: "white" }}
-                      >
-                        <h5 className="mb-0 fw-bold">
-                          <i className="fas fa-map-marked-alt me-2"></i>
-                          {koremData.koremName}
-                        </h5>
+                    <div key={koremId} className="korem-preview-group">
+                      <div className="korem-preview-title">
+                        <i className="fas fa-map-marked-alt"></i>
+                        {koremData.koremName}
                       </div>
-
-                      {Object.keys(koremData.kodims).map((kodimName) => {
+                      
+                      {Object.keys(koremData.kodims).map(kodimName => {
                         const kodimAssets = koremData.kodims[kodimName];
                         return (
-                          <div key={kodimName} className="ms-3 mb-3">
-                            <div className="bg-warning bg-opacity-25 p-2 border-start border-warning border-3">
-                              <strong className="text-dark">
-                                <i className="fas fa-building me-2"></i>
-                                {kodimName} ({kodimAssets.length} aset)
-                              </strong>
+                          <div key={kodimName} className="kodim-preview-group">
+                            <div className="kodim-preview-title">
+                              <span><i className="fas fa-building me-2"></i>{kodimName}</span>
+                              <span className="badge bg-white text-dark border">{kodimAssets.length} Aset</span>
                             </div>
-
-                            <div className="table-responsive">
-                              <table className="table table-sm table-hover mb-0">
-                                <thead className="table-dark">
+                            
+                            <div className="table-responsive-custom">
+                              <table className="table table-striped table-bordered table-hover mb-0">
+                                <thead className="table-dark" style={{ position: "sticky", top: 0, zIndex: 10 }}>
                                   <tr>
-                                    <th style={{ width: "60px" }}>No</th>
+                                    <th style={{ width: "50px" }}>No</th>
                                     <th>NUP</th>
                                     <th>Alamat</th>
                                     <th>Status</th>
-                                    <th style={{ width: "120px" }}>
-                                      Luas (m²)
-                                    </th>
-                                    <th style={{ width: "100px" }}>
-                                      Sertifikat
-                                    </th>
+                                    <th className="text-end">Luas</th>
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {kodimAssets.map((asset, index) => (
+                                  {kodimAssets.map((asset, idx) => (
                                     <tr key={asset.id}>
-                                      <td className="text-center">
-                                        {index + 1}
-                                      </td>
+                                      <td className="text-center text-muted">{idx + 1}</td>
+                                      <td className="fw-bold">{asset.nama || "-"}</td>
                                       <td>
-                                        <strong>{asset.nama || "-"}</strong>
-                                      </td>
-                                      <td>
-                                        <span
-                                          className="text-truncate d-inline-block"
-                                          style={{ maxWidth: "200px" }}
-                                        >
+                                        <div className="text-truncate" style={{maxWidth: '250px'}} title={asset.alamat}>
                                           {asset.alamat || "-"}
-                                        </span>
+                                        </div>
                                       </td>
                                       <td>
-                                        <span
-                                          className={`badge ${
-                                            asset.status === "Dimiliki/Dikuasai"
-                                              ? "bg-success"
-                                              : asset.status ===
-                                                "TIdak Dimiliki/Dikuasai"
-                                              ? "bg-danger"
-                                              : "bg-secondary"
-                                          }`}
-                                        >
+                                        <span className={`badge ${asset.status === "Dimiliki/Dikuasai" ? "bg-success" : "bg-danger"}`}>
                                           {asset.status || "-"}
                                         </span>
                                       </td>
-                                      <td className="text-end">
-                                        <strong>
-                                          {formatLuas(asset).toLocaleString(
-                                            "id-ID"
-                                          )}
-                                        </strong>
-                                      </td>
-                                      <td className="text-center">
-                                        {asset.pemilikan_sertifikat === "Ya" ? (
-                                          <span className="badge bg-success">
-                                            <i className="fas fa-check me-1"></i>
-                                            Ada
-                                          </span>
-                                        ) : (
-                                          <span className="badge bg-danger">
-                                            <i className="fas fa-times me-1"></i>
-                                            Belum
-                                          </span>
-                                        )}
+                                      <td className="text-end fw-bold">
+                                        {formatLuas(asset).toLocaleString("id-ID")} m²
                                       </td>
                                     </tr>
                                   ))}
@@ -874,14 +474,19 @@ const LaporanPage = () => {
                       })}
                     </div>
                   );
-                })}
-              </div>
-            </>
-          )}
-        </Card.Body>
-      </Card>
+                })
+              ) : (
+                <div className="empty-preview">
+                  <i className="fas fa-search-minus"></i>
+                  <h4>Data Tidak Ditemukan</h4>
+                  <p>Coba sesuaikan filter atau kata kunci pencarian Anda</p>
+                </div>
+              )}
+            </div>
+          </Card>
+        </Col>
+      </Row>
     </Container>
   );
 };
-
 export default LaporanPage;

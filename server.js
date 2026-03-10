@@ -271,10 +271,21 @@ app.get("/korem", async (req, res) => {
 app.get("/yardip_assets", async (req, res) => {
   try {
     const [assets] = await pool.query("SELECT * FROM yardip_assets ORDER BY created_at DESC");
-    const formattedAssets = assets.map((asset) => ({
-      ...asset,
-      lokasi: asset.lokasi ? JSON.parse(asset.lokasi) : null,
+    
+    // Ambil foto_aset untuk setiap asset
+    const formattedAssets = await Promise.all(assets.map(async (asset) => {
+      const [fotos] = await pool.query(
+        'SELECT foto_url FROM yardip_foto_aset WHERE yardip_asset_id = ? ORDER BY urutan',
+        [asset.id]
+      );
+      
+      return {
+        ...asset,
+        lokasi: asset.lokasi ? JSON.parse(asset.lokasi) : null,
+        foto_aset: fotos.map(f => f.foto_url),
+      };
     }));
+    
     res.json(formattedAssets);
   } catch (error) {
     console.error("Error getting yardip assets:", error);
@@ -290,11 +301,20 @@ app.get("/yardip_assets/:id", async (req, res) => {
     if (assets.length === 0) {
       return res.status(404).json({ error: "Yardip asset not found" });
     }
-    const asset = {
-      ...assets[0],
-      lokasi: assets[0].lokasi ? JSON.parse(assets[0].lokasi) : null,
-    };
-    res.json(asset);
+    
+    const asset = assets[0];
+    
+    // Ambil foto_aset dari tabel terpisah
+    const [fotos] = await pool.query(
+      'SELECT foto_url FROM yardip_foto_aset WHERE yardip_asset_id = ? ORDER BY urutan',
+      [asset.id]
+    );
+    
+    res.json({
+      ...asset,
+      lokasi: asset.lokasi ? JSON.parse(asset.lokasi) : null,
+      foto_aset: fotos.map(f => f.foto_url),
+    });
   } catch (error) {
     console.error("Error getting yardip asset:", error);
     res.status(500).json({ error: error.message });
@@ -305,15 +325,18 @@ app.post("/yardip_assets", async (req, res) => {
   try {
     const assetData = req.body;
     const id = assetData.id || "Y" + Date.now();
-    const lokasiJSON = assetData.lokasi ? JSON.stringify(assetData.lokasi) : null;
+    const lokasiJSON = assetData.lokasi ? (typeof assetData.lokasi === 'string' ? assetData.lokasi : JSON.stringify(assetData.lokasi)) : null;
 
+    // Insert main asset data (tanpa foto_aset)
     await pool.query(`
       INSERT INTO yardip_assets (
           id, pengelola, bidang, provinsi, kabkota,
           kecamatan, kelurahan, peruntukan, status,
           keterangan, area, lokasi, type,
-          bukti_pemilikan_url, bukti_pemilikan_filename, keterangan_bukti_pemilikan
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          bukti_pemilikan_url, bukti_pemilikan_filename, keterangan_bukti_pemilikan,
+          gambar_tampak_atas_url, gambar_tampak_atas_filename,
+          created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `, [
       id, assetData.pengelola, assetData.bidang, assetData.provinsi || null,
       assetData.kabkota, assetData.kecamatan, assetData.kelurahan,
@@ -321,7 +344,25 @@ app.post("/yardip_assets", async (req, res) => {
       assetData.area, lokasiJSON, assetData.type || "yardip",
       assetData.bukti_pemilikan_url || null, assetData.bukti_pemilikan_filename || null,
       assetData.keterangan_bukti_pemilikan || null,
+      assetData.gambar_tampak_atas_url || null, assetData.gambar_tampak_atas_filename || null,
+      new Date(), new Date(),
     ]);
+
+    // Insert foto_aset ke tabel terpisah jika ada
+    if (assetData.foto_aset && Array.isArray(assetData.foto_aset) && assetData.foto_aset.length > 0) {
+      const fotoValues = assetData.foto_aset
+        .filter(url => url != null)
+        .map((url, index) => [
+          id, url, index
+        ]);
+      
+      if (fotoValues.length > 0) {
+        await pool.query(
+          'INSERT INTO yardip_foto_aset (yardip_asset_id, foto_url, urutan) VALUES ?',
+          [fotoValues]
+        );
+      }
+    }
 
     res.status(201).json({ message: "Yardip asset created successfully", id });
   } catch (error) {
@@ -334,24 +375,51 @@ app.put("/yardip_assets/:id", async (req, res) => {
   try {
     const assetData = req.body;
     const { id } = req.params;
-    const lokasiJSON = assetData.lokasi ? JSON.stringify(assetData.lokasi) : null;
+    const lokasiJSON = assetData.lokasi ? (typeof assetData.lokasi === 'string' ? assetData.lokasi : JSON.stringify(assetData.lokasi)) : null;
 
+    // Update main asset data
     await pool.query(`
       UPDATE yardip_assets SET
           pengelola = ?, bidang = ?, provinsi = ?, kabkota = ?,
           kecamatan = ?, kelurahan = ?, peruntukan = ?, status = ?,
-          keterangan = ?, area = ?, lokasi = ?, updated_at = CURRENT_TIMESTAMP,
+          keterangan = ?, area = ?, lokasi = ?, type = ?,
+          updated_at = CURRENT_TIMESTAMP,
           bukti_pemilikan_url = ?, bukti_pemilikan_filename = ?,
-          keterangan_bukti_pemilikan = ?
+          keterangan_bukti_pemilikan = ?,
+          gambar_tampak_atas_url = ?, gambar_tampak_atas_filename = ?
       WHERE id = ?
       `, [
       assetData.pengelola, assetData.bidang, assetData.provinsi || null,
       assetData.kabkota, assetData.kecamatan, assetData.kelurahan,
       assetData.peruntukan, assetData.status, assetData.keterangan,
-      assetData.area, lokasiJSON, assetData.bukti_pemilikan_url || null,
+      assetData.area, lokasiJSON, assetData.type || "yardip",
+      assetData.bukti_pemilikan_url || null,
       assetData.bukti_pemilikan_filename || null,
-      assetData.keterangan_bukti_pemilikan || null, id,
+      assetData.keterangan_bukti_pemilikan || null,
+      assetData.gambar_tampak_atas_url || null,
+      assetData.gambar_tampak_atas_filename || null,
+      id,
     ]);
+
+    // Update foto_aset: delete old and insert new
+    if (assetData.foto_aset && Array.isArray(assetData.foto_aset)) {
+      // Delete existing photos
+      await pool.query('DELETE FROM yardip_foto_aset WHERE yardip_asset_id = ?', [id]);
+      
+      // Insert new photos
+      const fotoValues = assetData.foto_aset
+        .filter(url => url != null)
+        .map((url, index) => [
+          id, url, index
+        ]);
+        
+      if (fotoValues.length > 0) {
+        await pool.query(
+          'INSERT INTO yardip_foto_aset (yardip_asset_id, foto_url, urutan) VALUES ?',
+          [fotoValues]
+        );
+      }
+    }
 
     res.json({ message: "Yardip asset updated successfully" });
   } catch (error) {
@@ -554,6 +622,43 @@ app.delete("/users/:id", verifyToken, async (req, res) => {
   }
 });
 
+// PUT change password — PROTECTED (all users)
+app.put("/auth/change-password", verifyToken, async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+  const userId = req.user.id;
+
+  try {
+    if (!oldPassword || !newPassword) {
+      return res.status(400).json({ message: "Password lama dan baru wajib diisi" });
+    }
+
+    const [users] = await pool.query("SELECT * FROM users WHERE id = ?", [userId]);
+    if (users.length === 0) {
+      return res.status(404).json({ message: "User tidak ditemukan" });
+    }
+
+    const user = users[0];
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Password lama salah" });
+    }
+
+    // Optional: add password strength validation
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
+      return res.status(400).json({ message: "Password baru minimal 8 karakter dan harus mengandung huruf dan angka" });
+    }
+
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    await pool.query("UPDATE users SET password = ? WHERE id = ?", [hashedNewPassword, userId]);
+
+    res.json({ message: "Password berhasil diperbarui" });
+  } catch (error) {
+    console.error("Error changing password:", error);
+    res.status(500).json({ message: error.message || "Gagal mengganti password" });
+  }
+});
+
 // ==================== UPLOAD ENDPOINTS ====================
 
 const storage = multer.diskStorage({
@@ -584,6 +689,15 @@ app.post("/upload/asset-photos", upload.array("asset_photos", 10), (req, res) =>
 app.post("/upload/foto-tampak-atas", upload.single("foto_tampak_atas"), (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded" });
   res.json({ url: `/uploads/${req.file.filename}`, filename: req.file.filename });
+});
+
+// Endpoint untuk upload foto aset yardip (multiple)
+app.post("/upload/foto-aset", upload.array("foto_aset", 10), (req, res) => {
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ error: "No file uploaded" });
+  }
+  const files = req.files.map((file) => ({ url: `/uploads/${file.filename}`, filename: file.filename }));
+  res.json({ files });
 });
 
 // ==================== DELETE FILE ENDPOINTS ====================
@@ -617,6 +731,21 @@ app.delete("/upload/asset-photos/:filename", (req, res) => {
 });
 
 app.delete("/upload/foto-tampak-atas/:filename", (req, res) => {
+  try {
+    const filePath = path.join(__dirname, "uploads", req.params.filename);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      res.json({ message: "File deleted successfully", filename: req.params.filename });
+    } else {
+      res.status(404).json({ error: "File not found" });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Endpoint untuk delete foto aset yardip
+app.delete("/upload/foto-aset/:filename", (req, res) => {
   try {
     const filePath = path.join(__dirname, "uploads", req.params.filename);
     if (fs.existsSync(filePath)) {

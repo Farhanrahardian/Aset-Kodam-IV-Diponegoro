@@ -1,0 +1,387 @@
+/* ====== HEADER ====== */
+.sticky-header {
+  background: white;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  border-bottom: 3px solid #8A9A5B;
+}
+
+/* Gradient fade di bawah navbar */
+.sticky-header::after {
+  content: '';
+  position: absolute;
+  bottom: -32px;
+  left: 0;
+  right: 0;
+  height: 32px;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 1) 0%,
+    rgba(255, 255, 255, 0.8) 40%,
+    rgba(255, 255, 255, 0.4) 70%,
+    rgba(255, 255, 255, 0.1) 85%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  pointer-events: none;
+  z-index: 99;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  width: 100%;
+}
+
+/* ====== HEADER LEFT (HAMBURGER + TITLE) ====== */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.hamburger-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  color: #8A9A5B;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.hamburger-btn:hover {
+  background: rgba(138, 154, 91, 0.15);
+  border-color: #8A9A5B;
+  color: #6B7C45;
+}
+
+.hamburger-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.title-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.page-icon {
+  width: 20px;
+  height: 20px;
+  color: #8A9A5B;
+  flex-shrink: 0;
+}
+
+.header-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+.header-subtitle {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0;
+  font-weight: 400;
+}
+
+/* ====== HEADER RIGHT (USER DROPDOWN) ====== */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* User Dropdown */
+.user-dropdown {
+  position: relative;
+}
+
+.user-dropdown-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px 6px 6px;
+  background: transparent;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.user-dropdown-trigger:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #8A9A5B 0%, #6B7C45 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.user-name-display {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  text-align: left;
+}
+
+.chevron-icon {
+  width: 14px;
+  height: 14px;
+  color: #9ca3af;
+  transition: transform 0.2s ease;
+}
+
+.user-dropdown-trigger:hover .chevron-icon {
+  color: #8A9A5B;
+}
+
+/* User Dropdown Menu */
+.user-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+  padding: 8px;
+  min-width: 240px;
+  z-index: 1001;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Dropdown Header */
+.user-dropdown-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.dropdown-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #8A9A5B 0%, #6B7C45 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.dropdown-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dropdown-user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dropdown-user-role {
+  font-size: 12px;
+  color: #6b7280;
+  text-transform: capitalize;
+}
+
+/* Dropdown Divider */
+.dropdown-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 8px 0;
+}
+
+/* Dropdown Item */
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.dropdown-item:hover {
+  background: rgba(138, 154, 91, 0.15);
+  color: #6B7C45;
+}
+
+.dropdown-item svg {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+
+/* Logout Item */
+.logout-item {
+  color: #dc2626;
+}
+
+.logout-item:hover {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+/* ====== RESPONSIVE ====== */
+@media (max-width: 768px) {
+  .header-content {
+    padding: 14px 16px;
+  }
+
+  .header-left {
+    gap: 12px;
+  }
+
+  .hamburger-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .hamburger-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .page-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .header-title {
+    font-size: 17px;
+  }
+
+  .header-subtitle {
+    font-size: 12px;
+  }
+
+  .user-dropdown-trigger {
+    padding: 6px 10px 6px 6px;
+    gap: 8px;
+  }
+
+  .user-avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+
+  .user-name {
+    font-size: 13px;
+  }
+
+  .user-name-display {
+    display: none;
+  }
+
+  .user-dropdown-menu {
+    min-width: 200px;
+  }
+
+  .dropdown-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-content {
+    padding: 12px 14px;
+  }
+
+  .header-title {
+    font-size: 15px;
+  }
+
+  .header-subtitle {
+    font-size: 11px;
+  }
+
+  .hamburger-btn {
+    width: 38px;
+    height: 38px;
+  }
+
+  .hamburger-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .page-icon {
+    display: none;
+  }
+
+  .user-avatar {
+    width: 34px;
+    height: 34px;
+    font-size: 13px;
+  }
+}

@@ -1,29 +1,250 @@
-.sidebar .nav-link {
-  transition: all 0.3s ease;
-  border-radius: 5px; /* biar kotaknya membulat */
-  padding: 10px 15px; /* samain sama inline style */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+
+/* ═══════════════════════════════════════════════════════════
+   SIDEBAR - DEEP FOREST GREEN TNI-AD
+   ═══════════════════════════════════════════════════════════ */
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 99;
+  width: 260px;
+  height: 100vh;
+  background: linear-gradient(180deg, #2E3B23 0%, #1F2918 100%);
+  border-right: 1px solid #1A2214;
+  transition: transform 0.3s ease;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
-.sidebar .nav-link:hover {
-  background-color: #4caf50; /* hijau sama dengan aktif */
-  color: #ffffff;
-  transform: translateX(5px); /* efek geser */
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2); /* kasih bayangan halus */
+.sidebar.closed {
+  transform: translateX(-100%);
 }
+
+.sidebar-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 16px 12px;
+  overflow-y: auto;
+}
+
+/* ══════ LOGO SECTION ══════ */
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.logo-image {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.logo-text {
+  font-size: 20px;
+  font-weight: 700;
+  color: #FFFFFF;
+  white-space: nowrap;
+}
+
+/* ══════ NAVIGATION ══════ */
+
+.sidebar-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Menu Group */
+
+.menu-group {
+  margin-bottom: 16px;
+}
+
+.menu-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.menu-group-header:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.group-header-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.group-icon {
+  width: 18px;
+  height: 18px;
+  color: #A8B590;
+  transition: color 0.2s ease;
+}
+
+.menu-group-header:hover .group-icon {
+  color: #FFFFFF;
+}
+
+.group-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #A8B590;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.chevron-icon {
+  width: 14px;
+  height: 14px;
+  color: #8A9975;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+/* Submenu */
+
+.submenu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-left: 16px;
+  margin-top: 8px;
+}
+
+/* Sidebar Links */
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  color: #D8E0D0;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.sidebar-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #FFFFFF;
+}
+
+.sidebar-link:hover .link-icon {
+  color: #FFFFFF;
+}
+
+.sidebar-link.active {
+  background: linear-gradient(135deg, #8A9A5B 0%, #6B7C45 100%);
+  color: #FFFFFF;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(138, 154, 91, 0.4);
+}
+
+.sidebar-link.active .link-icon {
+  color: #FFFFFF;
+}
+
+.link-icon {
+  width: 20px;
+  height: 20px;
+  color: #A8B590;
+  flex-shrink: 0;
+  transition: color 0.2s ease;
+}
+
+.sidebar-link.active .link-icon {
+  color: #FFFFFF;
+}
+
+.link-label {
+  flex: 1;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ══════ SCROLLBAR ══════ */
+
+.sidebar-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* ══════ RESPONSIVE ══════ */
+
 @media (max-width: 768px) {
-  /* Turunkan z-index semua control Leaflet biar gak nabrak sidebar */
-  .leaflet-control {
-    z-index: 400 !important; /* default 1000, jadi lebih rendah dari sidebar */
-  }
-
-  .leaflet-top,
-  .leaflet-bottom {
-    z-index: 400 !important;
-  }
-
-  /* Pastikan sidebar lebih tinggi */
   .sidebar {
-    position: relative; /* atau fixed, sesuai layout kamu */
-    z-index: 1100; /* lebih tinggi dari Leaflet */
+    width: 260px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  }
+
+  .sidebar.closed {
+    transform: translateX(-100%);
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar-logo {
+    padding: 12px;
+  }
+
+  .logo-image {
+    width: 36px;
+    height: 36px;
+  }
+
+  .logo-text {
+    font-size: 18px;
+  }
+
+  .sidebar-link {
+    padding: 10px 12px;
+  }
+
+  .link-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .link-label {
+    font-size: 13px;
+  }
+
+  .group-title {
+    font-size: 11px;
   }
 }

@@ -1,0 +1,440 @@
+/* ═══════════════════════════════════════════════════════════
+   DATA ASET YARDIP PAGE - SMALLER ACTION BUTTONS
+   ═══════════════════════════════════════════════════════════ */
+
+/* Action buttons in table - SMALLER */
+.table .btn-group,
+.table .d-flex.gap-1 {
+  gap: 4px !important;
+}
+
+.table .btn {
+  padding: 4px 10px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  border-radius: 6px !important;
+  white-space: nowrap !important;
+}
+
+.table .btn-sm {
+  padding: 3px 8px !important;
+  font-size: 11px !important;
+}
+
+/* Specific button colors */
+.table .btn-info {
+  background: #17a2b8 !important;
+  border-color: #17a2b8 !important;
+  color: white !important;
+}
+
+.table .btn-warning {
+  background: #ffc107 !important;
+  border-color: #ffc107 !important;
+  color: #212529 !important;
+}
+
+.table .btn-danger {
+  background: #dc3545 !important;
+  border-color: #dc3545 !important;
+  color: white !important;
+}
+
+/* Hover effects */
+.table .btn:hover {
+  transform: translateY(-1px) !important;
+  opacity: 0.9 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PREMIUM MODERN UI STYLES
+   ═══════════════════════════════════════════════════════════ */
+
+/* 1. Card & Container Styling */
+.card {
+  border: none !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05) !important;
+  transition: box-shadow 0.3s ease;
+  overflow: hidden;
+}
+
+.card:hover {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08) !important;
+}
+
+.card-header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+  background-color: transparent !important;
+}
+
+/* 2. Filter Panel (Glassmorphism/Clean) */
+.filter-panel-card {
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.form-select,
+.form-control {
+  border-radius: 10px !important;
+  border: 1px solid #e5e7eb !important;
+  background-color: #f9fafb !important;
+  transition: all 0.2s ease;
+  font-size: 0.9rem !important;
+  padding: 0.5rem 1rem !important;
+}
+
+.form-select:focus,
+.form-control:focus {
+  background-color: #ffffff !important;
+  border-color: #8A9A5B !important;
+  box-shadow: 0 0 0 3px rgba(138, 154, 91, 0.15) !important;
+}
+
+.input-group-text {
+  background-color: #f9fafb !important;
+  border: 1px solid #e5e7eb !important;
+  border-right: none !important;
+  border-radius: 10px 0 0 10px !important;
+  color: #6b7280;
+}
+
+.input-group .form-control {
+  border-left: none !important;
+}
+
+/* 3. Table Modernization */
+.table-responsive {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f3f4f6;
+}
+
+.table {
+  margin-bottom: 0 !important;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table th {
+  background-color: #f8fafc !important;
+  /* Soft slate color */
+  color: #475569 !important;
+  font-weight: 600 !important;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  padding: 1rem !important;
+  border-bottom: 2px solid #e2e8f0 !important;
+  border-top: none !important;
+  white-space: nowrap;
+}
+
+/* ==============================================================
+   FORM MODERNIZATION (TAMBAH ASET)
+   ============================================================== */
+
+/* Label style modern */
+.form-bmn-wrapper label,
+.form-yardip-wrapper label {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #475569;
+  margin-bottom: 0.5rem;
+}
+
+/* Input & Select Box halus dengan border radius 10px */
+.form-bmn-wrapper .form-control,
+.form-yardip-wrapper .form-control,
+.form-bmn-wrapper .form-select,
+.form-yardip-wrapper .form-select {
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  padding: 0.6rem 1rem;
+  background-color: #f8fafc;
+  transition: all 0.2s;
+}
+
+/* Focus state ala Tailwind (border biru + ring/shadow tipis) */
+.form-bmn-wrapper .form-control:focus,
+.form-yardip-wrapper .form-control:focus,
+.form-bmn-wrapper .form-select:focus,
+.form-yardip-wrapper .form-select:focus {
+  background-color: #ffffff;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  outline: none;
+}
+
+/* Sticky action bar untuk Save/Cancel di bawah form */
+.sticky-action-bar {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 1.5rem;
+  margin-top: 2rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  position: sticky;
+  bottom: 0;
+  background: white;
+  padding-bottom: 1.5rem;
+  z-index: 10;
+}
+
+/* Tombol Save membulat dan menonjol */
+.btn-save-modern {
+  padding: 0.6rem 2rem;
+  border-radius: 10px;
+  font-weight: 600;
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
+}
+
+/* Tombol Cancel less-contrast */
+.btn-cancel-modern {
+  padding: 0.6rem 1.5rem;
+  border-radius: 10px;
+  font-weight: 600;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  background: white;
+}
+
+/* Map frame rounding radius modern */
+.map-frame-modern {
+  border-radius: 16px !important;
+}
+
+.table td {
+  padding: 1rem !important;
+  vertical-align: middle;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+  font-size: 0.875rem;
+  transition: background-color 0.2s ease;
+}
+
+/* Zebra Striping Halus */
+.table-striped tbody tr:nth-of-type(odd) td {
+  background-color: #fdfdfd !important;
+}
+
+.table-striped tbody tr:nth-of-type(even) td {
+  background-color: #ffffff !important;
+}
+
+/* Hover effect on row */
+.table tbody tr {
+  transition: all 0.2s ease;
+}
+
+.table tbody tr:hover td {
+  background-color: #eff6ff !important;
+  /* Light blue tint for Yardip */
+  cursor: default;
+}
+
+/* 4. Modern Badges */
+.badge {
+  padding: 0.5em 0.8em !important;
+  font-weight: 600 !important;
+  border-radius: 20px !important;
+  letter-spacing: 0.025em;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Dimiliki/Dikuasai - Pastel Green */
+.badge.bg-success {
+  background-color: #d1fae5 !important;
+  color: #065f46 !important;
+  border: 1px solid #a7f3d0 !important;
+}
+
+/* Tidak Dimiliki - Pastel Red */
+.badge.bg-danger {
+  background-color: #fee2e2 !important;
+  color: #991b1b !important;
+  border: 1px solid #fecaca !important;
+}
+
+/* Info/Neutral badge */
+.badge.bg-info {
+  background-color: #e0f2fe !important;
+  color: #075985 !important;
+  border: 1px solid #bae6fd !important;
+}
+
+/* Warning/Lain-lain badge */
+.badge.bg-warning {
+  background-color: #fef3c7 !important;
+  color: #92400e !important;
+  border: 1px solid #fde68a !important;
+}
+
+/* 5. Summary/Stat Cards Redesign */
+.summary-stat-box {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  transition: transform 0.2s;
+}
+
+.summary-stat-box:hover {
+  transform: translateY(-2px);
+}
+
+.summary-stat-value {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.summary-stat-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Colored text overriding BS defaults */
+.text-primary {
+  color: #2563eb !important;
+}
+
+.text-success {
+  color: #10b981 !important;
+}
+
+.text-danger {
+  color: #ef4444 !important;
+}
+
+.text-warning {
+  color: #f59e0b !important;
+}
+
+.text-info {
+  color: #0ea5e9 !important;
+}
+
+/* 6. Empty State Polish */
+.empty-state-icon {
+  font-size: 4rem;
+  color: #cbd5e1;
+  margin-bottom: 1.5rem;
+  opacity: 0.7;
+}
+
+/* Reset button styling */
+.btn-outline-secondary {
+  border-radius: 10px !important;
+  border-color: #e2e8f0;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.btn-outline-secondary:hover {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MODAL STYLES - CENTERED & LARGE
+   ═══════════════════════════════════════════════════════════ */
+
+.data-aset-yardip-page .modal-dialog,
+.data-aset-yardip-page.modal-dialog,
+.modal.yardip-modal .modal-dialog {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 1rem auto !important;
+  max-width: 95vw !important;
+  width: 95vw !important;
+}
+
+.data-aset-yardip-page .modal-content,
+.data-aset-yardip-page.modal-content,
+.modal.yardip-modal .modal-content {
+  border-radius: 20px !important;
+  border: none !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+  max-height: calc(100vh - 1rem) !important;
+  height: calc(100vh - 1rem) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+}
+
+.data-aset-yardip-page .modal-header,
+.data-aset-yardip-page.modal-header,
+.modal.yardip-modal .modal-header {
+  background: var(--gradient-primary);
+  padding: 1.25rem 2rem !important;
+  border-bottom: none !important;
+  flex-shrink: 0 !important;
+}
+
+.data-aset-yardip-page .modal-title,
+.data-aset-yardip-page.modal-title,
+.modal.yardip-modal .modal-title {
+  color: white !important;
+  font-weight: 800 !important;
+  font-size: 1.4rem !important;
+}
+
+.data-aset-yardip-page .modal-body,
+.data-aset-yardip-page.modal-body,
+.modal.yardip-modal .modal-body {
+  padding: 1.5rem !important;
+  overflow-y: auto !important;
+  flex: 1 !important;
+  min-height: 0 !important;
+}
+
+.data-aset-yardip-page .modal-footer,
+.data-aset-yardip-page.modal-footer,
+.modal.yardip-modal .modal-footer {
+  flex-shrink: 0 !important;
+  border-top: 1px solid var(--color-gray-200) !important;
+  padding: 1rem 1.5rem !important;
+}
+
+@media (max-width: 768px) {
+
+  .data-aset-yardip-page .modal-dialog,
+  .data-aset-yardip-page.modal-dialog,
+  .modal.yardip-modal .modal-dialog {
+    margin: 0.5rem auto !important;
+    max-width: 99vw !important;
+    width: 99vw !important;
+  }
+
+  .data-aset-yardip-page .modal-content,
+  .data-aset-yardip-page.modal-content,
+  .modal.yardip-modal .modal-content {
+    max-height: 98vh !important;
+    height: 98vh !important;
+  }
+
+  .data-aset-yardip-page .modal-header,
+  .data-aset-yardip-page.modal-header,
+  .modal.yardip-modal .modal-header {
+    padding: 1rem !important;
+  }
+
+  .data-aset-yardip-page .modal-title,
+  .data-aset-yardip-page.modal-title,
+  .modal.yardip-modal .modal-title {
+    font-size: 1.1rem !important;
+  }
+}

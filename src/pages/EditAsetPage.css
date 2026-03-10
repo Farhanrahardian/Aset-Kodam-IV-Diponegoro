@@ -1,0 +1,297 @@
+/* ═══════════════════════════════════════════════════════════
+   EDIT ASET PAGE - EXTRA LARGE FULL WIDTH FORM
+   ═══════════════════════════════════════════════════════════ */
+
+.edit-aset-page {
+  max-width: 100%;
+  margin: 0;
+  padding: 0 var(--spacing-8);
+}
+
+/* Page Header */
+.page-header-wrapper {
+  margin-bottom: var(--spacing-6);
+  padding-top: var(--spacing-6);
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+.header-icon {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gradient-primary);
+  color: white;
+  border-radius: var(--radius-xl);
+  flex-shrink: 0;
+}
+
+.header-icon.edit-icon {
+  background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+}
+
+.page-title {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-gray-900);
+  margin: 0;
+  line-height: var(--line-height-tight);
+}
+
+.page-subtitle {
+  font-size: var(--font-size-base);
+  color: var(--color-gray-500);
+  margin: var(--spacing-1) 0 0 0;
+}
+
+/* Form Card - EXTRA LARGE */
+.form-card {
+  max-width: 100%;
+  margin-bottom: var(--spacing-8);
+}
+
+.form-card .card {
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--color-gray-200);
+  overflow: hidden;
+  width: 100%;
+}
+
+.form-card .card-body {
+  padding: var(--spacing-10);
+}
+
+/* Form Groups - EXTRA LARGE */
+.form-group {
+  margin-bottom: var(--spacing-8);
+}
+
+.form-label {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-gray-700);
+  margin-bottom: var(--spacing-3);
+  display: block;
+}
+
+.form-control,
+.form-select {
+  padding: var(--spacing-4) var(--spacing-5);
+  font-size: var(--font-size-lg);
+  border: 2px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-normal);
+  width: 100%;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 4px var(--color-primary-100);
+  outline: none;
+}
+
+/* Two Column Layout - WIDER */
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-8);
+  margin: 0;
+}
+
+.form-row .form-group {
+  margin-bottom: 0;
+}
+
+/* Full Width Fields */
+.form-row.full-width {
+  grid-template-columns: 1fr;
+}
+
+/* File Upload Section */
+.file-upload-section {
+  margin-top: var(--spacing-8);
+  padding: var(--spacing-8);
+  background: var(--color-gray-50);
+  border-radius: var(--radius-xl);
+}
+
+/* Map Section - MUCH LARGER */
+.map-section {
+  margin: var(--spacing-8) 0;
+}
+
+.map-container {
+  height: 600px !important;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  border: 2px solid var(--color-gray-200);
+}
+
+/* Buttons */
+.btn-group {
+  display: flex;
+  gap: var(--spacing-4);
+  margin-top: var(--spacing-8);
+  padding-top: var(--spacing-8);
+  border-top: 1px solid var(--color-gray-200);
+}
+
+.btn {
+  padding: var(--spacing-4) var(--spacing-8);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--radius-xl);
+  transition: all var(--transition-slow);
+  cursor: pointer;
+  border: none;
+}
+
+.btn-primary {
+  background: var(--gradient-primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-xl);
+}
+
+.btn-secondary {
+  background: var(--color-gray-100);
+  color: var(--color-gray-700);
+  border: 1px solid var(--color-gray-300);
+}
+
+.btn-secondary:hover {
+  background: var(--color-gray-200);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .edit-aset-page {
+    padding: 0 var(--spacing-4);
+  }
+
+  .page-header-wrapper {
+    padding-top: var(--spacing-4);
+  }
+
+  .page-title {
+    font-size: var(--font-size-2xl);
+  }
+
+  .header-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .form-card .card-body {
+    padding: var(--spacing-5);
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-5);
+  }
+
+  .map-container {
+    height: 400px !important;
+  }
+
+  .btn-group {
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MODAL STYLES - CENTERED & LARGE
+   ═══════════════════════════════════════════════════════════ */
+
+.edit-aset-page .modal-dialog,
+.edit-aset-page.modal-dialog {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 1rem auto !important;
+  max-width: 95vw !important;
+  width: 95vw !important;
+}
+
+.edit-aset-page .modal-content,
+.edit-aset-page.modal-content {
+  border-radius: 20px !important;
+  border: none !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+  max-height: 90vh !important;
+  height: 90vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+}
+
+.edit-aset-page .modal-header,
+.edit-aset-page.modal-header {
+  background: var(--gradient-primary);
+  padding: 1.25rem 2rem !important;
+  border-bottom: none !important;
+  flex-shrink: 0 !important;
+}
+
+.edit-aset-page .modal-title,
+.edit-aset-page.modal-title {
+  color: white !important;
+  font-weight: 800 !important;
+  font-size: 1.4rem !important;
+}
+
+.edit-aset-page .modal-body,
+.edit-aset-page.modal-body {
+  padding: 1.5rem !important;
+  overflow-y: auto !important;
+  flex: 1 !important;
+  min-height: 0 !important;
+}
+
+.edit-aset-page .modal-footer,
+.edit-aset-page.modal-footer {
+  flex-shrink: 0 !important;
+  border-top: 1px solid var(--color-gray-200) !important;
+  padding: 1rem 1.5rem !important;
+}
+
+@media (max-width: 768px) {
+  .edit-aset-page .modal-dialog,
+  .edit-aset-page.modal-dialog {
+    margin: 0.5rem auto !important;
+    max-width: 99vw !important;
+    width: 99vw !important;
+  }
+
+  .edit-aset-page .modal-content,
+  .edit-aset-page.modal-content {
+    max-height: 98vh !important;
+    height: 98vh !important;
+  }
+
+  .edit-aset-page .modal-header,
+  .edit-aset-page.modal-header {
+    padding: 1rem !important;
+  }
+
+  .edit-aset-page .modal-title,
+  .edit-aset-page.modal-title {
+    font-size: 1.1rem !important;
+  }
+}

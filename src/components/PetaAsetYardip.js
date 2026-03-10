@@ -1,9 +1,10 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { GoogleMap, useJsApiLoader, Polygon, Marker, InfoWindow, OverlayView } from "@react-google-maps/api";
 import { MarkerClusterer } from "@googlemaps/markerclusterer";
 import * as turf from "@turf/turf";
 import { parseLocation } from "../utils/locationUtils";
 import { isGeometryNearCoastalArea } from "../utils/coastalConfig";
+import { FaExpandArrowsAlt, FaCompressArrowsAlt, FaExpand, FaCompress, FaArrowLeft } from "react-icons/fa";
 
 const libraries = ["drawing", "places", "geometry"];
 
@@ -192,6 +193,8 @@ const PetaAsetYardip = ({
   }, [assets, mode]);
 
   const [map, setMap] = useState(null);
+  const mapContainerRef = useRef(null);
+  const [isMapFullscreen, setIsMapFullscreen] = useState(false);
   const [view, setView] = useState({
     type: mode === 'detail' ? "kabupaten" : "nasional", // Set initial view based on mode
     provinsi: null,
@@ -200,6 +203,36 @@ const PetaAsetYardip = ({
   });
   const [zoom, setZoom] = useState(mapOptions.zoom);
   const [markerClusterer, setMarkerClusterer] = useState(null);
+
+  // ===== HANDLER FULLSCREEN PETA =====
+  const toggleMapFullscreen = () => {
+    if (!mapContainerRef.current) return;
+    if (!document.fullscreenElement) {
+      mapContainerRef.current.requestFullscreen().catch((err) => {
+        console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsMapFullscreen(!!document.fullscreenElement);
+      if (map) {
+        // Trigger resize event to ensure map fills new container size
+        window.google.maps.event.trigger(map, "resize");
+        
+        // Re-fit bounds to make sure the view is correct
+        const bounds = map.getBounds();
+        if (bounds) {
+          map.fitBounds(bounds);
+        }
+      }
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, [map]);
 
 
 
@@ -608,12 +641,50 @@ const PetaAsetYardip = ({
   }
 
   return (
-    <div style={{ position: "relative", height: "100%", width: "100%" }}>
-      {view.type !== "nasional" && mode !== "detail" && (
-        <button onClick={handleBackClick} className="custom-back-button">
-          Kembali
+    <div ref={mapContainerRef} style={{ position: "relative", height: "100%", width: "100%" }}>
+      {/* Top Left Controls Group */}
+      <div style={{ position: "absolute", top: "15px", left: "15px", zIndex: 10, display: "flex", gap: "10px" }}>
+        <button 
+          type="button"
+          className="shadow border-0 d-flex align-items-center justify-content-center" 
+          style={{ 
+            width: "40px", 
+            height: "40px", 
+            backgroundColor: "#ffffff", 
+            borderRadius: "4px",
+            padding: 0,
+            cursor: "pointer",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.3)"
+          }} 
+          onClick={toggleMapFullscreen}
+          title={isMapFullscreen ? "Keluar Fullscreen" : "Fullscreen"}
+        >
+          {isMapFullscreen ? 
+            <FaCompress size={22} style={{ color: "#000000", display: "block" }} /> : 
+            <FaExpand size={22} style={{ color: "#000000", display: "block" }} />
+          }
         </button>
-      )}
+
+        {view.type !== "nasional" && mode !== "detail" && (
+          <button 
+            type="button"
+            className="shadow border-0 d-flex align-items-center px-3" 
+            style={{ 
+              height: "40px", 
+              backgroundColor: "#ffffff", 
+              borderRadius: "4px",
+              cursor: "pointer",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+              fontWeight: "bold",
+              fontSize: "14px",
+              color: "#000"
+            }} 
+            onClick={handleBackClick}
+          >
+            <FaArrowLeft className="me-2" /> Kembali
+          </button>
+        )}
+      </div>
 
       {/* Map type selector - top right */}
       <div style={{
@@ -624,15 +695,15 @@ const PetaAsetYardip = ({
       }}>
         <div style={{
           backgroundColor: "white",
-          border: "1px solid #d1d5db",
-          borderRadius: "8px",
+          border: "none",
+          borderRadius: "4px",
           padding: "8px 12px",
           fontSize: "14px",
           fontWeight: "600",
           cursor: "pointer",
-          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+          boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
           transition: "all 0.2s",
-          minWidth: "100px",
+          minWidth: "120px",
           minHeight: "40px",
           color: "#374151"
         }}>
@@ -655,8 +726,8 @@ const PetaAsetYardip = ({
             }}
             defaultValue="roadmap"
           >
-            <option value="roadmap">Peta</option>
-            <option value="satellite">Satelit</option>
+            <option value="roadmap">Tampilan Peta</option>
+            <option value="satellite">Citra Satelit</option>
             <option value="hybrid">Hybrid</option>
             <option value="terrain">Terrain</option>
           </select>
@@ -664,62 +735,60 @@ const PetaAsetYardip = ({
       </div>
 
       {/* Zoom controls - bottom right */}
-      {mode !== 'detail' && (
-        <div style={{
-          position: "absolute",
-          bottom: "15px",
-          right: "15px",
-          zIndex: 1,
-          display: "flex",
-          flexDirection: "column",
-          gap: "5px"
-        }}>
-          <button
-            style={{
-              backgroundColor: "white",
-              border: "1px solid #d1d5db",
-              borderRadius: "8px",
-              padding: "8px 12px",
-              fontSize: "14px",
-              fontWeight: "600",
-              cursor: "pointer",
-              boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
-              transition: "all 0.2s",
-              minWidth: "40px",
-              minHeight: "40px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center"
-            }}
-            onClick={() => map && map.setZoom(map.getZoom() + 1)}
-            title="Zoom In"
-          >
-            +
-          </button>
-          <button
-            style={{
-              backgroundColor: "white",
-              border: "1px solid #d1d5db",
-              borderRadius: "8px",
-              padding: "8px 12px",
-              fontSize: "14px",
-              fontWeight: "600",
-              cursor: "pointer",
-              boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
-              transition: "all 0.2s",
-              minWidth: "40px",
-              minHeight: "40px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center"
-            }}
-            onClick={() => map && map.setZoom(map.getZoom() - 1)}
-            title="Zoom Out"
-          >
-            -
-          </button>
-        </div>
-      )}
+      <div style={{
+        position: "absolute",
+        bottom: "15px",
+        right: "15px",
+        zIndex: 1,
+        display: "flex",
+        flexDirection: "column",
+        gap: "8px"
+      }}>
+        <button
+          style={{
+            backgroundColor: "white",
+            border: "none",
+            borderRadius: "4px",
+            fontSize: "1.2rem",
+            fontWeight: "bold",
+            cursor: "pointer",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+            transition: "all 0.2s",
+            width: "40px",
+            height: "40px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#000"
+          }}
+          onClick={() => map && map.setZoom(map.getZoom() + 1)}
+          title="Zoom In"
+        >
+          +
+        </button>
+        <button
+          style={{
+            backgroundColor: "white",
+            border: "none",
+            borderRadius: "4px",
+            fontSize: "1.2rem",
+            fontWeight: "bold",
+            cursor: "pointer",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+            transition: "all 0.2s",
+            width: "40px",
+            height: "40px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#000"
+          }}
+          onClick={() => map && map.setZoom(map.getZoom() - 1)}
+          title="Zoom Out"
+        >
+          -
+        </button>
+      </div>
 
       <GoogleMap
         center={mapOptions.center}

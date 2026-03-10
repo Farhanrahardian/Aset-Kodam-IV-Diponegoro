@@ -1,0 +1,283 @@
+/* ═══════════════════════════════════════════════════════════
+   LAPORAN YARDIP PAGE - PROFESSIONAL ELEGANT DESIGN
+   ═══════════════════════════════════════════════════════════ */
+
+.laporan-container {
+  animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ══════ PAGE HEADER ═════ */
+.page-header-box {
+  background: white;
+  padding: 2rem;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+  border-left: 8px solid #8A9A5B;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.page-header-title h2 {
+  font-weight: 800;
+  color: #2E3B23;
+  margin: 0;
+  font-size: 1.75rem;
+}
+
+.page-header-title p {
+  color: #6B7C45;
+  margin: 0.5rem 0 0 0;
+  font-weight: 500;
+}
+
+/* ══════ FILTER PANEL ═════ */
+.filter-panel-card {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(138, 154, 91, 0.2);
+  overflow: hidden;
+  margin-bottom: 2.5rem;
+}
+
+.filter-panel-card .card-header {
+  background: #f8f9fa;
+  padding: 1.25rem 2rem;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.filter-panel-card .card-header h5 {
+  margin: 0;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #2E3B23;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.filter-panel-card .card-header h5 i {
+  color: #8A9A5B;
+}
+
+/* Form Controls */
+.filter-panel-card .form-label {
+  font-weight: 700;
+  color: #4A5A33;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.filter-panel-card .form-select {
+  border: 1px solid #dee2e6;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+}
+
+/* ══════ BUTTONS ═════ */
+.btn-sage-export {
+  background: linear-gradient(135deg, #8A9A5B 0%, #6B7C45 100%) !important;
+  border: none !important;
+  color: white !important;
+  padding: 0.75rem 2rem !important;
+  font-weight: 700 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 15px rgba(138, 154, 91, 0.3) !important;
+}
+
+.btn-reset-filter {
+  background: #f8f9fa !important;
+  border: 1px solid #dee2e6 !important;
+  color: #495057 !important;
+  padding: 0.75rem 1.5rem !important;
+  font-weight: 600 !important;
+  border-radius: 10px !important;
+}
+
+/* ══════ STATS CARDS ═════ */
+.stats-card {
+  background: white;
+  border-radius: 18px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  height: 100%;
+}
+
+.stats-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+
+.stats-info h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.stats-info p {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #6c757d;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.bg-sage-light { background-color: rgba(138, 154, 91, 0.1); color: #8A9A5B; }
+.bg-primary-light { background-color: rgba(13, 110, 253, 0.1); color: #0d6efd; }
+.bg-success-light { background-color: rgba(25, 135, 84, 0.1); color: #198754; }
+.bg-danger-light { background-color: rgba(220, 53, 69, 0.1); color: #dc3545; }
+.bg-warning-light { background-color: rgba(255, 193, 7, 0.1); color: #ffc107; }
+
+/* ══════ PREVIEW SECTION ═════ */
+.preview-section-card {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(138, 154, 91, 0.15);
+  overflow: hidden;
+}
+
+.preview-toolbar {
+  padding: 1.5rem 2rem;
+  background: #f8f9fa;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.search-box-wrapper {
+  position: relative;
+  max-width: 350px;
+  width: 100%;
+}
+
+.search-box-wrapper i {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #adb5bd;
+}
+
+.search-input-preview {
+  padding-left: 2.75rem !important;
+  border-radius: 10px !important;
+}
+
+/* Grouping Styles */
+.provinsi-preview-group {
+  margin-bottom: 2rem;
+}
+
+.provinsi-preview-title {
+  background: #4A5A33;
+  color: white;
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.kabupaten-preview-group {
+  margin-left: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.kabupaten-preview-title {
+  background: #f0f2f0;
+  color: #2E3B23;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  border-left: 4px solid #8A9A5B;
+  display: flex;
+  justify-content: space-between;
+}
+
+.table-responsive-custom {
+  background: white;
+  border-radius: 10px;
+  border: 1px solid #eee;
+  overflow: hidden;
+}
+
+.laporan-table-new {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.laporan-table-new th {
+  background: #f8f9fa;
+  padding: 0.875rem 1rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #6B7C45;
+  border-bottom: 2px solid #eee;
+}
+
+.laporan-table-new td {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  border-bottom: 1px solid #f1f1f1;
+}
+
+.badge-status {
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.7rem;
+}
+
+.preview-scroll-container {
+  max-height: 650px;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+/* Empty State */
+.empty-preview {
+  padding: 3rem;
+  text-align: center;
+  color: #6c757d;
+}
+
+.empty-preview i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .page-header-box {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+  
+  .kabupaten-preview-group {
+    margin-left: 0.5rem;
+  }
+}

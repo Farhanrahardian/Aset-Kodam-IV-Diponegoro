@@ -1,17 +1,8 @@
 import React, { useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
-import {
-  Card,
-  Form,
-  Button,
-  Container,
-  Row,
-  Col,
-  Alert,
-  Spinner,
-} from "react-bootstrap";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { FaEye, FaEyeSlash, FaLock, FaUser } from "react-icons/fa";
+import "./LoginPage.css";
 
 const LoginPage = () => {
   const [username, setUsername] = useState("");
@@ -42,128 +33,81 @@ const LoginPage = () => {
     }
   };
 
-  const backgroundStyle = {
-    height: "100vh",
-    width: "100vw",
-    backgroundImage: "url(/uploads/login.png)",
-    backgroundSize: "100% 100%",
-    backgroundPosition: "center",
-    backgroundRepeat: "no-repeat",
-    position: "relative",
-  };
-
-  const overlayStyle = {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  };
-
-  const inputStyle = {
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    backdropFilter: "blur(8px)",
-    WebkitBackdropFilter: "blur(8px)",
-    color: "white",
-  };
-
   return (
-    <Container fluid className="p-0" style={backgroundStyle}>
-      <div style={overlayStyle}>
-        <Row>
-          <Col>
-            <Card
-              style={{
-                width: "24rem",
-                backgroundColor: "rgba(255, 255, 255, 0.2)",
-                backdropFilter: "blur(10px)",
-                WebkitBackdropFilter: "blur(10px)",
-              }}
-            >
-              <Card.Body className="p-4">
-                <h3
-                  className="text-center mb-4"
-                  style={{ color: "rgba(255, 255, 255, 0.7)" }}
+    <div className="login-page">
+      <div className="login-form-container">
+        <div className="login-form-wrapper">
+          <div className="login-header">
+            <img src="/logo-kodam-diponegoro.png" alt="Logo Kodam" className="form-logo" />
+            <h3>SELAMAT DATANG</h3>
+            <p>Aplikasi Data Aset & Yardip</p>
+          </div>
+
+          <form className="login-form" onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label htmlFor="username">Username (NRP)</label>
+              <div className="password-input-wrapper">
+                <input
+                  type="text"
+                  id="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Masukkan NRP / Username"
+                  required
+                  disabled={loading}
+                  className="form-input"
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="password">Password</label>
+              <div className="password-input-wrapper">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Masukkan Password"
+                  required
+                  disabled={loading}
+                  className="form-input"
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
                 >
-                  Login
-                </h3>
-                <Form onSubmit={handleSubmit}>
-                  <Form.Group className="mb-3" controlId="formUsername">
-                    <Form.Label style={{ color: "rgba(255, 255, 255, 0.7)" }}>
-                      Username (NRP)
-                    </Form.Label>
-                    <Form.Control
-                      type="text"
-                      placeholder="Masukkan NRP"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      required
-                      disabled={loading}
-                      style={inputStyle}
-                    />
-                  </Form.Group>
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
+            </div>
 
-                  <Form.Group className="mb-3" controlId="formPassword">
-                    <Form.Label style={{ color: "rgba(255, 255, 255, 0.7)" }}>
-                      Password
-                    </Form.Label>
-                    <div className="position-relative">
-                      <Form.Control
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        disabled={loading}
-                        style={{ ...inputStyle, paddingRight: "2.5rem" }}
-                      />
-                      <span
-                        onClick={() => setShowPassword(!showPassword)}
-                        style={{
-                          position: "absolute",
-                          right: "10px",
-                          top: "50%",
-                          transform: "translateY(-50%)",
-                          cursor: "pointer",
-                          color: "rgba(255,255,255,0.7)",
-                          zIndex: 10,
-                        }}
-                      >
-                        {showPassword ? <FaEye /> : <FaEyeSlash />}
-                      </span>
-                    </div>
-                  </Form.Group>
+            {error && (
+              <div className="error-message">
+                <i className="fas fa-exclamation-circle me-2"></i>
+                <span>{error}</span>
+              </div>
+            )}
 
-                  {error && <Alert variant="danger">{error}</Alert>}
+            <button type="submit" className="btn-login" disabled={loading}>
+              {loading ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  Mempersiapkan...
+                </>
+              ) : (
+                "MASUK KE APLIKASI"
+              )}
+            </button>
+          </form>
 
-                  <div className="d-grid">
-                    <Button variant="primary" type="submit" disabled={loading}>
-                      {loading ? (
-                        <>
-                          <Spinner
-                            as="span"
-                            animation="border"
-                            size="sm"
-                            className="me-2"
-                          />
-                          Masuk...
-                        </>
-                      ) : (
-                        "Login"
-                      )}
-                    </Button>
-                  </div>
-                </Form>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
+          <div className="login-footer mt-4">
+            <p className="text-muted small">&copy; 2025 Kodam IV/Diponegoro</p>
+          </div>
+        </div>
       </div>
-    </Container>
+    </div>
   );
 };
 

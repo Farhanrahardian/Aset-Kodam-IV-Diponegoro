@@ -24,6 +24,7 @@ import JSZip from "jszip";
 import { normalizeKodimName } from "../utils/kodimUtils";
 import * as turf from "@turf/turf";
 import { isGeometryNearCoastalArea, findCoastalArea } from "../utils/coastalConfig";
+import "./FormAset.css";
 
 // Helper functions
 const isImageFile = (filename) => {
@@ -53,18 +54,18 @@ const extractKmlFromKmz = async (file) => {
   try {
     const zip = new JSZip();
     const zipContent = await zip.loadAsync(file);
-    
+
     // Cari file .kml dalam zip (case insensitive)
     const kmlFile = Object.keys(zipContent.files).find(
       (filename) => filename.toLowerCase().endsWith('.kml')
     );
-    
+
     if (!kmlFile) {
       throw new Error("Tidak ditemukan file KML dalam KMZ");
     }
-    
+
     console.log("KML file found in KMZ:", kmlFile);
-    
+
     // Extract konten KML
     const kmlContent = await zipContent.files[kmlFile].async("text");
     return kmlContent;
@@ -87,22 +88,22 @@ const validateAndFixCoordinates = (coordinates) => {
         // Nested array (polygon ring)
         return fixCoordArray(coord);
       }
-      
+
       // Individual coordinate [lng, lat, elevation?]
       let [lng, lat, elev] = coord;
-      
+
       // Validate longitude (-180 to 180)
       if (typeof lng !== 'number' || lng < -180 || lng > 180) {
         console.warn(`Invalid longitude: ${lng}, attempting to fix`);
         lng = ((lng + 180) % 360) - 180;
       }
-      
+
       // Validate latitude (-90 to 90)
       if (typeof lat !== 'number' || lat < -90 || lat > 90) {
         console.warn(`Invalid latitude: ${lat}, attempting to fix`);
         lat = Math.max(-90, Math.min(90, lat));
       }
-      
+
       // Return only [lng, lat] without elevation
       return [parseFloat(lng.toFixed(8)), parseFloat(lat.toFixed(8))];
     });
@@ -130,9 +131,9 @@ const processGoogleEarthGeometry = (feature) => {
     // Handle MultiPolygon - combine all polygons into one if needed
     if (geometry.type === "MultiPolygon") {
       console.log("Processing MultiPolygon with", geometry.coordinates.length, "polygons");
-      
+
       // Validate and fix all coordinates
-      const fixedCoordinates = geometry.coordinates.map(polygon => 
+      const fixedCoordinates = geometry.coordinates.map(polygon =>
         validateAndFixCoordinates(polygon)
       ).filter(Boolean);
 
@@ -192,7 +193,7 @@ const processGoogleEarthGeometry = (feature) => {
       const testPolygon = turf.polygon(geometry.coordinates);
       const area = turf.area(testPolygon);
       console.log("Processed geometry area:", area, "m²");
-      
+
       if (area === 0 || isNaN(area)) {
         throw new Error("Area polygon tidak valid (0 atau NaN)");
       }
@@ -225,6 +226,8 @@ const FormAset = forwardRef((props, ref) => {
     selectedKoremId,
     selectedKodimId,
     isEditMode = false,
+    hideLocationFields = false,
+    hideActionButtons = false,
   } = props;
 
   // States
@@ -449,6 +452,9 @@ const FormAset = forwardRef((props, ref) => {
     if (!formData.nama) newErrors.nama = "NUP tidak boleh kosong.";
     if (!formData.korem_id) newErrors.korem_id = "Korem tidak boleh kosong.";
     if (!formData.kodim) newErrors.kodim = "Kodim tidak boleh kosong.";
+    if (!formData.kib_kode_barang) newErrors.kib_kode_barang = "Kode Barang KIB tidak boleh kosong.";
+    if (!formData.nomor_registrasi) newErrors.nomor_registrasi = "No Registrasi tidak boleh kosong.";
+    if (!formData.asal_milik) newErrors.asal_milik = "Asal Milik tidak boleh kosong.";
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -545,7 +551,7 @@ const FormAset = forwardRef((props, ref) => {
           return feature;
         }
       });
-      
+
       return {
         type: 'FeatureCollection',
         features: expandedFeatures
@@ -575,11 +581,11 @@ const FormAset = forwardRef((props, ref) => {
 
       // Check if the geometry is near a coastline
       const coastalArea = await isNearCoastline(geometry);
-      
+
       // Determine which boundary data to use
       let searchKoremData = koremBoundaryData;
       let searchKodimData = kodimBoundaryData;
-      
+
       if (coastalArea) {
         toast.loading(`Mendeteksi area pesisir, menyesuaikan toleransi...`, { id: toastId });
         // Use expanded boundaries for coastal areas
@@ -657,8 +663,8 @@ const FormAset = forwardRef((props, ref) => {
           onKmlImport?.(geometry, !isFromKmlImport);
 
           if (!isFromKmlImport) {
-            const successMessage = usedCoastalBuffer 
-              ? "Poligon berhasil diproses (menggunakan toleransi area pesisir)." 
+            const successMessage = usedCoastalBuffer
+              ? "Poligon berhasil diproses (menggunakan toleransi area pesisir)."
               : "Poligon berhasil diproses.";
             toast.success(successMessage, { id: toastId });
           } else {
@@ -675,7 +681,7 @@ const FormAset = forwardRef((props, ref) => {
         const errorMessage = usedCoastalBuffer
           ? "Gagal menentukan wilayah Korem meskipun telah menggunakan toleransi area pesisir. Pastikan poligon berada di wilayah yang valid."
           : "Gagal menentukan wilayah Korem untuk poligon. Cek apakah poligon berada di wilayah yang valid.";
-        
+
         toast.error(errorMessage, { id: toastId });
       }
     } catch (error) {
@@ -782,13 +788,13 @@ const FormAset = forwardRef((props, ref) => {
       setKmlFileName("");
       return;
     }
-    
+
     setKmlFileName(file.name);
     const toastId = toast.loading("Memproses file...");
-    
+
     try {
       let kmlString;
-      
+
       // Extract KML content
       if (isKmzFile(file.name)) {
         toast.loading("Mengekstrak file KMZ...", { id: toastId });
@@ -802,65 +808,65 @@ const FormAset = forwardRef((props, ref) => {
           reader.readAsText(file);
         });
       }
-      
+
       toast.loading("Memproses geometri...", { id: toastId });
-      
+
       // Parse KML
       const kmlDom = new DOMParser().parseFromString(kmlString, "text/xml");
-      
+
       // Check for parsing errors
       const parseError = kmlDom.getElementsByTagName("parsererror");
       if (parseError.length > 0) {
         throw new Error("File KML tidak valid atau rusak");
       }
-      
+
       const geojsonData = kml(kmlDom);
 
       if (!geojsonData?.features?.length) {
         throw new Error("File tidak mengandung data geometri yang valid");
       }
-      
+
       console.log("Parsed GeoJSON features:", geojsonData.features.length);
-      
+
       // Extract all polygons
       const allPolygons = extractAllPolygonsFromKML(geojsonData);
-      
+
       if (allPolygons.length === 0) {
         throw new Error("Tidak ditemukan geometri poligon dalam file");
       }
 
       console.log("Found polygons:", allPolygons.map(p => p.name));
-      
+
       let selectedPolygon;
-      
+
       // If multiple polygons, let user choose
       if (allPolygons.length > 1) {
         toast.dismiss(toastId);
         const selectedIndex = await showPolygonSelectionDialog(allPolygons);
-        
+
         if (selectedIndex === null) {
           setKmlFileName("");
           event.target.value = null;
           return;
         }
-        
+
         selectedPolygon = allPolygons[selectedIndex];
         const newToastId = toast.loading("Memproses polygon terpilih...");
-        
+
         // Continue processing with new toast
         try {
           toast.loading("Memvalidasi koordinat...", { id: newToastId });
-          const processedGeometry = processGoogleEarthGeometry({ 
+          const processedGeometry = processGoogleEarthGeometry({
             geometry: selectedPolygon.geometry,
-            properties: selectedPolygon.properties 
+            properties: selectedPolygon.properties
           });
-          
+
           if (!processedGeometry) {
             throw new Error("Gagal memproses geometri dari file");
           }
 
           toast.success(`Polygon "${selectedPolygon.name}" berhasil diimpor!`, { id: newToastId });
-          
+
           // Send to parent component
           analyzeAndSetGeometry(processedGeometry, true);
         } catch (error) {
@@ -871,30 +877,30 @@ const FormAset = forwardRef((props, ref) => {
         // Single polygon - process directly
         selectedPolygon = allPolygons[0];
         console.log("Selected polygon:", selectedPolygon.name);
-        
+
         // Process the geometry with enhanced validation
         toast.loading("Memvalidasi koordinat...", { id: toastId });
-        const processedGeometry = processGoogleEarthGeometry({ 
+        const processedGeometry = processGoogleEarthGeometry({
           geometry: selectedPolygon.geometry,
-          properties: selectedPolygon.properties 
+          properties: selectedPolygon.properties
         });
-        
+
         if (!processedGeometry) {
           throw new Error("Gagal memproses geometri dari file");
         }
 
         toast.success(`Polygon "${selectedPolygon.name}" berhasil diimpor!`, { id: toastId });
-        
+
         // Send to parent component
         analyzeAndSetGeometry(processedGeometry, true);
       }
-      
+
     } catch (error) {
       console.error("Error processing KML/KMZ:", error);
       toast.error(`Gagal memproses file: ${error.message}`, { id: toastId });
       setKmlFileName("");
     }
-    
+
     event.target.value = null;
   };
 
@@ -1029,7 +1035,10 @@ const FormAset = forwardRef((props, ref) => {
   // EFFECTS
   useEffect(() => {
     if (assetToEdit) {
-      setFormData(assetToEdit);
+      setFormData({
+        ...assetToEdit,
+        keterangan: assetToEdit.keterangan || ""
+      });
     } else {
       const initialFormData = {
         nama: "",
@@ -1042,7 +1051,7 @@ const FormAset = forwardRef((props, ref) => {
         peruntukan: "",
         status: "",
         asal_milik: "",
-        pemilikan_sertifikat: "Ya",
+        pemilikan_sertifikat: "",
         keterangan_bukti_pemilikan: "",
         sertifikat_bidang: "",
         sertifikat_luas: "",
@@ -1099,7 +1108,7 @@ const FormAset = forwardRef((props, ref) => {
           } else if (kodimObjects.length === 0) {
             const newKodim =
               selectedKoremData.nama === "Berdiri Sendiri" ||
-              selectedKoremData.nama === "Kodim 0733/Kota Semarang"
+                selectedKoremData.nama === "Kodim 0733/Kota Semarang"
                 ? "Kodim 0733/Kota Semarang"
                 : selectedKoremData.nama;
             setFormData((prev) => ({ ...prev, kodim: newKodim }));
@@ -1149,252 +1158,268 @@ const FormAset = forwardRef((props, ref) => {
   }, [initialArea, assetToEdit]);
 
   return (
-    <Card>
-      <Card.Header>
-        <h5>Lengkapi Detail Aset</h5>
-      </Card.Header>
-      <Card.Body>
-        <Form>
-          {/* INFORMASI DASAR */}
-          <Card className="mb-3">
-            <Card.Header>
-              <strong>Informasi Dasar Aset</strong>
-            </Card.Header>
-            <Card.Body>
-              <Row>
-                <Col md={6}>
+    <div className="form-aset-wrapper">
+      {!isEnabled && !viewMode && hideLocationFields && (
+        <Alert variant="warning" className="mb-4">
+          <div className="d-flex align-items-center">
+            <i className="fas fa-exclamation-triangle me-2 fs-4"></i>
+            <div>
+              <strong>Belum ada poligon!</strong>
+              <p className="mb-0 mt-1">
+                Silakan buat poligon lokasi aset di peta atau melalui panel Informasi Dasar di atas untuk mengaktifkan formulir ini.
+              </p>
+            </div>
+          </div>
+        </Alert>
+      )}
+      <Form>
+          <fieldset disabled={viewMode || (hideLocationFields && !isEnabled)}>
+            <div className="form-group-section-wrapper">
+              {/* INFORMASI DASAR - Hanya tampil jika hideLocationFields = false */}
+              {!hideLocationFields && (
+              <div className="form-group-section">
+                <h6 className="form-group-title">
+                  <i className="fas fa-info-circle"></i>
+                  Informasi Dasar Aset
+                </h6>
+                <Row className="gx-3">
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Wilayah Korem *</Form.Label>
+                      <Form.Select
+                        name="korem_id"
+                        value={formData.korem_id || ""}
+                        onChange={handleChange}
+                        required
+                        disabled={viewMode || !!assetToEdit}
+                      >
+                        <option value="">-- Pilih Korem --</option>
+                        {koremList.map((korem) => (
+                          <option key={korem.id} value={korem.id}>
+                            {korem.nama === "Berdiri Sendiri"
+                              ? "Kodim 0733/Kota Semarang"
+                              : korem.nama}
+                          </option>
+                        ))}
+                      </Form.Select>
+                    </Form.Group>
+                  </Col>
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Kodim *</Form.Label>
+                      <Form.Select
+                        name="kodim"
+                        value={formData.kodim || ""}
+                        onChange={handleChange}
+                        disabled={
+                          viewMode ||
+                          !!assetToEdit ||
+                          !formData.korem_id ||
+                          kodimList.length === 0
+                        }
+                        required
+                      >
+                        <option value="">-- Pilih Kodim --</option>
+                        {kodimList.map((kodim, index) => (
+                          <option key={`${kodim.id}-${index}`} value={kodim.id}>
+                            {kodim.nama}
+                          </option>
+                        ))}
+                      </Form.Select>
+                    </Form.Group>
+                  </Col>
+                </Row>
+
+                {!viewMode && !isEditMode && (
                   <Form.Group className="mb-3">
-                    <Form.Label>Wilayah Korem *</Form.Label>
-                    <Form.Select
-                      name="korem_id"
-                      value={formData.korem_id || ""}
-                      onChange={handleChange}
-                      required
-                      disabled={viewMode || !!assetToEdit}
-                    >
-                      <option value="">-- Pilih Korem --</option>
-                      {koremList.map((korem) => (
-                        <option key={korem.id} value={korem.id}>
-                          {korem.nama === "Berdiri Sendiri"
-                            ? "Kodim 0733/Kota Semarang"
-                            : korem.nama}
-                        </option>
-                      ))}
-                    </Form.Select>
+                    <Form.Label>Pilih Metode Input Lokasi</Form.Label>
+
+                    <ButtonGroup className="d-flex flex-column flex-md-row gap-2 mt-2">
+                      <ToggleButton
+                        id="radio-draw"
+                        type="radio"
+                        variant="outline-primary"
+                        name="inputMethod"
+                        value="draw"
+                        checked={inputMethod === "draw"}
+                        onChange={(e) => handleInputChangeMethod(e.currentTarget.value)}
+                        className="w-100 rounded rounded-md-0"
+                      >
+                        Gambar di Peta
+                      </ToggleButton>
+
+                      <ToggleButton
+                        id="radio-kml"
+                        type="radio"
+                        variant="outline-primary"
+                        name="inputMethod"
+                        value="kml"
+                        checked={inputMethod === "kml"}
+                        onChange={(e) => handleInputChangeMethod(e.currentTarget.value)}
+                        className="w-100 rounded rounded-md-0"
+                      >
+                        Impor File KML/KMZ
+                      </ToggleButton>
+
+                      <ToggleButton
+                        id="radio-coords"
+                        type="radio"
+                        variant="outline-primary"
+                        name="inputMethod"
+                        value="coords"
+                        checked={inputMethod === "coords"}
+                        onChange={(e) => handleInputChangeMethod(e.currentTarget.value)}
+                        className="w-100 rounded rounded-md-0"
+                      >
+                        Input Koordinat
+                      </ToggleButton>
+                    </ButtonGroup>
                   </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Kodim *</Form.Label>
-                    <Form.Select
-                      name="kodim"
-                      value={formData.kodim || ""}
-                      onChange={handleChange}
-                      disabled={
-                        viewMode ||
-                        !!assetToEdit ||
-                        !formData.korem_id ||
-                        kodimList.length === 0
-                      }
-                      required
-                    >
-                      <option value="">-- Pilih Kodim --</option>
-                      {kodimList.map((kodim, index) => (
-                        <option key={`${kodim.id}-${index}`} value={kodim.id}>
-                          {kodim.nama}
-                        </option>
-                      ))}
-                    </Form.Select>
-                  </Form.Group>
-                </Col>
-              </Row>
+                )}
 
-          {!viewMode && !isEditMode && (
-  <Form.Group className="mb-3">
-    <Form.Label>Pilih Metode Input Lokasi</Form.Label>
-
-   <ButtonGroup className="d-flex flex-column flex-md-row gap-2 mt-2">
-  <ToggleButton
-    id="radio-draw"
-    type="radio"
-    variant="outline-primary"
-    name="inputMethod"
-    value="draw"
-    checked={inputMethod === "draw"}
-    onChange={(e) => handleInputChangeMethod(e.currentTarget.value)}
-    className="w-100 rounded rounded-md-0"
-  >
-    Gambar di Peta
-  </ToggleButton>
-
-  <ToggleButton
-    id="radio-kml"
-    type="radio"
-    variant="outline-primary"
-    name="inputMethod"
-    value="kml"
-    checked={inputMethod === "kml"}
-    onChange={(e) => handleInputChangeMethod(e.currentTarget.value)}
-    className="w-100 rounded rounded-md-0"
-  >
-    Impor File KML/KMZ
-  </ToggleButton>
-
-  <ToggleButton
-    id="radio-coords"
-    type="radio"
-    variant="outline-primary"
-    name="inputMethod"
-    value="coords"
-    checked={inputMethod === "coords"}
-    onChange={(e) => handleInputChangeMethod(e.currentTarget.value)}
-    className="w-100 rounded rounded-md-0"
-  >
-    Input Koordinat
-  </ToggleButton>
-</ButtonGroup>
-  </Form.Group>
-)}
-
-              {!viewMode && !isEditMode && inputMethod === "kml" && (
-                <Form.Group className="mb-3 border p-3 rounded">
-                  <Form.Label>Impor Poligon dari KML/KMZ</Form.Label>
-                  {!kmlFileName && (
-                    <Form.Control
-                      type="file"
-                      accept=".kml,.kmz"
-                      onChange={handleKmlImport}
-                    />
-                  )}
-                  {kmlFileName && (
-                    <>
-                      <div className="alert alert-info p-2 mb-2">
-                        File terpilih: <strong>{kmlFileName}</strong>
-                      </div>
+                {!viewMode && !isEditMode && inputMethod === "kml" && (
+                  <Form.Group className="mb-3 border p-3 rounded">
+                    <Form.Label>Impor Poligon dari KML/KMZ</Form.Label>
+                    {!kmlFileName && (
                       <Form.Control
                         type="file"
                         accept=".kml,.kmz"
                         onChange={handleKmlImport}
-                        className="mb-2"
                       />
-                      <Form.Text className="text-muted">
-                        Pilih file baru untuk mengganti file yang saat ini dipilih
-                      </Form.Text>
-                    </>
-                  )}
-                  <Form.Text className="text-muted d-block mt-2">
-                    Format yang didukung: KML dan KMZ. File dari Google Earth akan otomatis diproses dengan benar.
-                  </Form.Text>
-                </Form.Group>
-              )}
-
-              {!viewMode && !isEditMode && inputMethod === "coords" && (
-                <Form.Group className="mb-3 border p-3 rounded">
-                  <Form.Label>Input Koordinat Manual</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={5}
-                    value={coordsText}
-                    onChange={(e) => setCoordsText(e.target.value)}
-                    placeholder="Satu titik per baris. Format: longitude,latitude"
-                  />
-                  <Form.Text className="text-muted">
-                    Minimal 3 titik untuk membentuk poligon.
-                  </Form.Text>
-                  {coordsError && (
-                    <Alert variant="danger" className="mt-2 p-2">
-                      {coordsError}
-                    </Alert>
-                  )}
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    className="mt-2"
-                    onClick={handleProcessCoords}
-                  >
-                    Proses Koordinat
-                  </Button>
-                </Form.Group>
-              )}
-
-              {isEnabled && (
-                <fieldset disabled={viewMode}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>NUP *</Form.Label>
-                    <Form.Control
-                      type="text"
-                      name="nama"
-                      value={formData.nama || ""}
-                      onChange={handleChange}
-                      placeholder="Masukkan NUP"
-                      required
-                    />
+                    )}
+                    {kmlFileName && (
+                      <>
+                        <div className="alert alert-info p-2 mb-2">
+                          File terpilih: <strong>{kmlFileName}</strong>
+                        </div>
+                        <Form.Control
+                          type="file"
+                          accept=".kml,.kmz"
+                          onChange={handleKmlImport}
+                          className="mb-2"
+                        />
+                        <Form.Text className="text-muted">
+                          Pilih file baru untuk mengganti file yang saat ini dipilih
+                        </Form.Text>
+                      </>
+                    )}
+                    <Form.Text className="text-muted d-block mt-2">
+                      Format yang didukung: KML dan KMZ. File dari Google Earth akan otomatis diproses dengan benar.
+                    </Form.Text>
                   </Form.Group>
-                </fieldset>
+                )}
+
+                {!viewMode && !isEditMode && inputMethod === "coords" && (
+                  <Form.Group className="mb-3 border p-3 rounded">
+                    <Form.Label>Input Koordinat Manual</Form.Label>
+                    <Form.Control
+                      as="textarea"
+                      rows={5}
+                      value={coordsText}
+                      onChange={(e) => setCoordsText(e.target.value)}
+                      placeholder="Satu titik per baris. Format: longitude,latitude"
+                    />
+                    <Form.Text className="text-muted">
+                      Minimal 3 titik untuk membentuk poligon.
+                    </Form.Text>
+                    {coordsError && (
+                      <Alert variant="danger" className="mt-2 p-2">
+                        {coordsError}
+                      </Alert>
+                    )}
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      className="mt-2"
+                      onClick={handleProcessCoords}
+                    >
+                      Proses Koordinat
+                    </Button>
+                  </Form.Group>
+                )}
+
+              </div>
               )}
-            </Card.Body>
-          </Card>
 
-          {!isEnabled && !viewMode && (
-            <Alert variant="warning" className="text-center p-4 mt-3">
-              <p className="mb-0">
-                Gambar lokasi di peta untuk mengaktifkan sisa formulir.
-              </p>
-              <p className="mb-0 mt-2">
-                <small>
-                  Anda bisa memilih metode untuk menginputkan lokasi aset dengan
-                  menggambar poligon secara langsung di peta, mengimpor file
-                  KML/KMZ dari Google Earth, atau memasukkan koordinat secara manual.
-                </small>
-              </p>
-            </Alert>
-          )}
-
-          <fieldset disabled={!isEnabled || viewMode}>
-            {/* DETAIL REGISTRASI */}
-            <Card className="mb-3">
-              <Card.Header>
-                <strong>Detail Registrasi Aset</strong>
-              </Card.Header>
-              <Card.Body>
-                <Row>
-                  <Col md={6}>
+              {/* DETAIL REGISTRASI UTAMA */}
+              <div className="form-group-section">
+                <Row className="gx-3">
+                  <Col md={4}>
                     <Form.Group className="mb-3">
-                      <Form.Label>KIB/Kode Barang *</Form.Label>
+                      <Form.Label className="fw-bold">NUP *</Form.Label>
+                      <Form.Control
+                        type="text"
+                        name="nama"
+                        value={formData.nama || ""}
+                        onChange={handleChange}
+                        placeholder="Masukkan NUP"
+                        required
+                        disabled={viewMode}
+                        isInvalid={!!errors.nama}
+                      />
+                      <Form.Control.Feedback type="invalid">
+                        {errors.nama}
+                      </Form.Control.Feedback>
+                    </Form.Group>
+                  </Col>
+                  <Col md={4}>
+                    <Form.Group className="mb-3">
+                      <Form.Label className="fw-bold">Kode Barang KIB *</Form.Label>
                       <Form.Control
                         type="text"
                         name="kib_kode_barang"
                         value={formData.kib_kode_barang || ""}
                         onChange={handleChange}
-                        placeholder="Contoh: 1.3.1.01.001"
+                        placeholder="Contoh: 3.01.01.01.001"
+                        required
+                        disabled={viewMode}
+                        isInvalid={!!errors.kib_kode_barang}
                       />
+                      <Form.Control.Feedback type="invalid">
+                        {errors.kib_kode_barang}
+                      </Form.Control.Feedback>
                     </Form.Group>
                   </Col>
-                  <Col md={6}>
+                  <Col md={4}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Nomor Registrasi *</Form.Label>
+                      <Form.Label className="fw-bold">No Registrasi *</Form.Label>
                       <Form.Control
                         type="text"
                         name="nomor_registrasi"
                         value={formData.nomor_registrasi || ""}
                         onChange={handleChange}
-                        placeholder="Masukkan nomor registrasi"
+                        placeholder="Masukkan no registrasi"
+                        required
+                        disabled={viewMode}
+                        isInvalid={!!errors.nomor_registrasi}
+                      />
+                      <Form.Control.Feedback type="invalid">
+                        {errors.nomor_registrasi}
+                      </Form.Control.Feedback>
+                    </Form.Group>
+                  </Col>
+                </Row>
+                <Row className="gx-3">
+                  <Col md={12}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Alamat Registrasi Aset *</Form.Label>
+                      <Form.Control
+                        as="textarea"
+                        rows={2}
+                        name="alamat"
+                        value={formData.alamat || ""}
+                        onChange={handleChange}
+                        placeholder="Masukkan alamat lengkap"
+                        disabled={viewMode}
                       />
                     </Form.Group>
                   </Col>
                 </Row>
-                <Form.Group className="mb-3">
-                  <Form.Label>Alamat Registrasi Aset *</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={2}
-                    name="alamat"
-                    value={formData.alamat || ""}
-                    onChange={handleChange}
-                    placeholder="Masukkan alamat lengkap"
-                  />
-                </Form.Group>
-                <Row>
+              </div>
+
+              {/* LOKASI DAN STATUS */}
+              <div className="form-group-section">
+                <Row className="gx-3">
                   <Col md={6}>
                     <Form.Group className="mb-3">
                       <Form.Label>Peruntukan *</Form.Label>
@@ -1404,46 +1429,8 @@ const FormAset = forwardRef((props, ref) => {
                         value={formData.peruntukan || ""}
                         onChange={handleChange}
                         placeholder="Contoh: Kantor, Gudang, Latihan"
+                        disabled={viewMode}
                       />
-                    </Form.Group>
-                  </Col>
-                </Row>
-                <Form.Group className="mb-3">
-                  <Form.Label>Sejarah</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={3}
-                    name="keterangan"
-                    value={formData.keterangan || ""}
-                    onChange={handleChange}
-                    placeholder="Masukkan keterangan tambahan jika ada"
-                  />
-                </Form.Group>
-              </Card.Body>
-            </Card>
-
-            {/* DETAIL KEPEMILIKAN */}
-            <Card className="mb-3">
-              <Card.Header>
-                <strong>Detail Kepemilikan</strong>
-              </Card.Header>
-              <Card.Body>
-                <Row>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Status *</Form.Label>
-                      <Form.Select
-                        name="status"
-                        value={formData.status || ""}
-                        onChange={handleChange}
-                      >
-                        <option value="">-- Pilih Status --</option>
-                        {statusOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </Form.Select>
                     </Form.Group>
                   </Col>
                   <Col md={6}>
@@ -1454,302 +1441,81 @@ const FormAset = forwardRef((props, ref) => {
                         name="asal_milik"
                         value={formData.asal_milik || ""}
                         onChange={handleChange}
-                        placeholder="Masukkan asal usul milik"
+                        placeholder="Contoh: Pembelian Th. 1950, Peningkatan Status"
+                        required
+                        disabled={viewMode}
+                        isInvalid={!!errors.asal_milik}
                       />
+                      <Form.Control.Feedback type="invalid">
+                        {errors.asal_milik}
+                      </Form.Control.Feedback>
+                    </Form.Group>
+                  </Col>
+                </Row>
+              </div>
+
+              {/* LEGALITAS DAN SERTIFIKAT */}
+              <div className="form-group-section">
+                <Row className="gx-3">
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label className="fw-bold">Status Sertifikat *</Form.Label>
+                      <div className="d-flex gap-4">
+                        <Form.Check
+                          type="radio"
+                          id="sertifikat-bersertifikat"
+                          name="pemilikan_sertifikat"
+                          value="Ya"
+                          label="Bersertifikat"
+                          checked={formData.pemilikan_sertifikat === "Ya"}
+                          onChange={handleChange}
+                          disabled={viewMode}
+                          inline
+                          style={{ fontSize: '1.1rem' }}
+                        />
+                        <Form.Check
+                          type="radio"
+                          id="sertifikat-tidak-bersertifikat"
+                          name="pemilikan_sertifikat"
+                          value="Tidak"
+                          label="Tidak Bersertifikat"
+                          checked={formData.pemilikan_sertifikat === "Tidak"}
+                          onChange={handleChange}
+                          disabled={viewMode}
+                          inline
+                          style={{ fontSize: '1.1rem' }}
+                        />
+                      </div>
+                    </Form.Group>
+                  </Col>
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label className="fw-bold">Status *</Form.Label>
+                      <Form.Select
+                        name="status"
+                        value={formData.status || ""}
+                        onChange={handleChange}
+                        required
+                        disabled={viewMode}
+                        isInvalid={!!errors.status}
+                      >
+                        <option value="">-- Pilih Status --</option>
+                        {statusOptions.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </Form.Select>
+                      <Form.Control.Feedback type="invalid">
+                        {errors.status}
+                      </Form.Control.Feedback>
                     </Form.Group>
                   </Col>
                 </Row>
 
-                <Form.Group className="mb-3">
-                  <Form.Label>Status Sertifikat *</Form.Label>
-                  <div>
-                    <Form.Check
-                      type="radio"
-                      id="sertifikat-ya"
-                      name="pemilikan_sertifikat"
-                      value="Ya"
-                      label="Bersertifikat"
-                      onChange={handleChange}
-                      checked={formData.pemilikan_sertifikat === "Ya"}
-                      inline
-                    />
-                    <Form.Check
-                      type="radio"
-                      id="sertifikat-tidak"
-                      name="pemilikan_sertifikat"
-                      value="Tidak"
-                      label="Tidak Bersertifikat"
-                      onChange={handleChange}
-                      checked={formData.pemilikan_sertifikat === "Tidak"}
-                      inline
-                    />
-                  </div>
-                  <Form.Text className="text-muted">
-                    Pilihan ini akan menentukan field luas mana yang akan
-                    digunakan
-                  </Form.Text>
-                </Form.Group>
-
-                <Form.Group className="mb-3">
-                  <Form.Label>Nama Bukti Kepemilikan</Form.Label>
-                  <Form.Control
-                    type="text"
-                    name="keterangan_bukti_pemilikan"
-                    value={formData.keterangan_bukti_pemilikan || ""}
-                    onChange={handleChange}
-                    placeholder="Contoh: Sertifikat Hak Milik No. 123"
-                  />
-                </Form.Group>
-
-                {/* BUKTI PEMILIKAN */}
-                <Form.Group className="mb-3">
-                  <Form.Label>Upload Bukti Pemilikan</Form.Label>
-                  {isEditMode && formData.bukti_pemilikan_url && (
-                    <div className="mb-2">
-                      <Card body>
-                        <div className="d-flex justify-content-between align-items-center">
-                          <div>
-                            {isImageFile(formData.bukti_pemilikan_filename) ? (
-                              <Image
-                                src={
-                                  formData.bukti_pemilikan_url.startsWith(
-                                    "http"
-                                  )
-                                    ? formData.bukti_pemilikan_url
-                                    : `${API_URL}${formData.bukti_pemilikan_url}`
-                                }
-                                alt="Preview"
-                                style={{
-                                  height: "50px",
-                                  marginRight: "10px",
-                                  cursor: "pointer",
-                                }}
-                                fluid
-                                onClick={() =>
-                                  window.open(
-                                    formData.bukti_pemilikan_url.startsWith(
-                                      "http"
-                                    )
-                                      ? formData.bukti_pemilikan_url
-                                      : `${API_URL}${formData.bukti_pemilikan_url}`,
-                                    "_blank"
-                                  )
-                                }
-                              />
-                            ) : isPdfFile(formData.bukti_pemilikan_filename) ? (
-                              <Button
-                                variant="outline-secondary"
-                                size="sm"
-                                onClick={() =>
-                                  window.open(
-                                    formData.bukti_pemilikan_url.startsWith(
-                                      "http"
-                                    )
-                                      ? formData.bukti_pemilikan_url
-                                      : `${API_URL}${formData.bukti_pemilikan_url}`,
-                                    "_blank"
-                                  )
-                                }
-                              >
-                                Lihat PDF
-                              </Button>
-                            ) : (
-                              <a
-                                href={
-                                  formData.bukti_pemilikan_url.startsWith(
-                                    "http"
-                                  )
-                                    ? formData.bukti_pemilikan_url
-                                    : `${API_URL}${formData.bukti_pemilikan_url}`
-                                }
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                Lihat File
-                              </a>
-                            )}
-                            <span className="ms-2 fst-italic">
-                              {formData.bukti_pemilikan_filename}
-                            </span>
-                          </div>
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            onClick={handleDeleteBuktiPemilikan}
-                          >
-                            Hapus
-                          </Button>
-                        </div>
-                      </Card>
-                    </div>
-                  )}
-                  <Form.Control
-                    type="file"
-                    name="bukti_pemilikan_file"
-                    onChange={handleFileChange}
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    disabled={isEditMode && !!formData.bukti_pemilikan_url}
-                  />
-                  <Form.Text className="text-muted">
-                    {isEditMode
-                      ? formData.bukti_pemilikan_url
-                        ? "Hapus bukti yang ada jika ingin menggantinya."
-                        : "Upload file baru untuk mengganti yang lama."
-                      : "Format: PDF, JPG, JPEG, PNG (Maks. 10MB per file)"}
-                  </Form.Text>
-                </Form.Group>
-
-                {/* FOTO ASET */}
-                <Form.Group className="mb-3">
-                  <Form.Label>Foto Aset</Form.Label>
-                  {isEditMode &&
-                    formData.foto_aset &&
-                    formData.foto_aset.length > 0 && (
-                      <div className="mb-2 p-2 border rounded">
-                        <p>
-                          <strong>Foto saat ini:</strong>
-                        </p>
-                        <div className="d-flex flex-wrap gap-2">
-                          {formData.foto_aset.map((mediaUrl, index) => {
-                            const fullUrl = mediaUrl.startsWith("http")
-                              ? mediaUrl
-                              : `${API_URL}${mediaUrl}`;
-                            const isVideo = isVideoFile(fullUrl);
-                            return (
-                              <Card
-                                key={index}
-                                className="position-relative"
-                                style={{ width: "100px", height: "100px" }}
-                              >
-                                {isVideo ? (
-                                  <video
-                                    src={fullUrl}
-                                    controls
-                                    style={{
-                                      objectFit: "cover",
-                                      width: "100%",
-                                      height: "100%",
-                                      cursor: "pointer",
-                                    }}
-                                    onClick={() =>
-                                      window.open(fullUrl, "_blank")
-                                    }
-                                    title="Klik untuk lihat video"
-                                  />
-                                ) : (
-                                  <Card.Img
-                                    src={fullUrl}
-                                    alt={`Media Aset ${index + 1}`}
-                                    style={{
-                                      objectFit: "cover",
-                                      width: "100%",
-                                      height: "100%",
-                                      cursor: "pointer",
-                                    }}
-                                    onClick={() =>
-                                      window.open(fullUrl, "_blank")
-                                    }
-                                    title="Klik untuk lihat gambar"
-                                  />
-                                )}
-                                <Button
-                                  variant="danger"
-                                  size="sm"
-                                  className="position-absolute top-0 end-0 m-1"
-                                  style={{ zIndex: 1 }}
-                                  onClick={() => handleRemovePhoto(mediaUrl)}
-                                >
-                                  X
-                                </Button>
-                              </Card>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  <Form.Control
-                    type="file"
-                    name="asset_photos"
-                    onChange={handleAssetPhotosChange}
-                    multiple
-                    accept=".jpg,.jpeg,.png,.mp4,.mov,.webm"
-                  />
-                  <Form.Text className="text-muted">
-                    {isEditMode
-                      ? "Upload file baru untuk menambah media (maks. 50MB per file)."
-                      : "Format: JPG, PNG, MP4, MOV, WEBM (Maks. 50MB per file, 5 file maksimal)"}
-                  </Form.Text>
-                </Form.Group>
-
-                {/* FOTO ASET TAMPAK ATAS */}
-                <Form.Group className="mb-3">
-                  <Form.Label>Foto Aset Tampak Atas</Form.Label>
-                  {isEditMode && formData.gambar_tampak_atas_url && (
-                    <div className="mb-2">
-                      <Card body>
-                        <div className="d-flex justify-content-between align-items-center">
-                          <div>
-                            <Image
-                              src={
-                                formData.gambar_tampak_atas_url.startsWith(
-                                  "http"
-                                )
-                                  ? formData.gambar_tampak_atas_url
-                                  : `${API_URL}${formData.gambar_tampak_atas_url}`
-                              }
-                              alt="Preview Tampak Atas"
-                              style={{
-                                height: "50px",
-                                marginRight: "10px",
-                                cursor: "pointer",
-                              }}
-                              fluid
-                              onClick={() =>
-                                window.open(
-                                  formData.gambar_tampak_atas_url.startsWith(
-                                    "http"
-                                  )
-                                    ? formData.gambar_tampak_atas_url
-                                    : `${API_URL}${formData.gambar_tampak_atas_url}`,
-                                  "_blank"
-                                )
-                              }
-                            />
-                            <span className="ms-2 fst-italic">
-                              {formData.gambar_tampak_atas_filename}
-                            </span>
-                          </div>
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            onClick={handleDeleteFotoTampakAtas}
-                          >
-                            Hapus
-                          </Button>
-                        </div>
-                      </Card>
-                    </div>
-                  )}
-                  <Form.Control
-                    type="file"
-                    name="gambar_tampak_atas_file"
-                    onChange={handleGambarTampakAtasChange}
-                    accept=".jpg,.jpeg,.png"
-                    disabled={isEditMode && !!formData.gambar_tampak_atas_url}
-                  />
-                  <Form.Text className="text-muted">
-                    {isEditMode
-                      ? "Hapus gambar yang ada jika ingin menggantinya."
-                      : "Format: JPG, JPEG, PNG (Maks. 10MB)"}
-                  </Form.Text>
-                </Form.Group>
-
                 {/* DATA SERTIFIKAT */}
                 {formData.pemilikan_sertifikat === "Ya" && (
                   <Card className="mb-3 border-success">
-                    <Card.Header className="bg-success bg-opacity-10">
-                      <strong>Data Sertifikat</strong>
-                    </Card.Header>
                     <Card.Body>
                       <Form.Group className="mb-3">
                         <Form.Label>Atas Nama Pemilik Sertifikat</Form.Label>
@@ -1799,81 +1565,381 @@ const FormAset = forwardRef((props, ref) => {
                   </Card>
                 )}
 
-                {/* DATA BELUM BERSERTIFIKAT */}
+                {/* Jika Sertifikat = Tidak */}
                 {formData.pemilikan_sertifikat === "Tidak" && (
-                  <Card className="mb-3 border-warning">
-                    <Card.Header className="bg-warning bg-opacity-10">
-                      <strong>Data Belum Bersertifikat</strong>
-                    </Card.Header>
-                    <Card.Body>
-                      <Row>
-                        <Col md={6}>
-                          <Form.Group className="mb-3">
-                            <Form.Label>
-                              Jumlah Bidang Belum Bersertifikat
-                            </Form.Label>
-                            <Form.Control
-                              type="number"
-                              name="belum_sertifikat_bidang"
-                              value={formData.belum_sertifikat_bidang || ""}
-                              onChange={handleChange}
-                              placeholder="Jumlah bidang"
-                              min="0"
-                            />
-                          </Form.Group>
-                        </Col>
-                        <Col md={6}>
-                          <Form.Group className="mb-3">
-                            <Form.Label>
-                              Luas Belum Bersertifikat (m²) *
-                            </Form.Label>
-                            <Form.Control
-                              type="number"
-                              name="belum_sertifikat_luas"
-                              value={formData.belum_sertifikat_luas || ""}
-                              onChange={handleChange}
-                              placeholder="Otomatis dari peta atau isi manual"
-                              title="Luas otomatis diisi dari area yang digambar di peta"
-                              min="0"
-                              step="0.01"
-                            />
-                            <Form.Text className="text-warning">
-                              Otomatis terisi dari area yang digambar di peta,
-                              dapat diubah manual
-                            </Form.Text>
-                          </Form.Group>
-                        </Col>
-                      </Row>
-                    </Card.Body>
-                  </Card>
+                  <Row className="gx-3 mt-2 p-3 border-start border-danger border-4 bg-light rounded-2">
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label>Jumlah Bidang Belum Bersertifikat</Form.Label>
+                        <Form.Control
+                          type="number"
+                          name="belum_sertifikat_bidang"
+                          value={formData.belum_sertifikat_bidang || ""}
+                          onChange={handleChange}
+                          placeholder="Jumlah bidang"
+                          min="0"
+                          disabled={viewMode}
+                        />
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label>Luas Belum Sertifikat (m²)</Form.Label>
+                        <Form.Control
+                          type="number"
+                          step="0.01"
+                          name="belum_sertifikat_luas"
+                          value={formData.belum_sertifikat_luas || ""}
+                          onChange={handleChange}
+                          placeholder="0.00"
+                          disabled={viewMode}
+                        />
+                      </Form.Group>
+                    </Col>
+                  </Row>
                 )}
+              </div>
 
-                {/* INFO LUAS */}
-                {(initialArea || getCurrentAreaValue()) && (
-                  <div className="alert alert-info">
-                    <small>
-                      <strong>Info Luas:</strong>
-                      <br />• Area dari peta:{" "}
-                      {initialArea
-                        ? `${parseFloat(initialArea).toFixed(2)} m²`
-                        : "Belum digambar"}
-                      <br />• Luas{" "}
-                      {formData.pemilikan_sertifikat === "Ya"
-                        ? "bersertifikat"
-                        : "tidak bersertifikat"}
-                      : {getCurrentAreaValue() || "Belum diisi"} m²
-                    </small>
-                  </div>
-                )}
-              </Card.Body>
-            </Card>
+              {/* LUAS & KETERANGAN TAMBAHAN */}
+              <div className="form-group-section">
+                <Row className="gx-3">
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Nama Bukti Kepemilikan</Form.Label>
+                      <Form.Control
+                        type="text"
+                        name="keterangan_bukti_pemilikan"
+                        value={formData.keterangan_bukti_pemilikan || ""}
+                        onChange={handleChange}
+                        placeholder="Contoh: Sertifikat Hak Milik No. 123"
+                        disabled={viewMode}
+                      />
+                    </Form.Group>
+                  </Col>
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Sejarah</Form.Label>
+                      <Form.Control
+                        as="textarea"
+                        rows={1}
+                        name="keterangan"
+                        value={formData.keterangan || ""}
+                        onChange={handleChange}
+                        placeholder="Masukkan keterangan tambahan jika ada"
+                        disabled={viewMode}
+                      />
+                    </Form.Group>
+                  </Col>
+                </Row>
+
+                {/* BUKTI PEMILIKAN */}
+                <Row className="gx-3">
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Upload Bukti Pemilikan</Form.Label>
+                      {isEditMode && formData.bukti_pemilikan_url && (
+                        <div className="mb-2">
+                          <Card body>
+                            <div className="d-flex justify-content-between align-items-center">
+                              <div>
+                                {isImageFile(formData.bukti_pemilikan_filename) ? (
+                                  <Image
+                                    src={
+                                      formData.bukti_pemilikan_url.startsWith(
+                                        "http"
+                                      )
+                                        ? formData.bukti_pemilikan_url
+                                        : `${API_URL}${formData.bukti_pemilikan_url}`
+                                    }
+                                    alt="Preview"
+                                    style={{
+                                      height: "50px",
+                                      marginRight: "10px",
+                                      cursor: "pointer",
+                                    }}
+                                    fluid
+                                    onClick={() =>
+                                      window.open(
+                                        formData.bukti_pemilikan_url.startsWith(
+                                          "http"
+                                        )
+                                          ? formData.bukti_pemilikan_url
+                                          : `${API_URL}${formData.bukti_pemilikan_url}`,
+                                        "_blank"
+                                      )
+                                    }
+                                  />
+                                ) : isPdfFile(formData.bukti_pemilikan_filename) ? (
+                                  <Button
+                                    variant="outline-secondary"
+                                    size="sm"
+                                    onClick={() =>
+                                      window.open(
+                                        formData.bukti_pemilikan_url.startsWith(
+                                          "http"
+                                        )
+                                          ? formData.bukti_pemilikan_url
+                                          : `${API_URL}${formData.bukti_pemilikan_url}`,
+                                        "_blank"
+                                      )
+                                    }
+                                  >
+                                    Lihat PDF
+                                  </Button>
+                                ) : (
+                                  <a
+                                    href={
+                                      formData.bukti_pemilikan_url.startsWith(
+                                        "http"
+                                      )
+                                        ? formData.bukti_pemilikan_url
+                                        : `${API_URL}${formData.bukti_pemilikan_url}`
+                                    }
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    Lihat File
+                                  </a>
+                                )}
+                                <span className="ms-2 fst-italic">
+                                  {formData.bukti_pemilikan_filename}
+                                </span>
+                              </div>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={handleDeleteBuktiPemilikan}
+                              >
+                                Hapus
+                              </Button>
+                            </div>
+                          </Card>
+                        </div>
+                      )}
+                      <Form.Control
+                        type="file"
+                        name="bukti_pemilikan_file"
+                        onChange={handleFileChange}
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        disabled={isEditMode && !!formData.bukti_pemilikan_url || viewMode}
+                      />
+                      <Form.Text className="text-muted">
+                        {isEditMode
+                          ? formData.bukti_pemilikan_url
+                            ? "Hapus bukti yang ada jika ingin menggantinya."
+                            : "Upload file baru untuk mengganti yang lama."
+                          : "Format: PDF, JPG, JPEG, PNG (Maks. 10MB per file)"}
+                      </Form.Text>
+                    </Form.Group>
+                  </Col>
+
+                  {/* FOTO ASET TAMPAK ATAS */}
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Foto Aset Tampak Atas</Form.Label>
+                      {isEditMode && formData.gambar_tampak_atas_url && (
+                        <div className="mb-2">
+                          <Card body>
+                            <div className="d-flex justify-content-between align-items-center">
+                              <div>
+                                <Image
+                                  src={
+                                    formData.gambar_tampak_atas_url.startsWith(
+                                      "http"
+                                    )
+                                      ? formData.gambar_tampak_atas_url
+                                      : `${API_URL}${formData.gambar_tampak_atas_url}`
+                                  }
+                                  alt="Preview Tampak Atas"
+                                  style={{
+                                    height: "50px",
+                                    marginRight: "10px",
+                                    cursor: "pointer",
+                                  }}
+                                  fluid
+                                  onClick={() =>
+                                    window.open(
+                                      formData.gambar_tampak_atas_url.startsWith(
+                                        "http"
+                                      )
+                                        ? formData.gambar_tampak_atas_url
+                                        : `${API_URL}${formData.gambar_tampak_atas_url}`,
+                                      "_blank"
+                                    )
+                                  }
+                                />
+                                <span className="ms-2 fst-italic">
+                                  {formData.gambar_tampak_atas_filename}
+                                </span>
+                              </div>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={handleDeleteFotoTampakAtas}
+                              >
+                                Hapus
+                              </Button>
+                            </div>
+                          </Card>
+                        </div>
+                      )}
+                      <Form.Control
+                        type="file"
+                        name="gambar_tampak_atas_file"
+                        onChange={handleGambarTampakAtasChange}
+                        accept=".jpg,.jpeg,.png"
+                        disabled={isEditMode && !!formData.gambar_tampak_atas_url}
+                      />
+                      <Form.Text className="text-muted">
+                        {isEditMode
+                          ? "Hapus gambar yang ada jika ingin menggantinya."
+                          : "Maks. 5MB. Rasio disarankan 16:9"}
+                      </Form.Text>
+                    </Form.Group>
+                  </Col>
+                </Row>
+
+                {/* MULTIPLE FOTO ASET */}
+                <Row className="gx-3">
+                  <Col md={12}>
+                    <Form.Group className="mb-3 mt-3">
+                      <Form.Label className="fw-bold">Foto Aset</Form.Label>
+                      {isEditMode &&
+                        formData.foto_aset &&
+                        formData.foto_aset.length > 0 && (
+                          <div className="mb-2 p-3 border border-secondary border-opacity-25 rounded-3 bg-light">
+                            <p className="mb-2 fs-6">
+                            </p>
+                            <div className="d-flex flex-wrap gap-3">
+                              {formData.foto_aset.map((mediaUrl, index) => {
+                                const fullUrl = mediaUrl.startsWith("http")
+                                  ? mediaUrl
+                                  : `${API_URL}${mediaUrl}`;
+                                const isVideo = isVideoFile(fullUrl);
+                                return (
+                                  <Card
+                                    key={index}
+                                    className="position-relative shadow-sm border-0 flow-hidden"
+                                    style={{ width: "120px", height: "120px", borderRadius: "10px" }}
+                                  >
+                                    {isVideo ? (
+                                      <video
+                                        src={fullUrl}
+                                        controls
+                                        style={{
+                                          objectFit: "cover",
+                                          width: "100%",
+                                          height: "100%",
+                                          cursor: "pointer",
+                                          borderRadius: "10px"
+                                        }}
+                                        onClick={() =>
+                                          window.open(fullUrl, "_blank")
+                                        }
+                                        title="Klik untuk lihat video"
+                                      />
+                                    ) : (
+                                      <Card.Img
+                                        src={fullUrl}
+                                        alt={`Media Aset ${index + 1}`}
+                                        style={{
+                                          objectFit: "cover",
+                                          width: "100%",
+                                          height: "100%",
+                                          cursor: "pointer",
+                                          borderRadius: "10px"
+                                        }}
+                                        onClick={() =>
+                                          window.open(fullUrl, "_blank")
+                                        }
+                                        title="Klik untuk lihat gambar"
+                                      />
+                                    )}
+                                    {!viewMode && (
+                                      <button
+                                        className="position-absolute top-0 end-0 m-1 border-0"
+                                        onClick={() => handleRemovePhoto(mediaUrl)}
+                                        type="button"
+                                        title="Hapus foto"
+                                        style={{
+                                          width: '24px',
+                                          height: '24px',
+                                          minWidth: '24px',
+                                          borderRadius: '50%',
+                                          backgroundColor: '#dc3545',
+                                          border: 'none',
+                                          padding: 0,
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          zIndex: 10,
+                                          cursor: 'pointer',
+                                          boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                                        }}
+                                      >
+                                        <span
+                                          style={{
+                                            color: '#ffffff',
+                                            fontSize: '16px',
+                                            fontWeight: 900,
+                                            lineHeight: 1,
+                                            display: 'block',
+                                          }}
+                                        >
+                                          ×
+                                        </span>
+                                      </button>
+                                    )}
+                                  </Card>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      <Form.Control
+                        type="file"
+                        name="asset_photos"
+                        onChange={handleAssetPhotosChange}
+                        multiple
+                        accept=".jpg,.jpeg,.png,.mp4,.mov,.webm"
+                        disabled={viewMode}
+                      />
+                      <Form.Text className="text-muted">
+                        {isEditMode
+                          ? "Upload file baru untuk menambah media (maks. 50MB per file)."
+                          : "Format: JPG, PNG, MP4, MOV, WEBM (Maks. 50MB per file, 5 file maksimal)"}
+                      </Form.Text>
+                    </Form.Group>
+                  </Col>
+                </Row>
+              </div>
+
+              {/* INFO LUAS */}
+              {(initialArea || getCurrentAreaValue()) && (
+                <div className="alert alert-info">
+                  <small>
+                    <strong>Info Luas:</strong>
+                    <br />• Area dari peta:{" "}
+                    {initialArea
+                      ? `${parseFloat(initialArea).toFixed(2)} m²`
+                      : "Belum digambar"}
+                    <br />• Luas{" "}
+                    {formData.pemilikan_sertifikat === "Ya"
+                      ? "bersertifikat"
+                      : "tidak bersertifikat"}
+                    : {getCurrentAreaValue() || "Belum diisi"} m²
+                  </small>
+                </div>
+              )}
+            </div>
           </fieldset>
 
           {/* TOMBOL AKSI */}
-          {!assetToEdit && (
-            <div className="d-flex gap-2 justify-content-end mt-3">
+          {!hideActionButtons && !assetToEdit && (
+            <div className="d-flex gap-2 justify-content-end mt-4 sticky-action-bar flex-wrap">
               <Button
                 variant="secondary"
+                className="btn-cancel-modern"
                 onClick={() => {
                   setFilesToDelete({
                     buktiPemilikan: null,
@@ -1883,21 +1949,54 @@ const FormAset = forwardRef((props, ref) => {
                   onCancel();
                 }}
               >
-                Batalkan
+                <i className="fas fa-arrow-left me-2"></i> Batalkan
               </Button>
               <Button
                 variant="primary"
                 type="button"
+                className="btn-save-modern"
                 onClick={handleSave}
                 disabled={!isEnabled}
               >
-                Simpan Aset
+                <i className="fas fa-save me-2"></i> Simpan Aset Baru
+              </Button>
+            </div>
+          )}
+          {!hideActionButtons && assetToEdit && !viewMode && (
+            <div className="d-flex gap-2 justify-content-end mt-4 sticky-action-bar flex-wrap">
+              <Button
+                variant="secondary"
+                className="btn-cancel-modern"
+                onClick={onCancel}
+              >
+                <i className="fas fa-times me-2"></i> Tutup
+              </Button>
+              <Button
+                variant="primary"
+                type="button"
+                className="btn-save-modern"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (handleSave) handleSave(e);
+                }}
+              >
+                <i className="fas fa-save me-2"></i> Simpan Perubahan
+              </Button>
+            </div>
+          )}
+          {assetToEdit && viewMode && (
+            <div className="d-flex gap-2 justify-content-end mt-4 sticky-action-bar">
+              <Button
+                variant="secondary"
+                className="btn-cancel-modern"
+                onClick={onCancel}
+              >
+                <i className="fas fa-arrow-left me-2"></i> Kembali
               </Button>
             </div>
           )}
         </Form>
-      </Card.Body>
-    </Card>
+    </div>
   );
 });
 

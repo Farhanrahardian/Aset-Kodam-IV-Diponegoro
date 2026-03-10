@@ -16,6 +16,7 @@ import PetaAset from "../components/PetaAset";
 import DetailOffcanvasAset from "../components/DetailOffcanvasAset";
 import EditAsetModal from "../components/EditAsetModal";
 import DetailModalAset from "../components/DetailModalAset";
+import "./DataAsetTanahPage.css";
 
 const API_URL = "http://localhost:3001";
 
@@ -309,9 +310,9 @@ const TabelAset = ({ assets, onEdit, onDelete, onViewDetail, koremList, allKodim
                 <td style={{ minWidth: "120px" }}>{renderLuas(asset)}</td>
                 <td style={{ minWidth: "100px" }}>
                   {asset.pemilikan_sertifikat === "Ya" ? (
-                    <span className="badge bg-success">Ya</span>
+                    <span className="badge bg-success">Bersertifikat</span>
                   ) : (
-                    <span className="badge bg-danger">Tidak</span>
+                    <span className="badge bg-danger">Tidak Bersertifikat</span>
                   )}
                 </td>
                 <td style={{ minWidth: "200px" }}>
@@ -397,7 +398,7 @@ const FilterPanelTop = ({
   const hasActiveFilters = selectedKorem || selectedKodim || statusFilter || searchQuery;
 
   return (
-    <Card className="mb-3 border-0 shadow-sm">
+    <Card className="mb-3 border-0 filter-panel-card">
       <Card.Body className="py-2">
         <div className="d-flex align-items-center justify-content-between gap-2">
           {/* Kiri: Filter Dropdowns */}
@@ -896,7 +897,6 @@ const DataAsetTanahPage = () => {
 
       const refreshedAsset = await axiosAuth.get(`${API_URL}/assets/${id}`);
       setEditingAsset(refreshedAsset.data);
-      setEditModalKey(Date.now());
     } catch (err) {
       toast.error("Gagal menyimpan data aset.", { id: toastId });
     } finally {
@@ -909,7 +909,7 @@ const DataAsetTanahPage = () => {
 
   if (isLoading) {
     return (
-      <Container fluid className="mt-4">
+      <Container fluid className="data-aset-container">
         <div className="text-center py-5">
           <Spinner animation="border" variant="primary" />
           <p className="mt-3">Memuat data aset...</p>
@@ -919,18 +919,7 @@ const DataAsetTanahPage = () => {
   }
 
   return (
-    <Container fluid className="mt-4">
-      <h3>Data Aset BMN</h3>
-
-      {isCalculatingCounts && (
-        <Alert variant="info" className="mb-3">
-          <small>
-            <Spinner animation="border" size="sm" className="me-2" />
-            Menghitung jumlah aset per wilayah (2000 assets)...
-          </small>
-        </Alert>
-      )}
-
+    <Container fluid className="data-aset-container">
       <Row>
         <Col md={12}>
           <Card className="mb-4">
@@ -996,9 +985,9 @@ const DataAsetTanahPage = () => {
             <Card.Body className="p-0">
               {assets.length === 0 ? (
                 <div className="text-center py-5">
-                  <i className="fas fa-folder-open fa-3x mb-3 text-muted"></i>
-                  <h5>Belum Ada Data Aset BMN</h5>
-                  <p>Silakan tambah aset BMN baru di halaman Tambah Aset BMN.</p>
+                  <i className="fas fa-folder-open empty-state-icon"></i>
+                  <h5 className="fw-bold text-dark">Belum Ada Data Aset BMN</h5>
+                  <p className="text-muted">Silakan tambah aset BMN baru di halaman Tambah Aset BMN.</p>
                 </div>
               ) : (
                 <TabelAset
@@ -1015,32 +1004,30 @@ const DataAsetTanahPage = () => {
           </Card>
 
           {filteredAssets.length > 0 && (
-            <Card className="mt-3">
-              <Card.Body>
-                <Row className="text-center">
-                  <Col md={4}>
-                    <div className="border-end">
-                      <h5 className="text-primary">{filteredAssets.length}</h5>
-                      <small className="text-muted">Total Aset</small>
-                    </div>
-                  </Col>
-                  <Col md={4}>
-                    <div className="border-end">
-                      <h5 className="text-success">
-                        {filteredAssets.filter((a) => a.status === "Dimiliki/Dikuasai").length}
-                      </h5>
-                      <small className="text-muted">Dimiliki/Dikuasai</small>
-                    </div>
-                  </Col>
-                  <Col md={4}>
-                    <h5 className="text-danger">
-                      {filteredAssets.filter((a) => a.status === "TIdak Dimiliki/Dikuasai").length}
-                    </h5>
-                    <small className="text-muted">TIdak Dimiliki/Dikuasai</small>
-                  </Col>
-                </Row>
-              </Card.Body>
-            </Card>
+            <Row className="mt-4 mb-2">
+              <Col md={4}>
+                <Card className="h-100 summary-stat-box text-center">
+                  <div className="summary-stat-value text-primary">{filteredAssets.length}</div>
+                  <div className="summary-stat-label text-muted">Total Aset</div>
+                </Card>
+              </Col>
+              <Col md={4}>
+                <Card className="h-100 summary-stat-box text-center">
+                  <div className="summary-stat-value text-success">
+                    {filteredAssets.filter((a) => a.status === "Dimiliki/Dikuasai").length}
+                  </div>
+                  <div className="summary-stat-label text-muted">Dimiliki/Dikuasai</div>
+                </Card>
+              </Col>
+              <Col md={4}>
+                <Card className="h-100 summary-stat-box text-center">
+                  <div className="summary-stat-value text-danger">
+                    {filteredAssets.filter((a) => a.status === "TIdak Dimiliki/Dikuasai").length}
+                  </div>
+                  <div className="summary-stat-label text-muted">TIdak Dimiliki/Dikuasai</div>
+                </Card>
+              </Col>
+            </Row>
           )}
         </Col>
       </Row>

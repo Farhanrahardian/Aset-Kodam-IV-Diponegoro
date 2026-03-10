@@ -1,567 +1,318 @@
-import React, { useState, useEffect, Fragment } from "react";
-import { Offcanvas, Badge, Card, Row, Col, Button, Image, Modal } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
+import React, { useState, Fragment, useEffect } from "react";
+import {
+  Offcanvas,
+  Badge,
+  Card,
+  Row,
+  Col,
+  Button,
+  Image,
+  Modal,
+  Spinner,
+} from "react-bootstrap";
 import {
   FaBuilding,
-  FaMapMarkerAlt,
   FaInfoCircle,
-  FaGlobe,
-  FaFilePdf,
+  FaImage,
+  FaExpand,
+  FaCompress,
+  FaRedo,
+  FaUndo,
+  FaTimes,
+  FaMapMarkerAlt,
 } from "react-icons/fa";
-import { parseLocation } from "../utils/locationUtils";
 import PetaAsetYardip from "./PetaAsetYardip";
+import { parseLocation, getCentroid } from "../utils/locationUtils";
+import "./DetailOffcanvasAset.css";
 
 const API_URL = "http://localhost:3001";
 
 // Helper untuk mendapatkan warna badge berdasarkan status
 const getStatusBadgeVariant = (status) => {
-  switch (status) {
-    case "Dimiliki/Dikuasai":
-      return "success";
-    case "Tidak Dimiliki/Tidak Dikuasai":
-      return "danger";
-    default:
-      return "warning";
-  }
+  if (!status) return "secondary";
+  const s = status.toLowerCase();
+  if (s.includes("tidak")) return "danger";
+  if (s.includes("dimiliki") || s.includes("dikuasai")) return "success";
+  return "warning";
 };
 
-// Helper functions
+// Helper function untuk cek file type
 const isImageFile = (filename) => {
   if (!filename) return false;
-  const imageExtensions = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"];
-  return imageExtensions.some((ext) => filename.toLowerCase().endsWith(ext));
+  return [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"].some(ext => filename.toLowerCase().endsWith(ext));
 };
 
-const isPdfFile = (filename) => {
-  if (!filename) return false;
-  return filename.toLowerCase().endsWith(".pdf");
-};
-
-const isVideoFile = (filename) => {
-  if (!filename) return false;
-  const videoExtensions = [".mp4", ".mov", ".webm", ".avi"];
-  return videoExtensions.some((ext) => filename.toLowerCase().endsWith(ext));
-};
-
-const getFileUrl = (url) => {
-  if (!url) return null;
-  if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  if (url.startsWith("/")) return `${API_URL}${url}`;
-  return `${API_URL}/${url}`;
-};
-
-// ===== PREVIEW MODAL BUKTI PEMILIKAN =====
-const BuktiPreviewModal = ({ show, onHide, buktiPreviewMedia }) => (
-  <Modal show={show} onHide={onHide} size="lg" centered>
-    <Modal.Header closeButton>
-      <Modal.Title>Bukti Kepemilikan</Modal.Title>
-    </Modal.Header>
-    <Modal.Body className="text-center">
-      {buktiPreviewMedia?.isPdf ? (
-        <iframe
-          src={buktiPreviewMedia.url}
-          style={{ width: "100%", height: "70vh", border: "none" }}
-          title="Preview PDF"
-        />
-      ) : buktiPreviewMedia?.isVideo ? (
-        <video
-          src={buktiPreviewMedia.url}
-          controls
-          className="img-fluid"
-          style={{ maxHeight: "70vh", objectFit: "contain" }}
-          autoPlay
-        >
-          Browser Anda tidak mendukung elemen video.
-        </video>
-      ) : (
-        <img
-          src={buktiPreviewMedia?.url}
-          alt="Preview Bukti Pemilikan"
-          className="img-fluid"
-          style={{ maxHeight: "70vh", objectFit: "contain" }}
-        />
-      )}
-    </Modal.Body>
-    <Modal.Footer>
-      {buktiPreviewMedia && (
-        <Button
-          variant="info"
-          onClick={() => window.open(buktiPreviewMedia.url, "_blank")}
-          className="me-2"
-        >
-          Buka di Tab Baru
-        </Button>
-      )}
-      <Button variant="secondary" onClick={onHide}>
-        Tutup
-      </Button>
-    </Modal.Footer>
-  </Modal>
-);
+const isPdfFile = (filename) => filename?.toLowerCase().endsWith(".pdf");
+const isVideoFile = (filename) => [".mp4", ".mov", ".webm", ".avi"].some(ext => filename?.toLowerCase().endsWith(ext));
 
 const DetailOffcanvasYardip = ({ show, handleClose, asetYardip }) => {
+  const [previewMedia, setPreviewMedia] = useState(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [rotation, setRotation] = useState(0);
   const [provinsiData, setProvinsiData] = useState(null);
   const [kabupatenData, setKabupatenData] = useState(null);
-  const [buktiPreviewMedia, setBuktiPreviewMedia] = useState(null);
-  const [showBuktiPreviewModal, setShowBuktiPreviewModal] = useState(false);
+  
+  // State untuk Foto Aset
+  const [fotoAsetPreviewMedia, setFotoAsetPreviewMedia] = useState(null);
+  const [showFotoAsetPreviewModal, setShowFotoAsetPreviewModal] = useState(false);
+  const [fotoAsetCurrentIndex, setFotoAsetCurrentIndex] = useState(0);
+  const [fotoAsetPhotos, setFotoAsetPhotos] = useState([]);
 
-  // Load geojson data when offcanvas is shown
   useEffect(() => {
-    const loadData = async () => {
+    const loadGeoData = async () => {
       try {
-        const [provRes, kabRes] = await Promise.all([
-          fetch("/data/provinsi.geojson"),
-          fetch("/data/kabupaten_kota.geojson")
-        ]);
-
-        const provData = await provRes.json();
-        const kabData = await kabRes.json();
-
-        setProvinsiData(provData);
-        setKabupatenData(kabData);
-      } catch (error) {
-        console.error("Error loading geojson data:", error);
-      }
+        const [p, k] = await Promise.all([fetch("/data/provinsi.geojson"), fetch("/data/kabupaten_kota.geojson")]);
+        setProvinsiData(await p.json());
+        setKabupatenData(await k.json());
+      } catch (e) { console.error(e); }
     };
+    if (show) loadGeoData();
+  }, [show]);
 
-    if (show && asetYardip) {
-      const locationData = parseLocation(asetYardip.lokasi);
-      const hasValidLocation = locationData && locationData.type === "Polygon";
-      if (hasValidLocation) {
-        loadData();
-      }
-    }
-  }, [show, asetYardip]);
-
-  // ===== HANDLER PREVIEW BUKTI PEMILIKAN =====
-  const handlePreviewBukti = (mediaUrl, filename) => {
-    const fullUrl = mediaUrl.startsWith("http") ? mediaUrl : `${API_URL}${mediaUrl}`;
-    setBuktiPreviewMedia({
-      url: fullUrl,
-      isVideo: isVideoFile(filename),
-      isPdf: isPdfFile(filename),
-    });
-    setShowBuktiPreviewModal(true);
+  const handlePreviewMedia = (url, isPdf = false) => {
+    const fullUrl = url.startsWith("http") ? url : `${API_URL}${url}`;
+    setPreviewMedia({ url: fullUrl, isPdf, isVideo: isVideoFile(url) });
+    setShowPreviewModal(true);
   };
 
-  const handleCloseBuktiPreview = () => {
-    setShowBuktiPreviewModal(false);
-    setBuktiPreviewMedia(null);
+  // Handlers untuk Foto Aset
+  const handleFotoAsetPreview = (url, index = 0, allPhotos = []) => {
+    const fullUrl = url.startsWith("http") ? url : `${API_URL}${url}`;
+    setFotoAsetPreviewMedia({ url: fullUrl, isVideo: isVideoFile(url) });
+    setFotoAsetCurrentIndex(index);
+    setFotoAsetPhotos(allPhotos);
+    setShowFotoAsetPreviewModal(true);
+  };
+
+  const handleFotoAsetNext = () => {
+    if (fotoAsetPhotos.length > 1) {
+      const newIndex = (fotoAsetCurrentIndex + 1) % fotoAsetPhotos.length;
+      const newUrl = fotoAsetPhotos[newIndex];
+      const fullUrl = newUrl.startsWith("http") ? newUrl : `${API_URL}${newUrl}`;
+      setFotoAsetPreviewMedia({ url: fullUrl, isVideo: isVideoFile(newUrl) });
+      setFotoAsetCurrentIndex(newIndex);
+    }
+  };
+
+  const handleFotoAsetPrev = () => {
+    if (fotoAsetPhotos.length > 1) {
+      const newIndex = (fotoAsetCurrentIndex - 1 + fotoAsetPhotos.length) % fotoAsetPhotos.length;
+      const newUrl = fotoAsetPhotos[newIndex];
+      const fullUrl = newUrl.startsWith("http") ? newUrl : `${API_URL}${newUrl}`;
+      setFotoAsetPreviewMedia({ url: fullUrl, isVideo: isVideoFile(newUrl) });
+      setFotoAsetCurrentIndex(newIndex);
+    }
   };
 
   if (!asetYardip) return null;
 
   const locationData = parseLocation(asetYardip.lokasi);
   const hasValidLocation = locationData && locationData.type === "Polygon";
+  const centroid = hasValidLocation ? getCentroid(locationData) : null;
 
   return (
     <Fragment>
-      <Offcanvas
-        show={show}
-        onHide={handleClose}
-        placement="end"
-        backdrop={true}
-        style={{ width: "600px" }}
-      >
-        <Offcanvas.Header
-          closeButton
-          className="bg-success text-white border-bottom"
-        >
-          <Offcanvas.Title as="h5">
-          <FaBuilding className="me-2" />
-          Detail Aset Yardip
-        </Offcanvas.Title>
-      </Offcanvas.Header>
+      <Offcanvas show={show} onHide={handleClose} placement="end" className="detail-offcanvas">
+        <Offcanvas.Header closeButton className="bg-primary text-white border-bottom">
+          <Offcanvas.Title as="h5"><FaBuilding className="me-2" />Detail Aset Yardip</Offcanvas.Title>
+        </Offcanvas.Header>
 
-      <Offcanvas.Body style={{ padding: 0 }}>
-        {/* Mini Map Preview */}
-        <div style={{ height: "250px", width: "100%" }}>
-          {hasValidLocation && provinsiData && kabupatenData ? (
-            <PetaAsetYardip
-              assets={[
-                {
-                  id: asetYardip.id,
-                  pengelola: asetYardip.pengelola,
-                  lokasi: asetYardip.lokasi,
-                  area: asetYardip.area,
-                  status: asetYardip.status,
-                  provinsi: asetYardip.provinsi,
-                  kabkota: asetYardip.kabkota,
-                  kecamatan: asetYardip.kecamatan,
-                  kelurahan: asetYardip.kelurahan,
-                  peruntukan: asetYardip.peruntukan,
-                  keterangan: asetYardip.keterangan,
-                  type: "aset",
-                }
-              ]}
-              provinsiData={provinsiData}
-              kabupatenData={kabupatenData}
-              mode="detail"
-            />
-          ) : (
-            <div className="d-flex justify-content-center align-items-center h-100 bg-light">
-              <p className="text-muted">
-                {hasValidLocation ? "Memuat peta..." : "Lokasi poligon tidak tersedia."}
-              </p>
-            </div>
-          )}
-        </div>
-
-        <div
-          style={{
-            padding: "1rem",
-            maxHeight: "calc(100vh - 300px)",
-            overflowY: "auto",
-          }}
-        >
-          {/* Main Info Card */}
-          <Card className="mb-3 shadow-sm">
-            <Card.Header className="bg-success text-white">
-              <FaBuilding className="me-2" /> Informasi Aset Yardip
-            </Card.Header>
-            <Card.Body>
-              <div className="mb-3">
-                <h5 className="mb-1">{asetYardip.pengelola || "N/A"}</h5>
-                <small className="text-muted">Pengelola Aset</small>
-                <div className="mt-2">
-                  <Badge bg={getStatusBadgeVariant(asetYardip.status)} pill>
-                    {asetYardip.status || "Status Tidak Diketahui"}
-                  </Badge>
-                  <Badge bg="info" pill className="ms-2">
-                    {asetYardip.bidang || "Bidang Tidak Diketahui"}
-                  </Badge>
-                </div>
+        <Offcanvas.Body style={{ padding: 0 }}>
+          <div className="offcanvas-map-container">
+            {hasValidLocation && provinsiData && kabupatenData ? (
+              <PetaAsetYardip
+                assets={[{ ...asetYardip, type: "aset" }]}
+                provinsiData={provinsiData}
+                kabupatenData={kabupatenData}
+                mode="detail"
+              />
+            ) : (
+              <div className="d-flex justify-content-center align-items-center h-100 bg-light text-muted">
+                <p>{hasValidLocation ? "Memuat peta..." : "Lokasi tidak tersedia"}</p>
               </div>
+            )}
+          </div>
 
-              {/* Detailed Information Table */}
-              <div className="table-responsive">
-                <table className="table table-sm table-borderless mb-0">
-                  <tbody>
-                    <tr>
-                      <td width="40%">
-                        <strong>Pengelola:</strong>
-                      </td>
-                      <td>{asetYardip.pengelola || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Bidang:</strong>
-                      </td>
-                      <td>
-                        <Badge bg="info">{asetYardip.bidang || "-"}</Badge>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Provinsi:</strong>
-                      </td>
-                      <td>{asetYardip.provinsi || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Kabupaten/Kota:</strong>
-                      </td>
-                      <td>{asetYardip.kabkota || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Kecamatan:</strong>
-                      </td>
-                      <td>{asetYardip.kecamatan || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Kelurahan/Desa:</strong>
-                      </td>
-                      <td>{asetYardip.kelurahan || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Peruntukan:</strong>
-                      </td>
-                      <td>{asetYardip.peruntukan || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Status:</strong>
-                      </td>
-                      <td>
-                        <Badge bg={getStatusBadgeVariant(asetYardip.status)}>
-                          {asetYardip.status || "-"}
-                        </Badge>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Luas Area:</strong>
-                      </td>
-                      <td>
-                        {asetYardip.area ? (
-                          <span className="text-success">
-                            {Number(asetYardip.area).toLocaleString("id-ID")} m²
-                          </span>
-                        ) : (
-                          "-"
-                        )}
-                      </td>
-                    </tr>
-                    {/* BUKTI PEMILIKAN */}
-                    {asetYardip.bukti_pemilikan_url && (
-                      <tr>
-                        <td>
-                          <strong>Bukti Pemilikan:</strong>
-                        </td>
-                        <td>
-                          <div className="d-flex align-items-center gap-2">
-                            {isImageFile(asetYardip.bukti_pemilikan_filename) && (
-                              <div
-                                style={{
-                                  width: "40px",
-                                  height: "40px",
-                                  border: "1px solid #ddd",
-                                  borderRadius: "4px",
-                                  overflow: "hidden",
-                                }}
-                              >
-                                <img
-                                  src={getFileUrl(asetYardip.bukti_pemilikan_url)}
-                                  alt="Preview"
-                                  style={{
-                                    width: "100%",
-                                    height: "100%",
-                                    objectFit: "cover",
-                                  }}
-                                />
-                              </div>
-                            )}
-                            <div>
-                              <div style={{ fontSize: "0.8em" }}>
-                                {asetYardip.bukti_pemilikan_filename}
-                              </div>
-                              <Button
-                                variant="link"
-                                size="sm"
-                                onClick={() =>
-                                  handlePreviewBukti(
-                                    asetYardip.bukti_pemilikan_url,
-                                    asetYardip.bukti_pemilikan_filename
-                                  )
-                                }
-                                className="p-0"
-                                style={{ fontSize: "0.7em" }}
-                              >
-                                {isPdfFile(asetYardip.bukti_pemilikan_filename)
-                                  ? "Lihat PDF"
-                                  : "Lihat Gambar"}
+          <div className="offcanvas-content-wrapper">
+            <Card className="mb-3 shadow-sm border-0">
+              <Card.Body>
+                <div className="mb-3">
+                  <h5 className="mb-1">{asetYardip.pengelola || "N/A"}</h5>
+                  <Badge bg={getStatusBadgeVariant(asetYardip.status)} pill>{asetYardip.status || "Status N/A"}</Badge>
+                  <Badge bg="info" pill className="ms-2">{asetYardip.bidang || "Bidang N/A"}</Badge>
+                </div>
+
+                <div className="table-responsive">
+                  <table className="table table-sm table-borderless mb-0">
+                    <tbody>
+                      <tr><td width="40%"><strong>Pengelola:</strong></td><td>{asetYardip.pengelola || "-"}</td></tr>
+                      <tr><td><strong>Bidang:</strong></td><td>{asetYardip.bidang || "-"}</td></tr>
+                      <tr><td><strong>Provinsi:</strong></td><td>{asetYardip.provinsi || "-"}</td></tr>
+                      <tr><td><strong>Kota/Kab:</strong></td><td>{asetYardip.kabkota || "-"}</td></tr>
+                      <tr><td><strong>Kecamatan:</strong></td><td>{asetYardip.kecamatan || "-"}</td></tr>
+                      <tr><td><strong>Kelurahan:</strong></td><td>{asetYardip.kelurahan || "-"}</td></tr>
+                      <tr><td><strong>Peruntukan:</strong></td><td>{asetYardip.peruntukan || "-"}</td></tr>
+                      <tr><td><strong>Luas Area:</strong></td><td><span className="text-primary fw-bold">{asetYardip.area ? `${Number(asetYardip.area).toLocaleString("id-ID")} m²` : "-"}</span></td></tr>
+                      
+                      {asetYardip.bukti_pemilikan_url && (
+                        <tr>
+                          <td><strong>Bukti Pemilikan:</strong></td>
+                          <td>
+                            <div className="d-flex align-items-center gap-2">
+                              {isImageFile(asetYardip.bukti_pemilikan_filename) && (
+                                <div style={{ width: "40px", height: "40px", borderRadius: "4px", overflow: "hidden", border: "1px solid #ddd" }}>
+                                  <img src={asetYardip.bukti_pemilikan_url.startsWith("http") ? asetYardip.bukti_pemilikan_url : `${API_URL}${asetYardip.bukti_pemilikan_url}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="bukti" />
+                                </div>
+                              )}
+                              <Button variant="link" size="sm" className="p-0 text-decoration-none" onClick={() => handlePreviewMedia(asetYardip.bukti_pemilikan_url, isPdfFile(asetYardip.bukti_pemilikan_filename))}>
+                                {isPdfFile(asetYardip.bukti_pemilikan_filename) ? "Lihat PDF" : "Lihat Gambar"}
                               </Button>
                             </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                    {asetYardip.keterangan_bukti_pemilikan && (
-                      <tr>
-                        <td>
-                          <strong>Keterangan Bukti:</strong>
-                        </td>
-                        <td>{asetYardip.keterangan_bukti_pemilikan}</td>
-                      </tr>
-                    )}
-                    <tr>
-                      <td>
-                        <strong>Keterangan:</strong>
-                      </td>
-                      <td>{asetYardip.keterangan || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Koordinat:</strong>
-                      </td>
-                      <td>
-                        {hasValidLocation && locationData ? (
-                          <div>
-                            <small className="text-muted">
-                              Polygon dengan{" "}
-                              {locationData.coordinates[0]?.length || 0} titik
-                            </small>
-                            <details className="mt-1">
-                              <summary
-                                style={{
-                                  cursor: "pointer",
-                                  fontSize: "0.8em",
-                                }}
-                              >
-                                Lihat koordinat
-                              </summary>
-                              <div
-                                style={{
-                                  maxHeight: "100px",
-                                  overflowY: "auto",
-                                  fontSize: "0.7em",
-                                }}
-                              >
-                                {locationData.coordinates[0] ? (
-                                  locationData.coordinates[0].map(
-                                    (coord, idx) => (
-                                      <div key={idx}>
-                                        {idx + 1}: [
-                                        {coord[0]?.toFixed(6) || "N/A"},{" "}
-                                        {coord[1]?.toFixed(6) || "N/A"}]
-                                      </div>
-                                    )
-                                  )
-                                ) : (
-                                  <span className="text-muted">
-                                    Format koordinat tidak valid
-                                  </span>
-                                )}
-                              </div>
-                            </details>
-                          </div>
-                        ) : (
-                          <span className="text-muted">Tidak tersedia</span>
-                        )}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Tanggal Dibuat:</strong>
-                      </td>
-                      <td>
-                        {asetYardip.created_at
-                          ? new Date(asetYardip.created_at).toLocaleString(
-                            "id-ID"
-                          )
-                          : "-"}
-                      </td>
-                    </tr>
-                    {asetYardip.updated_at && (
-                      <tr>
-                        <td>
-                          <strong>Terakhir Diubah:</strong>
-                        </td>
-                        <td>
-                          {new Date(asetYardip.updated_at).toLocaleString(
-                            "id-ID"
-                          )}
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </Card.Body>
-          </Card>
-
-          {/* Geographic Information Card */}
-          {hasValidLocation && (
-            <Card className="mb-3 shadow-sm">
-              <Card.Header className="bg-warning text-dark">
-                <FaGlobe className="me-2" /> Informasi Geografis
-              </Card.Header>
-              <Card.Body>
-                <Row>
-                  <Col sm={6}>
-                    <div className="mb-2">
-                      <strong>Tipe Geometri:</strong>
-                      <br />
-                      <span className="text-muted">Polygon</span>
-                    </div>
-                  </Col>
-                  <Col sm={6}>
-                    <div className="mb-2">
-                      <strong>Jumlah Koordinat:</strong>
-                      <br />
-                      <span className="text-muted">
-                        {locationData.coordinates[0]?.length || 0} titik
-                      </span>
-                    </div>
-                  </Col>
-                  <Col sm={12}>
-                    <div className="mb-0">
-                      <strong>Luas Kalkulasi:</strong>
-                      <br />
-                      <span className="text-success">
-                        {asetYardip.area
-                          ? `${Number(asetYardip.area).toLocaleString(
-                            "id-ID"
-                          )} m²`
-                          : "Tidak tersedia"}
-                      </span>
-                    </div>
-                  </Col>
-                </Row>
+                          </td>
+                        </tr>
+                      )}
+                      <tr><td><strong>Keterangan:</strong></td><td style={{ whiteSpace: "pre-wrap" }}>{asetYardip.keterangan || "-"}</td></tr>
+                      <tr><td><strong>Koordinat:</strong></td><td>{centroid ? `Lat: ${centroid[0].toFixed(6)}, Lng: ${centroid[1].toFixed(6)}` : "-"}</td></tr>
+                    </tbody>
+                  </table>
+                </div>
               </Card.Body>
             </Card>
+
+            {/* FOTO TAMPAK ATAS */}
+            {asetYardip.gambar_tampak_atas_url && (
+              <Card className="mb-3 shadow-sm">
+                <Card.Header className="bg-light">
+                  <strong>Foto Aset Tampak Atas</strong>
+                </Card.Header>
+                <Card.Body>
+                  <Row>
+                    <Col md={4} className="mb-3">
+                      <Card
+                        onClick={() => handleFotoAsetPreview(asetYardip.gambar_tampak_atas_url)}
+                        className="h-100"
+                        style={{ cursor: "pointer", border: "1px solid #ddd" }}
+                      >
+                        <Card.Img
+                          variant="top"
+                          src={
+                            asetYardip.gambar_tampak_atas_url.startsWith("http")
+                              ? asetYardip.gambar_tampak_atas_url
+                              : `${API_URL}${asetYardip.gambar_tampak_atas_url}`
+                          }
+                          alt="Foto Aset Tampak Atas"
+                          style={{ height: "150px", width: "100%", objectFit: "cover" }}
+                        />
+                      </Card>
+                    </Col>
+                  </Row>
+                </Card.Body>
+              </Card>
+            )}
+
+            {/* FOTO ASET */}
+            {asetYardip.foto_aset && Array.isArray(asetYardip.foto_aset) && asetYardip.foto_aset.length > 0 && (
+              <Card className="mb-3 shadow-sm">
+                <Card.Header className="bg-light">
+                  <strong>Foto Aset</strong>
+                </Card.Header>
+                <Card.Body>
+                  <Row>
+                    {asetYardip.foto_aset.map((foto, index) => {
+                      const fullUrl = foto.startsWith("http") ? foto : `${API_URL}${foto}`;
+                      const isVideo = isVideoFile(foto);
+                      return (
+                        <Col key={index} md={4} className="mb-3">
+                          <Card
+                            onClick={() => handleFotoAsetPreview(foto, index, asetYardip.foto_aset)}
+                            className="h-100"
+                            style={{ cursor: "pointer", border: "1px solid #ddd" }}
+                          >
+                            {isVideo ? (
+                              <video
+                                src={fullUrl}
+                                controls={false}
+                                style={{ objectFit: "cover", width: "100%", height: "150px" }}
+                              />
+                            ) : (
+                              <Card.Img
+                                variant="top"
+                                src={fullUrl}
+                                alt={`Foto Aset ${index + 1}`}
+                                style={{ height: "150px", width: "100%", objectFit: "cover" }}
+                              />
+                            )}
+                          </Card>
+                        </Col>
+                      );
+                    })}
+                  </Row>
+                </Card.Body>
+              </Card>
+            )}
+          </div>
+        </Offcanvas.Body>
+      </Offcanvas>
+
+      {/* Media Preview Modal */}
+      <Modal show={showPreviewModal} onHide={() => setShowPreviewModal(false)} size="xl" centered dialogClassName={fullscreen ? 'fullscreen-modal' : ''}>
+        <Modal.Header closeButton>
+          <Modal.Title>Pratinjau Media</Modal.Title>
+          <Button variant="outline-dark" size="sm" className="ms-auto me-2" onClick={() => setFullscreen(!fullscreen)}>
+            {fullscreen ? <FaCompress /> : <FaExpand />}
+          </Button>
+        </Modal.Header>
+        <Modal.Body className="text-center bg-dark" style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+          {previewMedia?.isPdf ? (
+            <iframe src={previewMedia.url} style={{ width: "95%", height: "75vh", border: "none" }} title="pdf" />
+          ) : previewMedia?.isVideo ? (
+            <video src={previewMedia.url} controls autoPlay style={{ maxHeight: "70vh", maxWidth: "95%" }} />
+          ) : (
+            <img src={previewMedia?.url} alt="preview" style={{ maxHeight: "70vh", maxWidth: "95%", transform: `rotate(${rotation}deg)`, transition: "transform 0.3s" }} />
           )}
 
-          {/* Location Details Card */}
-          <Card className="mb-3 shadow-sm">
-            <Card.Header className="bg-info text-white">
-              <FaMapMarkerAlt className="me-2" /> Detail Lokasi
-            </Card.Header>
-            <Card.Body>
-              <Row>
-                <Col sm={6}>
-                  <div className="mb-2">
-                    <strong>Provinsi:</strong>
-                    <br />
-                    <span className="text-muted">
-                      {asetYardip.provinsi || "Tidak tersedia"}
-                    </span>
-                  </div>
-                </Col>
-                <Col sm={6}>
-                  <div className="mb-2">
-                    <strong>Kabupaten/Kota:</strong>
-                    <br />
-                    <span className="text-muted">
-                      {asetYardip.kabkota || "Tidak tersedia"}
-                    </span>
-                  </div>
-                </Col>
-                <Col sm={6}>
-                  <div className="mb-2">
-                    <strong>Kecamatan:</strong>
-                    <br />
-                    <span className="text-muted">
-                      {asetYardip.kecamatan || "Tidak tersedia"}
-                    </span>
-                  </div>
-                </Col>
-                <Col sm={6}>
-                  <div className="mb-0">
-                    <strong>Kelurahan/Desa:</strong>
-                    <br />
-                    <span className="text-muted">
-                      {asetYardip.kelurahan || "Tidak tersedia"}
-                    </span>
-                  </div>
-                </Col>
-              </Row>
-            </Card.Body>
-          </Card>
-
-          {/* Additional Information */}
-          {asetYardip.keterangan && (
-            <Card className="mb-3 shadow-sm">
-              <Card.Header className="bg-secondary text-white">
-                <FaInfoCircle className="me-2" /> Keterangan Tambahan
-              </Card.Header>
-              <Card.Body>
-                <p className="mb-0">{asetYardip.keterangan}</p>
-              </Card.Body>
-            </Card>
+          {previewMedia && !previewMedia.isPdf && !previewMedia.isVideo && (
+            <div style={{ position: "absolute", top: "10px", right: "10px", display: "flex", gap: "10px" }}>
+              <Button variant="outline-light" size="sm" onClick={() => setRotation(r => r - 90)}><FaUndo /></Button>
+              <Button variant="outline-light" size="sm" onClick={() => setRotation(r => r + 90)}><FaRedo /></Button>
+            </div>
           )}
-        </div>
-      </Offcanvas.Body>
-    </Offcanvas>
+        </Modal.Body>
+      </Modal>
 
-    {/* ===== PREVIEW MODAL BUKTI PEMILIKAN ===== */}
-    <BuktiPreviewModal
-      show={showBuktiPreviewModal}
-      onHide={handleCloseBuktiPreview}
-      buktiPreviewMedia={buktiPreviewMedia}
-    />
+      {/* Foto Aset Preview Modal */}
+      <Modal 
+        show={showFotoAsetPreviewModal} 
+        onHide={() => { setShowFotoAsetPreviewModal(false); setFotoAsetPhotos([]); }} 
+        size="xl" 
+        centered
+        dialogClassName="modal-95w"
+        backdropClassName="modal-backdrop-dark"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Foto Aset {fotoAsetCurrentIndex + 1}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="text-center bg-dark" style={{ minHeight: "70vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {fotoAsetPreviewMedia?.isVideo ? (
+            <video src={fotoAsetPreviewMedia?.url} controls autoPlay style={{ maxHeight: "70vh", maxWidth: "95%" }} />
+          ) : (
+            <img src={fotoAsetPreviewMedia?.url} alt="preview" style={{ maxHeight: "70vh", maxWidth: "95%" }} />
+          )}
+        </Modal.Body>
+        {fotoAsetPhotos.length > 1 && (
+          <Modal.Footer className="justify-content-center">
+            <Button variant="outline-primary" onClick={handleFotoAsetPrev}>
+              <i className="fas fa-arrow-left me-2"></i>Sebelumnya
+            </Button>
+            <Button variant="outline-primary" onClick={handleFotoAsetNext}>
+              Berikutnya<i className="fas fa-arrow-right ms-2"></i>
+            </Button>
+          </Modal.Footer>
+        )}
+      </Modal>
     </Fragment>
   );
 };

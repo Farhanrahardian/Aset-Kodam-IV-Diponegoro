@@ -1,0 +1,193 @@
+/* ═══════════════════════════════════════════════════════════
+   DETAIL OFFCANVAS - EXTRA LARGE
+   ═══════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════
+   PREVIEW MODAL - FULLSCREEN & DARK BACKDROP
+   ═══════════════════════════════════════════════════════════ */
+
+/* Dark backdrop for preview modals */
+.modal-backdrop-dark {
+  background-color: rgba(0, 0, 0, 0.9) !important;
+  backdrop-filter: blur(5px);
+}
+
+/* Fullscreen modal */
+.fullscreen-modal {
+  max-width: 100vw !important;
+  width: 100vw !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.fullscreen-modal .modal-dialog {
+  max-width: 100vw !important;
+  width: 100vw !important;
+  margin: 0 !important;
+}
+
+.fullscreen-modal .modal-content {
+  border-radius: 0 !important;
+  max-height: 100vh !important;
+  height: 100vh !important;
+}
+
+.fullscreen-modal .modal-body {
+  max-height: calc(100vh - 120px) !important;
+  height: calc(100vh - 120px) !important;
+}
+
+/* Preview body with dark background */
+.preview-body {
+  background-color: #000 !important;
+  background-image: 
+    radial-gradient(circle at center, rgba(30, 30, 30, 0.3) 0%, rgba(0, 0, 0, 0.8) 100%) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Canvas pattern overlay for preview body */
+.preview-body::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* Loading spinner centering */
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%);
+  z-index: 100;
+}
+
+/* Thumbnail strip styling */
+.thumbnail-strip {
+  scrollbar-width: thin;
+  scrollbar-color: #888 #000;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.thumbnail-strip::-webkit-scrollbar {
+  height: 8px;
+}
+
+.thumbnail-strip::-webkit-scrollbar-track {
+  background: #000;
+}
+
+.thumbnail-strip::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.thumbnail-strip::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
+/* Rotation controls animation */
+.rotation-controls button {
+  transition: all 0.2s ease;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.rotation-controls button:hover {
+  transform: scale(1.1);
+  background-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Fullscreen button styling */
+.modal-header .btn-outline-light {
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.modal-header .btn-outline-light:hover {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Navigation buttons in footer */
+.modal-footer .btn-outline-primary {
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  min-width: 140px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.modal-footer .btn-outline-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.4);
+}
+
+/* Offcanvas container - REDUCED WIDTH */
+.offcanvas.offcanvas-end {
+  width: 550px !important;
+  max-width: 85vw !important;
+  border-left: 1px solid var(--color-gray-200);
+  box-shadow: var(--shadow-2xl);
+}
+
+/* Offcanvas header */
+.offcanvas-header {
+  padding: var(--spacing-6) var(--spacing-6) !important;
+  background: linear-gradient(135deg, #8A9A5B 0%, #6B7C45 100%) !important;
+}
+
+.offcanvas-title {
+  font-size: var(--font-size-2xl) !important;
+  font-weight: var(--font-weight-bold) !important;
+}
+
+.offcanvas-title svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Offcanvas body */
+.offcanvas-body {
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+/* Map section - REDUCED HEIGHT FOR COMPACT VIEW */
+.offcanvas-map-container {
+  height: 300px !important;
+  width: 100%;
+  flex-shrink: 0 !important;
+  border-bottom: 2px solid #e9ecef;
+}
+
+/* Content section */
+.offcanvas-content-wrapper {
+  padding: var(--spacing-6);
+  flex-grow: 1 !important;
+  overflow-y: auto !important;
+}
+
+/* Cards inside offcanvas */
+.offcanvas-content-wrapper .card {
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--color-gray-200);
+  margin-bottom: var(--spacing-5);
+}

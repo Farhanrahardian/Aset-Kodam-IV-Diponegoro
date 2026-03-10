@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Container, Row, Col, Spinner, Alert } from "react-bootstrap";
+import { Container, Row, Col, Spinner, Alert, Card } from "react-bootstrap";
 import axiosAuth from "../utils/axiosAuth";
 import toast from "react-hot-toast";
 
 import FormAset from "../components/FormAset";
+import "./EditAsetPage.css";
 
 const API_URL = "http://localhost:3001";
 
@@ -230,23 +231,39 @@ const EditAsetPage = () => {
   if (error) return <Alert variant="danger">{error}</Alert>;
 
   return (
-    <Container fluid className="mt-4">
-      <h3>Edit Aset Tanah</h3>
-      <Row>
-        <Col>
-          {asset && (
-            <FormAset
-              ref={formAsetRef}
-              onSave={handleSaveAsset}
-              onCancel={handleCancel}
-              koremList={koremList}
-              assetToEdit={asset}
-              isEnabled={true}
-            />
-          )}
-        </Col>
-      </Row>
-    </Container>
+    <div className="edit-aset-page">
+      <div className="page-header-wrapper">
+        <div className="header-content">
+          <div className="header-icon edit-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+          </div>
+          <div>
+            <h1 className="page-title">Edit Aset Tanah</h1>
+            <p className="page-subtitle">Perbarui informasi aset tanah BMN</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="form-card">
+        <Card>
+          <Card.Body>
+            {asset && (
+              <FormAset
+                ref={formAsetRef}
+                onSave={handleSaveAsset}
+                onCancel={handleCancel}
+                koremList={koremList}
+                assetToEdit={asset}
+                isEnabled={true}
+              />
+            )}
+          </Card.Body>
+        </Card>
+      </div>
+    </div>
   );
 };
 

@@ -20,6 +20,7 @@ import EditYardipModal from "../components/EditYardipModal";
 import DetailOffcanvasYardip from "../components/DetailOffcanvasYardip";
 import DetailYardipModal from "../components/DetailYardipModal";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import "./DataAsetYardipPage.css";
 
 const API_URL = "http://localhost:3001";
 
@@ -83,7 +84,7 @@ const FilterPanelTop = ({
   const hasActiveFilters = selectedProvinsi || selectedKota || statusFilter || searchQuery;
 
   return (
-    <Card className="mb-3 border-0 shadow-sm">
+    <Card className="mb-3 border-0 filter-panel-card">
       <Card.Body className="py-2">
         <div className="d-flex align-items-center justify-content-between gap-2">
           {/* Kiri: Filter Dropdowns */}
@@ -188,6 +189,8 @@ const TabelAsetYardip = ({ assets, onEdit, onDelete, onViewDetail, userRole }) =
   if (!assets || assets.length === 0) {
     return (
       <div className="text-center py-5">
+        <i className="fas fa-folder-open empty-state-icon"></i>
+        <h5 className="fw-bold text-dark mb-2">Belum Ada Data / Tidak Ditemukan</h5>
         <p className="text-muted">
           Tidak ada data aset yardip yang cocok dengan filter Anda.
         </p>
@@ -429,21 +432,24 @@ const DataAsetYardipPage = () => {
     }
   };
 
-  const handleSaveYardip = async (formData, buktiPemilikanFile, filesToDelete) => {
+  const handleSaveYardip = async (formData, buktiPemilikanFile, filesToDelete, assetPhotos = [], gambarTampakAtasFile = null) => {
     const toastId = toast.loading("Menyimpan perubahan...");
 
     let buktiPemilikanUrl = formData.bukti_pemilikan_url || "";
     let buktiPemilikanFilename = formData.bukti_pemilikan_filename || "";
+    let gambarTampakAtasUrl = formData.gambar_tampak_atas_url || "";
+    let gambarTampakAtasFilename = formData.gambar_tampak_atas_filename || "";
 
     try {
+      // ===== HANDLE BUKTI PEMILIKAN =====
       if (filesToDelete?.buktiPemilikan) {
         const filename = filesToDelete.buktiPemilikan.split("/").pop();
         if (filename) {
           try {
             await axiosAuth.delete(`${API_URL}/upload/bukti-pemilikan/${filename}`);
-            console.log("✅ Old file deleted:", filename);
+            console.log("✅ Old bukti pemilikan deleted:", filename);
           } catch (err) {
-            console.warn("⚠️ Failed to delete old file:", filename);
+            console.warn("⚠️ Failed to delete old bukti pemilikan:", filename);
           }
         }
       }
@@ -466,14 +472,87 @@ const DataAsetYardipPage = () => {
         }
       }
 
+      // ===== HANDLE FOTO TAMPAK ATAS =====
+      if (filesToDelete?.fotoTampakAtas) {
+        const filename = filesToDelete.fotoTampakAtas.split("/").pop();
+        if (filename) {
+          try {
+            await axiosAuth.delete(`${API_URL}/upload/foto-tampak-atas/${filename}`);
+            console.log("✅ Old foto tampak atas deleted:", filename);
+          } catch (err) {
+            console.warn("⚠️ Failed to delete old foto tampak atas:", filename);
+          }
+        }
+      }
+
+      if (gambarTampakAtasFile) {
+        try {
+          toast.loading("Mengupload foto tampak atas baru...", { id: toastId });
+          const fileFormData = new FormData();
+          fileFormData.append("foto_tampak_atas", gambarTampakAtasFile);
+          const uploadRes = await axiosAuth.post(
+            `${API_URL}/upload/foto-tampak-atas`,
+            fileFormData
+          );
+          gambarTampakAtasUrl = uploadRes.data.url;
+          gambarTampakAtasFilename = uploadRes.data.filename;
+        } catch (err) {
+          toast.error("Gagal mengupload foto tampak atas baru.", { id: toastId });
+          console.error("File upload error:", err);
+          return;
+        }
+      }
+
+      // ===== HANDLE FOTO ASET (MULTIPLE) =====
+      if (filesToDelete?.assetPhotos && filesToDelete.assetPhotos.length > 0) {
+        for (const photoUrl of filesToDelete.assetPhotos) {
+          const filename = photoUrl.split("/").pop();
+          if (filename) {
+            try {
+              await axiosAuth.delete(`${API_URL}/upload/foto-aset/${filename}`);
+              console.log("✅ Old foto aset deleted:", filename);
+            } catch (err) {
+              console.warn("⚠️ Failed to delete old foto aset:", filename);
+            }
+          }
+        }
+      }
+
+      let fotoAsetUrls = formData.foto_aset || [];
+      if (assetPhotos && assetPhotos.length > 0) {
+        try {
+          toast.loading("Mengupload foto aset baru...", { id: toastId });
+          const uploadPromises = assetPhotos.map(async (photoFile) => {
+            const fileFormData = new FormData();
+            fileFormData.append("foto_aset", photoFile);
+            const uploadRes = await axiosAuth.post(
+              `${API_URL}/upload/foto-aset`,
+              fileFormData
+            );
+            return uploadRes.data.files[0].url;
+          });
+
+          const newPhotoUrls = await Promise.all(uploadPromises);
+          fotoAsetUrls = [...fotoAsetUrls, ...newPhotoUrls];
+        } catch (err) {
+          toast.error("Gagal mengupload foto aset baru.", { id: toastId });
+          console.error("File upload error:", err);
+          return;
+        }
+      }
+
+      // ===== PREPARE UPDATED DATA =====
       const updatedData = {
         ...formData,
         bukti_pemilikan_url: buktiPemilikanUrl,
         bukti_pemilikan_filename: buktiPemilikanFilename,
+        gambar_tampak_atas_url: gambarTampakAtasUrl,
+        gambar_tampak_atas_filename: gambarTampakAtasFilename,
+        foto_aset: fotoAsetUrls,
       };
 
       await axiosAuth.put(`${API_URL}/yardip_assets/${formData.id}`, updatedData);
-      toast.success("Aset Yardip berhasil diperbarui!", { id: toastId });
+      toast.success("Aset berhasil diperbarui!", { id: toastId });
 
       const refreshedAsset = await axiosAuth.get(`${API_URL}/yardip_assets/${formData.id}`);
       setEditingAsset(refreshedAsset.data);
@@ -488,7 +567,7 @@ const DataAsetYardipPage = () => {
   // ============= RENDER =============
   if (loading) {
     return (
-      <Container fluid className="mt-4">
+      <Container fluid className="data-aset-container">
         <div className="text-center py-5">
           <Spinner animation="border" variant="primary" />
           <p className="mt-3">Memuat data aset yardip...</p>
@@ -500,9 +579,7 @@ const DataAsetYardipPage = () => {
   if (error) return <Alert variant="danger">{error}</Alert>;
 
   return (
-    <Container fluid className="mt-4">
-      <h3>Data Aset Yardip</h3>
-
+    <Container fluid className="data-aset-container">
       <Row>
         <Col md={12}>
           <Card className="mb-4">
@@ -551,32 +628,30 @@ const DataAsetYardipPage = () => {
           </Card>
 
           {filteredTableAssets.length > 0 && (
-            <Card className="mt-3">
-              <Card.Body>
-                <Row className="text-center">
-                  <Col md={4}>
-                    <div className="border-end">
-                      <h5 className="text-primary">{filteredTableAssets.length}</h5>
-                      <small className="text-muted">Total Aset</small>
-                    </div>
-                  </Col>
-                  <Col md={4}>
-                    <div className="border-end">
-                      <h5 className="text-success">
-                        {filteredTableAssets.filter((a) => a.status === "Dimiliki/Dikuasai").length}
-                      </h5>
-                      <small className="text-muted">Dimiliki/Dikuasai</small>
-                    </div>
-                  </Col>
-                  <Col md={4}>
-                    <h5 className="text-danger">
-                      {filteredTableAssets.filter((a) => a.status === "Tidak Dimiliki/Tidak Dikuasai").length}
-                    </h5>
-                    <small className="text-muted">Tidak Dimiliki/Tidak Dikuasai</small>
-                  </Col>
-                </Row>
-              </Card.Body>
-            </Card>
+            <Row className="mt-4 mb-2">
+              <Col md={4}>
+                <Card className="h-100 summary-stat-box text-center border-0 shadow-sm">
+                  <div className="summary-stat-value text-primary">{filteredTableAssets.length}</div>
+                  <div className="summary-stat-label text-muted">Total Aset</div>
+                </Card>
+              </Col>
+              <Col md={4}>
+                <Card className="h-100 summary-stat-box text-center border-0 shadow-sm">
+                  <div className="summary-stat-value text-success">
+                    {filteredTableAssets.filter((a) => a.status === "Dimiliki/Dikuasai").length}
+                  </div>
+                  <div className="summary-stat-label text-muted">Dimiliki/Dikuasai</div>
+                </Card>
+              </Col>
+              <Col md={4}>
+                <Card className="h-100 summary-stat-box text-center border-0 shadow-sm">
+                  <div className="summary-stat-value text-danger">
+                    {filteredTableAssets.filter((a) => a.status === "Tidak Dimiliki/Tidak Dikuasai").length}
+                  </div>
+                  <div className="summary-stat-label text-muted">Tidak Dimiliki/Dikuasai</div>
+                </Card>
+              </Col>
+            </Row>
           )}
         </Col>
       </Row>

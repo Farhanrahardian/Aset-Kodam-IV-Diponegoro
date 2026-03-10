@@ -19,7 +19,10 @@ import ManageUsersPage from "./pages/ManageUsersPage";
 import ViewFilePage from "./pages/ViewFilePage";
 import { Toaster } from "react-hot-toast";
 
+// Import Bootstrap CSS first
 import "bootstrap/dist/css/bootstrap.min.css";
+// Then import our custom design tokens (which includes modal overrides)
+import "./styles/design-tokens.css";
 
 // ─────────────────────────────────────────────
 // Environment flag — evaluated once at module
@@ -159,7 +162,7 @@ function App() {
                     <Route
                       path="/settings"
                       element={
-                        <ProtectedRoute roles={["admin"]}>
+                        <ProtectedRoute roles={["admin", "pengguna"]}>
                           <SettingsPage />
                         </ProtectedRoute>
                       }

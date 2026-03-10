@@ -39,6 +39,12 @@ const isPdfFile = (filename) => {
   return filename.toLowerCase().endsWith(".pdf");
 };
 
+const isVideoFile = (filename) => {
+  if (!filename) return false;
+  const videoExtensions = [".mp4", ".mov", ".webm", ".avi"];
+  return videoExtensions.some((ext) => filename.toLowerCase().endsWith(ext));
+};
+
 // Helper function untuk check apakah file KMZ
 const isKmzFile = (filename) => {
   if (!filename) return false;
@@ -50,18 +56,18 @@ const extractKmlFromKmz = async (file) => {
   try {
     const zip = new JSZip();
     const zipContent = await zip.loadAsync(file);
-    
+
     // Cari file .kml dalam zip (case insensitive)
     const kmlFile = Object.keys(zipContent.files).find(
       (filename) => filename.toLowerCase().endsWith('.kml')
     );
-    
+
     if (!kmlFile) {
       throw new Error("Tidak ditemukan file KML dalam KMZ");
     }
-    
+
     console.log("KML file found in KMZ:", kmlFile);
-    
+
     // Extract konten KML
     const kmlContent = await zipContent.files[kmlFile].async("text");
     return kmlContent;
@@ -84,22 +90,22 @@ const validateAndFixCoordinates = (coordinates) => {
         // Nested array (polygon ring)
         return fixCoordArray(coord);
       }
-      
+
       // Individual coordinate [lng, lat, elevation?]
       let [lng, lat, elev] = coord;
-      
+
       // Validate longitude (-180 to 180)
       if (typeof lng !== 'number' || lng < -180 || lng > 180) {
         console.warn(`Invalid longitude: ${lng}, attempting to fix`);
         lng = ((lng + 180) % 360) - 180;
       }
-      
+
       // Validate latitude (-90 to 90)
       if (typeof lat !== 'number' || lat < -90 || lat > 90) {
         console.warn(`Invalid latitude: ${lat}, attempting to fix`);
         lat = Math.max(-90, Math.min(90, lat));
       }
-      
+
       // Return only [lng, lat] without elevation
       return [parseFloat(lng.toFixed(8)), parseFloat(lat.toFixed(8))];
     });
@@ -127,9 +133,9 @@ const processGoogleEarthGeometry = (feature) => {
     // Handle MultiPolygon - combine all polygons into one if needed
     if (geometry.type === "MultiPolygon") {
       console.log("Processing MultiPolygon with", geometry.coordinates.length, "polygons");
-      
+
       // Validate and fix all coordinates
-      const fixedCoordinates = geometry.coordinates.map(polygon => 
+      const fixedCoordinates = geometry.coordinates.map(polygon =>
         validateAndFixCoordinates(polygon)
       ).filter(Boolean);
 
@@ -189,7 +195,7 @@ const processGoogleEarthGeometry = (feature) => {
       const testPolygon = turf.polygon(geometry.coordinates);
       const area = turf.area(testPolygon);
       console.log("Processed geometry area:", area, "m²");
-      
+
       if (area === 0 || isNaN(area)) {
         throw new Error("Area polygon tidak valid (0 atau NaN)");
       }
@@ -220,6 +226,9 @@ const initialYardipState = {
   bukti_pemilikan_url: "",
   bukti_pemilikan_filename: "",
   keterangan_bukti_pemilikan: "",
+  gambar_tampak_atas_url: "",
+  gambar_tampak_atas_filename: "",
+  foto_aset: [],
 };
 
 const FormYardip = forwardRef(
@@ -242,6 +251,7 @@ const FormYardip = forwardRef(
       isPolygonCreated,
       onMapLocationSelect,
       onManualAreaChange,
+      hideLocationFields = false,
     },
     ref
   ) => {
@@ -252,15 +262,27 @@ const FormYardip = forwardRef(
     const [coordsError, setCoordsError] = useState("");
     const [kmlFileName, setKmlFileName] = useState("");
     const [buktiPemilikanFile, setBuktiPemilikanFile] = useState(null);
+    const [assetPhotos, setAssetPhotos] = useState([]);
+    const [gambarTampakAtasFile, setGambarTampakAtasFile] = useState(null);
     const [filesToDelete, setFilesToDelete] = useState({
       buktiPemilikan: null,
+      fotoTampakAtas: null,
+      assetPhotos: []
     });
 
     useImperativeHandle(ref, () => ({
-      getFormData: () => ({ formData, buktiPemilikanFile, filesToDelete }),
+      getFormData: () => ({ 
+        formData, 
+        buktiPemilikanFile, 
+        filesToDelete,
+        assetPhotos,
+        gambarTampakAtasFile
+      }),
       resetFilesToDelete: () => {
         setFilesToDelete({
           buktiPemilikan: null,
+          fotoTampakAtas: null,
+          assetPhotos: []
         });
       }
     }));
@@ -366,17 +388,19 @@ const FormYardip = forwardRef(
       (e) => {
         e.preventDefault();
         if (validateForm()) {
-          onSave(formData, buktiPemilikanFile, filesToDelete);
+          onSave(formData, buktiPemilikanFile, filesToDelete, assetPhotos, gambarTampakAtasFile);
         }
       },
-      [validateForm, formData, onSave, buktiPemilikanFile, filesToDelete]
+      [validateForm, formData, onSave, buktiPemilikanFile, filesToDelete, assetPhotos, gambarTampakAtasFile]
     );
 
     const handleReset = useCallback(() => {
       setFormData(initialYardipState);
       setErrors({});
       setBuktiPemilikanFile(null);
-      setFilesToDelete({ buktiPemilikan: null });
+      setAssetPhotos([]);
+      setGambarTampakAtasFile(null);
+      setFilesToDelete({ buktiPemilikan: null, fotoTampakAtas: null, assetPhotos: [] });
     }, []);
 
     // ===== BUKTI PEMILIKAN HANDLERS =====
@@ -425,6 +449,122 @@ const FormYardip = forwardRef(
         }
         setBuktiPemilikanFile(file);
       }
+    };
+
+    // ===== FOTO ASET HANDLERS =====
+    const handleAssetPhotosChange = (e) => {
+      const files = Array.from(e.target.files);
+      if (files.length > 0) {
+        const maxSize = 50 * 1024 * 1024;
+        const oversizedFiles = files.filter((file) => file.size > maxSize);
+
+        if (oversizedFiles.length > 0) {
+          const fileNames = oversizedFiles.map((file) => file.name).join(", ");
+          toast.error(`File berikut melebihi ukuran maksimal 50MB: ${fileNames}`);
+          return;
+        }
+
+        if (isEditMode) {
+          const existingPhotoCount = formData.foto_aset ? formData.foto_aset.length : 0;
+          const newFileCount = files.length;
+          const totalFileCount = existingPhotoCount + newFileCount;
+
+          if (totalFileCount > 5) {
+            toast.error(
+              `Total file foto aset tidak boleh melebihi 5. Anda saat ini memiliki ${existingPhotoCount} file dan mencoba menambahkan ${newFileCount} file. Maksimal ${5 - existingPhotoCount} file dapat ditambahkan.`
+            );
+            return;
+          }
+        } else {
+          if (files.length > 5) {
+            toast.error(
+              "Maksimal hanya 5 file foto aset yang dapat diupload sekaligus."
+            );
+            return;
+          }
+        }
+        setAssetPhotos(files);
+      }
+    };
+
+    const handleRemovePhoto = (mediaUrl) => {
+      if (!mediaUrl) {
+        toast.error("URL foto tidak valid");
+        return;
+      }
+
+      Swal.fire({
+        title: "Apakah Anda yakin?",
+        text: "Foto akan dihapus saat Anda menyimpan perubahan.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#3085d6",
+        cancelButtonColor: "#d33",
+        confirmButtonText: "Ya, hapus nanti!",
+        cancelButtonText: "Batal",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          setFilesToDelete(prev => ({
+            ...prev,
+            assetPhotos: [...prev.assetPhotos, mediaUrl]
+          }));
+
+          setFormData((prev) => ({
+            ...prev,
+            foto_aset: prev.foto_aset?.filter((url) => url !== mediaUrl) || []
+          }));
+
+          toast.success("Foto ditandai untuk dihapus saat disimpan!");
+        }
+      });
+    };
+
+    // ===== FOTO TAMPAK ATAS HANDLERS =====
+    const handleGambarTampakAtasChange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const maxSize = 10 * 1024 * 1024;
+        if (file.size > maxSize) {
+          toast.error(
+            `File foto aset tampak atas melebihi ukuran maksimal 10MB: ${file.name}`
+          );
+          return;
+        }
+        setGambarTampakAtasFile(file);
+      }
+    };
+
+    const handleDeleteFotoTampakAtas = () => {
+      if (!formData.gambar_tampak_atas_url) {
+        toast.error("Tidak ada foto aset tampak atas untuk dihapus.");
+        return;
+      }
+
+      Swal.fire({
+        title: "Apakah Anda yakin?",
+        text: "Foto tampak atas akan dihapus saat Anda menyimpan perubahan.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#3085d6",
+        cancelButtonColor: "#d33",
+        confirmButtonText: "Ya, hapus nanti!",
+        cancelButtonText: "Batal",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          setFilesToDelete(prev => ({
+            ...prev,
+            fotoTampakAtas: formData.gambar_tampak_atas_url
+          }));
+
+          setFormData((prev) => ({
+            ...prev,
+            gambar_tampak_atas_url: null,
+            gambar_tampak_atas_filename: null,
+          }));
+
+          toast.success("Foto tampak atas ditandai untuk dihapus saat disimpan!");
+        }
+      });
     };
 
     // IMPROVED: Enhanced KML/KMZ file import handler
@@ -512,13 +652,13 @@ const FormYardip = forwardRef(
         setKmlFileName("");
         return;
       }
-      
+
       setKmlFileName(file.name);
       const toastId = toast.loading("Memproses file...");
 
       try {
         let kmlString;
-        
+
         // Extract KML content
         if (isKmzFile(file.name)) {
           toast.loading("Mengekstrak file KMZ...", { id: toastId });
@@ -532,65 +672,65 @@ const FormYardip = forwardRef(
             reader.readAsText(file);
           });
         }
-        
+
         toast.loading("Memproses geometri...", { id: toastId });
-        
+
         // Parse KML
         const kmlDom = new DOMParser().parseFromString(kmlString, "text/xml");
-        
+
         // Check for parsing errors
         const parseError = kmlDom.getElementsByTagName("parsererror");
         if (parseError.length > 0) {
           throw new Error("File KML tidak valid atau rusak");
         }
-        
+
         const geojsonData = kml(kmlDom);
 
         if (!geojsonData?.features?.length) {
           throw new Error("File tidak mengandung data geometri yang valid");
         }
-        
+
         console.log("Parsed GeoJSON features:", geojsonData.features.length);
-        
+
         // Extract all polygons
         const allPolygons = extractAllPolygonsFromKML(geojsonData);
-        
+
         if (allPolygons.length === 0) {
           throw new Error("Tidak ditemukan geometri poligon dalam file");
         }
 
         console.log("Found polygons:", allPolygons.map(p => p.name));
-        
+
         let selectedPolygon;
-        
+
         // If multiple polygons, let user choose
         if (allPolygons.length > 1) {
           toast.dismiss(toastId);
           const selectedIndex = await showPolygonSelectionDialog(allPolygons);
-          
+
           if (selectedIndex === null) {
             setKmlFileName("");
             event.target.value = null;
             return;
           }
-          
+
           selectedPolygon = allPolygons[selectedIndex];
           const newToastId = toast.loading("Memproses polygon terpilih...");
-          
+
           // Continue processing with new toast
           try {
             toast.loading("Memvalidasi koordinat...", { id: newToastId });
-            const processedGeometry = processGoogleEarthGeometry({ 
+            const processedGeometry = processGoogleEarthGeometry({
               geometry: selectedPolygon.geometry,
-              properties: selectedPolygon.properties 
+              properties: selectedPolygon.properties
             });
-            
+
             if (!processedGeometry) {
               throw new Error("Gagal memproses geometri dari file");
             }
 
             toast.success(`Polygon "${selectedPolygon.name}" berhasil diimpor!`, { id: newToastId });
-            
+
             // Send to parent component
             onKmlImport?.(processedGeometry, 'kml');
           } catch (error) {
@@ -601,30 +741,30 @@ const FormYardip = forwardRef(
           // Single polygon - process directly
           selectedPolygon = allPolygons[0];
           console.log("Selected polygon:", selectedPolygon.name);
-          
+
           // Process the geometry with enhanced validation
           toast.loading("Memvalidasi koordinat...", { id: toastId });
-          const processedGeometry = processGoogleEarthGeometry({ 
+          const processedGeometry = processGoogleEarthGeometry({
             geometry: selectedPolygon.geometry,
-            properties: selectedPolygon.properties 
+            properties: selectedPolygon.properties
           });
-          
+
           if (!processedGeometry) {
             throw new Error("Gagal memproses geometri dari file");
           }
 
           toast.success(`Polygon "${selectedPolygon.name}" berhasil diimpor!`, { id: toastId });
-          
+
           // Send to parent component
           onKmlImport?.(processedGeometry, 'kml');
         }
-        
+
       } catch (error) {
         console.error("Error processing KML/KMZ:", error);
         toast.error(`Gagal memproses file: ${error.message}`, { id: toastId });
         setKmlFileName("");
       }
-      
+
       event.target.value = null;
     };
 
@@ -760,131 +900,17 @@ const FormYardip = forwardRef(
     };
 
     return (
-      <Card>
-        <Card.Body>
-          <Form onSubmit={handleSubmit}>
-            {!isEnabled && !isEditMode && (
-              <Alert variant="info">
-                Pilih lokasi Provinsi dan Kabupaten/Kota di peta untuk memulai.
-              </Alert>
-            )}
+      <div className="form-yardip-wrapper">
+        <Form onSubmit={handleSubmit}>
+          {!isEnabled && !isEditMode && (
+            <Alert variant="info">
+              Pilih lokasi Provinsi dan Kabupaten/Kota di peta untuk memulai.
+            </Alert>
+          )}
 
-            <fieldset disabled={!isEnabled && !isEditMode}>
-              {!isEditMode && isEnabled && (
-                <Form.Group className="mb-3 border p-3 rounded bg-light">
-                  <Form.Label className="fw-bold">
-                    Pilih Metode Input Poligon
-                  </Form.Label>
-                  <div className="mt-2">
-                    <ButtonGroup>
-                      <ToggleButton
-                        key="draw"
-                        id="yardip-radio-draw"
-                        type="radio"
-                        variant="outline-primary"
-                        name="inputMethod"
-                        value="draw"
-                        checked={inputMethod === "draw"}
-                        onChange={(e) => handleInputChangeMethod(e.currentTarget.value)}
-                      >
-                        Gambar di Peta
-                      </ToggleButton>
-                      <ToggleButton
-                        key="kml"
-                        id="yardip-radio-kml"
-                        type="radio"
-                        variant="outline-primary"
-                        name="inputMethod"
-                        value="kml"
-                        checked={inputMethod === "kml"}
-                        onChange={(e) => handleInputChangeMethod(e.currentTarget.value)}
-                      >
-                        Impor KML/KMZ
-                      </ToggleButton>
-                      <ToggleButton
-                        key="coords"
-                        id="yardip-radio-coords"
-                        type="radio"
-                        variant="outline-primary"
-                        name="inputMethod"
-                        value="coords"
-                        checked={inputMethod === "coords"}
-                        onChange={(e) => handleInputChangeMethod(e.currentTarget.value)}
-                      >
-                        Input Koordinat
-                      </ToggleButton>
-                    </ButtonGroup>
-                  </div>
-
-                  {inputMethod === "draw" && (
-                    <Alert variant="secondary" className="mt-3 mb-0">
-                      Gunakan kontrol gambar di pojok kiri atas peta untuk
-                      menggambar area aset.
-                    </Alert>
-                  )}
-
-                  {inputMethod === "kml" && (
-                    <Form.Group className="mt-3 mb-0">
-                      <Form.Label>Upload File KML/KMZ</Form.Label>
-                      {!kmlFileName && (
-                        <Form.Control
-                          type="file"
-                          accept=".kml,.kmz"
-                          onChange={handleKmlFileImport}
-                        />
-                      )}
-                      {kmlFileName && (
-                        <>
-                          <div className="alert alert-info p-2 mb-2">
-                            File terpilih: <strong>{kmlFileName}</strong>
-                          </div>
-                          <Form.Control
-                            type="file"
-                            accept=".kml,.kmz"
-                            onChange={handleKmlFileImport}
-                            className="mb-2"
-                          />
-                          <Form.Text className="text-muted">
-                            Pilih file baru untuk mengganti file yang saat ini dipilih
-                          </Form.Text>
-                        </>
-                      )}
-                      <Form.Text className="text-muted d-block mt-2">
-                        Format yang didukung: KML dan KMZ. File dari Google Earth akan otomatis diproses dengan benar.
-                      </Form.Text>
-                    </Form.Group>
-                  )}
-
-                  {inputMethod === "coords" && (
-                    <Form.Group className="mt-3 mb-0">
-                      <Form.Label>
-                        Input Koordinat Manual (Format: longitude, latitude)
-                      </Form.Label>
-                      <Form.Control
-                        as="textarea"
-                        rows={4}
-                        value={coordsText}
-                        onChange={(e) => setCoordsText(e.target.value)}
-                        placeholder="Satu titik per baris. Contoh:\n110.4283,-6.9904\n110.4285,-6.9910\n110.4279,-6.9908"
-                      />
-                      {coordsError && (
-                        <Alert variant="danger" className="mt-2 p-2">
-                          {coordsError}
-                        </Alert>
-                      )}
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        className="mt-2"
-                        onClick={handleProcessCoords}
-                      >
-                        Proses Koordinat
-                      </Button>
-                    </Form.Group>
-                  )}
-                </Form.Group>
-              )}
-
+          <fieldset disabled={!isEnabled && !isEditMode}>
+              {/* LOKASI TERPILIH - Hanya tampil jika hideLocationFields = false */}
+              {!hideLocationFields && (
               <Card className="mb-3">
                 <Card.Header>
                   <strong>Lokasi Terpilih (dari Peta)</strong>
@@ -978,6 +1004,7 @@ const FormYardip = forwardRef(
                   </Form.Group>
                 </Card.Body>
               </Card>
+              )}
 
               {!isPolygonCreated && !isEditMode && (
                 <Alert variant="warning" className="text-center">
@@ -987,69 +1014,69 @@ const FormYardip = forwardRef(
               )}
 
               <fieldset disabled={!isPolygonCreated}>
-                <Card className="mb-3">
-                  <Card.Header>
-                    <strong>Informasi Dasar</strong>
-                  </Card.Header>
-                  <Card.Body>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Pengelola *</Form.Label>
-                      <Form.Control
-                        type="text"
-                        name="pengelola"
-                        value={formData.pengelola}
-                        onChange={handleChange}
-                        isInvalid={!!errors.pengelola}
-                        required
-                      />
-                      <Form.Control.Feedback type="invalid">
-                        {errors.pengelola}
-                      </Form.Control.Feedback>
-                    </Form.Group>
+                <div className="form-group-section form-yardip-wrapper mt-2">
+                  <Row className="gx-3">
+                    <Col md={4}>
+                      <Form.Group className="mb-3">
+                        <Form.Label>Pengelola *</Form.Label>
+                        <Form.Control
+                          type="text"
+                          name="pengelola"
+                          value={formData.pengelola}
+                          onChange={handleChange}
+                          isInvalid={!!errors.pengelola}
+                          required
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {errors.pengelola}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+                    </Col>
 
-                    <Form.Group className="mb-3">
-                      <Form.Label>Bidang *</Form.Label>
-                      <Form.Select
-                        name="bidang"
-                        value={formData.bidang}
-                        onChange={handleChange}
-                        isInvalid={!!errors.bidang}
-                        required
-                      >
-                        <option value="">-- Pilih Bidang --</option>
-                        {bidangOptions.map((bidang) => (
-                          <option key={bidang} value={bidang}>
-                            {bidang}
-                          </option>
-                        ))}
-                      </Form.Select>
-                      <Form.Control.Feedback type="invalid">
-                        {errors.bidang}
-                      </Form.Control.Feedback>
-                    </Form.Group>
+                    <Col md={4}>
+                      <Form.Group className="mb-3">
+                        <Form.Label>Bidang *</Form.Label>
+                        <Form.Select
+                          name="bidang"
+                          value={formData.bidang}
+                          onChange={handleChange}
+                          isInvalid={!!errors.bidang}
+                          required
+                        >
+                          <option value="">-- Pilih Bidang --</option>
+                          {bidangOptions.map((bidang) => (
+                            <option key={bidang} value={bidang}>
+                              {bidang}
+                            </option>
+                          ))}
+                        </Form.Select>
+                        <Form.Control.Feedback type="invalid">
+                          {errors.bidang}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+                    </Col>
 
-                    <Form.Group className="mb-3">
-                      <Form.Label>Peruntukan *</Form.Label>
-                      <Form.Control
-                        type="text"
-                        name="peruntukan"
-                        value={formData.peruntukan}
-                        onChange={handleChange}
-                        isInvalid={!!errors.peruntukan}
-                        required
-                      />
-                      <Form.Control.Feedback type="invalid">
-                        {errors.peruntukan}
-                      </Form.Control.Feedback>
-                    </Form.Group>
-                  </Card.Body>
-                </Card>
+                    <Col md={4}>
+                      <Form.Group className="mb-3">
+                        <Form.Label>Peruntukan *</Form.Label>
+                        <Form.Control
+                          type="text"
+                          name="peruntukan"
+                          value={formData.peruntukan}
+                          onChange={handleChange}
+                          isInvalid={!!errors.peruntukan}
+                          required
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {errors.peruntukan}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+                    </Col>
+                  </Row>
+                </div>
 
-                <Card className="mb-3">
-                  <Card.Header>
-                    <strong>Informasi Lokasi Detail</strong>
-                  </Card.Header>
-                  <Card.Body>
+                <div className="form-group-section form-yardip-wrapper">
+                  <Form.Group className="mb-3">
                     <Form.Label>Alamat Lengkap *</Form.Label>
                     <Row className="mb-3">
                       <Col>
@@ -1095,48 +1122,51 @@ const FormYardip = forwardRef(
                         </Form.Control.Feedback>
                       </Col>
                     </Row>
-                  </Card.Body>
-                </Card>
+                  </Form.Group>
+                </div>
 
-                <Card className="mb-3">
-                  <Card.Header>
-                    <strong>Status dan Keterangan</strong>
-                  </Card.Header>
-                  <Card.Body>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Status *</Form.Label>
-                      <Form.Select
-                        name="status"
-                        value={formData.status}
-                        onChange={handleChange}
-                        isInvalid={!!errors.status}
-                        required
-                      >
-                        <option value="">-- Pilih Status --</option>
-                        {statusOptions.map((status) => (
-                          <option key={status} value={status}>
-                            {status}
-                          </option>
-                        ))}
-                      </Form.Select>
-                      <Form.Control.Feedback type="invalid">
-                        {errors.status}
-                      </Form.Control.Feedback>
-                    </Form.Group>
+                <div className="form-group-section form-yardip-wrapper">
+                  <Row className="gx-3">
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label>Status *</Form.Label>
+                        <Form.Select
+                          name="status"
+                          value={formData.status}
+                          onChange={handleChange}
+                          isInvalid={!!errors.status}
+                          required
+                        >
+                          <option value="">-- Pilih Status --</option>
+                          {statusOptions.map((status) => (
+                            <option key={status} value={status}>
+                              {status}
+                            </option>
+                          ))}
+                        </Form.Select>
+                        <Form.Control.Feedback type="invalid">
+                          {errors.status}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label>Keterangan</Form.Label>
+                        <Form.Control
+                          as="textarea"
+                          rows={3}
+                          name="keterangan"
+                          value={formData.keterangan}
+                          onChange={handleChange}
+                        />
+                      </Form.Group>
+                    </Col>
+                  </Row>
+                </div>
 
-                    <Form.Group className="mb-3">
-                      <Form.Label>Keterangan</Form.Label>
-                      <Form.Control
-                        as="textarea"
-                        rows={3}
-                        name="keterangan"
-                        value={formData.keterangan}
-                        onChange={handleChange}
-                      />
-                    </Form.Group>
-
-                    {/* BUKTI PEMILIKAN - TAMBAH & EDIT MODE */}
-                    <>
+                <div className="form-group-section form-yardip-wrapper mt-4 mb-3">
+                  <Row className="gx-3">
+                    <Col md={6}>
                       <Form.Group className="mb-3">
                         <Form.Label>Nama Bukti Kepemilikan</Form.Label>
                         <Form.Control
@@ -1147,7 +1177,8 @@ const FormYardip = forwardRef(
                           placeholder="Contoh: Sertifikat Hak Milik No. 123"
                         />
                       </Form.Group>
-
+                    </Col>
+                    <Col md={6}>
                       <Form.Group className="mb-3">
                         <Form.Label>Upload Bukti Pemilikan</Form.Label>
                         {isEditMode && formData.bukti_pemilikan_url && (
@@ -1244,29 +1275,176 @@ const FormYardip = forwardRef(
                             : "Format: PDF, JPG, JPEG, PNG (Maks. 10MB per file)"}
                         </Form.Text>
                       </Form.Group>
-                    </>
-                  </Card.Body>
-                </Card>
+                    </Col>
+                  </Row>
+
+                  {/* FOTO TAMPAK ATAS & FOTO ASET SECTION */}
+                  <Row className="gx-3 mt-1">
+                    {/* FOTO TAMPAK ATAS */}
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label>Foto Aset Tampak Atas</Form.Label>
+                        {isEditMode && formData.gambar_tampak_atas_url && (
+                          <div className="mb-2">
+                            <Card body>
+                              <div className="d-flex justify-content-between align-items-center">
+                                <div>
+                                  <Image
+                                    src={
+                                      formData.gambar_tampak_atas_url.startsWith("http")
+                                        ? formData.gambar_tampak_atas_url
+                                        : `${API_URL}${formData.gambar_tampak_atas_url}`
+                                    }
+                                    alt="Preview Tampak Atas"
+                                    style={{
+                                      height: "50px",
+                                      marginRight: "10px",
+                                      cursor: "pointer",
+                                    }}
+                                    fluid
+                                    onClick={() =>
+                                      window.open(
+                                        formData.gambar_tampak_atas_url.startsWith("http")
+                                          ? formData.gambar_tampak_atas_url
+                                          : `${API_URL}${formData.gambar_tampak_atas_url}`,
+                                        "_blank"
+                                      )
+                                    }
+                                  />
+                                  <span className="ms-2 fst-italic">
+                                    {formData.gambar_tampak_atas_filename}
+                                  </span>
+                                </div>
+                                <Button
+                                  variant="danger"
+                                  size="sm"
+                                  onClick={handleDeleteFotoTampakAtas}
+                                >
+                                  Hapus
+                                </Button>
+                              </div>
+                            </Card>
+                          </div>
+                        )}
+                        <Form.Control
+                          type="file"
+                          name="gambar_tampak_atas_file"
+                          onChange={handleGambarTampakAtasChange}
+                          accept=".jpg,.jpeg,.png"
+                          disabled={isEditMode && !!formData.gambar_tampak_atas_url}
+                        />
+                        <Form.Text className="text-muted">
+                          {isEditMode
+                            ? "Hapus gambar yang ada jika ingin menggantinya."
+                            : "Maks. 10MB. Format: JPG, JPEG, PNG"}
+                        </Form.Text>
+                      </Form.Group>
+                    </Col>
+
+                    {/* FOTO ASET (MULTIPLE) */}
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="fw-bold">Foto Aset</Form.Label>
+                        {isEditMode && formData.foto_aset && formData.foto_aset.length > 0 && (
+                          <div className="mb-2 p-2 border border-secondary border-opacity-25 rounded-3 bg-light">
+                            <div className="d-flex flex-wrap gap-2">
+                              {formData.foto_aset.map((mediaUrl, index) => {
+                                const fullUrl = mediaUrl.startsWith("http")
+                                  ? mediaUrl
+                                  : `${API_URL}${mediaUrl}`;
+                                const isVideo = isVideoFile(fullUrl);
+                                return (
+                                  <Card
+                                    key={index}
+                                    className="position-relative shadow-sm border-0"
+                                    style={{ width: "80px", height: "80px", borderRadius: "8px" }}
+                                  >
+                                    {isVideo ? (
+                                      <video
+                                        src={fullUrl}
+                                        style={{
+                                          objectFit: "cover",
+                                          width: "100%",
+                                          height: "100%",
+                                          cursor: "pointer",
+                                          borderRadius: "8px"
+                                        }}
+                                        onClick={() => window.open(fullUrl, "_blank")}
+                                      />
+                                    ) : (
+                                      <Card.Img
+                                        src={fullUrl}
+                                        alt={`Media Aset ${index + 1}`}
+                                        style={{
+                                          objectFit: "cover",
+                                          width: "100%",
+                                          height: "100%",
+                                          cursor: "pointer",
+                                          borderRadius: "8px"
+                                        }}
+                                        onClick={() => window.open(fullUrl, "_blank")}
+                                      />
+                                    )}
+                                    <button
+                                      className="position-absolute top-0 end-0 m-1 border-0"
+                                      onClick={() => handleRemovePhoto(mediaUrl)}
+                                      type="button"
+                                      title="Hapus foto"
+                                      style={{
+                                        width: '20px',
+                                        height: '20px',
+                                        minWidth: '20px',
+                                        borderRadius: '50%',
+                                        backgroundColor: '#dc3545',
+                                        border: 'none',
+                                        padding: 0,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        zIndex: 10,
+                                        cursor: 'pointer',
+                                      }}
+                                    >
+                                      <span style={{ color: '#ffffff', fontSize: '14px', fontWeight: 900, lineHeight: 1 }}>×</span>
+                                    </button>
+                                  </Card>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                        <Form.Control
+                          type="file"
+                          name="asset_photos"
+                          onChange={handleAssetPhotosChange}
+                          multiple
+                          accept=".jpg,.jpeg,.png,.mp4,.mov,.webm"
+                        />
+                        <Form.Text className="text-muted">
+                          {isEditMode
+                            ? "Upload file baru untuk menambah media (maks. 50MB per file, max 5 file)."
+                            : "Format: JPG, PNG, MP4, MOV, WEBM (Maks. 50MB per file, 5 file maksimal)"}
+                        </Form.Text>
+                      </Form.Group>
+                    </Col>
+                  </Row>
+                </div>
               </fieldset>
 
+              {/* TOMBOL AKSI */}
               {!isEditMode && (
-                <Row>
-                  <Col>
-                    <div className="d-flex justify-content-between">
-                      <Button variant="secondary" onClick={onCancel}>
-                        Batal
-                      </Button>
-                      <Button type="submit" variant="primary">
-                        {isEditMode ? "Simpan Perubahan" : "Simpan Aset"}
-                      </Button>
-                    </div>
-                  </Col>
-                </Row>
+                <div className="d-flex gap-2 justify-content-end mt-4 sticky-action-bar flex-wrap">
+                  <Button variant="secondary" className="btn-cancel-modern" onClick={onCancel}>
+                    <i className="fas fa-arrow-left me-2"></i> Batalkan
+                  </Button>
+                  <Button type="submit" variant="primary" className="btn-save-modern">
+                    <i className="fas fa-save me-2"></i> {isEditMode ? "Simpan Perubahan" : "Simpan Aset Baru"}
+                  </Button>
+                </div>
               )}
             </fieldset>
           </Form>
-        </Card.Body>
-      </Card>
+      </div>
     );
   }
 );

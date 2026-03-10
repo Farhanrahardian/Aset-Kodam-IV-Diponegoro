@@ -11,10 +11,16 @@ import {
 import axiosAuth from "../utils/axiosAuth";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import Swal from "sweetalert2";
+import { kml } from "@tmcw/togeojson";
+import { DOMParser } from "xmldom";
+import JSZip from "jszip";
 import PetaGambarAset from "../components/PetaGambarAset";
 import FormAset from "../components/FormAset";
+import InformasiDasarAset from "../components/InformasiDasarAset";
 import { normalizeKodimName } from "../utils/kodimUtils";
 import * as turf from "@turf/turf";
+import "./TambahAsetPage.css";
 
 const API_URL = "http://localhost:3001";
 
@@ -34,6 +40,23 @@ const TambahAsetPage = () => {
   const [inputMode, setInputMode] = useState("draw"); // Mode input saat ini (draw, kml, coords)
 
   const mapRef = useRef(null); // Declare mapRef here
+  const formRef = useRef(null); // Ref for the form component
+
+  // State untuk Lokasi & Wilayah (panel kanan)
+  const [infoDasarFormData, setInfoDasarFormData] = useState({
+    korem_id: "",
+    kodim: "",
+    nama: "",
+    assetToEdit: null,
+  });
+  const [infoDasarKodimList, setInfoDasarKodimList] = useState([]);
+  const [infoDasarInputMethod, setInfoDasarInputMethod] = useState("draw");
+  const [infoDasarKmlFileName, setInfoDasarKmlFileName] = useState("");
+  const [infoDasarCoordsText, setInfoDasarCoordsText] = useState("");
+  const [infoDasarCoordsError, setInfoDasarCoordsError] = useState("");
+
+  // Ref untuk menyimpan file KML yang akan diproses
+  const kmlFileRef = useRef(null);
 
 
   const [drawnAsset, setDrawnAsset] = useState(null);
@@ -55,6 +78,11 @@ const TambahAsetPage = () => {
     setActiveLocationInputType('none'); // Reset active input type
     setIsFormEnabled(false); // Disable form if no location is selected
     setIsLocationSelected(false);
+    // Reset info dasar states
+    setInfoDasarKmlFileName("");
+    setInfoDasarCoordsText("");
+    setInfoDasarCoordsError("");
+    kmlFileRef.current = null;
     // Explicitly call the map's internal clear function
     if (mapRef.current && mapRef.current.clearInternalDrawing) {
       mapRef.current.clearInternalDrawing();
@@ -86,6 +114,45 @@ const TambahAsetPage = () => {
 
   const prevIsLocationSelected = useRef(false);
   const currentSelectionRef = useRef({ koremId: "", kodimName: "" }); // Add ref to track selection for toast suppression
+
+  // Sync selectedKoremId dan selectedKodimId ke infoDasarFormData (saat pilih dari peta)
+  useEffect(() => {
+    if (selectedKoremId && selectedKoremId !== infoDasarFormData.korem_id) {
+      setInfoDasarFormData(prev => ({
+        ...prev,
+        korem_id: selectedKoremId,
+        kodim: selectedKodimId || "",
+      }));
+    }
+    // Reset kodim saat selectedKodimId berubah (termasuk saat reset ke "")
+    if (selectedKodimId !== infoDasarFormData.kodim) {
+      setInfoDasarFormData(prev => ({ ...prev, kodim: selectedKodimId || "" }));
+    }
+  }, [selectedKoremId, selectedKodimId]);
+
+  // Sync kodim list saat selectedKoremId berubah (dari form bawah atau peta)
+  useEffect(() => {
+    if (selectedKoremId) {
+      const selectedKoremData = koremList.find((k) => k.id === selectedKoremId);
+      if (selectedKoremData) {
+        const distinctKodims = [...new Set(selectedKoremData.kodim || [])];
+        const kodimObjects = distinctKodims.map((kName) => ({
+          id: kName,
+          nama: kName,
+        }));
+        setInfoDasarKodimList(kodimObjects);
+      }
+    } else {
+      setInfoDasarKodimList([]);
+    }
+  }, [selectedKoremId, koremList]);
+
+  // Sync input mode dari form bawah ke panel kanan
+  useEffect(() => {
+    if (inputMode !== infoDasarInputMethod) {
+      setInfoDasarInputMethod(inputMode);
+    }
+  }, [inputMode]);
 
   const handleLocationChange = useCallback(
     (koremId, kodimName) => {
@@ -175,6 +242,13 @@ const TambahAsetPage = () => {
         setSelectedKodimId("");
         setSelectedKodim(null);
         setIsLocationSelected(false);
+        // Reset infoDasarFormData
+        setInfoDasarFormData(prev => ({
+          ...prev,
+          korem_id: "",
+          kodim: "",
+        }));
+        setInfoDasarKodimList([]);
         return;
       }
 
@@ -243,7 +317,7 @@ const TambahAsetPage = () => {
           }
         }
       }
-       else {
+      else {
         const matchingKorem = koremList.find(
           (korem) => korem.nama.trim() === koremName.trim()
         );
@@ -255,6 +329,12 @@ const TambahAsetPage = () => {
           handleLocationChange(matchingKorem.id, kodimName);
         } else {
           setSelectedKodimId(kodimName);
+          // Reset infoDasarFormData jika tidak ada matching Korem
+          setInfoDasarFormData(prev => ({
+            ...prev,
+            korem_id: "",
+            kodim: kodimName,
+          }));
           // Jangan tampilkan notifikasi saat kembali dari level yang lebih rendah
         }
       }
@@ -273,7 +353,7 @@ const TambahAsetPage = () => {
     // If there's an existing KML or manual draw, and the source is changing
     // (i.e., we are about to draw manually, but there's already an imported KML)
     if (drawnAsset && activeLocationInputType !== 'manual_draw') {
-        clearAssetLocation();
+      clearAssetLocation();
     }
 
     if (!data || !data.geometry) {
@@ -468,76 +548,654 @@ const TambahAsetPage = () => {
     setSelectionSource("form");
   };
 
+  // Handler functions untuk Lokasi & Wilayah (panel kanan)
+  const handleInfoDasarChange = (e) => {
+    const { name, value } = e.target;
+
+    if (name === "korem_id") {
+      const selectedKoremData = koremList.find((k) => k.id === value);
+      let kodimValue = "";
+      if (
+        selectedKoremData &&
+        (selectedKoremData.nama === "Berdiri Sendiri" ||
+          selectedKoremData.nama === "Kodim 0733/Kota Semarang")
+      ) {
+        kodimValue = "Kodim 0733/Kota Semarang";
+      }
+      setInfoDasarFormData({ ...infoDasarFormData, korem_id: value, kodim: kodimValue });
+
+      // Update kodim list
+      if (selectedKoremData) {
+        const distinctKodims = [...new Set(selectedKoremData.kodim || [])];
+        const kodimObjects = distinctKodims.map((kName) => ({
+          id: kName,
+          nama: kName,
+        }));
+        setInfoDasarKodimList(kodimObjects);
+      } else {
+        setInfoDasarKodimList([]);
+      }
+
+      // Sync dengan state utama untuk peta dan form bawah
+      setSelectedKoremId(value);
+      setSelectedKodimId(kodimValue);
+      handleLocationChange(value, kodimValue);
+    } else if (name === "kodim") {
+      // Saat pilih Kodim dari dropdown, sync ke peta
+      setInfoDasarFormData(prev => ({ ...prev, [name]: value }));
+      setSelectedKodimId(value);
+      handleLocationChange(selectedKoremId, value);
+    }
+  };
+
+  const handleInfoDasarInputChangeMethod = (newMethod) => {
+    // Reset KML file and coords when switching method
+    if (infoDasarInputMethod === 'kml') {
+      setInfoDasarKmlFileName("");
+      kmlFileRef.current = null;
+    } else if (infoDasarInputMethod === 'coords') {
+      setInfoDasarCoordsText("");
+      setInfoDasarCoordsError("");
+    }
+    setInfoDasarInputMethod(newMethod);
+    setInputMode(newMethod);
+  };
+
+  // Helper: Check if file is KMZ
+  const isKmzFile = (filename) => {
+    if (!filename) return false;
+    return filename.toLowerCase().endsWith(".kmz");
+  };
+
+  // Helper: Extract KML from KMZ
+  const extractKmlFromKmz = async (file) => {
+    try {
+      const zip = new JSZip();
+      const zipContent = await zip.loadAsync(file);
+      const kmlFile = Object.keys(zipContent.files).find(
+        (filename) => filename.toLowerCase().endsWith('.kml')
+      );
+      if (!kmlFile) {
+        throw new Error("Tidak ditemukan file KML dalam KMZ");
+      }
+      return await zipContent.files[kmlFile].async("text");
+    } catch (error) {
+      console.error("Error extracting KMZ:", error);
+      throw new Error(`Gagal mengekstrak KMZ: ${error.message}`);
+    }
+  };
+
+  // Helper: Validate and fix coordinates
+  const validateAndFixCoordinates = (coordinates) => {
+    if (!coordinates || !Array.isArray(coordinates)) {
+      return null;
+    }
+    const fixCoordArray = (coordArray) => {
+      return coordArray.map(coord => {
+        if (Array.isArray(coord[0])) {
+          return fixCoordArray(coord);
+        }
+        let [lng, lat] = coord;
+        if (typeof lng !== 'number' || lng < -180 || lng > 180) {
+          lng = ((lng + 180) % 360) - 180;
+        }
+        if (typeof lat !== 'number' || lat < -90 || lat > 90) {
+          lat = Math.max(-90, Math.min(90, lat));
+        }
+        return [parseFloat(lng.toFixed(8)), parseFloat(lat.toFixed(8))];
+      });
+    };
+    try {
+      return fixCoordArray(coordinates);
+    } catch (error) {
+      console.error("Error fixing coordinates:", error);
+      return null;
+    }
+  };
+
+  // Helper: Process Google Earth geometry
+  const processGoogleEarthGeometry = (feature) => {
+    try {
+      if (!feature || !feature.geometry) {
+        throw new Error("Feature tidak memiliki geometri");
+      }
+      let geometry = feature.geometry;
+
+      if (geometry.type === "MultiPolygon") {
+        const fixedCoordinates = geometry.coordinates.map(polygon =>
+          validateAndFixCoordinates(polygon)
+        ).filter(Boolean);
+        if (fixedCoordinates.length === 0) {
+          throw new Error("Tidak ada koordinat valid dalam MultiPolygon");
+        }
+        if (fixedCoordinates.length > 1) {
+          const areas = fixedCoordinates.map(coords => {
+            try {
+              return turf.area(turf.polygon(coords));
+            } catch (e) {
+              return 0;
+            }
+          });
+          const maxIndex = areas.indexOf(Math.max(...areas));
+          geometry = {
+            type: "Polygon",
+            coordinates: fixedCoordinates[maxIndex]
+          };
+        } else {
+          geometry = {
+            type: "Polygon",
+            coordinates: fixedCoordinates[0]
+          };
+        }
+      } else if (geometry.type === "Polygon") {
+        const fixedCoordinates = validateAndFixCoordinates(geometry.coordinates);
+        if (!fixedCoordinates) {
+          throw new Error("Gagal memperbaiki koordinat polygon");
+        }
+        geometry = {
+          type: "Polygon",
+          coordinates: fixedCoordinates
+        };
+      } else {
+        throw new Error(`Tipe geometri tidak didukung: ${geometry.type}`);
+      }
+
+      // Ensure polygon is closed
+      const coords = geometry.coordinates[0];
+      if (coords.length > 0) {
+        const first = coords[0];
+        const last = coords[coords.length - 1];
+        if (first[0] !== last[0] || first[1] !== last[1]) {
+          coords.push([...first]);
+        }
+      }
+
+      // Validate final geometry
+      const testPolygon = turf.polygon(geometry.coordinates);
+      const area = turf.area(testPolygon);
+      if (area === 0 || isNaN(area)) {
+        throw new Error("Area polygon tidak valid (0 atau NaN)");
+      }
+
+      return geometry;
+    } catch (error) {
+      console.error("Error processing Google Earth geometry:", error);
+      throw error;
+    }
+  };
+
+  // Helper: Extract all polygons from KML
+  const extractAllPolygonsFromKML = (geojsonData) => {
+    if (!geojsonData?.features?.length) {
+      return [];
+    }
+    return geojsonData.features
+      .filter(f => f.geometry?.type === "Polygon" || f.geometry?.type === "MultiPolygon")
+      .map((feature, index) => ({
+        name: feature.properties?.name || `Polygon ${index + 1}`,
+        geometry: feature.geometry,
+        properties: feature.properties,
+        index: index
+      }));
+  };
+
+  // Helper: Show polygon selection dialog
+  const showPolygonSelectionDialog = async (polygons) => {
+    const options = {};
+    polygons.forEach((poly, idx) => {
+      options[idx] = poly.name;
+    });
+
+    const { value: selectedIndex } = await Swal.fire({
+      title: 'Pilih Polygon',
+      html: `
+        <p class="mb-2">File KML/KMZ mengandung <strong>${polygons.length} polygon</strong>.</p>
+        <p class="mb-3">Silakan pilih polygon yang ingin digunakan:</p>
+      `,
+      input: 'select',
+      inputOptions: options,
+      inputPlaceholder: 'Pilih polygon',
+      showCancelButton: true,
+      confirmButtonText: 'Gunakan Polygon Ini',
+      cancelButtonText: 'Batal',
+      inputValidator: (value) => {
+        if (!value && value !== 0) {
+          return 'Anda harus memilih salah satu polygon!';
+        }
+      }
+    });
+
+    if (selectedIndex !== undefined) {
+      return parseInt(selectedIndex);
+    }
+    return null;
+  };
+
+  // Process KML import for Informasi Dasar
+  const processInfoDasarKmlImport = async () => {
+    const file = kmlFileRef.current;
+    if (!file) return;
+
+    const toastId = toast.loading("Memproses file...");
+
+    try {
+      let kmlString;
+      if (isKmzFile(file.name)) {
+        toast.loading("Mengekstrak file KMZ...", { id: toastId });
+        kmlString = await extractKmlFromKmz(file);
+      } else {
+        toast.loading("Membaca file KML...", { id: toastId });
+        kmlString = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.onerror = () => reject(new Error("Gagal membaca file"));
+          reader.readAsText(file);
+        });
+      }
+
+      toast.loading("Memproses geometri...", { id: toastId });
+      const kmlDom = new DOMParser().parseFromString(kmlString, "text/xml");
+      const parseError = kmlDom.getElementsByTagName("parsererror");
+      if (parseError.length > 0) {
+        throw new Error("File KML tidak valid atau rusak");
+      }
+
+      const geojsonData = kml(kmlDom);
+      if (!geojsonData?.features?.length) {
+        throw new Error("File tidak mengandung data geometri yang valid");
+      }
+
+      const allPolygons = extractAllPolygonsFromKML(geojsonData);
+      if (allPolygons.length === 0) {
+        throw new Error("Tidak ditemukan geometri poligon dalam file");
+      }
+
+      let selectedPolygon;
+      if (allPolygons.length > 1) {
+        toast.dismiss(toastId);
+        const selectedIndex = await showPolygonSelectionDialog(allPolygons);
+        if (selectedIndex === null) {
+          setInfoDasarKmlFileName("");
+          kmlFileRef.current = null;
+          return;
+        }
+        selectedPolygon = allPolygons[selectedIndex];
+        const newToastId = toast.loading("Memproses polygon terpilih...");
+        try {
+          const processedGeometry = processGoogleEarthGeometry({
+            geometry: selectedPolygon.geometry,
+            properties: selectedPolygon.properties
+          });
+          if (!processedGeometry) {
+            throw new Error("Gagal memproses geometri dari file");
+          }
+          toast.success(`Polygon "${selectedPolygon.name}" berhasil diimpor!`, { id: newToastId });
+          analyzeAndSetGeometryForKml(processedGeometry);
+        } catch (error) {
+          toast.error(`Gagal memproses: ${error.message}`, { id: newToastId });
+          throw error;
+        }
+      } else {
+        selectedPolygon = allPolygons[0];
+        toast.loading("Memvalidasi koordinat...", { id: toastId });
+        const processedGeometry = processGoogleEarthGeometry({
+          geometry: selectedPolygon.geometry,
+          properties: selectedPolygon.properties
+        });
+        if (!processedGeometry) {
+          throw new Error("Gagal memproses geometri dari file");
+        }
+        toast.success(`Polygon "${selectedPolygon.name}" berhasil diimpor!`, { id: toastId });
+        analyzeAndSetGeometryForKml(processedGeometry);
+      }
+    } catch (error) {
+      console.error("Error processing KML/KMZ:", error);
+      toast.error(`Gagal memproses file: ${error.message}`, { id: toastId });
+      setInfoDasarKmlFileName("");
+      kmlFileRef.current = null;
+    }
+  };
+
+  // Analyze and set geometry from KML import
+  const analyzeAndSetGeometryForKml = async (geometry) => {
+    const toastId = toast.loading("Menganalisis poligon...");
+    try {
+      toast.loading("Memuat data batas wilayah...", { id: toastId });
+      const [koremBoundaryRes, kodimBoundaryRes] = await Promise.all([
+        axiosAuth.get("/data/korem.geojson"),
+        axiosAuth.get("/data/Kodim.geojson"),
+      ]);
+      const koremBoundaryData = koremBoundaryRes.data;
+      const kodimBoundaryData = kodimBoundaryRes.data;
+
+      toast.loading("Mencari wilayah...", { id: toastId });
+      const centerPoint = turf.centroid(geometry);
+      let foundKorem = null;
+      let foundKodim = null;
+
+      for (const koremFeature of koremBoundaryData.features) {
+        if (turf.booleanPointInPolygon(centerPoint, koremFeature)) {
+          foundKorem = koremFeature.properties;
+          break;
+        }
+      }
+
+      if (foundKorem) {
+        for (const kodimFeature of kodimBoundaryData.features) {
+          if (turf.booleanPointInPolygon(centerPoint, kodimFeature)) {
+            foundKodim = kodimFeature.properties;
+            break;
+          }
+        }
+
+        const koremNameInGeoJSON = foundKorem.listkodim_Korem;
+        const koremIdToSet = koremList.find(
+          (k) => k.nama === koremNameInGeoJSON
+        )?.id;
+        const kodimNameInGeoJSON = foundKodim
+          ? normalizeKodimName(foundKodim.listkodim_Kodim)
+          : koremNameInGeoJSON === "Berdiri Sendiri" ||
+            koremNameInGeoJSON === "Kodim 0733/Kota Semarang"
+            ? "Kodim 0733/Kota Semarang"
+            : koremNameInGeoJSON;
+
+        if (koremIdToSet) {
+          setInfoDasarFormData((prev) => ({
+            ...prev,
+            korem_id: koremIdToSet,
+            kodim: kodimNameInGeoJSON,
+          }));
+          setSelectedKoremId(koremIdToSet);
+          setSelectedKodimId(kodimNameInGeoJSON);
+          
+          // Call handleKmlImport with geometry
+          handleKmlImport(geometry, false);
+          
+          toast.success("Poligon berhasil diproses.", { id: toastId });
+        } else {
+          toast.error(
+            `Korem "${koremNameInGeoJSON}" ditemukan tapi tidak ada di daftar pilihan.`,
+            { id: toastId }
+          );
+        }
+      } else {
+        toast.error(
+          "Gagal menentukan wilayah Korem untuk poligon. Cek apakah poligon berada di wilayah yang valid.",
+          { id: toastId }
+        );
+      }
+    } catch (error) {
+      console.error("Error during geometry analysis:", error);
+      toast.error("Terjadi kesalahan saat memproses geometri.", { id: toastId });
+    }
+  };
+
+  const handleInfoDasarKmlImport = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      setInfoDasarKmlFileName(file.name);
+      kmlFileRef.current = file;
+      // Check if there's existing geometry
+      if (drawnAsset) {
+        Swal.fire({
+          title: "Apakah Anda yakin?",
+          text: "Mengimpor file KML/KMZ baru akan menghapus area aset yang telah digambar sebelumnya. Lanjutkan?",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonColor: "#3085d6",
+          cancelButtonColor: "#d33",
+          confirmButtonText: "Ya, impor!",
+          cancelButtonText: "Batal",
+        }).then((result) => {
+          if (result.isConfirmed) {
+            clearAssetLocation();
+            processInfoDasarKmlImport();
+          } else {
+            event.target.value = null;
+            setInfoDasarKmlFileName("");
+            kmlFileRef.current = null;
+          }
+        });
+      } else {
+        processInfoDasarKmlImport();
+      }
+    } else {
+      setInfoDasarKmlFileName("");
+      kmlFileRef.current = null;
+    }
+  };
+
+  const handleInfoDasarProcessCoords = () => {
+    if (!infoDasarCoordsText.trim()) {
+      setInfoDasarCoordsError("Masukkan koordinat terlebih dahulu.");
+      return;
+    }
+
+    const lines = infoDasarCoordsText.trim().split("\n");
+    if (lines.length < 3) {
+      setInfoDasarCoordsError(
+        "Minimal dibutuhkan 3 titik koordinat untuk membuat poligon."
+      );
+      return;
+    }
+
+    const coordinates = [];
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      const parts = line.split(",");
+      if (parts.length !== 2) {
+        setInfoDasarCoordsError(
+          `Format salah di baris ${i + 1}. Gunakan format: longitude,latitude`
+        );
+        return;
+      }
+      const lon = parseFloat(parts[0].trim());
+      const lat = parseFloat(parts[1].trim());
+      if (
+        isNaN(lon) ||
+        isNaN(lat) ||
+        lat < -90 ||
+        lat > 90 ||
+        lon < -180 ||
+        lon > 180
+      ) {
+        setInfoDasarCoordsError(`Koordinat tidak valid di baris ${i + 1}.`);
+        return;
+      }
+      coordinates.push([lon, lat]);
+    }
+
+    // Close polygon if not already closed
+    if (
+      coordinates[0][0] !== coordinates[coordinates.length - 1][0] ||
+      coordinates[0][1] !== coordinates[coordinates.length - 1][1]
+    ) {
+      coordinates.push(coordinates[0]);
+    }
+
+    const geojsonPolygon = { type: "Polygon", coordinates: [coordinates] };
+
+    // Check if there's existing geometry
+    if (drawnAsset) {
+      Swal.fire({
+        title: "Apakah Anda yakin?",
+        text: "Memproses koordinat baru akan menghapus area aset yang telah digambar sebelumnya. Lanjutkan?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#3085d6",
+        cancelButtonColor: "#d33",
+        confirmButtonText: "Ya, proses!",
+        cancelButtonText: "Batal",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          clearAssetLocation();
+          analyzeAndSetGeometryForCoords(geojsonPolygon);
+        }
+      });
+    } else {
+      analyzeAndSetGeometryForCoords(geojsonPolygon);
+    }
+  };
+
+  const analyzeAndSetGeometryForCoords = async (geometry) => {
+    const toastId = toast.loading("Menganalisis poligon...");
+    try {
+      toast.loading("Memuat data batas wilayah...", { id: toastId });
+      const [koremBoundaryRes, kodimBoundaryRes] = await Promise.all([
+        axiosAuth.get("/data/korem.geojson"),
+        axiosAuth.get("/data/Kodim.geojson"),
+      ]);
+      const koremBoundaryData = koremBoundaryRes.data;
+      const kodimBoundaryData = kodimBoundaryRes.data;
+
+      toast.loading("Mencari wilayah...", { id: toastId });
+      const centerPoint = turf.centroid(geometry);
+      let foundKorem = null;
+      let foundKodim = null;
+
+      for (const koremFeature of koremBoundaryData.features) {
+        if (turf.booleanPointInPolygon(centerPoint, koremFeature)) {
+          foundKorem = koremFeature.properties;
+          break;
+        }
+      }
+
+      if (foundKorem) {
+        for (const kodimFeature of kodimBoundaryData.features) {
+          if (turf.booleanPointInPolygon(centerPoint, kodimFeature)) {
+            foundKodim = kodimFeature.properties;
+            break;
+          }
+        }
+
+        const koremNameInGeoJSON = foundKorem.listkodim_Korem;
+        const koremIdToSet = koremList.find(
+          (k) => k.nama === koremNameInGeoJSON
+        )?.id;
+        const kodimNameInGeoJSON = foundKodim
+          ? normalizeKodimName(foundKodim.listkodim_Kodim)
+          : koremNameInGeoJSON === "Berdiri Sendiri" ||
+            koremNameInGeoJSON === "Kodim 0733/Kota Semarang"
+            ? "Kodim 0733/Kota Semarang"
+            : koremNameInGeoJSON;
+
+        if (koremIdToSet) {
+          setInfoDasarFormData((prev) => ({
+            ...prev,
+            korem_id: koremIdToSet,
+            kodim: kodimNameInGeoJSON,
+          }));
+          setSelectedKoremId(koremIdToSet);
+          setSelectedKodimId(kodimNameInGeoJSON);
+          
+          // Call handleKmlImport with geometry (isFromCoords = true)
+          handleKmlImport(geometry, true);
+          
+          toast.success("Poligon berhasil diproses.", { id: toastId });
+        } else {
+          toast.error(
+            `Korem "${koremNameInGeoJSON}" ditemukan tapi tidak ada di daftar pilihan.`,
+            { id: toastId }
+          );
+        }
+      } else {
+        toast.error(
+          "Gagal menentukan wilayah Korem untuk poligon. Cek apakah poligon berada di wilayah yang valid.",
+          { id: toastId }
+        );
+      }
+    } catch (error) {
+      console.error("Error during geometry analysis:", error);
+      toast.error("Terjadi kesalahan saat memproses geometri.", { id: toastId });
+    }
+  };
+
   const handleCancel = () => {
     navigate("/data-aset-tanah", { replace: true });
   };
 
-  if (loading) return <Spinner animation="border" variant="primary" />;
-  if (error) return <Alert variant="danger">{error}</Alert>;
+  if (loading) return (
+    <div className="loading-spinner-wrapper">
+      <Spinner animation="border" variant="primary" />
+    </div>
+  );
+  if (error) return <Alert variant="danger" className="error-alert">{error}</Alert>;
 
   return (
-    <Container fluid className="mt-4">
-      <Row>
-        <Col>
-          <Card>
-            <Card.Header>
-              <h4 className="mb-0">Tambah Aset BMN Baru</h4>
-            </Card.Header>
-            <Card.Body>
-              <Row>
-                <Col md={7}>
-                  <Alert variant="info">
-                    <b>Alur Pengisian:</b>
-                    <ol className="mb-0 ps-3">
-                      <li>
-                        Pilih Wilayah Korem dan Kodim pada form di sebelah kanan
-                        atau klik area KOREM/KODIM di peta.
-                      </li>
-                      <li>
-                        Gunakan kontrol di pojok kanan atas peta untuk
-                        menggambar batas area aset.
-                      </li>
-                      <li>Lengkapi sisa detail aset pada form.</li>
-                    </ol>
-                  </Alert>
-                  <div style={{ height: "70vh", width: "100%" }}>
-                    <PetaGambarAset
-                      ref={mapRef}
-                      onPolygonCreated={handleDrawingCreated}
-                      selectedKorem={selectedKorem}
-                      selectedKodim={selectedKodim}
-                      isLocationSelected={isLocationSelected}
-                      onLocationSelect={handleAreaSelect}
-                      selectionSource={selectionSource}
-                      koremList={koremList}
-                      koremBoundaries={koremBoundaries}
-                      kodimBoundaries={kodimBoundaries}
-                      importedGeometry={drawnAsset && drawnAsset.source === 'import' ? drawnAsset.geometry : importedGeometry} // Conditional imported geometry
-                      geoJsonKey={geoJsonKey} // Pass key ke peta
-                      inputMode={inputMode} // Mode input saat ini
-                    />
-                  </div>
-                </Col>
-                <Col md={5}>
-                  <FormAset
-                    onSave={handleSaveAsset}
-                    onCancel={handleCancel}
-                    koremList={koremList}
-                    onLocationChange={handleLocationChange}
-                    onKmlImport={handleKmlImport} // Pass handler ke form
-                    onClearDrawing={clearAssetLocation} // Pass handler untuk membersihkan gambar
-                    onResetMapView={handleResetMapView} // Pass handler untuk mereset tampilan peta
-                    onUpdateInputMode={setInputMode} // Pass handler untuk mengupdate mode input
-                    initialGeometry={drawnAsset ? drawnAsset.geometry : null}
-                    initialArea={drawnAsset ? drawnAsset.area : null}
-                    isEnabled={isFormEnabled}
-                    selectedKoremId={selectedKoremId}
-                    selectedKodimId={selectedKodimId}
-                  />
-                </Col>
-              </Row>
-            </Card.Body>
-          </Card>
+    <Container fluid className="tambah-aset-page mt-4">
+      {/* BARIS 1: PETA DI KIRI, INFORMASI DASAR DI KANAN */}
+      <Row className="g-4">
+        {/* PETA - 8 Kolom */}
+        <Col lg={8} xs={12}>
+          <div className="map-frame-modern" style={{ height: "60vh", width: "100%", borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)", overflow: "hidden" }}>
+            <PetaGambarAset
+              ref={mapRef}
+              onPolygonCreated={handleDrawingCreated}
+              selectedKorem={selectedKorem}
+              selectedKodim={selectedKodim}
+              isLocationSelected={isLocationSelected}
+              onLocationSelect={handleAreaSelect}
+              selectionSource={selectionSource}
+              koremList={koremList}
+              koremBoundaries={koremBoundaries}
+              kodimBoundaries={kodimBoundaries}
+              importedGeometry={drawnAsset && drawnAsset.source === 'import' ? drawnAsset.geometry : importedGeometry}
+              geoJsonKey={geoJsonKey}
+              inputMode={inputMode}
+            />
+          </div>
+        </Col>
+
+        {/* LOKASI & WILAYAH - 4 Kolom */}
+        <Col lg={4} xs={12}>
+          <div className="info-panel" style={{ background: "#fff", borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)", padding: "1.5rem", height: "100%" }}>
+            <InformasiDasarAset
+              koremList={koremList}
+              formData={infoDasarFormData}
+              handleChange={handleInfoDasarChange}
+              inputMethod={infoDasarInputMethod}
+              handleInputChangeMethod={handleInfoDasarInputChangeMethod}
+              handleKmlImport={handleInfoDasarKmlImport}
+              kmlFileName={infoDasarKmlFileName}
+              coordsText={infoDasarCoordsText}
+              setCoordsText={setInfoDasarCoordsText}
+              coordsError={infoDasarCoordsError}
+              handleProcessCoords={handleInfoDasarProcessCoords}
+              isEnabled={isFormEnabled}
+              kodimList={infoDasarKodimList}
+              onSave={handleSaveAsset}
+              onCancel={handleCancel}
+            />
+          </div>
+        </Col>
+      </Row>
+
+      {/* BARIS 2: FORMULIR LENGKAP (tanpa Lokasi & Metode Input) */}
+      <Row className="g-4 mt-2">
+        <Col xs={12}>
+          <div className="form-section" style={{ background: "#fff", borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)", padding: "1.5rem" }}>
+            <h5 style={{ fontSize: "1.1rem", fontWeight: "600", color: "#1a1a2e", marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <i className="fas fa-file-alt" style={{ color: "#6c757d" }}></i>
+              Formulir Aset BMN
+            </h5>
+            <FormAset
+              ref={formRef}
+              onSave={handleSaveAsset}
+              onCancel={handleCancel}
+              koremList={koremList}
+              onLocationChange={handleLocationChange}
+              onKmlImport={handleKmlImport}
+              onClearDrawing={clearAssetLocation}
+              onResetMapView={handleResetMapView}
+              onUpdateInputMode={setInputMode}
+              initialGeometry={drawnAsset ? drawnAsset.geometry : null}
+              initialArea={drawnAsset ? drawnAsset.area : null}
+              isEnabled={isFormEnabled}
+              selectedKoremId={selectedKoremId}
+              selectedKodimId={selectedKodimId}
+              hideLocationFields={true}
+            />
+          </div>
         </Col>
       </Row>
     </Container>

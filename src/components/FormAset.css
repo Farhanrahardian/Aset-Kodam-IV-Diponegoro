@@ -1,0 +1,384 @@
+/* ═══════════════════════════════════════════════════════════
+   FORM ASET - IMPROVED LAYOUT & STYLING
+   ═══════════════════════════════════════════════════════════ */
+
+/* Form Container */
+.form-aset-container {
+  width: 100%;
+  max-width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.form-aset-container .card {
+  border: none;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.form-aset-container .card-header {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  color: white;
+  padding: 1.25rem 1.5rem;
+  border: none;
+}
+
+.form-aset-container .card-header h5 {
+  margin: 0;
+  font-weight: 700;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.form-aset-container .card-body {
+  padding: 1.5rem;
+  background: white;
+}
+
+/* Form Section */
+.form-group-section {
+  margin-bottom: 1.5rem;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  border: none;
+}
+
+.form-group-section:last-child {
+  margin-bottom: 0;
+}
+
+.form-group-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.form-group-title i {
+  color: #667eea;
+  font-size: 1.1rem;
+}
+
+/* Form Inputs */
+.form-aset-container .form-label {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.form-aset-container .form-control,
+.form-aset-container .form-select {
+  border: 1px solid #ced4da;
+  border-radius: 8px;
+  padding: 0.625rem 1rem;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  background-color: white;
+}
+
+.form-aset-container .form-control:focus,
+.form-aset-container .form-select:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+}
+
+.form-aset-container .form-control:disabled,
+.form-aset-container .form-select:disabled {
+  background-color: #f8f9fa;
+  cursor: not-allowed;
+}
+
+.form-aset-container textarea.form-control {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Button Group */
+.form-aset-container .btn-group {
+  gap: 0.5rem;
+}
+
+.form-aset-container .btn-group .btn,
+.form-aset-container .btn-group .btn-check + .btn {
+  border-radius: 8px;
+  padding: 0.625rem 1.25rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.form-aset-container .btn-group .btn-check:checked + .btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #667eea;
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.form-aset-container .btn-group .btn-check:focus + .btn {
+  box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+/* File Upload */
+.form-aset-container .file-upload-area {
+  border: 2px dashed #dee2e6;
+  border-radius: 10px;
+  padding: 1.5rem;
+  text-align: center;
+  background: #fafbfc;
+  transition: all 0.2s ease;
+}
+
+.form-aset-container .file-upload-area:hover {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.05);
+}
+
+/* Alert */
+.form-aset-container .alert {
+  border: none;
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  border-left: 4px solid;
+}
+
+.form-aset-container .alert-warning {
+  background: #fff8e1;
+  color: #856404;
+  border-left-color: #ffc107;
+}
+
+.form-aset-container .alert-info {
+  background: #e3f2fd;
+  color: #0c5460;
+  border-left-color: #17a2b8;
+}
+
+.form-aset-container .alert-danger {
+  background: #fee;
+  color: #721c24;
+  border-left-color: #dc3545;
+}
+
+/* Card within Form */
+.form-aset-container .card {
+  border: none;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  margin-bottom: 1.5rem;
+}
+
+.form-aset-container .card-header {
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  color: #495057;
+}
+
+.form-aset-container .card-body {
+  padding: 1.25rem;
+  background: white;
+}
+
+/* Image Preview */
+.form-aset-container .img-preview {
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  transition: all 0.2s ease;
+}
+
+.form-aset-container .img-preview:hover {
+  border-color: #667eea;
+  transform: scale(1.02);
+}
+
+/* Action Buttons */
+.sticky-action-bar {
+  position: sticky;
+  bottom: 0;
+  background: white;
+  padding: 1rem 0;
+  border-top: 2px solid #e9ecef;
+  margin-top: 2rem;
+}
+
+.btn-save-modern,
+.btn-cancel-modern {
+  padding: 0.75rem 2rem;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  min-width: 140px;
+}
+
+.btn-save-modern {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: white;
+}
+
+.btn-save-modern:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-save-modern:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-cancel-modern {
+  background: #6c757d;
+  border: none;
+  color: white;
+}
+
+.btn-cancel-modern:hover {
+  background: #5a6268;
+}
+
+/* Form Text */
+.form-aset-container .form-text {
+  font-size: 0.85rem;
+  color: #6c757d;
+  margin-top: 0.5rem;
+}
+
+/* Input Group */
+.form-aset-container .input-group {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.form-aset-container .input-group-text {
+  background: #f8f9fa;
+  border-color: #ced4da;
+  font-weight: 600;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .form-aset-container .card-body {
+    padding: 1rem;
+  }
+
+  .form-group-section {
+    padding: 1rem;
+  }
+
+  .form-group-title {
+    font-size: 1rem;
+  }
+
+  .sticky-action-bar {
+    position: static;
+    flex-direction: column;
+  }
+
+  .btn-save-modern,
+  .btn-cancel-modern {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* Loading & Error States */
+.loading-spinner-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+.error-alert {
+  border: none;
+  border-radius: 10px;
+  background: #fee;
+  color: #c00;
+  padding: 1rem 1.25rem;
+  margin: 1rem 0;
+  border-left: 4px solid #dc3545;
+}
+
+/* Section Spacing */
+.form-bmn-wrapper {
+  background: transparent;
+}
+
+.form-bmn-wrapper .row {
+  margin: 0;
+}
+
+.form-detail-sections {
+  /* Wrapper for conditional detail sections */
+}
+
+.form-bmn-wrapper .col-md-3,
+.form-bmn-wrapper .col-md-4,
+.form-bmn-wrapper .col-md-6,
+.form-bmn-wrapper .col-md-12,
+.form-bmn-wrapper .col-lg-3,
+.form-bmn-wrapper .col-lg-4,
+.form-bmn-wrapper .col-lg-6,
+.form-bmn-wrapper .col-lg-12 {
+  padding: 0 0.75rem;
+}
+
+/* Map Container (if used in form) */
+.form-aset-container .map-container {
+  height: 500px !important;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid #e9ecef;
+}
+
+@media (max-width: 768px) {
+  .form-aset-container .map-container {
+    height: 350px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FOTO ASET - DELETE BUTTON
+   ═══════════════════════════════════════════════════════════ */
+
+/* Delete button for existing photos */
+.photo-delete-btn {
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  border-radius: 50% !important;
+  background-color: #dc3545 !important;
+  border: none !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 10 !important;
+  line-height: 1 !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.photo-delete-btn i {
+  color: #ffffff !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  position: relative !important;
+  z-index: 20 !important;
+  display: block !important;
+}
+
+.photo-delete-btn:hover {
+  background-color: #c82333 !important;
+  transform: scale(1.1);
+  box-shadow: 0 3px 6px rgba(0,0,0,0.4) !important;
+}
+
