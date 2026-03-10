@@ -24,7 +24,7 @@ const EditYardip = ({
     kelurahan: "",
     peruntukan: "",
     status: "",
-    keterangan: "",
+    sejarah: "",
     area: 0,
   });
 
@@ -46,7 +46,7 @@ const EditYardip = ({
         kelurahan: editingAsset.kelurahan || "",
         peruntukan: editingAsset.peruntukan || "",
         status: editingAsset.status || "",
-        keterangan: editingAsset.keterangan || "",
+        sejarah: editingAsset.sejarah || "",
         area: Number(editingAsset.area) || 0,
       });
 
@@ -459,19 +459,19 @@ const EditYardip = ({
                     </Form.Group>
                   </Col>
 
-                  {/* Keterangan */}
+                  {/* sejarah */}
                   <Col md={12}>
                     <Form.Group className="mb-3">
                       <Form.Label>
-                        <strong>Keterangan</strong>
+                        <strong>sejarah</strong>
                       </Form.Label>
                       <Form.Control
                         as="textarea"
                         rows={3}
-                        name="keterangan"
-                        value={formData.keterangan}
+                        name="sejarah"
+                        value={formData.sejarah}
                         onChange={handleInputChange}
-                        placeholder="Masukkan keterangan tambahan"
+                        placeholder="Masukkan sejarah tambahan"
                         disabled={isLoading}
                       />
                     </Form.Group>

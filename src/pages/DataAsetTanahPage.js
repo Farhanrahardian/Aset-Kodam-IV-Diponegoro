@@ -199,7 +199,7 @@ const checkAssetCompleteness = (asset) => {
     sertifikat: asset.bukti_pemilikan_url || asset.bukti_pemilikan_filename,
     fotoAset: asset.foto_aset && asset.foto_aset.length > 0,
     fotoTampakAtas: asset.gambar_tampak_atas_url || asset.gambar_tampak_atas_filename,
-    sejarah: asset.keterangan && asset.keterangan.trim() !== "",
+    sejarah: asset.sejarah && asset.sejarah.trim() !== "",
   };
 
   const missingFields = [];
@@ -276,7 +276,7 @@ const TabelAset = ({ assets, onEdit, onDelete, onViewDetail, koremList, allKodim
             <th style={{ minWidth: "100px" }}>Status</th>
             <th style={{ minWidth: "120px" }}>Luas</th>
             <th style={{ minWidth: "100px" }}>Sertifikat</th>
-            <th style={{ minWidth: "200px" }}>Keterangan</th>
+            <th style={{ minWidth: "200px" }}>Sejarah</th>
             <th style={{ minWidth: "100px" }}>Aksi</th>
           </tr>
         </thead>

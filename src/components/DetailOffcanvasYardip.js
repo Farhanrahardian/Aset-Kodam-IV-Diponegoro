@@ -174,7 +174,7 @@ const DetailOffcanvasYardip = ({ show, handleClose, asetYardip }) => {
                           </td>
                         </tr>
                       )}
-                      <tr><td><strong>Keterangan:</strong></td><td style={{ whiteSpace: "pre-wrap" }}>{asetYardip.keterangan || "-"}</td></tr>
+                      <tr><td><strong>Sejarah:</strong></td><td style={{ whiteSpace: "pre-wrap" }}>{asetYardip.keterangan || "-"}</td></tr>
                       <tr><td><strong>Koordinat:</strong></td><td>{centroid ? `Lat: ${centroid[0].toFixed(6)}, Lng: ${centroid[1].toFixed(6)}` : "-"}</td></tr>
                     </tbody>
                   </table>

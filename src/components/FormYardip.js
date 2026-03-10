@@ -1151,7 +1151,7 @@ const FormYardip = forwardRef(
                     </Col>
                     <Col md={6}>
                       <Form.Group className="mb-3">
-                        <Form.Label>Keterangan</Form.Label>
+                        <Form.Label>Sejarah</Form.Label>
                         <Form.Control
                           as="textarea"
                           rows={3}
