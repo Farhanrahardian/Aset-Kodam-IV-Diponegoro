@@ -188,7 +188,7 @@ const LaporanPage = () => {
         { width: 22 }, // C  NUP
         { width: 22 }, // D  KIB/Kode Barang
         { width: 14 }, // E  No. Reg
-        { width: 32 }, // F  Alamat
+        { width: 35 }, // F  Alamat (lebih lebar agar wrap bekerja)
         { width: 22 }, // G  Peruntukan
         { width: 22 }, // H  Status
         { width: 18 }, // I  Asal Milik
@@ -298,7 +298,22 @@ const LaporanPage = () => {
 
           kodimAssets.forEach((asset) => {
             const hasSertifikat = asset.pemilikan_sertifikat === "Ya";
-            ws.getRow(currentRow).height = 15;
+
+            // Alamat menurun per bagian
+            const alamatParts = [
+              asset.alamat      || null,
+              asset.kelurahan   ? `Kel. ${asset.kelurahan}`   : null,
+              asset.kecamatan   ? `Kec. ${asset.kecamatan}`   : null,
+              asset.kabkota     ? `Kab. ${asset.kabkota}`     : null,
+              asset.provinsi    || null,
+            ].filter(Boolean);
+            const alamatText = alamatParts.join("\n");
+
+            const ROW_LINE_HEIGHT = 13; // tinggi per baris teks (pt)
+            const alamatLines = alamatParts.length;
+            const rowHeight = Math.max(18, ROW_LINE_HEIGHT * alamatLines + 4);
+            ws.getRow(currentRow).height = rowHeight;
+            ws.getRow(currentRow).customHeight = true; // kunci tinggi, tidak di-override Excel
 
             const rowData = [
               globalIndex,
@@ -306,7 +321,7 @@ const LaporanPage = () => {
               asset.nama || "-",
               asset.kib_kode_barang || asset.kode_barang || "-",
               asset.nomor_registrasi || asset.no_registrasi || "-",
-              asset.alamat || "-",
+              alamatText,
               asset.peruntukan || asset.fungsi || "-",
               asset.status || "-",
               asset.asal_milik || "-",
@@ -326,7 +341,18 @@ const LaporanPage = () => {
               const cell = dataRow.getCell(i + 1);
               cell.value = val;
               cell.font = { size: 9, name: "Arial", color: { argb: COLOR.fontDark } };
-              cell.alignment = { vertical: "middle", wrapText: i === 5 || i === 17 };
+
+              // Default alignment
+              cell.alignment = { vertical: "middle", wrapText: false };
+
+              // Kolom alamat (i=5): wrap ke bawah, rata atas
+              if (i === 5) {
+                cell.alignment = { vertical: "top", wrapText: true, horizontal: "left" };
+              }
+              // Kolom sejarah (i=17): wrap juga
+              else if (i === 17) {
+                cell.alignment = { vertical: "top", wrapText: true, horizontal: "left" };
+              }
 
               // Alignment khusus
               if ([0, 1, 11, 13, 15].includes(i)) {

@@ -24,7 +24,6 @@ const LaporanYardipPage = () => {
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState(null);
 
-  // Filter states
   const [selectedProvinsi, setSelectedProvinsi] = useState("");
   const [selectedKabupaten, setSelectedKabupaten] = useState("");
   const [selectedBidang, setSelectedBidang] = useState("");
@@ -41,12 +40,10 @@ const LaporanYardipPage = () => {
           axiosAuth.get(`${API_URL}/yardip_assets`),
           axiosAuth.get("/data/kabupaten_kota.geojson"),
         ]);
-
         const assetsData = assetsRes.data || [];
         setAssets(assetsData);
         setKabupatenGeoData(kabGeoRes.data);
 
-        // Extract unique fields
         const bidangMap = {};
         assetsData.forEach((asset) => {
           if (asset.bidang) {
@@ -58,9 +55,8 @@ const LaporanYardipPage = () => {
         });
         setBidangList(Object.values(bidangMap).sort());
 
-        const uniqueProvinsi = [...new Set(assetsData.map(a => a.provinsi).filter(Boolean))].sort();
+        const uniqueProvinsi = [...new Set(assetsData.map((a) => a.provinsi).filter(Boolean))].sort();
         setProvinsiList(uniqueProvinsi);
-
         setFilteredAssets(assetsData);
         setError(null);
       } catch (err) {
@@ -75,29 +71,27 @@ const LaporanYardipPage = () => {
 
   useEffect(() => {
     let filtered = assets;
-
-    if (selectedProvinsi) filtered = filtered.filter(a => a.provinsi === selectedProvinsi);
-    if (selectedKabupaten) filtered = filtered.filter(a => a.kabkota === selectedKabupaten);
-    if (selectedBidang) filtered = filtered.filter(a => a.bidang?.toLowerCase() === selectedBidang.toLowerCase());
-    if (statusFilter) filtered = filtered.filter(a => a.status === statusFilter);
-
+    if (selectedProvinsi) filtered = filtered.filter((a) => a.provinsi === selectedProvinsi);
+    if (selectedKabupaten) filtered = filtered.filter((a) => a.kabkota === selectedKabupaten);
+    if (selectedBidang) filtered = filtered.filter((a) => a.bidang?.toLowerCase() === selectedBidang.toLowerCase());
+    if (statusFilter) filtered = filtered.filter((a) => a.status === statusFilter);
     if (searchTerm) {
-      const lowerSearch = searchTerm.toLowerCase();
-      filtered = filtered.filter(a => 
-        (a.pengelola?.toLowerCase().includes(lowerSearch)) ||
-        (a.kecamatan?.toLowerCase().includes(lowerSearch)) ||
-        (a.kelurahan?.toLowerCase().includes(lowerSearch))
+      const q = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (a) =>
+          a.pengelola?.toLowerCase().includes(q) ||
+          a.kecamatan?.toLowerCase().includes(q) ||
+          a.kelurahan?.toLowerCase().includes(q)
       );
     }
-
     setFilteredAssets(filtered);
   }, [selectedProvinsi, selectedKabupaten, selectedBidang, statusFilter, assets, searchTerm]);
 
   const getKabupatenForSelectedProvinsi = () => {
     if (!selectedProvinsi || !kabupatenGeoData) return [];
     const kabList = kabupatenGeoData.features
-      .filter(f => f.properties.PROVINCE === selectedProvinsi)
-      .map(f => f.properties.Kabupaten)
+      .filter((f) => f.properties.PROVINCE === selectedProvinsi)
+      .map((f) => f.properties.Kabupaten)
       .filter(Boolean);
     return [...new Set(kabList)].sort();
   };
@@ -127,117 +121,285 @@ const LaporanYardipPage = () => {
     return grouped;
   };
 
+  // ─── PALET WARNA NETRAL ──────────────────────────────────
+  const COLOR = {
+    provinsi:    "FF4A4A4A", // abu gelap  → baris provinsi (teks putih)
+    kabupaten:   "FFD9D9D9", // abu muda   → baris kabupaten (teks hitam)
+    peruntukan:  "FFEEEEEE", // abu sangat terang → baris grup peruntukan
+    headerCol:   "FFE8E8E8", // abu terang → header kolom tabel
+    fontWhite:   "FFFFFFFF",
+    fontDark:    "FF1A1A1A",
+    fontGray:    "FF555555",
+    border:      "FFB0B0B0",
+    zebraEven:   "FFF7F7F7",
+  };
+
+  const applyBorder = (cell) => {
+    const s = { style: "thin", color: { argb: COLOR.border } };
+    cell.border = { top: s, left: s, bottom: s, right: s };
+  };
+
+  const styleHeader = (cell, value, bgColor, fontColor = COLOR.fontDark, size = 9) => {
+    cell.value = value;
+    cell.font = { bold: true, size, name: "Arial", color: { argb: fontColor } };
+    cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: bgColor } };
+    applyBorder(cell);
+  };
+
+  const buildSheet = (workbook, sheetName, title, assets) => {
+    const ws = workbook.addWorksheet(sheetName, {
+      pageSetup: {
+        paperSize: 9,           // A4
+        orientation: "landscape",
+        fitToPage: true,
+        fitToWidth: 1,
+        fitToHeight: 0,
+        margins: { left: 0.5, right: 0.5, top: 0.75, bottom: 0.75, header: 0.3, footer: 0.3 },
+      },
+    });
+
+    // ── Lebar kolom ────────────────────────────────────────
+    ws.columns = [
+      { width: 5  }, // A  No
+      { width: 22 }, // B  Bidang
+      { width: 28 }, // C  Lokasi (Kelurahan / Kecamatan / Kab / Provinsi)
+      { width: 14 }, // D  Luas (m²)
+      { width: 22 }, // E  Peruntukan
+      { width: 22 }, // F  Status
+      { width: 36 }, // G  Sejarah
+    ];
+
+    const subtitle = selectedProvinsi
+      ? `DI WILAYAH ${selectedProvinsi.toUpperCase()}`
+      : "DI SELURUH WILAYAH";
+
+    const now = new Date();
+    const tanggal = now.toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" });
+
+    // ── Baris 1: Judul ─────────────────────────────────────
+    ws.getRow(1).height = 22;
+    const t = ws.getCell("A1");
+    t.value = title.toUpperCase();
+    t.font = { bold: true, size: 13, name: "Arial", color: { argb: COLOR.fontDark } };
+    t.alignment = { horizontal: "center", vertical: "middle" };
+    ws.mergeCells("A1:G1");
+
+    // ── Baris 2: Sub-judul ─────────────────────────────────
+    ws.getRow(2).height = 16;
+    const s = ws.getCell("A2");
+    s.value = subtitle;
+    s.font = { bold: true, size: 11, name: "Arial", color: { argb: COLOR.fontGray } };
+    s.alignment = { horizontal: "center", vertical: "middle" };
+    ws.mergeCells("A2:G2");
+
+    // ── Baris 3: Tanggal ────────────────────────────────────
+    ws.getRow(3).height = 13;
+    const d = ws.getCell("A3");
+    d.value = `Dicetak: ${tanggal}`;
+    d.font = { italic: true, size: 8, name: "Arial", color: { argb: "FF999999" } };
+    d.alignment = { horizontal: "right", vertical: "middle" };
+    ws.mergeCells("A3:G3");
+
+    // ── Baris 4: Spasi ──────────────────────────────────────
+    ws.getRow(4).height = 5;
+
+    // ── Baris 5: Header kolom ───────────────────────────────
+    ws.getRow(5).height = 28;
+    const HEADERS = ["NO", "BIDANG", "LOKASI", "LUAS (M²)", "PERUNTUKAN", "STATUS", "SEJARAH"];
+    HEADERS.forEach((h, i) => styleHeader(ws.getRow(5).getCell(i + 1), h, COLOR.headerCol));
+
+    // Freeze header
+    ws.views = [{ state: "frozen", xSplit: 0, ySplit: 5, activeCell: "A6" }];
+
+    // ── Data, dikelompokkan per Provinsi → Kabupaten → Peruntukan ──
+    let currentRow = 6;
+    let globalIndex = 1;
+
+    const grouped = groupAssetsByProvinsiKabupaten(assets);
+
+    Object.keys(grouped).forEach((prov) => {
+      // Baris Provinsi — abu gelap, teks putih
+      ws.getRow(currentRow).height = 18;
+      const provCell = ws.getRow(currentRow).getCell(1);
+      provCell.value = `  ${prov.toUpperCase()}`;
+      provCell.font = { bold: true, size: 10, name: "Arial", color: { argb: COLOR.fontWhite } };
+      provCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLOR.provinsi } };
+      provCell.alignment = { vertical: "middle" };
+      ws.mergeCells(`A${currentRow}:G${currentRow}`);
+      applyBorder(provCell);
+      currentRow++;
+
+      Object.keys(grouped[prov]).forEach((kab) => {
+        const kabAssets = grouped[prov][kab];
+
+        // Baris Kabupaten — abu muda, teks gelap
+        ws.getRow(currentRow).height = 16;
+        const kabCell = ws.getRow(currentRow).getCell(1);
+        kabCell.value = `      ${kab.toUpperCase()}  (${kabAssets.length} aset)`;
+        kabCell.font = { bold: true, size: 9, name: "Arial", color: { argb: COLOR.fontDark } };
+        kabCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLOR.kabupaten } };
+        kabCell.alignment = { vertical: "middle" };
+        ws.mergeCells(`A${currentRow}:G${currentRow}`);
+        applyBorder(kabCell);
+        currentRow++;
+
+        // Kelompokkan per peruntukan
+        const byPeruntukan = {};
+        kabAssets.forEach((a) => {
+          const p = a.peruntukan || "Lain-lain";
+          if (!byPeruntukan[p]) byPeruntukan[p] = [];
+          byPeruntukan[p].push(a);
+        });
+
+        Object.keys(byPeruntukan).forEach((pName) => {
+          const pAssets = byPeruntukan[pName];
+
+          // Baris Peruntukan — abu sangat terang, italic
+          ws.getRow(currentRow).height = 14;
+          const pCell = ws.getRow(currentRow).getCell(1);
+          pCell.value = `            ${pName.toUpperCase()}`;
+          pCell.font = { bold: true, italic: true, size: 9, name: "Arial", color: { argb: COLOR.fontGray } };
+          pCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLOR.peruntukan } };
+          pCell.alignment = { vertical: "middle" };
+          ws.mergeCells(`A${currentRow}:G${currentRow}`);
+          applyBorder(pCell);
+          currentRow++;
+
+          pAssets.forEach((asset) => {
+            // Setiap aset ditampilkan dalam 1 baris (lokasi digabung)
+            const lokasiParts = [
+              asset.kelurahan  ? `Kel/Desa ${asset.kelurahan}`   : null,
+              asset.kecamatan  ? `Kec. ${asset.kecamatan}`       : null,
+              asset.kabkota    ? `Kab. ${asset.kabkota}`         : null,
+              asset.provinsi   || null,
+            ].filter(Boolean);
+            const lokasi = lokasiParts.join("\n");
+
+            ws.getRow(currentRow).height = 15 * lokasiParts.length || 15;
+            const row = ws.getRow(currentRow);
+
+            const vals = [
+              globalIndex,
+              asset.bidang || "-",
+              lokasi || "-",
+              asset.area ? Number(asset.area) : 0,
+              asset.peruntukan || "-",
+              asset.status || "-",
+              asset.sejarah || "-",
+            ];
+
+            vals.forEach((val, i) => {
+              const cell = row.getCell(i + 1);
+              cell.value = val;
+              cell.font = { size: 9, name: "Arial", color: { argb: COLOR.fontDark } };
+              cell.alignment = {
+                vertical: "middle",
+                wrapText: i === 2 || i === 6,
+                horizontal: i === 0 ? "center" : i === 3 ? "right" : "left",
+              };
+              if (i === 3) cell.numFmt = "#,##0.##";
+
+              // Zebra stripe
+              if (globalIndex % 2 === 0) {
+                cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLOR.zebraEven } };
+              }
+              applyBorder(cell);
+            });
+
+            currentRow++;
+            globalIndex++;
+          });
+        });
+
+        // Baris total per Kabupaten
+        ws.getRow(currentRow).height = 14;
+        const totalLuas = kabAssets.reduce((sum, a) => sum + (Number(a.area) || 0), 0);
+
+        const totLabelCell = ws.getRow(currentRow).getCell(1);
+        totLabelCell.value = `Total ${kab}: ${kabAssets.length} aset`;
+        totLabelCell.font = { bold: true, size: 9, name: "Arial", color: { argb: COLOR.fontGray } };
+        totLabelCell.alignment = { horizontal: "right", vertical: "middle" };
+        totLabelCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEFEFEF" } };
+        ws.mergeCells(`A${currentRow}:C${currentRow}`);
+
+        const totLuasCell = ws.getRow(currentRow).getCell(4);
+        totLuasCell.value = totalLuas;
+        totLuasCell.numFmt = "#,##0.##";
+        totLuasCell.font = { bold: true, size: 9, name: "Arial" };
+        totLuasCell.alignment = { horizontal: "right", vertical: "middle" };
+        totLuasCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEFEFEF" } };
+        ws.mergeCells(`D${currentRow}:G${currentRow}`);
+
+        for (let c = 1; c <= 7; c++) applyBorder(ws.getRow(currentRow).getCell(c));
+        currentRow++;
+      });
+
+      // Spasi antar provinsi
+      ws.getRow(currentRow).height = 5;
+      currentRow++;
+    });
+  };
+
   const exportToExcel = async () => {
     if (filteredAssets.length === 0) {
       toast.error("Tidak ada data untuk diekspor!");
       return;
     }
     setExporting(true);
-    // ... (Excel export logic remains the same as it's functional and complex)
-    // I will keep the original functional export logic here but slightly clean up the start
+
     try {
       const workbook = new ExcelJS.Workbook();
-      let subtitle = selectedProvinsi ? `DI WILAYAH ${selectedProvinsi.toUpperCase()}` : "DI SELURUH WILAYAH";
-      
-      const tanahAssets = filteredAssets.filter(a => a.bidang === "Tanah");
-      const nonTanahAssets = filteredAssets.filter(a => a.bidang !== "Tanah" && a.bidang);
+      workbook.creator = "Sistem Aset Yardip";
+      workbook.created = new Date();
 
-      const addDataRows = (worksheet, assets, startRow) => {
-        let currentRow = startRow;
-        let globalIndex = 1;
-        const groupedByPeruntukan = {};
-        assets.forEach(a => {
-          const p = a.peruntukan || "Lain-lain";
-          if (!groupedByPeruntukan[p]) groupedByPeruntukan[p] = [];
-          groupedByPeruntukan[p].push(a);
-        });
-
-        Object.keys(groupedByPeruntukan).forEach(pName => {
-          const pAssets = groupedByPeruntukan[pName];
-          worksheet.getRow(currentRow).getCell(1).value = pName.toUpperCase();
-          worksheet.getRow(currentRow).getCell(1).font = { bold: true };
-          worksheet.mergeCells(`A${currentRow}:G${currentRow}`);
-          currentRow++;
-
-          pAssets.forEach(asset => {
-            const r = worksheet.getRow(currentRow);
-            r.getCell(1).value = globalIndex;
-            r.getCell(2).value = asset.bidang;
-            r.getCell(3).value = asset.kelurahan || "-";
-            r.getCell(4).value = asset.area ? Number(asset.area) : 0;
-            r.getCell(5).value = asset.peruntukan || "-";
-            r.getCell(6).value = asset.status || "-";
-            r.getCell(7).value = asset.sejarah || "-";
-            
-            worksheet.getRow(currentRow+1).getCell(3).value = asset.kecamatan || "-";
-            worksheet.getRow(currentRow+2).getCell(3).value = asset.kabkota || "-";
-            worksheet.getRow(currentRow+3).getCell(3).value = asset.provinsi || "-";
-
-            for(let i=0; i<4; i++) {
-                const row = worksheet.getRow(currentRow + i);
-                row.height = 18;
-                for(let c=1; c<=7; c++) {
-                    const cell = row.getCell(c);
-                    cell.font = { size: 9, name: 'Arial' };
-                    cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
-                    if (c === 4 && i === 0) cell.numFmt = '#,##0';
-                    cell.alignment = { vertical: 'middle', wrapText: true };
-                }
-            }
-            currentRow += 4;
-            globalIndex++;
-          });
-        });
-        return currentRow;
-      };
+      const tanahAssets    = filteredAssets.filter((a) => a.bidang === "Tanah");
+      const nonTanahAssets = filteredAssets.filter((a) => a.bidang !== "Tanah" && a.bidang);
 
       if (nonTanahAssets.length > 0) {
-        const ws = workbook.addWorksheet("Aset Selain Tanah");
-        ws.columns = [{width:5}, {width:20}, {width:25}, {width:12}, {width:20}, {width:20}, {width:30}];
-        ws.mergeCells("A1:G1"); ws.getCell("A1").value = "DAFTAR ASET TANAH YARDIP SELAIN KEBUN";
-        ws.mergeCells("A2:G2"); ws.getCell("A2").value = subtitle;
-        const hRow = ws.getRow(4);
-        ["NO", "BIDANG", "LOKASI", "LUAS (M2)", "PERUNTUKAN", "STATUS", "SEJARAH"].forEach((h, i) => {
-            hRow.getCell(i+1).value = h;
-            hRow.getCell(i+1).fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFD3D3D3'} };
-            hRow.getCell(i+1).font = { bold: true };
-        });
-        addDataRows(ws, nonTanahAssets, 6);
+        buildSheet(
+          workbook,
+          "Aset Selain Tanah",
+          "Daftar Aset Yardip Selain Kebun",
+          nonTanahAssets
+        );
       }
 
       if (tanahAssets.length > 0) {
-        const ws = workbook.addWorksheet("Aset Tanah");
-        ws.columns = [{width:5}, {width:20}, {width:25}, {width:12}, {width:20}, {width:20}, {width:30}];
-        ws.mergeCells("A1:G1"); ws.getCell("A1").value = "DAFTAR ASET TANAH YAYASAN RUMPUN DIPONEGORO";
-        ws.mergeCells("A2:G2"); ws.getCell("A2").value = subtitle;
-        const hRow = ws.getRow(4);
-        ["NO", "BIDANG", "LOKASI", "LUAS (M2)", "PERUNTUKAN", "STATUS", "SEJARAH"].forEach((h, i) => {
-            hRow.getCell(i+1).value = h;
-            hRow.getCell(i+1).fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFD3D3D3'} };
-            hRow.getCell(i+1).font = { bold: true };
-        });
-        addDataRows(ws, tanahAssets, 6);
+        buildSheet(
+          workbook,
+          "Aset Tanah",
+          "Daftar Aset Tanah Yayasan Rumpun Diponegoro",
+          tanahAssets
+        );
       }
 
       const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
       link.download = `Laporan_Aset_Yardip_${new Date().toISOString().split("T")[0]}.xlsx`;
       link.click();
       toast.success("File Excel berhasil didownload.");
-    } catch (error) {
-      toast.error(`Gagal mengekspor: ${error.message}`);
+    } catch (err) {
+      toast.error(`Gagal mengekspor: ${err.message}`);
+      console.error(err);
     } finally {
       setExporting(false);
     }
   };
 
-  if (loading) return (
-    <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: "60vh" }}>
-      <Spinner animation="border" variant="success" />
-    </Container>
-  );
+  if (loading)
+    return (
+      <Container
+        className="d-flex justify-content-center align-items-center"
+        style={{ minHeight: "60vh" }}
+      >
+        <Spinner animation="border" variant="success" />
+      </Container>
+    );
 
   const groupedPreview = groupAssetsByProvinsiKabupaten(filteredAssets);
 
@@ -245,11 +407,21 @@ const LaporanYardipPage = () => {
     <Container className="py-4 laporan-container">
       <div className="page-header-box shadow-sm">
         <div className="page-header-title">
-          <h2><i className="fas fa-file-excel me-3 text-success"></i>Laporan Aset Yardip</h2>
+          <h2>
+            <i className="fas fa-file-excel me-3 text-success"></i>Laporan Aset Yardip
+          </h2>
         </div>
         <div className="page-header-actions">
-          <Button className="btn-sage-export" onClick={exportToExcel} disabled={exporting || filteredAssets.length === 0}>
-            {exporting ? <Spinner size="sm" className="me-2" /> : <i className="fas fa-download me-2"></i>}
+          <Button
+            className="btn-sage-export"
+            onClick={exportToExcel}
+            disabled={exporting || filteredAssets.length === 0}
+          >
+            {exporting ? (
+              <Spinner size="sm" className="me-2" />
+            ) : (
+              <i className="fas fa-download me-2"></i>
+            )}
             Cetak Laporan Excel
           </Button>
         </div>
@@ -259,26 +431,32 @@ const LaporanYardipPage = () => {
         <Col lg={4}>
           <Card className="filter-panel-card border-0 shadow-sm mb-4">
             <Card.Header>
-              <h5><i className="fas fa-sliders-h"></i>Filter Laporan</h5>
+              <h5>
+                <i className="fas fa-sliders-h"></i>Filter Laporan
+              </h5>
             </Card.Header>
             <Card.Body className="p-4">
               <Form.Group className="mb-3">
                 <Form.Label>Provinsi</Form.Label>
                 <Form.Select value={selectedProvinsi} onChange={handleProvinsiChange}>
                   <option value="">Semua Provinsi</option>
-                  {provinsiList.map(p => <option key={p} value={p}>{p}</option>)}
+                  {provinsiList.map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
                 </Form.Select>
               </Form.Group>
 
               <Form.Group className="mb-3">
                 <Form.Label>Kota/Kabupaten</Form.Label>
-                <Form.Select 
-                    value={selectedKabupaten} 
-                    onChange={(e) => setSelectedKabupaten(e.target.value)}
-                    disabled={!selectedProvinsi}
+                <Form.Select
+                  value={selectedKabupaten}
+                  onChange={(e) => setSelectedKabupaten(e.target.value)}
+                  disabled={!selectedProvinsi}
                 >
                   <option value="">Semua Kota/Kabupaten</option>
-                  {getKabupatenForSelectedProvinsi().map(k => <option key={k} value={k}>{k}</option>)}
+                  {getKabupatenForSelectedProvinsi().map((k) => (
+                    <option key={k} value={k}>{k}</option>
+                  ))}
                 </Form.Select>
               </Form.Group>
 
@@ -286,7 +464,9 @@ const LaporanYardipPage = () => {
                 <Form.Label>Bidang</Form.Label>
                 <Form.Select value={selectedBidang} onChange={(e) => setSelectedBidang(e.target.value)}>
                   <option value="">Semua Bidang</option>
-                  {bidangList.map(b => <option key={b} value={b}>{b}</option>)}
+                  {bidangList.map((b) => (
+                    <option key={b} value={b}>{b}</option>
+                  ))}
                 </Form.Select>
               </Form.Group>
 
@@ -308,7 +488,9 @@ const LaporanYardipPage = () => {
           <Row className="g-3">
             <Col xs={12}>
               <div className="stats-card">
-                <div className="stats-icon bg-sage-light"><i className="fas fa-database"></i></div>
+                <div className="stats-icon bg-sage-light">
+                  <i className="fas fa-database"></i>
+                </div>
                 <div className="stats-info">
                   <h3>{filteredAssets.length}</h3>
                   <p>Total Aset</p>
@@ -317,9 +499,11 @@ const LaporanYardipPage = () => {
             </Col>
             <Col xs={12}>
               <div className="stats-card">
-                <div className="stats-icon bg-success-light"><i className="fas fa-check-circle"></i></div>
+                <div className="stats-icon bg-success-light">
+                  <i className="fas fa-check-circle"></i>
+                </div>
                 <div className="stats-info">
-                  <h3>{filteredAssets.filter(a => a.status === "Dimiliki/Dikuasai").length}</h3>
+                  <h3>{filteredAssets.filter((a) => a.status === "Dimiliki/Dikuasai").length}</h3>
                   <p>Dimiliki</p>
                 </div>
               </div>
@@ -330,12 +514,14 @@ const LaporanYardipPage = () => {
         <Col lg={8}>
           <Card className="preview-section-card border-0 shadow-sm">
             <div className="preview-toolbar">
-              <h5 className="mb-0 fw-bold"><i className="fas fa-eye me-2 text-success"></i>Pratinjau Data</h5>
+              <h5 className="mb-0 fw-bold">
+                <i className="fas fa-eye me-2 text-success"></i>Pratinjau Data
+              </h5>
               <div className="search-box-wrapper">
                 <i className="fas fa-search"></i>
-                <Form.Control 
-                  type="text" 
-                  placeholder="Cari pengelola atau lokasi..." 
+                <Form.Control
+                  type="text"
+                  placeholder="Cari pengelola atau lokasi..."
                   className="search-input-preview"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -345,34 +531,46 @@ const LaporanYardipPage = () => {
 
             <div className="preview-scroll-container">
               {Object.keys(groupedPreview).length > 0 ? (
-                Object.keys(groupedPreview).map(prov => {
+                Object.keys(groupedPreview).map((prov) => {
                   const provData = groupedPreview[prov];
                   return (
                     <div key={prov} className="provinsi-preview-group">
                       <div className="provinsi-preview-title">
-                        <i className="fas fa-map-marker-alt"></i>{prov}
+                        <i className="fas fa-map-marker-alt"></i>
+                        {prov}
                       </div>
-                      {Object.keys(provData).map(kab => {
+                      {Object.keys(provData).map((kab) => {
                         const kabAssets = provData[kab];
                         return (
                           <div key={kab} className="kabupaten-preview-group">
                             <div className="kabupaten-preview-title">
-                              <span><i className="fas fa-city me-2"></i>{kab}</span>
-                              <span className="badge bg-white text-dark border">{kabAssets.length} Aset</span>
+                              <span>
+                                <i className="fas fa-city me-2"></i>
+                                {kab}
+                              </span>
+                              <span className="badge bg-white text-dark border">
+                                {kabAssets.length} Aset
+                              </span>
                             </div>
                             <div className="table-responsive-custom">
                               <table className="table table-striped table-bordered table-hover mb-0">
-                                <thead className="table-dark" style={{ position: "sticky", top: 0, zIndex: 10 }}>
+                                <thead
+                                  className="table-dark"
+                                  style={{ position: "sticky", top: 0, zIndex: 10 }}
+                                >
                                   <tr>
-                                    <th style={{ width: "120px", minWidth: "120px", whiteSpace: "nowrap" }} className="text-end">
-  Luas (m²)
-</th>
+                                    <th style={{ width: "45px" }}>No</th>
                                     <th>Pengelola</th>
                                     <th>Bidang</th>
                                     <th>Provinsi</th>
                                     <th>Kota/Kab.</th>
                                     <th>Status</th>
-                                    <th className="text-end">Luas</th>
+                                    <th
+                                      className="text-end"
+                                      style={{ minWidth: "110px", whiteSpace: "nowrap" }}
+                                    >
+                                      Luas (m²)
+                                    </th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -381,7 +579,7 @@ const LaporanYardipPage = () => {
                                       switch (status) {
                                         case "Dimiliki/Dikuasai": return "bg-success";
                                         case "Tidak Dimiliki/Tidak Dikuasai": return "bg-danger";
-                                        default: return "bg-info";
+                                        default: return "bg-secondary";
                                       }
                                     };
                                     return (
@@ -396,9 +594,12 @@ const LaporanYardipPage = () => {
                                             {asset.status || "-"}
                                           </span>
                                         </td>
-                                      <td className="text-end fw-bold" style={{ whiteSpace: "nowrap", minWidth: "120px" }}>
-  {(asset.area || 0).toLocaleString("id-ID")} m²
-</td>
+                                        <td
+                                          className="text-end fw-bold"
+                                          style={{ whiteSpace: "nowrap" }}
+                                        >
+                                          {(asset.area || 0).toLocaleString("id-ID")} m²
+                                        </td>
                                       </tr>
                                     );
                                   })}
