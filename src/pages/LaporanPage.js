@@ -208,7 +208,7 @@ const LaporanPage = () => {
       const headers1 = [
         "NOMOR URUT", "BAG", "NUP", "KIB / KODE BARANG", "NO. REG", "ALAMAT",
         "PERUNTUKAN", "STATUS", "ASAL MILIK", "BUKTI PEMILIKAN", "A.N. PEMILIK SERTIFIKAT",
-        "JUMLAH TANAH KESELURUHAN", "", "SUDAH SERTIFIKAT", "", "BELUM SERTIFIKAT", "", "KET",
+        "JUMLAH TANAH KESELURUHAN", "", "SUDAH SERTIFIKAT", "", "BELUM SERTIFIKAT", "", "SEJARAH",
       ];
 
       const headerRow1 = worksheet.getRow(4);
@@ -265,7 +265,7 @@ const LaporanPage = () => {
               asset.peruntukan || asset.fungsi || "-", asset.status || "-", asset.asal_milik || "-",
               asset.bukti_pemilikan_filename || "-", asset.atas_nama_pemilik_sertifikat || "-",
               1, formatLuas(asset), hasSertifikat ? 1 : 0, parseFloat(asset.sertifikat_luas) || 0,
-              !hasSertifikat ? 1 : 0, parseFloat(asset.belum_sertifikat_luas) || 0, asset.keterangan || "-",
+              !hasSertifikat ? 1 : 0, parseFloat(asset.belum_sertifikat_luas) || 0, asset.sejarah || "-",
             ];
             const dataRow = worksheet.getRow(currentRow);
             rowData.forEach((val, i) => {

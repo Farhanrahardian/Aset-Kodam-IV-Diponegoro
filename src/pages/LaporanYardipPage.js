@@ -167,7 +167,7 @@ const LaporanYardipPage = () => {
             r.getCell(4).value = asset.area ? Number(asset.area) : 0;
             r.getCell(5).value = asset.peruntukan || "-";
             r.getCell(6).value = asset.status || "-";
-            r.getCell(7).value = asset.keterangan || "-";
+            r.getCell(7).value = asset.sejarah || "-";
             
             worksheet.getRow(currentRow+1).getCell(3).value = asset.kecamatan || "-";
             worksheet.getRow(currentRow+2).getCell(3).value = asset.kabkota || "-";
@@ -197,7 +197,7 @@ const LaporanYardipPage = () => {
         ws.mergeCells("A1:G1"); ws.getCell("A1").value = "DAFTAR ASET TANAH YARDIP SELAIN KEBUN";
         ws.mergeCells("A2:G2"); ws.getCell("A2").value = subtitle;
         const hRow = ws.getRow(4);
-        ["NO", "BIDANG", "LOKASI", "LUAS (M2)", "PERUNTUKAN", "STATUS", "KETERANGAN"].forEach((h, i) => {
+        ["NO", "BIDANG", "LOKASI", "LUAS (M2)", "PERUNTUKAN", "STATUS", "SEJARAH"].forEach((h, i) => {
             hRow.getCell(i+1).value = h;
             hRow.getCell(i+1).fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFD3D3D3'} };
             hRow.getCell(i+1).font = { bold: true };
@@ -211,7 +211,7 @@ const LaporanYardipPage = () => {
         ws.mergeCells("A1:G1"); ws.getCell("A1").value = "DAFTAR ASET TANAH YAYASAN RUMPUN DIPONEGORO";
         ws.mergeCells("A2:G2"); ws.getCell("A2").value = subtitle;
         const hRow = ws.getRow(4);
-        ["NO", "BIDANG", "LOKASI", "LUAS (M2)", "PERUNTUKAN", "STATUS", "KETERANGAN"].forEach((h, i) => {
+        ["NO", "BIDANG", "LOKASI", "LUAS (M2)", "PERUNTUKAN", "STATUS", "SEJARAH"].forEach((h, i) => {
             hRow.getCell(i+1).value = h;
             hRow.getCell(i+1).fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFD3D3D3'} };
             hRow.getCell(i+1).font = { bold: true };
@@ -364,7 +364,9 @@ const LaporanYardipPage = () => {
                               <table className="table table-striped table-bordered table-hover mb-0">
                                 <thead className="table-dark" style={{ position: "sticky", top: 0, zIndex: 10 }}>
                                   <tr>
-                                    <th style={{ width: "50px" }}>No</th>
+                                    <th style={{ width: "120px", minWidth: "120px", whiteSpace: "nowrap" }} className="text-end">
+  Luas (m²)
+</th>
                                     <th>Pengelola</th>
                                     <th>Bidang</th>
                                     <th>Provinsi</th>
@@ -394,7 +396,9 @@ const LaporanYardipPage = () => {
                                             {asset.status || "-"}
                                           </span>
                                         </td>
-                                        <td className="text-end fw-bold">{(asset.area || 0).toLocaleString("id-ID")} m²</td>
+                                      <td className="text-end fw-bold" style={{ whiteSpace: "nowrap", minWidth: "120px" }}>
+  {(asset.area || 0).toLocaleString("id-ID")} m²
+</td>
                                       </tr>
                                     );
                                   })}

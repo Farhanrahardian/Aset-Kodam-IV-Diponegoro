@@ -220,7 +220,12 @@
   background: white;
   border-radius: 10px;
   border: 1px solid #eee;
-  overflow: hidden;
+  overflow-x: auto;  /* ← ubah dari overflow: hidden */
+  overflow-y: hidden;
+}
+
+.table-responsive-custom table {
+  min-width: 700px; /* pastikan tabel punya lebar minimum */
 }
 
 .laporan-table-new {
