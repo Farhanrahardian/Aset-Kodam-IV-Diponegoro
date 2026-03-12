@@ -910,62 +910,66 @@ const FormYardip = forwardRef(
 
           <fieldset disabled={!isEnabled && !isEditMode}>
               {/* LOKASI TERPILIH - Hanya tampil jika hideLocationFields = false */}
-              {!hideLocationFields && (
               <Card className="mb-3">
-                <Card.Header>
-                  <strong>Lokasi Terpilih (dari Peta)</strong>
-                </Card.Header>
+                {!hideLocationFields && (
+                  <Card.Header>
+                    <strong>Lokasi Terpilih (dari Peta)</strong>
+                  </Card.Header>
+                )}
                 <Card.Body>
-                  <Row>
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Provinsi</Form.Label>
-                        <Form.Select
-                          name="provinsi"
-                          value={selectedProvinceName || ""}
-                          onChange={handleProvinceChange}
-                          disabled={isEditMode}
-                        >
-                          <option value="">-- Pilih Provinsi --</option>
-                          {provinsiData?.features.map((p) => (
-                            <option
-                              key={p.properties.PROVINCE}
-                              value={p.properties.PROVINCE}
-                            >
-                              {p.properties.PROVINCE}
-                            </option>
-                          ))}
-                        </Form.Select>
-                      </Form.Group>
-                    </Col>
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Kabupaten/Kota</Form.Label>
-                        <Form.Select
-                          name="kabupaten"
-                          value={selectedKabupatenName || ""}
-                          onChange={handleKabupatenChange}
-                          disabled={isEditMode || !selectedProvinceName}
-                        >
-                          <option value="">-- Pilih Kabupaten/Kota --</option>
-                          {selectedProvinceName &&
-                            kabupatenData?.features
-                              .filter(
-                                (f) =>
-                                  f.properties.PROVINCE === selectedProvinceName && !isConservationArea(f.properties.Kabupaten)
-                              )
-                              .map((f) => (
-                                <option
-                                  key={f.properties.Kabupaten}
-                                  value={f.properties.Kabupaten}
-                                >
-                                  {f.properties.Kabupaten}
-                                </option>
-                              ))}
-                        </Form.Select>
-                      </Form.Group>
-                    </Col>
-                  </Row>
+                  {!hideLocationFields && (
+                    <Row>
+                      <Col md={6}>
+                        <Form.Group className="mb-3">
+                          <Form.Label>Provinsi</Form.Label>
+                          <Form.Select
+                            name="provinsi"
+                            value={selectedProvinceName || ""}
+                            onChange={handleProvinceChange}
+                            disabled={isEditMode}
+                          >
+                            <option value="">-- Pilih Provinsi --</option>
+                            {provinsiData?.features.map((p) => (
+                              <option
+                                key={p.properties.PROVINCE}
+                                value={p.properties.PROVINCE}
+                              >
+                                {p.properties.PROVINCE}
+                              </option>
+                            ))}
+                          </Form.Select>
+                        </Form.Group>
+                      </Col>
+                      <Col md={6}>
+                        <Form.Group className="mb-3">
+                          <Form.Label>Kabupaten/Kota</Form.Label>
+                          <Form.Select
+                            name="kabupaten"
+                            value={selectedKabupatenName || ""}
+                            onChange={handleKabupatenChange}
+                            disabled={isEditMode || !selectedProvinceName}
+                          >
+                            <option value="">-- Pilih Kabupaten/Kota --</option>
+                            {selectedProvinceName &&
+                              kabupatenData?.features
+                                .filter(
+                                  (f) =>
+                                    f.properties.PROVINCE === selectedProvinceName && !isConservationArea(f.properties.Kabupaten)
+                                )
+                                .map((f) => (
+                                  <option
+                                    key={f.properties.Kabupaten}
+                                    value={f.properties.Kabupaten}
+                                  >
+                                    {f.properties.Kabupaten}
+                                  </option>
+                                ))}
+                          </Form.Select>
+                        </Form.Group>
+                      </Col>
+                    </Row>
+                  )}
+                  
                   <Form.Group className="mb-3">
                     <Form.Label>
                       Luas Area (dari Peta) <span className="text-danger">*</span>
@@ -1004,7 +1008,6 @@ const FormYardip = forwardRef(
                   </Form.Group>
                 </Card.Body>
               </Card>
-              )}
 
               {!isPolygonCreated && !isEditMode && (
                 <Alert variant="warning" className="text-center">
